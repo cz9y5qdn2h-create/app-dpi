@@ -14,25 +14,35 @@ const settingsRoutes = require('./routes/settings');
 
 const app = express();
 
-// Securite
-app.use(helmet({ crossOriginResourcePolicy: false }));
+// CRITIQUE: Necesaire sur Vercel (proxy) sinon express-rate-limit bloque tout
+app.set('trust proxy', 1);
 
-// CORS - accepte toutes les origines en beta
+// Securite (assouplie pour Vercel)
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  contentSecurityPolicy: false
+}));
+
+// CORS ouvert pour la beta
 app.use(cors({
-  origin: true, // accepte toutes les origines
+  origin: true,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
-app.options('*', cors()); // preflight
+app.options('*', cors());
 
-// Rate limiting
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 200,
-  message: { error: 'Trop de requetes, reessayez dans 15 minutes.' }
-});
-app.use('/api/', limiter);
+// Rate limiting (desactive en dev)
+if (process.env.NODE_ENV === 'production') {
+  const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 300,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Trop de requetes, reessayez dans 15 minutes.' }
+  });
+  app.use('/api/', limiter);
+}
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
@@ -48,29 +58,37 @@ app.use('/api/settings', settingsRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    env: {
+      supabase: !!process.env.SUPABASE_URL,
+      anthropic: !!process.env.ANTHROPIC_API_KEY,
+      service_role: !!process.env.SUPABASE_SERVICE_ROLE_KEY
+    }
+  });
 });
 
-// Route racine
 app.get('/', (req, res) => {
-  res.json({ name: 'DIP Pilot API', version: '1.0.0', status: 'running' });
+  res.json({ name: 'DIP Pilot API', version: '1.0.0', status: 'ok' });
 });
 
-// Gestion erreurs globale
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({ error: 'Route non trouvee: ' + req.method + ' ' + req.path });
+});
+
+// Erreurs globales
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(err.status || 500).json({
-    error: err.message || 'Erreur interne du serveur'
-  });
+  console.error('[ERROR]', err.message);
+  res.status(err.status || 500).json({ error: err.message || 'Erreur interne' });
 });
 
-// Pour Vercel serverless ET local
-const PORT = process.env.PORT || 3001;
-if (process.env.NODE_ENV !== 'production' || process.env.VERCEL !== '1') {
-  app.listen(PORT, () => {
-    console.log('DIP Pilot API demarree sur le port ' + PORT);
-  });
-}
-
-// IMPORTANT: exporter pour Vercel serverless
+// Export pour Vercel serverless
 module.exports = app;
+
+// Demarrage local uniquement
+if (require.main === module) {
+  const PORT = process.env.PORT || 3001;
+  app.listen(PORT, () => console.log('DIP Pilot API sur port ' + PORT));
+}
