@@ -7,7 +7,7 @@ const router = express.Router();
 router.post('/register', async (req, res) => {
   const { email, password, company_name, role = 'franchiseur' } = req.body;
   if (!email || !password || !company_name) {
-    return res.status(400).json({ error: 'Email, mot de passe et nom de société requis' });
+    return res.status(400).json({ error: 'Email, mot de passe et nom de societe requis' });
   }
   try {
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
@@ -17,7 +17,7 @@ router.post('/register', async (req, res) => {
     });
     if (authError) return res.status(400).json({ error: authError.message });
 
-    await supabaseAdmin.from('users').insert({
+    const { error: profileError } = await supabaseAdmin.from('users').insert({
       id: authData.user.id,
       email,
       role,
@@ -25,8 +25,11 @@ router.post('/register', async (req, res) => {
       created_at: new Date().toISOString()
     });
 
-    res.status(201).json({ message: 'Compte créé avec succès', user_id: authData.user.id });
+    if (profileError) console.warn('Profile insert error:', profileError.message);
+
+    res.status(201).json({ message: 'Compte cree avec succes', user_id: authData.user.id });
   } catch (err) {
+    console.error('Register error:', err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -36,35 +39,47 @@ router.post('/login', async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) return res.status(400).json({ error: 'Email et mot de passe requis' });
 
-  const { createClient } = require('@supabase/supabase-js');
-  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+  try {
+    const { createClient } = require('@supabase/supabase-js');
+    const supabase = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_ANON_KEY
+    );
 
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) return res.status(401).json({ error: 'Identifiants invalides' });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) {
+      console.error('Login error:', error.message);
+      return res.status(401).json({ error: 'Identifiants invalides' });
+    }
 
-  const { data: profile } = await supabaseAdmin
-    .from('users').select('*').eq('id', data.user.id).single();
+    const { data: profile } = await supabaseAdmin
+      .from('users').select('*').eq('id', data.user.id).single();
 
-  res.json({
-    access_token: data.session.access_token,
-    refresh_token: data.session.refresh_token,
-    user: { ...data.user, ...profile }
-  });
+    res.json({
+      access_token: data.session.access_token,
+      refresh_token: data.session.refresh_token,
+      user: { ...data.user, ...(profile || {}) }
+    });
+  } catch (err) {
+    console.error('Login catch error:', err);
+    res.status(500).json({ error: 'Erreur serveur lors de la connexion' });
+  }
 });
 
 // GET /api/auth/me
 router.get('/me', authMiddleware, async (req, res) => {
-  const { data: profile } = await supabaseAdmin
-    .from('users').select('*').eq('id', req.user.id).single();
-  res.json({ user: { ...req.user, ...profile } });
+  try {
+    const { data: profile } = await supabaseAdmin
+      .from('users').select('*').eq('id', req.user.id).single();
+    res.json({ user: { ...req.user, ...(profile || {}) } });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // POST /api/auth/logout
 router.post('/logout', authMiddleware, async (req, res) => {
-  const { createClient } = require('@supabase/supabase-js');
-  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
-  await supabase.auth.signOut();
-  res.json({ message: 'Déconnexion réussie' });
+  res.json({ message: 'Deconnexion reussie' });
 });
 
 module.exports = router;
