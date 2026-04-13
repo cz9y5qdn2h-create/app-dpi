@@ -4,9 +4,7 @@
 
 @layer base {
   * { box-sizing: border-box; }
-  
   html { scroll-behavior: smooth; }
-  
   body {
     background-color: #080808;
     color: #F4F2EE;
@@ -15,17 +13,15 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
-
   h1, h2, h3, h4 {
     font-family: 'Cormorant Garamond', Georgia, serif;
     font-weight: 300;
     color: #F4F2EE;
   }
-
   ::-webkit-scrollbar { width: 4px; height: 4px; }
   ::-webkit-scrollbar-track { background: #080808; }
-  ::-webkit-scrollbar-thumb { background: rgba(200,169,110,0.3); border-radius: 2px; }
-  ::-webkit-scrollbar-thumb:hover { background: rgba(200,169,110,0.5); }
+  ::-webkit-scrollbar-thumb { background: rgba(200,169,110,0.25); border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(200,169,110,0.45); }
 }
 
 @layer components {
@@ -33,82 +29,56 @@
     @apply bg-gold text-bg-primary font-dm-sans font-medium px-6 py-3 rounded transition-all duration-300
            hover:bg-gold-light active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
   }
-
   .btn-secondary {
     @apply border border-border-default text-text-primary font-dm-sans font-light px-6 py-3 rounded
            transition-all duration-300 hover:border-gold hover:text-gold active:scale-95
            disabled:opacity-50 disabled:cursor-not-allowed;
   }
-
   .btn-ghost {
     @apply text-text-secondary font-dm-sans font-light px-4 py-2 rounded
            transition-all duration-300 hover:text-text-primary hover:bg-bg-elevated;
   }
-
   .card {
     @apply bg-bg-card border border-border-subtle rounded-lg p-6;
   }
-
   .card-hover {
     @apply card transition-all duration-300 hover:border-border-default hover:bg-bg-elevated;
   }
-
   .input-field {
     @apply w-full bg-bg-elevated border border-border-subtle text-text-primary
            font-dm-sans font-light px-4 py-3 rounded transition-all duration-300
            focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold/20
            placeholder:text-text-secondary;
   }
-
   .label {
     @apply block text-text-secondary font-dm-sans text-sm font-light mb-2;
   }
-
-  .badge {
-    @apply inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-dm-mono;
-  }
-
-  .badge-conforme {
-    @apply badge bg-success/10 text-success border border-success/20;
-  }
-
-  .badge-a_verifier {
-    @apply badge bg-gold/10 text-gold border border-gold/20;
-  }
-
-  .badge-non_conforme {
-    @apply badge bg-danger/10 text-danger border border-danger/20;
-  }
-
-  .section-title {
-    @apply font-cormorant text-2xl font-light text-text-primary mb-1;
-  }
-
+  .badge { @apply inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-dm-mono; }
+  .badge-conforme    { @apply badge bg-success/10 text-success border border-success/20; }
+  .badge-a_verifier  { @apply badge bg-gold/10 text-gold border border-gold/20; }
+  .badge-non_conforme { @apply badge bg-danger/10 text-danger border border-danger/20; }
+  .section-title { @apply font-cormorant text-2xl font-light text-text-primary mb-1; }
   .nav-link {
-    @apply flex items-center gap-3 px-4 py-3 rounded text-text-secondary font-dm-sans
-           font-light text-sm transition-all duration-300
+    @apply flex items-center gap-3 px-4 py-2.5 rounded text-text-secondary font-dm-sans
+           font-light text-sm transition-all duration-200
            hover:text-text-primary hover:bg-bg-elevated;
   }
-
-  .nav-link-active {
-    @apply nav-link text-gold bg-gold/10 border-l-2 border-gold;
-  }
-
-  .divider {
-    @apply border-t border-border-subtle my-6;
-  }
+  .nav-link-active { @apply nav-link text-gold bg-gold/10 border-l-2 border-gold; }
+  .divider { @apply border-t border-border-subtle my-6; }
+  .skeleton { @apply bg-bg-elevated rounded animate-skeleton; }
 }
 
-/* Animation utilitaires */
-.animate-fade-in { animation: fadeIn 0.4s ease forwards; }
-.animate-slide-up { animation: slideUp 0.4s ease forwards; }
+.animate-fade-in  { animation: fadeIn 0.4s ease forwards; }
+.animate-slide-up { animation: slideUp 0.3s ease forwards; }
+.animate-skeleton { animation: skeleton 1.5s ease-in-out infinite; }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
+@keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes skeleton { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
