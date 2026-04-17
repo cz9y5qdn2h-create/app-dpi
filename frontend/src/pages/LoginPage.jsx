@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { Shield, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Shield, Eye, EyeOff, AlertCircle, Lock } from 'lucide-react';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+import { useNavigate } from 'react-router-dom';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -42,18 +42,22 @@ export default function LoginPage() {
           </div>
           <h1 className="font-cormorant text-4xl text-text-primary font-light">DIP Pilot</h1>
           <p className="font-dm-sans text-sm text-text-secondary mt-2">
-            Conformité franchise automatisée
+            Conformité franchise automatisée — Loi Doubin
           </p>
         </div>
 
         {/* Formulaire */}
         <div className="card border-border-default">
-          <h2 className="font-cormorant text-2xl text-text-primary mb-6">Connexion</h2>
+          <h2 className="font-cormorant text-2xl text-text-primary mb-2">Connexion</h2>
+          <p className="font-dm-sans text-xs text-text-secondary mb-6 flex items-center gap-1.5">
+            <Lock className="w-3 h-3 flex-shrink-0" />
+            Accès réservé aux clients autorisés
+          </p>
 
           {error && (
-            <div className="flex items-center gap-3 bg-danger/10 border border-danger/20 text-danger rounded p-3 mb-5 text-sm font-dm-sans">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              {error}
+            <div className="flex items-start gap-3 bg-danger/10 border border-danger/20 text-danger rounded p-3 mb-5 text-sm font-dm-sans">
+              <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+              <span>{error}</span>
             </div>
           )}
 
@@ -105,18 +109,34 @@ export default function LoginPage() {
 
           <div className="divider" />
 
-          <p className="text-center font-dm-sans text-sm text-text-secondary">
-            Pas encore de compte ?{' '}
-            <Link to="/register" className="text-gold hover:text-gold-light transition-colors">
-              Créer un compte
-            </Link>
-          </p>
+          {/* Accès sur invitation */}
+          <div className="text-center">
+            <p className="font-dm-sans text-sm text-text-secondary">
+              Pas encore de compte ?
+            </p>
+            <p className="font-dm-sans text-xs text-text-muted mt-1">
+              L&apos;accès à DIP Pilot est sur invitation uniquement.{' '}
+              <a
+                href="mailto:theo@iralink-agency.com"
+                className="text-gold hover:text-gold-light transition-colors"
+              >
+                Contactez-nous
+              </a>
+            </p>
+          </div>
         </div>
 
-        {/* Footer */}
-        <p className="text-center font-dm-mono text-xs text-text-muted mt-8">
-          Loi Doubin — Article L.330-3 du Code de commerce
-        </p>
+        {/* Notice RGPD & légale */}
+        <div className="mt-6 space-y-2 text-center">
+          <p className="font-dm-mono text-xs text-text-muted">
+            Loi Doubin — Art. L.330-3 du Code de commerce
+          </p>
+          <p className="font-dm-sans text-xs text-text-muted leading-relaxed max-w-sm mx-auto">
+            En vous connectant, vous acceptez que vos données soient traitées conformément au{' '}
+            <span className="text-text-secondary">Règlement (UE) 2016/679 (RGPD)</span>.
+            Données hébergées en Union Européenne. Responsable de traitement&nbsp;: Iralink Agency.
+          </p>
+        </div>
       </div>
     </div>
   );

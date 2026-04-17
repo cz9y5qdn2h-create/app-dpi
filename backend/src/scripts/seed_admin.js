@@ -1,6 +1,7 @@
 /**
- * Script de seed: crée le compte admin beta
+ * Script de seed: crée le compte administrateur principal
  * Usage: node src/scripts/seed_admin.js
+ * Ce compte est le seul à pouvoir gérer les utilisateurs de la plateforme.
  */
 require('dotenv').config({ path: '../../.env' });
 const { createClient } = require('@supabase/supabase-js');
@@ -14,18 +15,22 @@ async function seedAdmin() {
   const email = process.env.ADMIN_EMAIL || 'theo@iralink-agency.com';
   const password = process.env.ADMIN_PASSWORD || '*Theo.iralink-agency';
 
-  console.log(`Création du compte admin: ${email}`);
+  console.log(`Vérification du compte admin: ${email}`);
 
-  // Vérifier si l'utilisateur existe déjà
   const { data: existing } = await supabase
-    .from('users').select('id').eq('email', email).single();
+    .from('users').select('id, role').eq('email', email).single();
 
   if (existing) {
-    console.log('Compte admin déjà existant.');
+    // S'assurer que le rôle est bien 'admin'
+    if (existing.role !== 'admin') {
+      await supabase.from('users').update({ role: 'admin', is_active: true }).eq('id', existing.id);
+      console.log('✓ Rôle mis à jour: admin');
+    } else {
+      console.log('✓ Compte admin déjà configuré correctement.');
+    }
     return;
   }
 
-  // Créer via Auth Admin API
   const { data: authData, error: authError } = await supabase.auth.admin.createUser({
     email,
     password,
@@ -37,12 +42,12 @@ async function seedAdmin() {
     return;
   }
 
-  // Créer le profil
   const { error: profileError } = await supabase.from('users').insert({
     id: authData.user.id,
     email,
-    role: 'franchiseur',
+    role: 'admin',
     company_name: 'Iralink Agency',
+    is_active: true,
     created_at: new Date().toISOString()
   });
 
@@ -51,9 +56,10 @@ async function seedAdmin() {
     return;
   }
 
-  console.log('✓ Compte admin créé avec succès');
+  console.log('✓ Compte administrateur créé avec succès');
   console.log(`  Email: ${email}`);
   console.log(`  UUID: ${authData.user.id}`);
+  console.log(`  Rôle: admin`);
 }
 
 seedAdmin().catch(console.error);
