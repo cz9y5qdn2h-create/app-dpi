@@ -5,6 +5,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 
 const authRoutes = require('./routes/auth');
+const adminRoutes = require('./routes/admin');
 const dipRoutes = require('./routes/dip');
 const alertRoutes = require('./routes/alerts');
 const franchiseeRoutes = require('./routes/franchisees');
@@ -14,41 +15,72 @@ const settingsRoutes = require('./routes/settings');
 
 const app = express();
 
-// CRITIQUE: Necesaire sur Vercel (proxy) sinon express-rate-limit bloque tout
+// CRITIQUE: Nécessaire sur Vercel (proxy) sinon express-rate-limit bloque tout
 app.set('trust proxy', 1);
 
-// Securite (assouplie pour Vercel)
+// Sécurité: Helmet avec CSP activé
+const supabaseHost = process.env.SUPABASE_URL
+  ? new URL(process.env.SUPABASE_URL).hostname
+  : '*.supabase.co';
+
 app.use(helmet({
-  crossOriginResourcePolicy: { policy: 'cross-origin' },
-  contentSecurityPolicy: false
+  crossOriginResourcePolicy: { policy: 'same-site' },
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      connectSrc: ["'self'", `https://${supabaseHost}`, 'https://api.anthropic.com'],
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", 'data:', 'https:'],
+      frameSrc: ["'none'"],
+      objectSrc: ["'none'"]
+    }
+  }
 }));
 
-// CORS ouvert pour la beta
+// CORS restrictif: uniquement le frontend autorisé
+const allowedOrigins = process.env.FRONTEND_URL
+  ? [process.env.FRONTEND_URL]
+  : ['http://localhost:5173', 'http://localhost:3000'];
+
 app.use(cors({
-  origin: true,
+  origin: (origin, callback) => {
+    // Autoriser les appels sans origin (ex: curl, Postman en dev)
+    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    callback(new Error('CORS: origine non autorisée'));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 app.options('*', cors());
 
-// Rate limiting (desactive en dev)
-if (process.env.NODE_ENV === 'production') {
-  const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 300,
-    standardHeaders: true,
-    legacyHeaders: false,
-    message: { error: 'Trop de requetes, reessayez dans 15 minutes.' }
-  });
-  app.use('/api/', limiter);
-}
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: process.env.NODE_ENV === 'production' ? 300 : 1000,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Trop de requêtes, réessayez dans 15 minutes.' }
+});
+app.use('/api/', limiter);
 
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+// Rate limiting strict sur l'auth (anti brute-force)
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Trop de tentatives de connexion. Réessayez dans 15 minutes.' }
+});
+app.use('/api/auth/', authLimiter);
+
+app.use(express.json({ limit: '20mb' }));
+app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
 app.use('/api/dip', dipRoutes);
 app.use('/api/alerts', alertRoutes);
 app.use('/api/franchisees', franchiseeRoutes);
@@ -75,7 +107,7 @@ app.get('/', (req, res) => {
 
 // 404 handler
 app.use((req, res) => {
-  res.status(404).json({ error: 'Route non trouvee: ' + req.method + ' ' + req.path });
+  res.status(404).json({ error: 'Route non trouvée: ' + req.method + ' ' + req.path });
 });
 
 // Erreurs globales
@@ -87,7 +119,7 @@ app.use((err, req, res, next) => {
 // Export pour Vercel serverless
 module.exports = app;
 
-// Demarrage local uniquement
+// Démarrage local uniquement
 if (require.main === module) {
   const PORT = process.env.PORT || 3001;
   app.listen(PORT, () => console.log('DIP Pilot API sur port ' + PORT));

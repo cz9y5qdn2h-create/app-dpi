@@ -4,11 +4,11 @@ import { useAuth } from '../context/AuthContext';
 import api from '../lib/api';
 import {
   LayoutDashboard, FileText, Upload, Bell, History,
-  Users, Settings, Download, LogOut, Shield
+  Users, Settings, Download, LogOut, Shield, ShieldAlert
 } from 'lucide-react';
 
 export default function Sidebar({ open, onClose }) {
-  const { profile, logout } = useAuth();
+  const { profile, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
 
   const { data: alertsData } = useQuery({
@@ -74,16 +74,36 @@ export default function Sidebar({ open, onClose }) {
             )}
           </NavLink>
         ))}
+
+        {/* Section admin — visible uniquement pour l'administrateur */}
+        {isAdmin && (
+          <div className="pt-3 mt-3 border-t border-border-subtle">
+            <p className="font-dm-mono text-xs text-text-muted px-4 pb-2 uppercase tracking-wider">Administration</p>
+            <NavLink
+              to="/admin"
+              onClick={onClose}
+              className={({ isActive }) =>
+                isActive ? 'nav-link-active' : 'nav-link'
+              }
+            >
+              <ShieldAlert className="w-4 h-4 flex-shrink-0 text-gold" />
+              <span className="flex-1">Gestion clients</span>
+            </NavLink>
+          </div>
+        )}
       </nav>
 
       <div className="px-3 py-4 border-t border-border-subtle">
         <div className="px-4 py-3 mb-1 rounded bg-bg-elevated">
           <p className="font-dm-sans text-sm text-text-primary truncate font-medium">
-            {profile?.company_name || 'Franchiseur'}
+            {profile?.company_name || 'Utilisateur'}
           </p>
           <p className="font-dm-mono text-xs text-text-secondary truncate mt-0.5">
             {profile?.email || ''}
           </p>
+          {isAdmin && (
+            <p className="font-dm-mono text-xs text-gold mt-0.5">Administrateur</p>
+          )}
         </div>
         <button
           onClick={handleLogout}
