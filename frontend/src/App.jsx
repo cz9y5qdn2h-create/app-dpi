@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import AuthProvider from './context/AuthContext';
 import Layout from './components/Layout';
+import ErrorBoundary from './components/ui/ErrorBoundary';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
@@ -31,26 +32,24 @@ function PublicRoute({ children }) {
 export default function App() {
   return (
     <AuthProvider>
-      <Routes>
-        {/* Pages publiques */}
-        <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
-        <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-
-        {/* Pages protégées */}
-        <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-          <Route path="dashboard" element={<DashboardPage />} />
-          <Route path="dip" element={<DIPPage />} />
-          <Route path="dip/upload" element={<UploadDIPPage />} />
-          <Route path="alerts" element={<AlertsPage />} />
-          <Route path="history" element={<HistoryPage />} />
-          <Route path="franchisees" element={<FranchiseesPage />} />
-          <Route path="settings" element={<SettingsPage />} />
-          <Route path="export" element={<ExportPage />} />
-        </Route>
-
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
-      </Routes>
+      <ErrorBoundary>
+        <Routes>
+          <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
+          <Route path="/register" element={<PublicRoute><RegisterPage /></PublicRoute>} />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+            <Route path="dashboard" element={<ErrorBoundary><DashboardPage /></ErrorBoundary>} />
+            <Route path="dip" element={<ErrorBoundary><DIPPage /></ErrorBoundary>} />
+            <Route path="dip/upload" element={<ErrorBoundary><UploadDIPPage /></ErrorBoundary>} />
+            <Route path="alerts" element={<ErrorBoundary><AlertsPage /></ErrorBoundary>} />
+            <Route path="history" element={<ErrorBoundary><HistoryPage /></ErrorBoundary>} />
+            <Route path="franchisees" element={<ErrorBoundary><FranchiseesPage /></ErrorBoundary>} />
+            <Route path="settings" element={<ErrorBoundary><SettingsPage /></ErrorBoundary>} />
+            <Route path="export" element={<ErrorBoundary><ExportPage /></ErrorBoundary>} />
+          </Route>
+          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        </Routes>
+      </ErrorBoundary>
     </AuthProvider>
   );
 }
