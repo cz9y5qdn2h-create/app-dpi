@@ -1,16 +1,18 @@
 const Anthropic = require('@anthropic-ai/sdk');
 
-const claude = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY
-});
-
+const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const MODEL = 'claude-sonnet-4-20250514';
 
-/**
- * Analyser et extraire les sections d'un DIP depuis le texte brut
- */
+const withTimeout = (promise, ms = 45000) =>
+  Promise.race([
+    promise,
+    new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Analyse IA expirée — réessayez dans quelques instants')), ms)
+    )
+  ]);
+
 const parseDIPSections = async (rawText) => {
-  const message = await claude.messages.create({
+  const message = await withTimeout(claude.messages.create({
     model: MODEL,
     max_tokens: 8192,
     messages: [{
@@ -49,20 +51,16 @@ ${rawText.substring(0, 15000)}
 
 Réponds UNIQUEMENT avec le JSON, sans markdown.`
     }]
-  });
+  }), 60000);
 
   const text = message.content[0].text.trim();
-  // Nettoyer le JSON si nécessaire
   const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error('Réponse Claude invalide');
+  if (!jsonMatch) throw new Error('Réponse IA invalide — réessayez');
   return JSON.parse(jsonMatch[0]);
 };
 
-/**
- * Détecter les changements entre un document source et une section DIP
- */
 const detectChanges = async (sectionContent, newDocumentText, sectionTitle) => {
-  const message = await claude.messages.create({
+  const message = await withTimeout(claude.messages.create({
     model: MODEL,
     max_tokens: 2048,
     messages: [{
@@ -91,7 +89,7 @@ Réponds avec ce JSON uniquement :
   "urgency": "haute" | "moyenne" | "faible"
 }`
     }]
-  });
+  }));
 
   const text = message.content[0].text.trim();
   const jsonMatch = text.match(/\{[\s\S]*\}/);
@@ -99,11 +97,8 @@ Réponds avec ce JSON uniquement :
   return JSON.parse(jsonMatch[0]);
 };
 
-/**
- * Générer un résumé des modifications pour notification franchisés
- */
 const generateUpdateSummary = async (updatedSections) => {
-  const message = await claude.messages.create({
+  const message = await withTimeout(claude.messages.create({
     model: MODEL,
     max_tokens: 1024,
     messages: [{
@@ -120,7 +115,7 @@ Le message doit être :
 
 Réponds uniquement avec le texte du message.`
     }]
-  });
+  }));
 
   return message.content[0].text.trim();
 };
