@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -7,21 +8,18 @@ import StatusBadge from '../components/ui/StatusBadge';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import ConformityGauge from '../components/dashboard/ConformityGauge';
 import AlertCard from '../components/dashboard/AlertCard';
+import CalModal from '../components/CalModal';
 import {
   Upload, RefreshCw, Bell, FileText,
-  TrendingUp, AlertTriangle, CheckCircle, Clock
+  AlertTriangle, CheckCircle, Clock, History,
+  Phone, Eye
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
-const SECTION_LABELS = [
-  '', 'Identité du franchiseur', 'Historique', 'État du réseau',
-  'Comptes annuels', 'Marque & PI', 'Infos financières',
-  'Territoire', 'Contrat', 'Litiges', 'Comptes prévisionnels'
-];
-
 export default function DashboardPage() {
   const { profile } = useAuth();
+  const [calOpen, setCalOpen] = useState(false);
 
   const { data: dipsData, isLoading: dipsLoading } = useQuery({
     queryKey: ['dips'],
@@ -63,20 +61,40 @@ export default function DashboardPage() {
         title={`Bonjour, ${profile?.company_name || 'Franchiseur'}`}
         subtitle="Vue d'ensemble de la conformité de votre DIP"
         action={
-          <div className="flex gap-3">
-            {dip && (
-              <button onClick={handleCheck} className="btn-secondary flex items-center gap-2">
-                <RefreshCw className="w-4 h-4" />
-                Vérifier
-              </button>
-            )}
-            <Link to="/dip/upload" className="btn-primary flex items-center gap-2">
-              <Upload className="w-4 h-4" />
-              {dip ? 'Mettre à jour' : 'Importer le DIP'}
-            </Link>
-          </div>
+          dip ? (
+            <button onClick={handleCheck} className="btn-secondary flex items-center gap-2">
+              <RefreshCw className="w-4 h-4" />
+              Vérifier
+            </button>
+          ) : null
         }
       />
+
+      {/* CTA Principal Buttons — liquid glass */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <Link to="/dip/upload" className="btn-liquid-glass flex-col py-4 px-4 gap-2 h-auto">
+          <Upload className="w-5 h-5" />
+          <span>{dip ? 'Nouvelle version' : 'Importer le DIP'}</span>
+        </Link>
+
+        <Link to="/dip" className={`btn-liquid-glass flex-col py-4 px-4 gap-2 h-auto ${!dip ? 'opacity-40 pointer-events-none' : ''}`}>
+          <Eye className="w-5 h-5" />
+          <span>Consulter le DIP</span>
+        </Link>
+
+        <Link to="/history" className={`btn-liquid-glass flex-col py-4 px-4 gap-2 h-auto ${!dip ? 'opacity-40 pointer-events-none' : ''}`}>
+          <History className="w-5 h-5" />
+          <span>Historique complet</span>
+        </Link>
+
+        <button
+          onClick={() => setCalOpen(true)}
+          className="btn-liquid-glass-prominent flex-col py-4 px-4 gap-2 h-auto w-full"
+        >
+          <Phone className="w-5 h-5" />
+          <span>Contacter Iralink</span>
+        </button>
+      </div>
 
       {!dip ? (
         /* État vide */
@@ -90,7 +108,7 @@ export default function DashboardPage() {
           <p className="font-dm-sans text-sm text-text-secondary mb-8 max-w-sm mx-auto">
             Importez votre Document d'Information Précontractuelle pour commencer l'analyse de conformité.
           </p>
-          <Link to="/dip/upload" className="btn-primary inline-flex items-center gap-2">
+          <Link to="/dip/upload" className="btn-liquid-glass inline-flex">
             <Upload className="w-4 h-4" />
             Importer mon DIP
           </Link>
@@ -99,13 +117,11 @@ export default function DashboardPage() {
         <>
           {/* Ligne 1: Score + Statistiques */}
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* Score de conformité */}
             <div className="lg:col-span-1 card flex flex-col items-center justify-center py-8">
               <ConformityGauge score={dip.conformity_score || 0} />
               <p className="font-dm-sans text-xs text-text-secondary mt-3">Score de conformité</p>
             </div>
 
-            {/* Stats cards */}
             <div className="lg:col-span-3 grid grid-cols-2 sm:grid-cols-4 gap-4">
               <StatCard
                 icon={<FileText className="w-5 h-5" />}
@@ -121,7 +137,7 @@ export default function DashboardPage() {
               />
               <StatCard
                 icon={<Clock className="w-5 h-5" />}
-                label="\u00c0 v\u00e9rifier"
+                label="À vérifier"
                 value={stats.a_verifier}
                 color="text-gold"
               />
@@ -136,7 +152,6 @@ export default function DashboardPage() {
 
           {/* Ligne 2: Sections + Alertes */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Liste des sections */}
             <div className="lg:col-span-2 card">
               <div className="flex items-center justify-between mb-5">
                 <h2 className="font-cormorant text-xl text-text-primary">Sections du DIP</h2>
@@ -158,7 +173,6 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Alertes récentes */}
             <div className="card">
               <div className="flex items-center justify-between mb-5">
                 <div className="flex items-center gap-2">
@@ -191,7 +205,30 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Dernière mise à jour */}
+          {/* Niveau d'automatisation actif */}
+          {profile?.automation_level && (
+            <div className="card border-gold/15 bg-gold/3">
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center flex-shrink-0">
+                  <span className="font-cormorant text-xl text-gold">{profile.automation_level}</span>
+                </div>
+                <div>
+                  <p className="font-dm-sans text-sm font-medium text-text-primary">
+                    Niveau {profile.automation_level} d'automatisation actif
+                  </p>
+                  <p className="font-dm-sans text-xs text-text-secondary">
+                    {profile.automation_level === 1 && 'Chaque changement doit être approuvé manuellement'}
+                    {profile.automation_level === 2 && 'Approbation globale en une action'}
+                    {profile.automation_level === 3 && 'Changements appliqués automatiquement après 48h'}
+                  </p>
+                </div>
+                <Link to="/settings" className="ml-auto btn-ghost text-xs py-1.5">
+                  Modifier
+                </Link>
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center gap-3 text-text-secondary text-xs font-dm-mono">
             <Clock className="w-3 h-3" />
             <span>
@@ -202,6 +239,8 @@ export default function DashboardPage() {
           </div>
         </>
       )}
+
+      <CalModal open={calOpen} onClose={() => setCalOpen(false)} />
     </div>
   );
 }

@@ -52,9 +52,58 @@ Réponds UNIQUEMENT avec le JSON, sans markdown.`
   });
 
   const text = message.content[0].text.trim();
-  // Nettoyer le JSON si nécessaire
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) throw new Error('Réponse Claude invalide');
+  return JSON.parse(jsonMatch[0]);
+};
+
+/**
+ * Comparer deux versions d'un DIP et retourner les deltas avec recommandations légales
+ */
+const compareDIPVersions = async (previousText, newText) => {
+  const message = await claude.messages.create({
+    model: MODEL,
+    max_tokens: 8192,
+    messages: [{
+      role: 'user',
+      content: `Tu es un expert juridique en droit de la franchise française, spécialisé dans la Loi Doubin et les Documents d'Information Précontractuelle (DIP).
+
+Compare ces deux versions d'un DIP et identifie tous les changements (deltas) qui nécessitent une mise à jour formelle.
+
+VERSION PRÉCÉDENTE :
+${previousText.substring(0, 8000)}
+
+NOUVELLE VERSION :
+${newText.substring(0, 8000)}
+
+Pour chaque changement détecté, fournis le JSON suivant :
+{
+  "changements": [
+    {
+      "id": "unique_id_1",
+      "type": "prix_franchise" | "conditions" | "equipe" | "resultats_financiers" | "reseau" | "litiges" | "contrat" | "territoire" | "marque" | "autre",
+      "section": "Nom de la section DIP concernée",
+      "section_number": 1,
+      "ancien": "valeur ou texte précédent",
+      "nouveau": "nouvelle valeur ou texte",
+      "impact_legal": "Low" | "Moderate" | "High",
+      "recommandation_ia": "Explication légale détaillée — pourquoi ce changement est important, quelles obligations légales il implique selon la Loi Doubin",
+      "proposition_texte": "Reformulation légale complète et conforme à intégrer dans le DIP"
+    }
+  ],
+  "resume": "Résumé global des changements détectés",
+  "nb_changements_critiques": 0
+}
+
+Si aucun changement significatif n'est détecté, retourne { "changements": [], "resume": "Aucun changement significatif détecté", "nb_changements_critiques": 0 }.
+
+Réponds UNIQUEMENT avec le JSON, sans markdown.`
+    }]
+  });
+
+  const text = message.content[0].text.trim();
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) return { changements: [], resume: 'Analyse impossible', nb_changements_critiques: 0 };
   return JSON.parse(jsonMatch[0]);
 };
 
@@ -125,4 +174,4 @@ Réponds uniquement avec le texte du message.`
   return message.content[0].text.trim();
 };
 
-module.exports = { parseDIPSections, detectChanges, generateUpdateSummary };
+module.exports = { parseDIPSections, compareDIPVersions, detectChanges, generateUpdateSummary };
