@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { Analytics } from '@vercel/analytics/react';
 import { useAuth } from './context/AuthContext';
 import AuthProvider from './context/AuthContext';
 import Layout from './components/Layout';
@@ -51,6 +52,7 @@ export default function App() {
 
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
+      <Analytics />
     </AuthProvider>
   );
 }
