@@ -1,18 +1,36 @@
 const configs = {
-  conforme: { label: 'Conforme', className: 'badge-conforme' },
-  a_verifier: { label: 'À vérifier', className: 'badge-a_verifier' },
-  non_conforme: { label: 'Non conforme', className: 'badge-non_conforme' },
-  pending: { label: 'En attente', className: 'badge bg-gold/10 text-gold border border-gold/20' },
-  validated: { label: 'Validé', className: 'badge-conforme' },
-  ignored: { label: 'Ignoré', className: 'badge bg-text-muted/20 text-text-secondary border border-text-muted/20' },
-  actif: { label: 'Actif', className: 'badge-conforme' },
-  inactif: { label: 'Inactif', className: 'badge bg-text-muted/20 text-text-secondary border border-text-muted/20' },
-  haute: { label: 'Urgente', className: 'badge bg-danger/10 text-danger border border-danger/20' },
-  moyenne: { label: 'Moyenne', className: 'badge-a_verifier' },
-  faible: { label: 'Faible', className: 'badge bg-text-secondary/10 text-text-secondary border border-text-muted/20' },
+  // DIP sections
+  conforme:     { label: 'Conforme',     cls: 'badge bg-success/10 text-success border border-success/20' },
+  a_verifier:   { label: 'À vérifier',   cls: 'badge bg-gold/10 text-gold border border-gold/20' },
+  non_conforme: { label: 'Non conforme', cls: 'badge bg-danger/10 text-danger border border-danger/20' },
+  // Alerts
+  pending:      { label: 'En attente',   cls: 'badge bg-gold/10 text-gold border border-gold/20' },
+  validated:    { label: 'Validée',      cls: 'badge bg-success/10 text-success border border-success/20' },
+  ignored:      { label: 'Ignorée',      cls: 'badge bg-bg-elevated text-text-secondary border border-border-subtle' },
+  // Urgency
+  haute:        { label: 'Critique',     cls: 'badge bg-danger/10 text-danger border border-danger/20' },
+  moyenne:      { label: 'Modérée',      cls: 'badge bg-gold/10 text-gold border border-gold/20' },
+  faible:       { label: 'Faible',       cls: 'badge bg-bg-elevated text-text-secondary border border-border-subtle' },
+  // Franchisees
+  actif:        { label: 'Actif',        cls: 'badge bg-success/10 text-success border border-success/20' },
+  inactif:      { label: 'Inactif',      cls: 'badge bg-bg-elevated text-text-secondary border border-border-subtle' },
+  en_cours:     { label: 'En cours',     cls: 'badge bg-gold/10 text-gold border border-gold/20' },
+  // DIP versions
+  brouillon:    { label: 'Brouillon',    cls: 'badge bg-gold/10 text-gold border border-gold/20' },
+  archive:      { label: 'Archivé',      cls: 'badge bg-bg-elevated text-text-secondary border border-border-subtle' },
+  // Changes
+  approved:     { label: 'Approuvé',     cls: 'badge bg-success/10 text-success border border-success/20' },
+  rejected:     { label: 'Rejeté',       cls: 'badge bg-danger/10 text-danger border border-danger/20' },
+  // Impact
+  High:         { label: 'Critique',     cls: 'badge bg-danger/10 text-danger border border-danger/20' },
+  Moderate:     { label: 'Modéré',       cls: 'badge bg-gold/10 text-gold border border-gold/20' },
+  Low:          { label: 'Faible',       cls: 'badge bg-bg-elevated text-text-secondary border border-border-subtle' },
 };
 
 export default function StatusBadge({ status }) {
-  const cfg = configs[status] || { label: status, className: 'badge bg-bg-elevated text-text-secondary' };
-  return <span className={cfg.className}>{cfg.label}</span>;
+  const cfg = configs[status] || {
+    label: status || '—',
+    cls: 'badge bg-bg-elevated text-text-secondary border border-border-subtle'
+  };
+  return <span className={cfg.cls}>{cfg.label}</span>;
 }

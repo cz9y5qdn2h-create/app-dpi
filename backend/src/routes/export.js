@@ -65,7 +65,7 @@ router.get('/:dipId/report', authMiddleware, async (req, res) => {
     <h2 style="color:#F4F2EE">Sections du DIP</h2>
     ${sectionsHtml}
     <footer style="margin-top:48px;padding-top:16px;border-top:1px solid #222;color:#5A5A5A;font-size:11px">
-      DIP Pilot - Document généré automatiquement - ${new Date().toISOString()}
+      DIPpro by Iralink — Document généré automatiquement le ${new Date().toLocaleDateString('fr-FR')} — Conforme Loi Doubin Art. L.330-3
     </footer>
   </body></html>`;
 

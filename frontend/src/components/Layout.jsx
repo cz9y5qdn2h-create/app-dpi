@@ -1,36 +1,12 @@
 import { Outlet, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import Sidebar from './Sidebar';
 import api from '../lib/api';
 import { Bell, Menu } from 'lucide-react';
 
-// Inject Crisp Chat widget if VITE_CRISP_WEBSITE_ID is set
-function useCrispChat() {
-  useEffect(() => {
-    const websiteId = import.meta.env.VITE_CRISP_WEBSITE_ID;
-    if (!websiteId || window.$crisp) return;
-
-    window.$crisp = [];
-    window.CRISP_WEBSITE_ID = websiteId;
-
-    const script = document.createElement('script');
-    script.src = 'https://client.crisp.chat/l.js';
-    script.async = true;
-    document.head.appendChild(script);
-
-    // Iralink brand colors
-    script.onload = () => {
-      if (window.$crisp) {
-        window.$crisp.push(['config', 'color:theme', ['#C8A96E']]);
-      }
-    };
-  }, []);
-}
-
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  useCrispChat();
 
   const { data: alertsData } = useQuery({
     queryKey: ['alerts', 'pending'],

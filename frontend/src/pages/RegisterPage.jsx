@@ -58,8 +58,8 @@ export default function RegisterPage() {
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-lg bg-gold/10 border border-gold/30 mb-6">
             <Shield className="w-7 h-7 text-gold" />
           </div>
-          <h1 className="font-cormorant text-4xl text-text-primary font-light">DIP Pilot</h1>
-          <p className="font-dm-sans text-sm text-text-secondary mt-2">Créez votre compte franchiseur</p>
+          <h1 className="font-cormorant text-4xl text-text-primary font-light">DIPpro</h1>
+          <p className="font-dm-sans text-sm text-text-secondary mt-2">Créez votre compte franchiseur · by Iralink</p>
         </div>
 
         <div className="card border-border-default">

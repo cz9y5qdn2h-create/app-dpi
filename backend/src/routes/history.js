@@ -3,13 +3,26 @@ const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware } = require('../middleware/auth');
 const router = express.Router();
 
-// GET /api/history - Historique audit de l'utilisateur
+// GET /api/history — Journal d'audit de l'utilisateur
 router.get('/', authMiddleware, async (req, res) => {
-  const { dip_id, limit = 50, offset = 0 } = req.query;
+  const { dip_id, limit = 100, offset = 0 } = req.query;
+
+  // Récupérer les DIP IDs de l'utilisateur (filtre sécurisé côté DB)
+  const { data: userDips } = await supabaseAdmin
+    .from('dip_documents')
+    .select('id')
+    .eq('user_id', req.user.id);
+
+  if (!userDips || userDips.length === 0) {
+    return res.json({ history: [], total: 0 });
+  }
+
+  const dipIds = userDips.map(d => d.id);
 
   let query = supabaseAdmin
     .from('audit_log')
-    .select('*, dip_documents(title, user_id), dip_sections(section_title)')
+    .select('*, dip_documents(title), dip_sections(section_title)')
+    .in('dip_id', dipIds)
     .order('timestamp', { ascending: false })
     .range(Number(offset), Number(offset) + Number(limit) - 1);
 
@@ -18,8 +31,7 @@ router.get('/', authMiddleware, async (req, res) => {
   const { data, error } = await query;
   if (error) return res.status(500).json({ error: error.message });
 
-  const filtered = data.filter(log => log.dip_documents?.user_id === req.user.id);
-  res.json({ history: filtered, total: filtered.length });
+  res.json({ history: data || [], total: data?.length || 0 });
 });
 
 module.exports = router;
