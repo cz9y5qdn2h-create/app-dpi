@@ -71,35 +71,16 @@ export default function AuthProvider({ children }) {
     return data.user;
   };
 
-  // Register via backend (pour creer le profil users)
+  // Register via backend (cree le compte Supabase + profil users)
   const register = async (email, password, company_name) => {
-    // Essayer via backend d'abord
-    try {
-      const API = import.meta.env.VITE_API_URL;
-      if (API) {
-        const res = await fetch(API + '/api/auth/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email, password, company_name })
-        });
-        if (res.ok) return await res.json();
-      }
-    } catch (e) {
-      console.warn('Backend register failed, fallback Supabase:', e.message);
-    }
-
-    // Fallback: creer directement via Supabase
-    const { data, error } = await supabase.auth.signUp({ email, password });
-    if (error) throw new Error(error.message);
-
-    // Creer le profil
-    await supabase.from('users').insert({
-      id: data.user.id,
-      email,
-      role: 'franchiseur',
-      company_name
+    const res = await fetch('/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, company_name })
     });
-    return { message: 'Compte cree', user_id: data.user.id };
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Erreur lors de la creation du compte');
+    return data;
   };
 
   const logout = async () => {

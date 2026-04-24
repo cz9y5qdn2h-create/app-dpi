@@ -6,12 +6,10 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 
 if (!supabaseUrl) {
-  console.error('FATAL: SUPABASE_URL manquant. Ajoutez-la dans vos variables d\'environnement.');
-  process.exit(1);
+  throw new Error('FATAL: SUPABASE_URL manquant. Ajoutez-la dans les variables d\'environnement Vercel.');
 }
 if (!supabaseServiceKey) {
-  console.error('FATAL: SUPABASE_SERVICE_ROLE_KEY manquant. Le backend ne peut pas contourner les RLS sans cette clé.');
-  process.exit(1);
+  throw new Error('FATAL: SUPABASE_SERVICE_ROLE_KEY manquant. Ajoutez-la dans les variables d\'environnement Vercel.');
 }
 
 // Client admin (contourne RLS) — usage backend uniquement, jamais exposé au client
