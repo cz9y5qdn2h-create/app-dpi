@@ -1,73 +1,110 @@
-# Deploiement DIP Pilot
+# Déploiement DIPpro sur Vercel
 
-## Supabase (CONFIGURE)
+## Architecture
 
-- **Projet**: `nqboedyhlmyxyefjkshg`
-- **URL**: `https://nqboedyhlmyxyefjkshg.supabase.co`
-- **Region**: eu-west-1
-- **Schema**: Applique (tables + RLS + bucket `dip-files`)
-- **Compte admin**: `theo@iralink-agency.com` / `*Theo.iralink-agency`
+Un seul projet Vercel déployé depuis la **racine** du repo.
+- Frontend React → servi en statique
+- Backend Express → `/api/*` en serverless function
+- Pas besoin de `VITE_API_URL` : tout est sur le même domaine
 
-Recuperer la `service_role key` dans Supabase > Settings > API > service_role
+---
 
-## Vercel - Frontend
+## 1. Prérequis : Supabase
 
-1. Aller sur https://vercel.com/new
-2. Importer le repo `cz9y5qdn2h-create/app-dpi`
-3. **Root Directory**: `frontend`
-4. **Framework**: Vite
-5. Variables d'environnement :
-   ```
-   VITE_SUPABASE_URL = https://nqboedyhlmyxyefjkshg.supabase.co
-   VITE_SUPABASE_ANON_KEY = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5xYm9lZHlobG15eHllZmprc2hnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5MjM0ODEsImV4cCI6MjA5MDQ5OTQ4MX0.qp8IjE9-MRZFKviebneQU6rLP_PRp3ma673HBpTUDf4
-   VITE_API_URL = <URL du backend Vercel apres deploiement>
-   ```
-6. Deploy
+Le projet Supabase est déjà configuré :
+- **URL** : `https://nqboedyhlmyxyefjkshg.supabase.co`
+- **Anon key** : voir `frontend/.env.example`
 
-## Vercel - Backend
+Récupérer la `service_role key` :
+→ Supabase Dashboard > Settings > API > **service_role** (secret)
 
-1. Aller sur https://vercel.com/new
-2. Meme repo, **Root Directory**: `backend`
-3. **Framework**: Other (Node.js)
-4. Variables d'environnement :
-   ```
-   SUPABASE_URL = https://nqboedyhlmyxyefjkshg.supabase.co
-   SUPABASE_ANON_KEY = eyJhbGci... (anon key)
-   SUPABASE_SERVICE_ROLE_KEY = <service_role key depuis Supabase>
-   ANTHROPIC_API_KEY = <votre cle Anthropic>
-   FRONTEND_URL = <URL du frontend Vercel>
-   BREVO_API_KEY = <optionnel>
-   ```
-5. Deploy
+Appliquer les migrations SQL si ce n'est pas fait :
+→ Supabase Dashboard > SQL Editor > coller et exécuter dans l'ordre :
+1. `supabase/migrations/001_initial_schema.sql`
+2. `supabase/migrations/002_add_profile_fields.sql`
+3. `supabase/migrations/003_automation_settings.sql`
 
-## Demarrage local rapide
+---
+
+## 2. Déploiement Vercel (projet unique)
+
+### Étape 1 — Importer le repo
+
+1. Aller sur **https://vercel.com/new**
+2. Sélectionner le repo `cz9y5qdn2h-create/app-dpi`
+3. **Root Directory** : laisser **vide** (racine du repo)
+4. **Framework Preset** : `Other`
+5. Cliquer **Deploy** (il va lire le `vercel.json` à la racine)
+
+### Étape 2 — Variables d'environnement
+
+Dans Vercel > Project > Settings > **Environment Variables**, ajouter :
+
+| Variable | Valeur | Obligatoire |
+|---|---|---|
+| `SUPABASE_URL` | `https://nqboedyhlmyxyefjkshg.supabase.co` | ✅ |
+| `SUPABASE_ANON_KEY` | voir `frontend/.env.example` | ✅ |
+| `SUPABASE_SERVICE_ROLE_KEY` | clé service_role Supabase | ✅ |
+| `ANTHROPIC_API_KEY` | `sk-ant-...` depuis console.anthropic.com | ✅ |
+| `VITE_SUPABASE_URL` | `https://nqboedyhlmyxyefjkshg.supabase.co` | ✅ |
+| `VITE_SUPABASE_ANON_KEY` | voir `frontend/.env.example` | ✅ |
+| `VITE_CAL_COM_URL` | `https://cal.com/theo-coutard-mhdsix/call-clients` | ✅ |
+| `VITE_CONTACT_EMAIL` | `theo@iralink-agency.com` | ✅ |
+| `VITE_CONTACT_PHONE` | numéro optionnel | ❌ |
+| `ANTHROPIC_MODEL` | `claude-sonnet-4-20250514` | ❌ |
+| `BREVO_API_KEY` | clé Brevo pour emails franchisés | ❌ |
+| `BREVO_SENDER_EMAIL` | `noreply@dip-pilot.fr` | ❌ |
+
+> ⚠️ **Ne pas** ajouter `VITE_API_URL` — le backend est sur le même domaine.
+
+### Étape 3 — Redéployer
+
+Après avoir ajouté les variables :
+- Vercel > Deployments > cliquer les 3 points > **Redeploy**
+
+---
+
+## 3. Développement local
 
 ```bash
 # Cloner
 git clone https://github.com/cz9y5qdn2h-create/app-dpi
-git checkout claude/dip-pilot-beta-h9OuT
+cd app-dpi
+git checkout claude/build-dippro-mvp-SZEtW
 
 # Backend
 cd backend
 cp .env.example .env
 # Remplir SUPABASE_SERVICE_ROLE_KEY et ANTHROPIC_API_KEY dans .env
 npm install
-npm run dev
+npm run dev          # démarre sur http://localhost:3001
 
-# Frontend (nouvel onglet)
+# Frontend (nouvel onglet terminal)
 cd frontend
 cp .env.example .env.local
+# Vérifier que VITE_API_URL=http://localhost:3001 est dans .env.local
 npm install
-npm run dev
-
-# Acceder a l'app: http://localhost:5173
-# Login admin: theo@iralink-agency.com / *Theo.iralink-agency
+npm run dev          # démarre sur http://localhost:5173
 ```
 
-## Cles API a obtenir
+Accéder à l'app : **http://localhost:5173**
 
-| Cle | Ou | Obligatoire |
-|-----|----|-------------|
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase > Settings > API | Oui |
-| `ANTHROPIC_API_KEY` | console.anthropic.com | Oui (parsing DIP) |
-| `BREVO_API_KEY` | app.brevo.com | Non (emails) |
+---
+
+## 4. Compte admin par défaut
+
+| Email | Mot de passe |
+|---|---|
+| `theo@iralink-agency.com` | `*Theo.iralink-agency` |
+
+---
+
+## 5. Dépannage courant
+
+| Symptôme | Cause | Solution |
+|---|---|---|
+| Page blanche / erreur réseau | `VITE_API_URL` configuré sur mauvais domaine | Supprimer la variable sur Vercel |
+| "FATAL: SUPABASE_SERVICE_ROLE_KEY manquant" | Variable manquante | L'ajouter dans Vercel Settings |
+| Login échoue | `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` manquants | Les ajouter dans Vercel Settings |
+| Upload DIP échoue | `ANTHROPIC_API_KEY` invalide ou manquant | Vérifier la clé sur console.anthropic.com |
+| Cal.com ne s'ouvre pas | `VITE_CAL_COM_URL` manquant | L'ajouter dans Vercel Settings |
