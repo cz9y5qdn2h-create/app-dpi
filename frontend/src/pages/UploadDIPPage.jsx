@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import api from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import PageHeader from '../components/ui/PageHeader';
@@ -26,21 +26,21 @@ export default function UploadDIPPage() {
 
   const [file, setFile]   = useState(null);
   const [title, setTitle] = useState('');
-  const [step, setStep]   = useState('idle'); // idle | uploading | analyzing | report | approving | done | error
+  const [step, setStep]   = useState('idle');
+  const [stepMsg, setStepMsg] = useState('');
+  const [error, setError] = useState('');
 
-  // Comparison mode state
-  const [comparisonResult, setComparisonResult] = useState(null); // { draft_dip_id, changements, resume, ... }
-  const [approvedIds, setApprovedIds]     = useState(new Set());
-  const [rejectedIds, setRejectedIds]     = useState(new Set());
-  const [expandedId, setExpandedId]       = useState(null);
-
-  // Initial parse mode state
+  const [comparisonResult, setComparisonResult] = useState(null);
+  const [approvedIds, setApprovedIds] = useState(new Set());
+  const [rejectedIds, setRejectedIds] = useState(new Set());
+  const [expandedId, setExpandedId]   = useState(null);
   const [initialResult, setInitialResult] = useState(null);
 
   const onDrop = useCallback((accepted) => {
     if (accepted[0]) {
       setFile(accepted[0]);
       setTitle(accepted[0].name.replace(/\.(pdf|docx|doc)$/i, ''));
+      setError('');
     }
   }, []);
 
@@ -51,154 +51,177 @@ export default function UploadDIPPage() {
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
       'application/msword': ['.doc']
     },
-    maxSize: 20 * 1024 * 1024,
+    maxSize: 50 * 1024 * 1024,
     maxFiles: 1,
     onDropRejected: (files) => {
       const err = files[0]?.errors[0];
-      if (err?.code === 'file-too-large') toast.error('Fichier trop volumineux (max 20 Mo)');
+      if (err?.code === 'file-too-large') toast.error('Fichier trop volumineux (max 50 Mo)');
       else toast.error('Format non supporté. Utilisez PDF ou DOCX.');
     }
   });
 
-  const uploadMutation = useMutation({
-    mutationFn: async () => {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('title', title);
-      return api.post('/dip/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        timeout: 120000
-      });
-    },
-    onMutate: () => {
+  const handleUpload = async () => {
+    if (!file) return;
+    setError('');
+
+    try {
+      // Étape 1 : obtenir une URL signée pour upload direct vers Supabase
       setStep('uploading');
-      setTimeout(() => setStep('analyzing'), 2000);
-    },
-    onSuccess: (res) => {
-      const data = res.data;
+      setStepMsg('Préparation de l\'upload…');
+
+      const urlRes = await api.get(`/dip/upload-url?filename=${encodeURIComponent(file.name)}`);
+      const { signed_url, storage_path } = urlRes.data;
+
+      // Étape 2 : uploader le fichier directement vers Supabase Storage (contourne la limite Vercel)
+      setStepMsg('Upload du fichier en cours…');
+
+      const uploadRes = await fetch(signed_url, {
+        method: 'PUT',
+        body: file,
+        headers: { 'Content-Type': file.type || 'application/octet-stream' }
+      });
+
+      if (!uploadRes.ok) {
+        throw new Error('Erreur lors de l\'upload. Vérifiez votre connexion et réessayez.');
+      }
+
+      // Étape 3 : demander au backend d'analyser le fichier
+      setStep('analyzing');
+      setStepMsg('Claude analyse votre DIP… (30 à 60 secondes)');
+
+      const processRes = await api.post('/dip/process', {
+        storage_path,
+        title: title || file.name.replace(/\.(pdf|docx|doc)$/i, '')
+      }, { timeout: 120000 });
+
+      const data = processRes.data;
+
       if (data.mode === 'comparison') {
         setComparisonResult(data);
-        // Level 3: auto-approve all and redirect
         if (automationLevel === 3) {
-          handleAutoApprove(data);
+          await handleAutoApprove(data);
         } else {
           setStep('report');
-          // Level 2: pre-select all as approved
           if (automationLevel === 2) {
-            const allIds = new Set(data.changements.map(c => c.id));
-            setApprovedIds(allIds);
+            setApprovedIds(new Set(data.changements.map(c => c.id)));
           }
         }
       } else {
         setInitialResult(data);
         setStep('done');
         queryClient.invalidateQueries({ queryKey: ['dips'] });
-        toast.success('DIP analysé avec succès !');
+        toast.success(`DIP analysé — ${data.sections_count} sections extraites`);
       }
-    },
-    onError: (err) => {
+
+    } catch (err) {
+      console.error('Upload error:', err);
       setStep('error');
-      toast.error(err.message);
+      setError(err.response?.data?.error || err.message || 'Erreur inconnue');
     }
-  });
-
-  const approveMutation = useMutation({
-    mutationFn: (payload) => api.post('/dip/approve-changes', payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['dips'] });
-      setStep('done');
-      toast.success('Nouvelle version activée avec succès !');
-    },
-    onError: (err) => {
-      toast.error(err.message);
-      setStep('report');
-    }
-  });
-
-  const handleAutoApprove = (data) => {
-    const approved = data.changements.map(c => ({ ...c, section_number: c.section_number }));
-    approveMutation.mutate({
-      draft_dip_id: data.draft_dip_id,
-      previous_dip_id: data.previous_dip_id,
-      approved_changes: approved
-    });
-    setStep('approving');
   };
 
-  const handleFinalApprove = () => {
-    if (!comparisonResult) return;
-    const approved = comparisonResult.changements.filter(c => approvedIds.has(c.id));
+  const handleAutoApprove = async (data) => {
     setStep('approving');
-    approveMutation.mutate({
-      draft_dip_id: comparisonResult.draft_dip_id,
-      previous_dip_id: comparisonResult.previous_dip_id,
-      approved_changes: approved
-    });
+    try {
+      await api.post('/dip/approve-changes', {
+        draft_dip_id: data.draft_dip_id,
+        previous_dip_id: data.previous_dip_id,
+        approved_changes: data.changements
+      });
+      queryClient.invalidateQueries({ queryKey: ['dips'] });
+      setStep('done');
+      toast.success('Nouvelle version activée automatiquement');
+    } catch (err) {
+      setStep('error');
+      setError(err.message);
+    }
+  };
+
+  const handleFinalApprove = async () => {
+    if (!comparisonResult) return;
+    setStep('approving');
+    try {
+      const approved = comparisonResult.changements.filter(c => approvedIds.has(c.id));
+      await api.post('/dip/approve-changes', {
+        draft_dip_id: comparisonResult.draft_dip_id,
+        previous_dip_id: comparisonResult.previous_dip_id,
+        approved_changes: approved
+      });
+      queryClient.invalidateQueries({ queryKey: ['dips'] });
+      setStep('done');
+      toast.success('Nouvelle version activée avec succès');
+    } catch (err) {
+      setStep('error');
+      setError(err.message);
+    }
   };
 
   const toggleApprove = (id) => {
-    setApprovedIds(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
-    setRejectedIds(prev => {
-      const next = new Set(prev);
-      next.delete(id);
-      return next;
-    });
+    setApprovedIds(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
+    setRejectedIds(prev => { const s = new Set(prev); s.delete(id); return s; });
   };
 
   const toggleReject = (id) => {
-    setRejectedIds(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
-    setApprovedIds(prev => {
-      const next = new Set(prev);
-      next.delete(id);
-      return next;
-    });
+    setRejectedIds(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
+    setApprovedIds(prev => { const s = new Set(prev); s.delete(id); return s; });
   };
 
   const approveAll = () => {
-    const allIds = new Set(comparisonResult.changements.map(c => c.id));
-    setApprovedIds(allIds);
+    setApprovedIds(new Set(comparisonResult.changements.map(c => c.id)));
     setRejectedIds(new Set());
   };
 
-  const formatSize = (bytes) => {
-    if (bytes < 1024) return `${bytes} o`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} Ko`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
-  };
-
   const reset = () => {
-    setFile(null); setTitle(''); setStep('idle');
+    setFile(null); setTitle(''); setStep('idle'); setError(''); setStepMsg('');
     setComparisonResult(null); setInitialResult(null);
     setApprovedIds(new Set()); setRejectedIds(new Set());
   };
 
-  /* ── Done state ── */
+  const formatSize = (b) => b < 1048576 ? `${(b/1024).toFixed(0)} Ko` : `${(b/1048576).toFixed(1)} Mo`;
+
+  /* ── Chargement ── */
+  if (step === 'uploading' || step === 'analyzing' || step === 'approving') {
+    return (
+      <div className="max-w-2xl mx-auto text-center py-24 animate-fade-in">
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-lg bg-gold/10 border border-gold/20 mb-6 animate-glow">
+          {step === 'analyzing'
+            ? <Sparkles className="w-8 h-8 text-gold animate-pulse" />
+            : <LoadingSpinner size="md" />
+          }
+        </div>
+        <p className="font-cormorant text-2xl text-text-primary mb-2">
+          {step === 'uploading' ? 'Upload en cours…'
+            : step === 'analyzing' ? 'Analyse IA en cours…'
+            : 'Activation en cours…'}
+        </p>
+        <p className="font-dm-sans text-sm text-text-secondary">{stepMsg}</p>
+        {step === 'analyzing' && (
+          <div className="w-48 h-1 bg-bg-elevated rounded-full mx-auto mt-6 overflow-hidden">
+            <div className="h-full bg-gold rounded-full animate-pulse" style={{ width: '60%' }} />
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  /* ── Succès ── */
   if (step === 'done') {
     return (
       <div className="max-w-2xl mx-auto space-y-8 animate-fade-in">
-        <PageHeader title="Mise à jour DIP" subtitle="Traitement terminé" />
-        <div className="card border-success/30 animate-slide-up">
+        <PageHeader title="Analyse terminée" subtitle="Votre DIP a été traité avec succès" />
+        <div className="card border-success/30">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-12 h-12 rounded-lg bg-success/10 border border-success/20 flex items-center justify-center">
               <CheckCircle className="w-6 h-6 text-success" />
             </div>
             <div>
               <p className="font-dm-sans text-sm font-medium text-text-primary">
-                {comparisonResult ? 'Nouvelle version activée' : 'DIP analysé avec succès'}
+                {comparisonResult ? 'Nouvelle version activée' : 'DIP analysé et enregistré'}
               </p>
               <p className="font-dm-mono text-xs text-text-secondary">
                 {comparisonResult
                   ? `${approvedIds.size} changement(s) approuvé(s) sur ${comparisonResult.changements.length}`
-                  : `${initialResult?.sections_count} sections extraites · Score ${initialResult?.conformity_score}%`
-                }
+                  : `${initialResult?.sections_count} sections · Score ${initialResult?.conformity_score}%`}
               </p>
             </div>
           </div>
@@ -206,29 +229,14 @@ export default function UploadDIPPage() {
             <button onClick={() => navigate('/dip')} className="btn-liquid-glass flex-1">
               <CheckCircle className="w-4 h-4" /> Consulter le DIP
             </button>
-            <button onClick={reset} className="btn-secondary">
-              Importer un autre
-            </button>
+            <button onClick={reset} className="btn-secondary">Importer un autre</button>
           </div>
         </div>
       </div>
     );
   }
 
-  /* ── Approving state ── */
-  if (step === 'approving') {
-    return (
-      <div className="max-w-2xl mx-auto text-center py-24 animate-fade-in">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-lg bg-gold/10 border border-gold/20 mb-6 animate-glow">
-          <Sparkles className="w-8 h-8 text-gold animate-pulse" />
-        </div>
-        <p className="font-cormorant text-2xl text-text-primary mb-2">Activation en cours…</p>
-        <p className="font-dm-sans text-sm text-text-secondary">La nouvelle version du DIP est en cours d'activation.</p>
-      </div>
-    );
-  }
-
-  /* ── Comparison Report state ── */
+  /* ── Rapport de comparaison ── */
   if (step === 'report' && comparisonResult) {
     const changements = comparisonResult.changements || [];
     const critiques = changements.filter(c => c.impact_legal === 'High').length;
@@ -236,16 +244,12 @@ export default function UploadDIPPage() {
 
     return (
       <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
-        <PageHeader
-          title="Rapport des changements"
-          subtitle={comparisonResult.resume}
-        />
+        <PageHeader title="Rapport des changements" subtitle={comparisonResult.resume} />
 
-        {/* Summary bar */}
         <div className="grid grid-cols-3 gap-4">
           <div className="card text-center py-4">
             <p className="font-cormorant text-3xl text-text-primary">{changements.length}</p>
-            <p className="font-dm-sans text-xs text-text-secondary">Changements détectés</p>
+            <p className="font-dm-sans text-xs text-text-secondary">Changements</p>
           </div>
           <div className="card text-center py-4">
             <p className="font-cormorant text-3xl text-danger">{critiques}</p>
@@ -257,37 +261,25 @@ export default function UploadDIPPage() {
           </div>
         </div>
 
-        {/* Level 2: Approve all button at top */}
         {automationLevel === 2 && (
-          <div className="card border-gold/20 bg-gold/3">
-            <div className="flex items-center gap-4">
-              <AlertTriangle className="w-5 h-5 text-gold flex-shrink-0" />
-              <div className="flex-1">
-                <p className="font-dm-sans text-sm font-medium text-text-primary">
-                  Niveau 2 — Approbation globale
-                </p>
-                <p className="font-dm-sans text-xs text-text-secondary">
-                  Approuvez tous les changements proposés par l'IA en une seule action.
-                </p>
-              </div>
-              <button onClick={approveAll} className="btn-liquid-glass flex-shrink-0">
-                <Check className="w-4 h-4" /> Tout approuver
-              </button>
+          <div className="card border-gold/20 bg-gold/3 flex items-center gap-4">
+            <AlertTriangle className="w-5 h-5 text-gold flex-shrink-0" />
+            <div className="flex-1">
+              <p className="font-dm-sans text-sm font-medium text-text-primary">Niveau 2 — Approbation globale</p>
+              <p className="font-dm-sans text-xs text-text-secondary">Approuvez tous les changements IA en une action, ou ajustez individuellement.</p>
             </div>
+            <button onClick={approveAll} className="btn-liquid-glass flex-shrink-0">
+              <Check className="w-4 h-4" /> Tout approuver
+            </button>
           </div>
         )}
 
-        {/* Changes list */}
         {changements.length === 0 ? (
           <div className="card text-center py-12">
             <CheckCircle className="w-10 h-10 text-success/40 mx-auto mb-3" />
-            <p className="font-cormorant text-xl text-text-primary">Aucun changement significatif</p>
-            <p className="font-dm-sans text-sm text-text-secondary mt-2">
-              Les deux versions du DIP sont identiques.
-            </p>
-            <button onClick={() => navigate('/dip')} className="btn-liquid-glass mt-6">
-              Retour au DIP
-            </button>
+            <p className="font-cormorant text-xl text-text-primary">Aucun changement significatif détecté</p>
+            <p className="font-dm-sans text-sm text-text-secondary mt-2">Les deux versions du DIP sont identiques.</p>
+            <button onClick={() => navigate('/dip')} className="btn-liquid-glass mt-6">Retour au DIP</button>
           </div>
         ) : (
           <div className="space-y-3">
@@ -300,17 +292,13 @@ export default function UploadDIPPage() {
               return (
                 <div
                   key={c.id}
-                  className={`card transition-all duration-200 animate-slide-up stagger-${Math.min(idx + 1, 5)} ${
-                    isApproved ? 'border-success/30 bg-success/3' :
-                    isRejected ? 'border-danger/20 bg-danger/3' :
-                    'border-border-default'
+                  className={`card transition-all duration-200 ${
+                    isApproved ? 'border-success/30 bg-success/3'
+                    : isRejected ? 'border-danger/20 bg-danger/3'
+                    : 'border-border-default'
                   }`}
                 >
-                  {/* Header */}
-                  <div
-                    className="flex items-start gap-3 cursor-pointer"
-                    onClick={() => setExpandedId(isExpanded ? null : c.id)}
-                  >
+                  <div className="flex items-start gap-3 cursor-pointer" onClick={() => setExpandedId(isExpanded ? null : c.id)}>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <span className="font-dm-mono text-xs text-gold/60">§{c.section_number}</span>
@@ -320,16 +308,12 @@ export default function UploadDIPPage() {
                         {isRejected && <span className="text-xs font-dm-mono text-danger">✗ Rejeté</span>}
                       </div>
                       <p className="font-dm-sans text-xs text-text-secondary capitalize">
-                        Type : {c.type?.replace(/_/g, ' ')}
+                        {c.type?.replace(/_/g, ' ')}
                       </p>
                     </div>
-                    {isExpanded
-                      ? <ChevronUp className="w-4 h-4 text-text-secondary flex-shrink-0" />
-                      : <ChevronDown className="w-4 h-4 text-text-secondary flex-shrink-0" />
-                    }
+                    {isExpanded ? <ChevronUp className="w-4 h-4 text-text-secondary flex-shrink-0" /> : <ChevronDown className="w-4 h-4 text-text-secondary flex-shrink-0" />}
                   </div>
 
-                  {/* Diff */}
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
                     <div className="bg-danger/5 border border-danger/15 rounded p-3">
                       <p className="font-dm-mono text-xs text-danger mb-1">Avant</p>
@@ -341,108 +325,63 @@ export default function UploadDIPPage() {
                     </div>
                   </div>
 
-                  {/* Expanded: AI recommendation + proposed text */}
                   {isExpanded && (
                     <div className="mt-4 space-y-3 animate-slide-up">
                       {c.recommandation_ia && (
                         <div className="bg-gold/5 border border-gold/20 rounded p-3">
                           <p className="font-dm-mono text-xs text-gold mb-2">Recommandation IA — Loi Doubin</p>
-                          <p className="font-dm-sans text-sm text-text-primary leading-relaxed">
-                            {c.recommandation_ia}
-                          </p>
+                          <p className="font-dm-sans text-sm text-text-primary leading-relaxed">{c.recommandation_ia}</p>
                         </div>
                       )}
                       {c.proposition_texte && (
                         <div className="bg-bg-elevated border border-border-default rounded p-3">
                           <p className="font-dm-mono text-xs text-text-secondary mb-2">Reformulation légale proposée</p>
-                          <p className="font-dm-sans text-sm text-text-primary leading-relaxed whitespace-pre-wrap">
-                            {c.proposition_texte}
-                          </p>
+                          <p className="font-dm-sans text-sm text-text-primary leading-relaxed whitespace-pre-wrap">{c.proposition_texte}</p>
                         </div>
                       )}
                     </div>
                   )}
 
-                  {/* Level 1: per-change approve/reject buttons */}
-                  {automationLevel === 1 && (
-                    <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border-subtle">
-                      <button
-                        onClick={() => toggleApprove(c.id)}
-                        className={`flex items-center gap-1.5 px-4 py-2 rounded text-sm font-dm-sans transition-all duration-200 border ${
-                          isApproved
-                            ? 'bg-success/15 border-success/40 text-success'
-                            : 'border-border-subtle text-text-secondary hover:border-success/40 hover:text-success'
-                        }`}
-                      >
-                        <Check className="w-3.5 h-3.5" /> Approuver
-                      </button>
-                      <button
-                        onClick={() => toggleReject(c.id)}
-                        className={`flex items-center gap-1.5 px-4 py-2 rounded text-sm font-dm-sans transition-all duration-200 border ${
-                          isRejected
-                            ? 'bg-danger/10 border-danger/30 text-danger'
-                            : 'border-border-subtle text-text-secondary hover:border-danger/30 hover:text-danger'
-                        }`}
-                      >
-                        <XCircle className="w-3.5 h-3.5" /> Rejeter
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Level 2: individual toggle still allowed */}
-                  {automationLevel === 2 && (
-                    <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border-subtle">
-                      <button
-                        onClick={() => toggleApprove(c.id)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-dm-sans transition-all duration-200 border ${
-                          isApproved
-                            ? 'bg-success/15 border-success/40 text-success'
-                            : 'border-border-subtle text-text-secondary hover:border-success/40 hover:text-success'
-                        }`}
-                      >
-                        <Check className="w-3 h-3" /> {isApproved ? 'Approuvé' : 'Approuver'}
-                      </button>
-                      <button
-                        onClick={() => toggleReject(c.id)}
-                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-dm-sans transition-all duration-200 border ${
-                          isRejected
-                            ? 'bg-danger/10 border-danger/30 text-danger'
-                            : 'border-border-subtle text-text-secondary hover:border-danger/30 hover:text-danger'
-                        }`}
-                      >
-                        <XCircle className="w-3 h-3" /> Rejeter
-                      </button>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2 mt-4 pt-4 border-t border-border-subtle">
+                    <button
+                      onClick={() => toggleApprove(c.id)}
+                      className={`flex items-center gap-1.5 px-4 py-2 rounded text-sm font-dm-sans transition-all border ${
+                        isApproved ? 'bg-success/15 border-success/40 text-success' : 'border-border-subtle text-text-secondary hover:border-success/40 hover:text-success'
+                      }`}
+                    >
+                      <Check className="w-3.5 h-3.5" /> Approuver
+                    </button>
+                    <button
+                      onClick={() => toggleReject(c.id)}
+                      className={`flex items-center gap-1.5 px-4 py-2 rounded text-sm font-dm-sans transition-all border ${
+                        isRejected ? 'bg-danger/10 border-danger/30 text-danger' : 'border-border-subtle text-text-secondary hover:border-danger/30 hover:text-danger'
+                      }`}
+                    >
+                      <XCircle className="w-3.5 h-3.5" /> Rejeter
+                    </button>
+                  </div>
                 </div>
               );
             })}
           </div>
         )}
 
-        {/* Bottom action bar */}
         {changements.length > 0 && (
           <div className="sticky bottom-6 card border-border-default bg-bg-card/90 backdrop-blur-sm shadow-xl">
             <div className="flex items-center gap-4">
-              <div className="flex-1 min-w-0">
-                {automationLevel === 1 && (
-                  <p className="font-dm-sans text-sm text-text-secondary">
-                    {approvedIds.size} approuvé(s) · {rejectedIds.size} rejeté(s) · {pendingDecision} en attente
-                  </p>
-                )}
-                {automationLevel === 2 && (
-                  <p className="font-dm-sans text-sm text-text-secondary">
-                    {approvedIds.size} / {changements.length} changements sélectionnés
-                  </p>
-                )}
+              <div className="flex-1">
+                <p className="font-dm-sans text-sm text-text-secondary">
+                  {automationLevel === 1
+                    ? `${approvedIds.size} approuvé(s) · ${rejectedIds.size} rejeté(s) · ${pendingDecision} en attente`
+                    : `${approvedIds.size} / ${changements.length} changements sélectionnés`}
+                </p>
               </div>
               <button
                 onClick={handleFinalApprove}
-                disabled={approveMutation.isPending || (automationLevel === 1 && approvedIds.size === 0 && rejectedIds.size === 0)}
+                disabled={automationLevel === 1 && approvedIds.size === 0 && rejectedIds.size === 0}
                 className="btn-liquid-glass-prominent flex-shrink-0"
               >
-                {approveMutation.isPending ? <LoadingSpinner size="sm" /> : <CheckCircle className="w-4 h-4" />}
-                Valider la nouvelle version
+                <CheckCircle className="w-4 h-4" /> Valider la nouvelle version
               </button>
             </div>
           </div>
@@ -451,55 +390,25 @@ export default function UploadDIPPage() {
     );
   }
 
-  /* ── Upload form ── */
+  /* ── Formulaire d'upload ── */
   return (
     <div className="max-w-2xl mx-auto space-y-8 animate-fade-in">
       <PageHeader
         title="Importer un DIP"
-        subtitle="Uploadez votre Document d'Information Précontractuelle au format PDF ou DOCX. L'IA analysera automatiquement les changements par rapport à la version précédente."
+        subtitle="Uploadez votre DIP au format PDF ou DOCX. L'IA détecte automatiquement les changements par rapport à la version précédente."
       />
 
       <div className="space-y-5">
-        {/* Drop zone */}
         <div
           {...getRootProps()}
           className={`relative border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-all duration-300 ${
-            isDragActive
-              ? 'border-gold bg-gold/5'
-              : file
-              ? 'border-success/40 bg-success/3'
-              : 'border-border-default hover:border-gold hover:bg-gold/3'
-          } ${step !== 'idle' ? 'pointer-events-none' : ''}`}
+            isDragActive ? 'border-gold bg-gold/5'
+            : file ? 'border-success/40 bg-success/3'
+            : 'border-border-default hover:border-gold hover:bg-gold/3'
+          }`}
         >
           <input {...getInputProps()} />
-
-          {step === 'uploading' || step === 'analyzing' ? (
-            <div className="space-y-4">
-              <div className="inline-flex items-center justify-center w-14 h-14 rounded-lg bg-gold/10 border border-gold/20 animate-glow">
-                {step === 'uploading'
-                  ? <LoadingSpinner size="md" />
-                  : <Sparkles className="w-7 h-7 text-gold animate-pulse" />
-                }
-              </div>
-              <div>
-                <p className="font-dm-sans text-sm font-medium text-text-primary">
-                  {step === 'uploading' ? 'Upload en cours…' : 'Analyse IA en cours…'}
-                </p>
-                <p className="font-dm-sans text-xs text-text-secondary mt-1">
-                  {step === 'uploading'
-                    ? 'Envoi du fichier vers le serveur'
-                    : 'Claude compare les versions et détecte les changements légaux — jusqu\'à 60s'
-                  }
-                </p>
-              </div>
-              <div className="w-48 h-1 bg-bg-elevated rounded-full mx-auto overflow-hidden">
-                <div
-                  className="h-full bg-gold rounded-full animate-pulse"
-                  style={{ width: step === 'analyzing' ? '70%' : '30%', transition: 'width 2s ease' }}
-                />
-              </div>
-            </div>
-          ) : file ? (
+          {file ? (
             <div className="space-y-3">
               <div className="inline-flex items-center justify-center w-14 h-14 rounded-lg bg-success/10 border border-success/20">
                 <FileText className="w-7 h-7 text-success" />
@@ -509,10 +418,10 @@ export default function UploadDIPPage() {
                 <p className="font-dm-mono text-xs text-text-secondary">{formatSize(file.size)}</p>
               </div>
               <button
-                onClick={(e) => { e.stopPropagation(); setFile(null); }}
+                onClick={(e) => { e.stopPropagation(); setFile(null); setError(''); }}
                 className="inline-flex items-center gap-1 text-xs text-text-secondary hover:text-danger transition-colors"
               >
-                <X className="w-3 h-3" /> Supprimer
+                <X className="w-3 h-3" /> Changer de fichier
               </button>
             </div>
           ) : (
@@ -524,7 +433,7 @@ export default function UploadDIPPage() {
                 <p className="font-dm-sans text-sm font-medium text-text-primary">
                   {isDragActive ? 'Déposez ici' : 'Glissez-déposez votre DIP'}
                 </p>
-                <p className="font-dm-sans text-xs text-text-secondary mt-1">PDF ou DOCX, max 20 Mo</p>
+                <p className="font-dm-sans text-xs text-text-secondary mt-1">PDF ou DOCX, jusqu'à 50 Mo</p>
               </div>
               <span className="inline-block font-dm-sans text-xs text-gold border border-gold/30 rounded px-3 py-1">
                 Parcourir les fichiers
@@ -533,7 +442,7 @@ export default function UploadDIPPage() {
           )}
         </div>
 
-        {file && step === 'idle' && (
+        {file && (
           <div className="animate-slide-up">
             <label className="label">Titre du document</label>
             <input
@@ -546,37 +455,38 @@ export default function UploadDIPPage() {
           </div>
         )}
 
+        {error && (
+          <div className="flex items-start gap-3 bg-danger/10 border border-danger/20 text-danger rounded p-4 text-sm font-dm-sans">
+            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-medium mb-1">Erreur lors de l'analyse</p>
+              <p className="text-xs opacity-80">{error}</p>
+            </div>
+            <button onClick={() => { setStep('idle'); setError(''); }} className="underline text-xs flex-shrink-0">
+              Réessayer
+            </button>
+          </div>
+        )}
+
         {file && step === 'idle' && (
-          <button
-            onClick={() => uploadMutation.mutate()}
-            disabled={uploadMutation.isPending}
-            className="btn-liquid-glass-prominent w-full"
-          >
+          <button onClick={handleUpload} className="btn-liquid-glass-prominent w-full">
             <Sparkles className="w-4 h-4" />
             Analyser avec l'IA
           </button>
         )}
 
-        {step === 'error' && (
-          <div className="flex items-center gap-3 bg-danger/10 border border-danger/20 text-danger rounded p-3 text-sm font-dm-sans">
-            <AlertCircle className="w-4 h-4 flex-shrink-0" />
-            Erreur lors de l'analyse. Vérifiez que le fichier est lisible et réessayez.
-            <button onClick={() => setStep('idle')} className="ml-auto underline">Réessayer</button>
-          </div>
-        )}
-
         <div className="bg-gold/5 border border-gold/20 rounded p-4">
           <p className="font-dm-mono text-xs text-gold mb-2">Comment ça fonctionne</p>
-          <ol className="space-y-1">
+          <ol className="space-y-1.5">
             {[
-              'Votre fichier est uploadé de manière sécurisée',
-              'L\'IA Claude extrait le texte et le compare à la version précédente',
-              'Les changements (deltas) sont identifiés section par section',
-              'Des reformulations légales conformes Loi Doubin sont proposées',
+              'Le fichier est uploadé directement vers le stockage sécurisé Supabase',
+              'L\'IA Claude extrait le texte et l\'analyse section par section',
+              'Si un DIP existe déjà, Claude compare les deux versions et détecte les changements',
+              'Des reformulations légales conformes à la Loi Doubin sont proposées',
               'Vous approuvez ou rejetez chaque changement selon votre niveau d\'automatisation'
             ].map((s, i) => (
               <li key={i} className="flex items-start gap-2 font-dm-sans text-xs text-text-secondary">
-                <span className="font-dm-mono text-gold/60">{i + 1}.</span> {s}
+                <span className="font-dm-mono text-gold/60 flex-shrink-0">{i + 1}.</span> {s}
               </li>
             ))}
           </ol>

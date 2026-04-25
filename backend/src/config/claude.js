@@ -4,7 +4,7 @@ const claude = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY
 });
 
-const MODEL = process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-20250514';
+const MODEL = process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5-20251001';
 
 /**
  * Analyser et extraire les sections d'un DIP depuis le texte brut

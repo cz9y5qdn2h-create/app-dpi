@@ -1,26 +1,17 @@
 const express = require('express');
-const multer = require('multer');
 const path = require('path');
 const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware, requireFranchisor } = require('../middleware/auth');
 const { parseDIPSections, compareDIPVersions } = require('../config/claude');
 const router = express.Router();
 
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: { fileSize: 20 * 1024 * 1024 },
-  fileFilter: (req, file, cb) => {
-    const allowed = ['.pdf', '.docx', '.doc'];
-    const ext = path.extname(file.originalname).toLowerCase();
-    if (allowed.includes(ext)) cb(null, true);
-    else cb(new Error('Format non supporté. Utilisez PDF ou DOCX.'));
-  }
-});
+const BUCKET = 'dip-files';
 
-const extractText = async (buffer, originalname) => {
-  const ext = path.extname(originalname).toLowerCase();
+const extractText = async (buffer, filename) => {
+  const ext = path.extname(filename).toLowerCase();
   if (ext === '.pdf') {
-    const pdfParse = require('pdf-parse');
+    // Use internal module to avoid test-file loading crash in serverless
+    const pdfParse = require('pdf-parse/lib/pdf-parse.js');
     const data = await pdfParse(buffer);
     return data.text;
   } else if (ext === '.docx' || ext === '.doc') {
@@ -28,40 +19,56 @@ const extractText = async (buffer, originalname) => {
     const result = await mammoth.extractRawText({ buffer });
     return result.value;
   }
-  throw new Error('Format non supporté');
+  throw new Error('Format non supporté (PDF ou DOCX requis)');
 };
 
-// GET /api/dip - Liste des DIPs de l'utilisateur
-router.get('/', authMiddleware, async (req, res) => {
-  const { data, error } = await supabaseAdmin
-    .from('dip_documents')
-    .select('*, dip_sections(*)')
-    .eq('user_id', req.user.id)
-    .order('created_at', { ascending: false });
-  if (error) return res.status(500).json({ error: error.message });
-  res.json({ dips: data });
+// GET /api/dip/upload-url — génère une URL signée pour upload direct vers Supabase Storage
+router.get('/upload-url', authMiddleware, requireFranchisor, async (req, res) => {
+  const { filename } = req.query;
+  if (!filename) return res.status(400).json({ error: 'filename requis' });
+
+  const ext = path.extname(filename).toLowerCase();
+  if (!['.pdf', '.docx', '.doc'].includes(ext)) {
+    return res.status(400).json({ error: 'Format non supporté. Utilisez PDF ou DOCX.' });
+  }
+
+  const storagePath = `${req.user.id}/${Date.now()}_${filename}`;
+
+  const { data, error } = await supabaseAdmin.storage
+    .from(BUCKET)
+    .createSignedUploadUrl(storagePath);
+
+  if (error) return res.status(500).json({ error: 'Impossible de générer le lien upload: ' + error.message });
+
+  res.json({ signed_url: data.signedUrl, storage_path: storagePath });
 });
 
-// GET /api/dip/:id - Détail d'un DIP
-router.get('/:id', authMiddleware, async (req, res) => {
-  const { data, error } = await supabaseAdmin
-    .from('dip_documents')
-    .select('*, dip_sections(*)')
-    .eq('id', req.params.id)
-    .eq('user_id', req.user.id)
-    .single();
-  if (error || !data) return res.status(404).json({ error: 'DIP introuvable' });
-  res.json({ dip: data });
-});
-
-// POST /api/dip/upload - Upload, parsing ou comparaison de version DIP
-router.post('/upload', authMiddleware, requireFranchisor, upload.single('file'), async (req, res) => {
-  if (!req.file) return res.status(400).json({ error: 'Fichier requis' });
+// POST /api/dip/process — télécharge depuis Storage, extrait le texte, analyse avec Claude
+router.post('/process', authMiddleware, requireFranchisor, async (req, res) => {
+  const { storage_path, title } = req.body;
+  if (!storage_path) return res.status(400).json({ error: 'storage_path requis' });
 
   try {
-    const rawText = await extractText(req.file.buffer, req.file.originalname);
+    // Télécharger le fichier depuis Supabase Storage (pas de limite de taille côté backend)
+    const { data: fileBlob, error: dlError } = await supabaseAdmin.storage
+      .from(BUCKET)
+      .download(storage_path);
 
-    // Vérifier si un DIP actif existe déjà pour comparer les versions
+    if (dlError) throw new Error('Téléchargement impossible: ' + dlError.message);
+
+    const arrayBuffer = await fileBlob.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    const rawText = await extractText(buffer, storage_path);
+
+    if (!rawText || rawText.trim().length < 50) {
+      throw new Error('Le fichier ne contient pas assez de texte lisible. Vérifiez que le PDF n\'est pas scanné (image) ou protégé.');
+    }
+
+    const fileUrl = supabaseAdmin.storage.from(BUCKET).getPublicUrl(storage_path).data.publicUrl;
+    const docTitle = title || path.basename(storage_path).replace(/^\d+_/, '').replace(/\.(pdf|docx|doc)$/i, '');
+
+    // Vérifier s'il existe déjà un DIP actif
     const { data: existingDips } = await supabaseAdmin
       .from('dip_documents')
       .select('id, raw_text, title, conformity_score')
@@ -72,26 +79,15 @@ router.post('/upload', authMiddleware, requireFranchisor, upload.single('file'),
 
     const previousDip = existingDips?.[0];
 
-    // Upload du fichier dans Supabase Storage
-    const fileName = `${req.user.id}/${Date.now()}_${req.file.originalname}`;
-    const { data: storageData } = await supabaseAdmin.storage
-      .from('dip-files')
-      .upload(fileName, req.file.buffer, { contentType: req.file.mimetype });
-
-    const fileUrl = storageData
-      ? supabaseAdmin.storage.from('dip-files').getPublicUrl(fileName).data.publicUrl
-      : null;
-
-    // Mode comparaison : DIP existant → retourner les deltas pour approbation
+    // MODE COMPARAISON : DIP existant détecté
     if (previousDip && previousDip.raw_text) {
       const comparison = await compareDIPVersions(previousDip.raw_text, rawText);
 
-      // Stocker le nouveau fichier en brouillon en attente d'approbation
       const { data: draftDip, error: draftError } = await supabaseAdmin
         .from('dip_documents')
         .insert({
           user_id: req.user.id,
-          title: req.body.title || req.file.originalname,
+          title: docTitle,
           file_url: fileUrl,
           status: 'brouillon',
           conformity_score: previousDip.conformity_score,
@@ -107,14 +103,14 @@ router.post('/upload', authMiddleware, requireFranchisor, upload.single('file'),
         action: 'upload_nouvelle_version',
         user_id: req.user.id,
         new_content: JSON.stringify({
-          filename: req.file.originalname,
+          filename: path.basename(storage_path),
           nb_changements: comparison.changements?.length || 0,
           previous_dip_id: previousDip.id
         }),
         timestamp: new Date().toISOString()
       });
 
-      return res.status(200).json({
+      return res.json({
         mode: 'comparison',
         draft_dip_id: draftDip.id,
         previous_dip_id: previousDip.id,
@@ -124,14 +120,14 @@ router.post('/upload', authMiddleware, requireFranchisor, upload.single('file'),
       });
     }
 
-    // Mode initial : premier DIP → parser les sections
+    // MODE INITIAL : premier DIP
     const parsed = await parseDIPSections(rawText);
 
     const { data: dipDoc, error: dipError } = await supabaseAdmin
       .from('dip_documents')
       .insert({
         user_id: req.user.id,
-        title: req.body.title || req.file.originalname,
+        title: docTitle,
         file_url: fileUrl,
         status: 'actif',
         conformity_score: parsed.global_score || 0,
@@ -142,7 +138,7 @@ router.post('/upload', authMiddleware, requireFranchisor, upload.single('file'),
 
     if (dipError) throw new Error(dipError.message);
 
-    const sectionsToInsert = parsed.sections.map(s => ({
+    const sectionsToInsert = (parsed.sections || []).map(s => ({
       dip_id: dipDoc.id,
       section_number: s.section_number,
       section_title: s.section_title,
@@ -152,13 +148,19 @@ router.post('/upload', authMiddleware, requireFranchisor, upload.single('file'),
       last_updated: new Date().toISOString()
     }));
 
-    await supabaseAdmin.from('dip_sections').insert(sectionsToInsert);
+    if (sectionsToInsert.length > 0) {
+      await supabaseAdmin.from('dip_sections').insert(sectionsToInsert);
+    }
 
     await supabaseAdmin.from('audit_log').insert({
       dip_id: dipDoc.id,
       action: 'upload_initial',
       user_id: req.user.id,
-      new_content: JSON.stringify({ filename: req.file.originalname, score: parsed.global_score }),
+      new_content: JSON.stringify({
+        filename: path.basename(storage_path),
+        score: parsed.global_score,
+        sections: sectionsToInsert.length
+      }),
       timestamp: new Date().toISOString()
     });
 
@@ -169,13 +171,14 @@ router.post('/upload', authMiddleware, requireFranchisor, upload.single('file'),
       conformity_score: parsed.global_score,
       summary: parsed.summary
     });
+
   } catch (err) {
-    console.error('Upload DIP error:', err);
+    console.error('DIP process error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
-// POST /api/dip/approve-changes - Approuver les changements d'une nouvelle version
+// POST /api/dip/approve-changes
 router.post('/approve-changes', authMiddleware, requireFranchisor, async (req, res) => {
   const { draft_dip_id, previous_dip_id, approved_changes } = req.body;
   if (!draft_dip_id || !previous_dip_id) {
@@ -183,14 +186,12 @@ router.post('/approve-changes', authMiddleware, requireFranchisor, async (req, r
   }
 
   try {
-    // Archiver l'ancien DIP actif
     await supabaseAdmin
       .from('dip_documents')
       .update({ status: 'archive' })
       .eq('id', previous_dip_id)
       .eq('user_id', req.user.id);
 
-    // Activer le nouveau DIP
     const { data: newDip, error: activateError } = await supabaseAdmin
       .from('dip_documents')
       .update({ status: 'actif' })
@@ -201,7 +202,6 @@ router.post('/approve-changes', authMiddleware, requireFranchisor, async (req, r
 
     if (activateError) throw new Error(activateError.message);
 
-    // Copier les sections de l'ancien DIP et les mettre à jour avec les changements approuvés
     const { data: previousSections } = await supabaseAdmin
       .from('dip_sections')
       .select('*')
@@ -219,7 +219,6 @@ router.post('/approve-changes', authMiddleware, requireFranchisor, async (req, r
         last_updated: new Date().toISOString()
       }));
 
-      // Appliquer les changements approuvés aux sections correspondantes
       if (approved_changes?.length > 0) {
         approved_changes.forEach(change => {
           const section = newSections.find(s => s.section_number === change.section_number);
@@ -233,7 +232,6 @@ router.post('/approve-changes', authMiddleware, requireFranchisor, async (req, r
 
       await supabaseAdmin.from('dip_sections').insert(newSections);
 
-      // Recalculer le score
       const conformeCount = newSections.filter(s => s.status === 'conforme').length;
       const score = Math.round((conformeCount / newSections.length) * 100);
       await supabaseAdmin.from('dip_documents').update({ conformity_score: score }).eq('id', draft_dip_id);
@@ -243,21 +241,41 @@ router.post('/approve-changes', authMiddleware, requireFranchisor, async (req, r
       dip_id: draft_dip_id,
       action: 'version_approved',
       user_id: req.user.id,
-      new_content: JSON.stringify({
-        nb_changes_approved: approved_changes?.length || 0,
-        previous_dip_id
-      }),
+      new_content: JSON.stringify({ nb_changes_approved: approved_changes?.length || 0, previous_dip_id }),
       timestamp: new Date().toISOString()
     });
 
     res.json({ message: 'Nouvelle version activée', dip: newDip });
   } catch (err) {
-    console.error('Approve changes error:', err);
+    console.error('Approve changes error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
-// PUT /api/dip/:id/sections/:sectionId - Mettre à jour une section
+// GET /api/dip — liste
+router.get('/', authMiddleware, async (req, res) => {
+  const { data, error } = await supabaseAdmin
+    .from('dip_documents')
+    .select('*, dip_sections(*)')
+    .eq('user_id', req.user.id)
+    .order('created_at', { ascending: false });
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ dips: data });
+});
+
+// GET /api/dip/:id — détail
+router.get('/:id', authMiddleware, async (req, res) => {
+  const { data, error } = await supabaseAdmin
+    .from('dip_documents')
+    .select('*, dip_sections(*)')
+    .eq('id', req.params.id)
+    .eq('user_id', req.user.id)
+    .single();
+  if (error || !data) return res.status(404).json({ error: 'DIP introuvable' });
+  res.json({ dip: data });
+});
+
+// PUT /api/dip/:id/sections/:sectionId
 router.put('/:id/sections/:sectionId', authMiddleware, requireFranchisor, async (req, res) => {
   const { content, status } = req.body;
   const { data: existing } = await supabaseAdmin
@@ -291,13 +309,14 @@ router.put('/:id/sections/:sectionId', authMiddleware, requireFranchisor, async 
   res.json({ section: data, conformity_score: score });
 });
 
-// POST /api/dip/check/:id - Lancer une vérification manuelle
+// POST /api/dip/check/:id
 router.post('/check/:id', authMiddleware, requireFranchisor, async (req, res) => {
   const { data: dip } = await supabaseAdmin
-    .from('dip_documents').select('*, dip_sections(*)').eq('id', req.params.id).single();
+    .from('dip_documents').select('id').eq('id', req.params.id).eq('user_id', req.user.id).single();
   if (!dip) return res.status(404).json({ error: 'DIP introuvable' });
 
-  await supabaseAdmin.from('dip_sections').update({ last_checked: new Date().toISOString() })
+  await supabaseAdmin.from('dip_sections')
+    .update({ last_checked: new Date().toISOString() })
     .eq('dip_id', req.params.id);
 
   res.json({ message: 'Vérification lancée', checked_at: new Date().toISOString() });
