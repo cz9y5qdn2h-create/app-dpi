@@ -22,6 +22,23 @@ const extractText = async (buffer, filename) => {
   throw new Error('Format non supporté (PDF ou DOCX requis)');
 };
 
+// S'assurer que le bucket existe (créé automatiquement si absent)
+const ensureBucket = async () => {
+  const { data: buckets } = await supabaseAdmin.storage.listBuckets();
+  const exists = buckets?.some(b => b.id === BUCKET);
+  if (!exists) {
+    await supabaseAdmin.storage.createBucket(BUCKET, {
+      public: true,
+      fileSizeLimit: 52428800,
+      allowedMimeTypes: [
+        'application/pdf',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/msword'
+      ]
+    });
+  }
+};
+
 // GET /api/dip/upload-url — génère une URL signée pour upload direct vers Supabase Storage
 router.get('/upload-url', authMiddleware, requireFranchisor, async (req, res) => {
   const { filename } = req.query;
@@ -32,15 +49,22 @@ router.get('/upload-url', authMiddleware, requireFranchisor, async (req, res) =>
     return res.status(400).json({ error: 'Format non supporté. Utilisez PDF ou DOCX.' });
   }
 
-  const storagePath = `${req.user.id}/${Date.now()}_${filename}`;
+  try {
+    await ensureBucket();
 
-  const { data, error } = await supabaseAdmin.storage
-    .from(BUCKET)
-    .createSignedUploadUrl(storagePath);
+    const storagePath = `${req.user.id}/${Date.now()}_${filename}`;
 
-  if (error) return res.status(500).json({ error: 'Impossible de générer le lien upload: ' + error.message });
+    const { data, error } = await supabaseAdmin.storage
+      .from(BUCKET)
+      .createSignedUploadUrl(storagePath);
 
-  res.json({ signed_url: data.signedUrl, storage_path: storagePath });
+    if (error) return res.status(500).json({ error: 'Impossible de générer le lien upload: ' + error.message });
+
+    res.json({ signed_url: data.signedUrl, storage_path: storagePath });
+  } catch (err) {
+    console.error('upload-url error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // POST /api/dip/process — télécharge depuis Storage, extrait le texte, analyse avec Claude

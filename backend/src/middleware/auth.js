@@ -6,9 +6,6 @@ const supabase = createClient(
   process.env.SUPABASE_ANON_KEY || ''
 );
 
-/**
- * Middleware authentification JWT Supabase
- */
 const authMiddleware = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -20,38 +17,58 @@ const authMiddleware = async (req, res, next) => {
   try {
     const { data: { user }, error } = await supabase.auth.getUser(token);
     if (error || !user) {
-      return res.status(401).json({ error: 'Token invalide ou expire' });
+      return res.status(401).json({ error: 'Token invalide ou expiré. Reconnectez-vous.' });
     }
     req.user = user;
     req.token = token;
     next();
   } catch (err) {
-    console.error('Auth middleware error:', err.message);
     return res.status(401).json({ error: 'Erreur d\'authentification' });
   }
 };
 
-/**
- * Middleware role franchiseur
- */
+// Vérifie le rôle franchiseur — crée le profil automatiquement s'il est manquant
 const requireFranchisor = async (req, res, next) => {
-  if (!req.user) return res.status(401).json({ error: 'Non authentifie' });
+  if (!req.user) return res.status(401).json({ error: 'Non authentifié' });
 
   try {
     const { supabaseAdmin } = require('../config/supabase');
-    const { data: profile } = await supabaseAdmin
+
+    let { data: profile } = await supabaseAdmin
       .from('users')
       .select('role')
       .eq('id', req.user.id)
       .single();
 
-    if (!profile || profile.role !== 'franchiseur') {
-      return res.status(403).json({ error: 'Acces reserve aux franchiseurs' });
+    // Profil manquant : le créer automatiquement comme franchiseur
+    if (!profile) {
+      const { data: newProfile, error: insertError } = await supabaseAdmin
+        .from('users')
+        .insert({
+          id: req.user.id,
+          email: req.user.email,
+          role: 'franchiseur',
+          company_name: req.user.user_metadata?.company_name || req.user.email.split('@')[0],
+          created_at: new Date().toISOString()
+        })
+        .select('role')
+        .single();
+
+      if (insertError) {
+        console.error('Auto-create profile error:', insertError.message);
+        return res.status(403).json({ error: 'Impossible de créer le profil utilisateur.' });
+      }
+      profile = newProfile;
     }
+
+    if (profile.role !== 'franchiseur') {
+      return res.status(403).json({ error: 'Accès réservé aux franchiseurs.' });
+    }
+
     next();
   } catch (err) {
     console.error('requireFranchisor error:', err.message);
-    return res.status(403).json({ error: 'Erreur de verification du role' });
+    return res.status(403).json({ error: 'Erreur de vérification du rôle' });
   }
 };
 
