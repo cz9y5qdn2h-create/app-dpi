@@ -18,21 +18,34 @@ router.put('/profile', authMiddleware, async (req, res) => {
     notifications_sms, notification_frequency
   } = req.body;
 
-  const updates = {};
-  if (company_name !== undefined) updates.company_name = company_name;
-  if (phone !== undefined) updates.phone = phone;
-  if (address !== undefined) updates.address = address;
-  if (siret !== undefined) updates.siret = siret;
-  if (siren !== undefined) updates.siren = siren;
-  if (renewal_alert_date !== undefined) updates.renewal_alert_date = renewal_alert_date || null;
-  if (automation_level !== undefined) updates.automation_level = parseInt(automation_level, 10);
-  if (notifications_email !== undefined) updates.notifications_email = notifications_email;
-  if (notifications_inapp !== undefined) updates.notifications_inapp = notifications_inapp;
-  if (notifications_sms !== undefined) updates.notifications_sms = notifications_sms;
-  if (notification_frequency !== undefined) updates.notification_frequency = notification_frequency;
+  // Champs de base (toujours présents — migration 001/002)
+  const baseUpdates = {};
+  if (company_name !== undefined) baseUpdates.company_name = company_name;
+  if (phone !== undefined) baseUpdates.phone = phone;
+  if (address !== undefined) baseUpdates.address = address;
+  if (siret !== undefined) baseUpdates.siret = siret;
+  if (siren !== undefined) baseUpdates.siren = siren;
+  if (renewal_alert_date !== undefined) baseUpdates.renewal_alert_date = renewal_alert_date || null;
 
-  const { data, error } = await supabaseAdmin
-    .from('users').update(updates).eq('id', req.user.id).select().single();
+  // Champs étendus (migration 003 — peuvent être absents)
+  const extendedUpdates = {};
+  if (automation_level !== undefined) extendedUpdates.automation_level = parseInt(automation_level, 10);
+  if (notifications_email !== undefined) extendedUpdates.notifications_email = notifications_email;
+  if (notifications_inapp !== undefined) extendedUpdates.notifications_inapp = notifications_inapp;
+  if (notifications_sms !== undefined) extendedUpdates.notifications_sms = notifications_sms;
+  if (notification_frequency !== undefined) extendedUpdates.notification_frequency = notification_frequency;
+
+  // Essayer d'abord avec tous les champs
+  let data, error;
+  ({ data, error } = await supabaseAdmin
+    .from('users').update({ ...baseUpdates, ...extendedUpdates }).eq('id', req.user.id).select().single());
+
+  // Si erreur de colonne manquante (migration 003 non exécutée), sauvegarder seulement les champs de base
+  if (error && error.message.includes('column')) {
+    ({ data, error } = await supabaseAdmin
+      .from('users').update(baseUpdates).eq('id', req.user.id).select().single());
+  }
+
   if (error) return res.status(500).json({ error: error.message });
   res.json({ profile: data });
 });
