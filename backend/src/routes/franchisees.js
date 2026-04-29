@@ -17,11 +17,12 @@ router.get('/', authMiddleware, requireFranchisor, async (req, res) => {
 
 // POST /api/franchisees
 router.post('/', authMiddleware, requireFranchisor, async (req, res) => {
-  const { name, email, territory, contract_start, contract_end } = req.body;
+  const { name, email, territory, contract_start, contract_end, whatsapp_number, phone } = req.body;
   if (!name || !email) return res.status(400).json({ error: 'Nom et email requis' });
 
   const { data, error } = await supabaseAdmin.from('franchisees').insert({
-    franchiseur_id: req.user.id, name, email, territory, contract_start, contract_end
+    franchiseur_id: req.user.id, name, email, territory, contract_start, contract_end,
+    whatsapp_number: whatsapp_number || null, phone: phone || null
   }).select().single();
 
   if (error) return res.status(500).json({ error: error.message });
@@ -30,9 +31,10 @@ router.post('/', authMiddleware, requireFranchisor, async (req, res) => {
 
 // PUT /api/franchisees/:id
 router.put('/:id', authMiddleware, requireFranchisor, async (req, res) => {
-  const { name, email, territory, contract_start, contract_end, status } = req.body;
+  const { name, email, territory, contract_start, contract_end, status, whatsapp_number, phone } = req.body;
   const { data, error } = await supabaseAdmin.from('franchisees')
-    .update({ name, email, territory, contract_start, contract_end, status })
+    .update({ name, email, territory, contract_start, contract_end, status,
+              whatsapp_number: whatsapp_number || null, phone: phone || null })
     .eq('id', req.params.id).eq('franchiseur_id', req.user.id).select().single();
   if (error) return res.status(500).json({ error: error.message });
   res.json({ franchisee: data });

@@ -6,7 +6,7 @@ import api from '../lib/api';
 import CalModal from './CalModal';
 import {
   LayoutDashboard, FileText, Upload, Bell, History,
-  Users, Settings, Download, LogOut, Shield, Phone
+  Users, Settings, Download, LogOut, Shield, Phone, Zap, ShieldAlert
 } from 'lucide-react';
 
 export default function Sidebar({ open, onClose }) {
@@ -22,6 +22,8 @@ export default function Sidebar({ open, onClose }) {
   });
   const pendingCount = alertsData?.alerts?.length || 0;
 
+  const isAdmin = profile?.role === 'admin';
+
   const navItems = [
     { to: '/dashboard', icon: LayoutDashboard, label: 'Tableau de bord' },
     { to: '/dip',       icon: FileText,        label: 'Mon DIP' },
@@ -30,7 +32,9 @@ export default function Sidebar({ open, onClose }) {
     { to: '/history',   icon: History,         label: 'Historique' },
     { to: '/franchisees', icon: Users,         label: 'Franchisés' },
     { to: '/export',    icon: Download,        label: 'Export' },
+    { to: '/integrations', icon: Zap,          label: 'Intégrations' },
     { to: '/settings',  icon: Settings,        label: 'Paramètres' },
+    ...(isAdmin ? [{ to: '/admin', icon: ShieldAlert, label: 'Admin', adminOnly: true }] : []),
   ];
 
   const handleLogout = async () => {
@@ -60,12 +64,16 @@ export default function Sidebar({ open, onClose }) {
 
         {/* Navigation */}
         <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-          {navItems.map(({ to, icon: Icon, label, count }) => (
+          {navItems.map(({ to, icon: Icon, label, count, adminOnly }) => (
             <NavLink
               key={to}
               to={to}
               onClick={onClose}
-              className={({ isActive }) => isActive ? 'nav-link-active' : 'nav-link'}
+              className={({ isActive }) =>
+                adminOnly
+                  ? (isActive ? 'nav-link-active border-l-2 border-gold' : 'nav-link text-gold/80 hover:text-gold')
+                  : (isActive ? 'nav-link-active' : 'nav-link')
+              }
             >
               <Icon className="w-4 h-4 flex-shrink-0" />
               <span className="flex-1">{label}</span>

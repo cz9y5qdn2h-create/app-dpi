@@ -61,7 +61,7 @@ const requireFranchisor = async (req, res, next) => {
       profile = newProfile;
     }
 
-    if (profile.role !== 'franchiseur') {
+    if (profile.role !== 'franchiseur' && profile.role !== 'admin') {
       return res.status(403).json({ error: 'Accès réservé aux franchiseurs.' });
     }
 

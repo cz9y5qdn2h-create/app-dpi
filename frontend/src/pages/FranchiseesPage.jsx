@@ -4,12 +4,13 @@ import api from '../lib/api';
 import PageHeader from '../components/ui/PageHeader';
 import StatusBadge from '../components/ui/StatusBadge';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
-import { Plus, Users, Edit3, Trash2, Send, X, Check, AlertCircle } from 'lucide-react';
+import { Plus, Users, Edit3, Trash2, Send, X, Check, AlertCircle, Mail, MessageCircle, Phone as PhoneIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const EMPTY_FORM = {
   name: '', email: '', territory: '',
-  contract_start: '', contract_end: '', status: 'actif'
+  contract_start: '', contract_end: '', status: 'actif',
+  whatsapp_number: '', phone: ''
 };
 
 export default function FranchiseesPage() {
@@ -19,6 +20,9 @@ export default function FranchiseesPage() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [notifyLoading, setNotifyLoading] = useState(false);
   const [formError, setFormError] = useState('');
+  const [notifyChannels, setNotifyChannels] = useState(['email']);
+  const [notifyMsg, setNotifyMsg] = useState('');
+  const [showNotifyModal, setShowNotifyModal] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['franchisees'],
@@ -68,19 +72,19 @@ export default function FranchiseesPage() {
   const handleNotify = async () => {
     const dip = dipsData?.dips?.[0];
     if (!dip) return toast.error('Aucun DIP disponible pour notifier');
-    if (franchisees.length === 0) return toast.error('Aucun franchisé à notifier');
     const actifs = franchisees.filter(f => f.status === 'actif');
     if (actifs.length === 0) return toast.error('Aucun franchisé actif');
+    if (!notifyMsg.trim()) return toast.error('Veuillez saisir un message');
     setNotifyLoading(true);
+    setShowNotifyModal(false);
     try {
-      const res = await api.post('/franchisees/notify', {
+      const res = await api.post('/notifications/send', {
         dip_id: dip.id,
-        updated_sections: dip.dip_sections?.map(s => ({
-          title: s.section_title,
-          status: s.status
-        }))
+        message: notifyMsg,
+        channels: notifyChannels
       });
-      toast.success(`${res.data.sent ?? actifs.length} franchisé(s) notifié(s)`);
+      toast.success(`${res.data.sent} franchisé(s) notifié(s)`);
+      setNotifyMsg('');
     } catch (err) {
       toast.error(err.message);
     } finally {
@@ -107,7 +111,9 @@ export default function FranchiseesPage() {
       territory: f.territory || '',
       contract_start: f.contract_start ? f.contract_start.split('T')[0] : '',
       contract_end: f.contract_end ? f.contract_end.split('T')[0] : '',
-      status: f.status || 'actif'
+      status: f.status || 'actif',
+      whatsapp_number: f.whatsapp_number || '',
+      phone: f.phone || ''
     });
     setShowForm(false);
     setFormError('');
@@ -129,7 +135,7 @@ export default function FranchiseesPage() {
           <div className="flex gap-3">
             {franchisees.length > 0 && (
               <button
-                onClick={handleNotify}
+                onClick={() => setShowNotifyModal(true)}
                 disabled={notifyLoading}
                 className="btn-secondary flex items-center gap-2"
               >
@@ -228,6 +234,24 @@ export default function FranchiseesPage() {
                 onChange={e => setForm(f => ({ ...f, contract_end: e.target.value }))}
               />
             </div>
+            <div>
+              <label className="label">WhatsApp <span className="text-text-secondary">(+33...)</span></label>
+              <input
+                className="input-field"
+                value={form.whatsapp_number}
+                onChange={e => setForm(f => ({ ...f, whatsapp_number: e.target.value }))}
+                placeholder="+33612345678"
+              />
+            </div>
+            <div>
+              <label className="label">Téléphone SMS</label>
+              <input
+                className="input-field"
+                value={form.phone}
+                onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
+                placeholder="+33612345678"
+              />
+            </div>
             <div className="sm:col-span-2 flex gap-3">
               <button
                 type="submit"
@@ -324,6 +348,74 @@ export default function FranchiseesPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Notify Modal */}
+      {showNotifyModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="card w-full max-w-lg animate-slide-up">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="font-cormorant text-xl">Notifier les franchisés</h3>
+              <button onClick={() => setShowNotifyModal(false)} className="text-text-secondary hover:text-text-primary">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="label">Canaux de notification</label>
+                <div className="flex gap-3 flex-wrap">
+                  {[
+                    { id: 'email', icon: Mail, label: 'Email' },
+                    { id: 'whatsapp', icon: MessageCircle, label: 'WhatsApp' },
+                    { id: 'sms', icon: PhoneIcon, label: 'SMS' }
+                  ].map(({ id, icon: Icon, label }) => (
+                    <button
+                      key={id}
+                      type="button"
+                      onClick={() => setNotifyChannels(prev =>
+                        prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]
+                      )}
+                      className={`flex items-center gap-2 px-4 py-2 rounded border text-sm font-dm-sans transition-all ${
+                        notifyChannels.includes(id)
+                          ? 'bg-gold/10 border-gold text-gold'
+                          : 'border-border-subtle text-text-secondary hover:border-border-default'
+                      }`}
+                    >
+                      <Icon className="w-4 h-4" />
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="label">Message *</label>
+                <textarea
+                  className="input-field min-h-[120px] resize-y"
+                  value={notifyMsg}
+                  onChange={e => setNotifyMsg(e.target.value)}
+                  placeholder="Suite aux modifications du DIP, veuillez prendre connaissance des changements suivants..."
+                  rows={5}
+                />
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={handleNotify}
+                  disabled={!notifyMsg.trim() || notifyChannels.length === 0}
+                  className="btn-primary flex items-center gap-2 flex-1"
+                >
+                  <Send className="w-4 h-4" />
+                  Envoyer aux {franchisees.filter(f => f.status === 'actif').length} actifs
+                </button>
+                <button onClick={() => setShowNotifyModal(false)} className="btn-secondary">
+                  Annuler
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

@@ -11,6 +11,8 @@ const franchiseeRoutes = require('./routes/franchisees');
 const exportRoutes = require('./routes/export');
 const historyRoutes = require('./routes/history');
 const settingsRoutes = require('./routes/settings');
+const adminRoutes = require('./routes/admin');
+const notificationRoutes = require('./routes/notifications');
 
 const app = express();
 
@@ -55,6 +57,8 @@ app.use('/api/franchisees', franchiseeRoutes);
 app.use('/api/export', exportRoutes);
 app.use('/api/history', historyRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

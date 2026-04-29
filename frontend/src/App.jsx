@@ -12,6 +12,8 @@ import HistoryPage from './pages/HistoryPage';
 import FranchiseesPage from './pages/FranchiseesPage';
 import SettingsPage from './pages/SettingsPage';
 import ExportPage from './pages/ExportPage';
+import AdminPage from './pages/AdminPage';
+import ApiConfigPage from './pages/ApiConfigPage';
 import LoadingSpinner from './components/ui/LoadingSpinner';
 
 function ProtectedRoute({ children }) {
@@ -47,6 +49,8 @@ export default function App() {
           <Route path="franchisees" element={<FranchiseesPage />} />
           <Route path="settings" element={<SettingsPage />} />
           <Route path="export" element={<ExportPage />} />
+          <Route path="admin" element={<AdminPage />} />
+          <Route path="integrations" element={<ApiConfigPage />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
