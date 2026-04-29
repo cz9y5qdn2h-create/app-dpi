@@ -20,7 +20,14 @@ export default function LoginPage() {
       await login(form.email, form.password);
       navigate('/dashboard');
     } catch (err) {
-      setError(err.message || 'Identifiants invalides');
+      const msg = err?.message || '';
+      if (msg.includes('fetch') || msg.includes('Invalid value') || msg.includes('Failed to')) {
+        setError('Configuration incomplète : variables Supabase manquantes côté Vercel. Contactez l\'administrateur.');
+      } else if (msg.includes('Invalid login') || msg.includes('Identifiants')) {
+        setError('Email ou mot de passe incorrect.');
+      } else {
+        setError(msg || 'Erreur de connexion');
+      }
     } finally {
       setLoading(false);
     }

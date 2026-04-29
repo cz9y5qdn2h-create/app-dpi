@@ -4,7 +4,17 @@ import { createClient } from '@supabase/supabase-js';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+  console.error(
+    'CONFIG ERROR: VITE_SUPABASE_URL ou VITE_SUPABASE_ANON_KEY manquant. ' +
+    'Ajoutez-les dans Vercel > Settings > Environment Variables, puis redéployez sans cache.'
+  );
+}
+
+const supabase = createClient(
+  SUPABASE_URL || 'https://placeholder.supabase.co',
+  SUPABASE_ANON_KEY || 'placeholder'
+);
 
 const AuthContext = createContext(null);
 
