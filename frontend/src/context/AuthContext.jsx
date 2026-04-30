@@ -1,20 +1,11 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Valeurs publiques — l'anon key est conçue pour être exposée côté client (RLS protège les données)
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://xlfycuhmbnzeofgnleof.supabase.co';
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhsZnljdWhtYm56ZW9mZ25sZW9mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5OTY1MTAsImV4cCI6MjA5MTU3MjUxMH0.NcLXD5xzgokCnKcZv0laDMDP7ixrMqZvJNuCNQXLt3s';
 
-if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-  console.error(
-    'CONFIG ERROR: VITE_SUPABASE_URL ou VITE_SUPABASE_ANON_KEY manquant. ' +
-    'Ajoutez-les dans Vercel > Settings > Environment Variables, puis redéployez sans cache.'
-  );
-}
-
-const supabase = createClient(
-  SUPABASE_URL || 'https://placeholder.supabase.co',
-  SUPABASE_ANON_KEY || 'placeholder'
-);
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const AuthContext = createContext(null);
 
