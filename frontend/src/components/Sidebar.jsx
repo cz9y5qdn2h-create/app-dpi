@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
+import { useTheme, THEMES } from '../context/ThemeContext';
 import api from '../lib/api';
 import CalModal from './CalModal';
 import {
@@ -11,6 +12,7 @@ import {
 
 export default function Sidebar({ open, onClose }) {
   const { profile, logout } = useAuth();
+  const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
   const [calOpen, setCalOpen] = useState(false);
 
@@ -21,19 +23,18 @@ export default function Sidebar({ open, onClose }) {
     retry: false
   });
   const pendingCount = alertsData?.alerts?.length || 0;
-
   const isAdmin = profile?.role === 'admin';
 
   const navItems = [
-    { to: '/dashboard', icon: LayoutDashboard, label: 'Tableau de bord' },
-    { to: '/dip',       icon: FileText,        label: 'Mon DIP' },
-    { to: '/dip/upload',icon: Upload,          label: 'Nouvelle version' },
-    { to: '/alerts',    icon: Bell,            label: 'Alertes', count: pendingCount },
-    { to: '/history',   icon: History,         label: 'Historique' },
-    { to: '/franchisees', icon: Users,         label: 'Franchisés' },
-    { to: '/export',    icon: Download,        label: 'Export' },
-    { to: '/integrations', icon: Zap,          label: 'Intégrations' },
-    { to: '/settings',  icon: Settings,        label: 'Paramètres' },
+    { to: '/dashboard',    icon: LayoutDashboard, label: 'Tableau de bord' },
+    { to: '/dip',          icon: FileText,        label: 'Mon DIP' },
+    { to: '/dip/upload',   icon: Upload,          label: 'Nouvelle version' },
+    { to: '/alerts',       icon: Bell,            label: 'Alertes', count: pendingCount },
+    { to: '/history',      icon: History,         label: 'Historique' },
+    { to: '/franchisees',  icon: Users,           label: 'Franchisés' },
+    { to: '/export',       icon: Download,        label: 'Export' },
+    { to: '/integrations', icon: Zap,             label: 'Intégrations' },
+    { to: '/settings',     icon: Settings,        label: 'Paramètres' },
     ...(isAdmin ? [{ to: '/admin', icon: ShieldAlert, label: 'Admin', adminOnly: true }] : []),
   ];
 
@@ -45,14 +46,15 @@ export default function Sidebar({ open, onClose }) {
   return (
     <>
       <aside className={`
-        fixed top-0 left-0 h-full w-64 bg-bg-card border-r border-border-subtle
+        sidebar-panel
+        fixed top-0 left-0 h-full w-64 border-r border-border-subtle
         flex flex-col z-30 transition-transform duration-300
         ${open ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0
       `}>
         {/* Logo */}
         <div className="px-6 py-8 border-b border-border-subtle">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded bg-gold/10 border border-gold/30 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-gold/10 border border-gold/30 flex items-center justify-center">
               <Shield className="w-4 h-4 text-gold" />
             </div>
             <div>
@@ -71,7 +73,7 @@ export default function Sidebar({ open, onClose }) {
               onClick={onClose}
               className={({ isActive }) =>
                 adminOnly
-                  ? (isActive ? 'nav-link-active border-l-2 border-gold' : 'nav-link text-gold/80 hover:text-gold')
+                  ? (isActive ? 'nav-link-active' : 'nav-link text-gold/80 hover:text-gold')
                   : (isActive ? 'nav-link-active' : 'nav-link')
               }
             >
@@ -86,8 +88,9 @@ export default function Sidebar({ open, onClose }) {
           ))}
         </nav>
 
-        {/* Bottom: Contact + User + Logout */}
-        <div className="px-3 py-4 border-t border-border-subtle space-y-2">
+        {/* Bottom section */}
+        <div className="px-3 py-4 border-t border-border-subtle space-y-3">
+
           {/* Contacter Iralink */}
           <button
             onClick={() => { setCalOpen(true); onClose?.(); }}
@@ -97,8 +100,29 @@ export default function Sidebar({ open, onClose }) {
             Contacter Iralink
           </button>
 
+          {/* Theme switcher */}
+          <div className="px-1">
+            <p className="font-dm-mono text-xs text-text-muted mb-2 uppercase tracking-widest">Thème</p>
+            <div className="flex items-center gap-2">
+              {THEMES.map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => setTheme(t.id)}
+                  title={`${t.label} — ${t.desc}`}
+                  className="w-[22px] h-[22px] rounded-full transition-all duration-200 hover:scale-125 flex-shrink-0"
+                  style={{
+                    background: `linear-gradient(135deg, ${t.bg} 50%, ${t.accent} 50%)`,
+                    outline: theme === t.id ? `2px solid ${t.accent}` : '2px solid transparent',
+                    outlineOffset: '2px',
+                    transform: theme === t.id ? 'scale(1.2)' : undefined,
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+
           {/* User info */}
-          <div className="px-4 py-3 rounded bg-bg-elevated">
+          <div className="px-3 py-2.5 rounded-lg bg-gold/5 border border-border-subtle">
             <p className="font-dm-sans text-sm text-text-primary truncate font-medium">
               {profile?.company_name || 'Franchiseur'}
             </p>
@@ -107,6 +131,7 @@ export default function Sidebar({ open, onClose }) {
             </p>
           </div>
 
+          {/* Logout */}
           <button
             onClick={handleLogout}
             className="nav-link w-full text-left text-danger hover:text-danger hover:bg-danger/5"
