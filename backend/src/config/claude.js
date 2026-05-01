@@ -1,7 +1,7 @@
 const Anthropic = require('@anthropic-ai/sdk');
 
 const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-const MODEL = process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5-20251001';
+const MODEL = process.env.ANTHROPIC_MODEL || 'claude-opus-4-7';
 
 const SYSTEM_DIP_EXPERT = `Tu es un expert juridique senior spécialisé en droit de la franchise française.
 Tu maîtrises parfaitement :
@@ -15,6 +15,8 @@ Règles absolues :
 - Si une information est absente du document, indique "Non renseigné" (ne pas inventer)
 - Applique les critères de conformité de la Loi Doubin strictement`;
 
+const CACHED_SYSTEM = [{ type: 'text', text: SYSTEM_DIP_EXPERT, cache_control: { type: 'ephemeral' } }];
+
 /**
  * Analyser et extraire les 10 sections réglementaires d'un DIP
  */
@@ -26,7 +28,7 @@ const parseDIPSections = async (rawText) => {
   const message = await claude.messages.create({
     model: MODEL,
     max_tokens: 8192,
-    system: SYSTEM_DIP_EXPERT,
+    system: CACHED_SYSTEM,
     messages: [{
       role: 'user',
       content: `Analyse ce DIP et extrais les 10 sections réglementaires obligatoires selon la Loi Doubin.
@@ -125,7 +127,7 @@ const compareDIPVersions = async (previousText, newText) => {
   const message = await claude.messages.create({
     model: MODEL,
     max_tokens: 8192,
-    system: SYSTEM_DIP_EXPERT,
+    system: CACHED_SYSTEM,
     messages: [{
       role: 'user',
       content: `Compare ces deux versions d'un DIP et identifie tous les changements qui ont un impact légal.
@@ -206,7 +208,7 @@ const detectChanges = async (sectionContent, newDocumentText, sectionTitle) => {
   const message = await claude.messages.create({
     model: MODEL,
     max_tokens: 2048,
-    system: SYSTEM_DIP_EXPERT,
+    system: CACHED_SYSTEM,
     messages: [{
       role: 'user',
       content: `Compare la section DIP existante avec un nouveau document source et détecte les mises à jour nécessaires.
@@ -246,7 +248,7 @@ const generateUpdateSummary = async (updatedSections) => {
   const message = await claude.messages.create({
     model: MODEL,
     max_tokens: 1024,
-    system: 'Tu es un expert en communication juridique franchise. Tu rédiges des messages clairs, professionnels et rasssurants.',
+    system: [{ type: 'text', text: 'Tu es un expert en communication juridique franchise. Tu rédiges des messages clairs, professionnels et rassurants.', cache_control: { type: 'ephemeral' } }],
     messages: [{
       role: 'user',
       content: `Rédige un message de notification professionnel à envoyer aux franchisés pour les informer des mises à jour du DIP.
