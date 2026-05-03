@@ -1,10 +1,4 @@
 require('dotenv').config();
-const { createClient } = require('@supabase/supabase-js');
-
-const supabase = createClient(
-  process.env.SUPABASE_URL || '',
-  process.env.SUPABASE_ANON_KEY || ''
-);
 
 const authMiddleware = async (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -15,7 +9,8 @@ const authMiddleware = async (req, res, next) => {
   const token = authHeader.split(' ')[1];
 
   try {
-    const { data: { user }, error } = await supabase.auth.getUser(token);
+    const { supabaseAdmin } = require('../config/supabase');
+    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
     if (error || !user) {
       return res.status(401).json({ error: 'Token invalide ou expiré. Reconnectez-vous.' });
     }
@@ -23,6 +18,7 @@ const authMiddleware = async (req, res, next) => {
     req.token = token;
     next();
   } catch (err) {
+    console.error('authMiddleware error:', err.message);
     return res.status(401).json({ error: 'Erreur d\'authentification' });
   }
 };
@@ -34,13 +30,17 @@ const requireFranchisor = async (req, res, next) => {
   try {
     const { supabaseAdmin } = require('../config/supabase');
 
-    let { data: profile } = await supabaseAdmin
+    let { data: profile, error: profileError } = await supabaseAdmin
       .from('users')
       .select('role')
       .eq('id', req.user.id)
       .single();
 
-    // Profil manquant : le créer automatiquement comme franchiseur
+    if (profileError && profileError.code !== 'PGRST116') {
+      console.error('requireFranchisor DB error:', profileError.message, profileError.code);
+      return res.status(500).json({ error: 'Erreur lors de la vérification du profil.' });
+    }
+
     if (!profile) {
       const { data: newProfile, error: insertError } = await supabaseAdmin
         .from('users')
@@ -56,7 +56,7 @@ const requireFranchisor = async (req, res, next) => {
 
       if (insertError) {
         console.error('Auto-create profile error:', insertError.message);
-        return res.status(403).json({ error: 'Impossible de créer le profil utilisateur.' });
+        return res.status(500).json({ error: 'Impossible de créer le profil utilisateur.' });
       }
       profile = newProfile;
     }
@@ -68,7 +68,7 @@ const requireFranchisor = async (req, res, next) => {
     next();
   } catch (err) {
     console.error('requireFranchisor error:', err.message);
-    return res.status(403).json({ error: 'Erreur de vérification du rôle' });
+    return res.status(500).json({ error: 'Erreur de vérification du rôle' });
   }
 };
 
