@@ -1,6 +1,32 @@
 require('dotenv').config();
+const crypto = require('crypto');
 
-const authMiddleware = async (req, res, next) => {
+const decodeJWT = (token) => {
+  const parts = token.split('.');
+  if (parts.length !== 3) throw new Error('Token malformé');
+
+  const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
+
+  // Vérification de signature si JWT_SECRET est disponible
+  if (process.env.JWT_SECRET) {
+    const sig = Buffer.from(parts[2], 'base64url');
+    const expected = crypto
+      .createHmac('sha256', process.env.JWT_SECRET)
+      .update(`${parts[0]}.${parts[1]}`)
+      .digest();
+    if (sig.length !== expected.length || !crypto.timingSafeEqual(sig, expected)) {
+      throw new Error('Signature invalide');
+    }
+  }
+
+  if (!payload.exp || payload.exp < Math.floor(Date.now() / 1000)) {
+    throw new Error('Token expiré');
+  }
+
+  return payload;
+};
+
+const authMiddleware = (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'Token d\'authentification manquant' });
@@ -9,17 +35,24 @@ const authMiddleware = async (req, res, next) => {
   const token = authHeader.split(' ')[1];
 
   try {
-    const { supabaseAdmin } = require('../config/supabase');
-    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
-    if (error || !user) {
-      return res.status(401).json({ error: 'Token invalide ou expiré. Reconnectez-vous.' });
+    const payload = decodeJWT(token);
+
+    if (!payload.sub) {
+      return res.status(401).json({ error: 'Token invalide' });
     }
-    req.user = user;
+
+    req.user = {
+      id: payload.sub,
+      email: payload.email || '',
+      user_metadata: payload.user_metadata || {}
+    };
     req.token = token;
     next();
   } catch (err) {
-    console.error('authMiddleware error:', err.message);
-    return res.status(401).json({ error: 'Erreur d\'authentification' });
+    return res.status(401).json({ error: err.message === 'Token expiré'
+      ? 'Session expirée. Reconnectez-vous.'
+      : 'Token invalide ou expiré. Reconnectez-vous.'
+    });
   }
 };
 
