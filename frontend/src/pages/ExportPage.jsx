@@ -11,7 +11,7 @@ export default function ExportPage() {
     queryFn: () => api.get('/dip').then(r => r.data)
   });
 
-  const dip = data?.dips?.[0];
+  const dip = data?.dips?.find(d => d.status === 'actif') ?? data?.dips?.[0];
 
   const handleExportReport = async () => {
     if (!dip) return toast.error('Aucun DIP disponible');
@@ -91,7 +91,9 @@ export default function ExportPage() {
               </div>
               <div className="text-right">
                 <p className="font-dm-mono text-xs text-text-secondary">
-                  Importe le {new Date(dip.upload_date).toLocaleDateString('fr-FR')}
+                  {dip.upload_date || dip.created_at
+                    ? new Date(dip.upload_date || dip.created_at).toLocaleDateString('fr-FR')
+                    : 'N/A'}
                 </p>
               </div>
             </div>

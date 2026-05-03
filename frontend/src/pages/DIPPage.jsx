@@ -74,7 +74,7 @@ export default function DIPPage() {
     onError: (err) => toast.error(err.message)
   });
 
-  const dip = data?.dips?.[0];
+  const dip = data?.dips?.find(d => d.status === 'actif') ?? data?.dips?.[0];
   const sections = dip?.dip_sections?.sort((a, b) => a.section_number - b.section_number) || [];
 
   const set = (path, value) => {

@@ -277,15 +277,21 @@ router.post('/approve-changes', authMiddleware, requireFranchisor, async (req, r
   }
 });
 
-// GET /api/dip — liste
+// GET /api/dip — retourne le DIP actif (+ optionnellement tous avec ?all=true)
 router.get('/', authMiddleware, async (req, res) => {
-  const { data, error } = await supabaseAdmin
+  let query = supabaseAdmin
     .from('dip_documents')
     .select('*, dip_sections(*)')
     .eq('user_id', req.user.id)
     .order('created_at', { ascending: false });
+
+  if (req.query.all !== 'true') {
+    query = query.eq('status', 'actif');
+  }
+
+  const { data, error } = await query;
   if (error) return res.status(500).json({ error: errMsg(error) });
-  res.json({ dips: data });
+  res.json({ dips: data || [] });
 });
 
 // GET /api/dip/:id — détail

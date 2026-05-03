@@ -21,17 +21,18 @@ export default function DashboardPage() {
   const { profile } = useAuth();
   const [calOpen, setCalOpen] = useState(false);
 
-  const { data: dipsData, isLoading: dipsLoading } = useQuery({
+  const { data: dipsData, isLoading: dipsLoading, isError: dipsError } = useQuery({
     queryKey: ['dips'],
     queryFn: () => api.get('/dip').then(r => r.data)
   });
 
   const { data: alertsData, isLoading: alertsLoading } = useQuery({
     queryKey: ['alerts', 'pending'],
-    queryFn: () => api.get('/alerts?status=pending').then(r => r.data)
+    queryFn: () => api.get('/alerts?status=pending').then(r => r.data),
+    retry: false
   });
 
-  const dip = dipsData?.dips?.[0];
+  const dip = dipsData?.dips?.find(d => d.status === 'actif') ?? dipsData?.dips?.[0];
   const pendingAlerts = alertsData?.alerts || [];
   const sections = dip?.dip_sections || [];
 
@@ -51,6 +52,17 @@ export default function DashboardPage() {
     return (
       <div className="flex items-center justify-center min-h-64">
         <LoadingSpinner size="lg" />
+      </div>
+    );
+  }
+
+  if (dipsError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-64 gap-4 text-center">
+        <AlertTriangle className="w-10 h-10 text-danger/50" />
+        <p className="font-cormorant text-xl text-text-primary">Impossible de charger le tableau de bord</p>
+        <p className="font-dm-sans text-sm text-text-secondary">Vérifiez votre connexion ou rechargez la page.</p>
+        <button onClick={() => window.location.reload()} className="btn-ghost text-sm">Recharger</button>
       </div>
     );
   }
