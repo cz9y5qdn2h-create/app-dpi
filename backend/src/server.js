@@ -13,6 +13,7 @@ const historyRoutes = require('./routes/history');
 const settingsRoutes = require('./routes/settings');
 const adminRoutes = require('./routes/admin');
 const notificationRoutes = require('./routes/notifications');
+const agentRoutes = require('./routes/agent');
 
 const app = express();
 
@@ -59,6 +60,7 @@ app.use('/api/history', historyRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/agent', agentRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
