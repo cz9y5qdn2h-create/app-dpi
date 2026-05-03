@@ -3,6 +3,7 @@ const path = require('path');
 const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware, requireFranchisor } = require('../middleware/auth');
 const { parseDIPSections, compareDIPVersions } = require('../config/claude');
+const errMsg = require('../config/errorMessage');
 const router = express.Router();
 
 const BUCKET = 'dip-files';
@@ -63,7 +64,7 @@ router.get('/upload-url', authMiddleware, requireFranchisor, async (req, res) =>
     res.json({ signed_url: data.signedUrl, storage_path: storagePath });
   } catch (err) {
     console.error('upload-url error:', err.message);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: errMsg(err) });
   }
 });
 
@@ -198,7 +199,7 @@ router.post('/process', authMiddleware, requireFranchisor, async (req, res) => {
 
   } catch (err) {
     console.error('DIP process error:', err.message);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: errMsg(err) });
   }
 });
 
@@ -272,7 +273,7 @@ router.post('/approve-changes', authMiddleware, requireFranchisor, async (req, r
     res.json({ message: 'Nouvelle version activée', dip: newDip });
   } catch (err) {
     console.error('Approve changes error:', err.message);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: errMsg(err) });
   }
 });
 
@@ -283,7 +284,7 @@ router.get('/', authMiddleware, async (req, res) => {
     .select('*, dip_sections(*)')
     .eq('user_id', req.user.id)
     .order('created_at', { ascending: false });
-  if (error) return res.status(500).json({ error: error.message });
+  if (error) return res.status(500).json({ error: errMsg(error) });
   res.json({ dips: data });
 });
 
@@ -322,7 +323,7 @@ router.put('/:id/sections/:sectionId', authMiddleware, requireFranchisor, async 
     .eq('id', req.params.sectionId)
     .select().single();
 
-  if (error) return res.status(500).json({ error: error.message });
+  if (error) return res.status(500).json({ error: errMsg(error) });
 
   const { data: allSections } = await supabaseAdmin
     .from('dip_sections').select('status').eq('dip_id', req.params.id);

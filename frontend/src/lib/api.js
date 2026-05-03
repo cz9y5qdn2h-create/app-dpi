@@ -26,18 +26,19 @@ api.interceptors.response.use(
       return Promise.reject(new Error('Le serveur est inaccessible. Verifiez votre connexion.'));
     }
     const status = error.response.status;
-    const msg = error.response.data?.error || error.message;
+    const raw = error.response.data?.error ?? error.response.data?.message ?? error.message;
+    const msg = typeof raw === 'string' ? raw : (raw?.message ?? JSON.stringify(raw) ?? 'Erreur inconnue');
 
     if (status === 401) {
       localStorage.removeItem('access_token');
       if (!window.location.pathname.includes('/login')) {
         window.location.href = '/login';
       }
-      return Promise.reject(new Error('Session expiree, reconnectez-vous.'));
+      return Promise.reject(new Error('Session expirée, reconnectez-vous.'));
     }
-    if (status === 403) return Promise.reject(new Error('Acces refuse.'));
+    if (status === 403) return Promise.reject(new Error('Accès refusé.'));
     if (status === 404) return Promise.reject(new Error('Ressource introuvable.'));
-    if (status >= 500) return Promise.reject(new Error('Erreur serveur: ' + msg));
+    if (status >= 500) return Promise.reject(new Error(msg));
 
     return Promise.reject(new Error(msg));
   }

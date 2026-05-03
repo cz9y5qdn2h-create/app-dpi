@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const { authMiddleware, requireFranchisor } = require('../middleware/auth');
 const { analyzeDIP, generateDIPFromForm, compareDIPVersions, verifyLegalData, generateDocx } = require('../config/dipAgent');
+const errMsg = require('../config/errorMessage');
 
 const router = express.Router();
 
@@ -35,7 +36,7 @@ router.post('/analyze', authMiddleware, requireFranchisor, async (req, res) => {
     const result = await analyzeDIP(rawText);
     res.json({ success: true, ...result });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: errMsg(err) });
   }
 });
 
@@ -55,7 +56,7 @@ router.post('/generate', authMiddleware, requireFranchisor, async (req, res) => 
     const result = await generateDIPFromForm(formData, sourceText);
     res.json({ success: true, ...result });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: errMsg(err) });
   }
 });
 
@@ -80,7 +81,7 @@ router.post('/compare', authMiddleware, requireFranchisor, async (req, res) => {
     const result = await compareDIPVersions(previousText, newText);
     res.json({ success: true, ...result });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: errMsg(err) });
   }
 });
 
@@ -94,7 +95,7 @@ router.post('/verify', authMiddleware, requireFranchisor, async (req, res) => {
     const result = await verifyLegalData(companyInfo);
     res.json({ success: true, ...result });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: errMsg(err) });
   }
 });
 
@@ -113,7 +114,7 @@ router.post('/docx', authMiddleware, requireFranchisor, async (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.send(buffer);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: errMsg(err) });
   }
 });
 
