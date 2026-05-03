@@ -1,7 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
-// Valeurs publiques — l'anon key est conçue pour être exposée côté client (RLS protège les données)
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://xlfycuhmbnzeofgnleof.supabase.co';
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhsZnljdWhtYm56ZW9mZ25sZW9mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU5OTY1MTAsImV4cCI6MjA5MTU3MjUxMH0.NcLXD5xzgokCnKcZv0laDMDP7ixrMqZvJNuCNQXLt3s';
 
@@ -15,13 +14,22 @@ export function useAuth() {
   return ctx;
 }
 
+const withTimeout = (promise, ms, fallback = null) => Promise.race([
+  promise,
+  new Promise((resolve) => setTimeout(() => resolve(fallback), ms))
+]);
+
 async function fetchProfile(userId) {
-  const { data } = await supabase
-    .from('users')
-    .select('*')
-    .eq('id', userId)
-    .single();
-  return data;
+  try {
+    const result = await withTimeout(
+      supabase.from('users').select('*').eq('id', userId).single(),
+      3000,
+      { data: null }
+    );
+    return result?.data || null;
+  } catch {
+    return null;
+  }
 }
 
 export default function AuthProvider({ children }) {
@@ -30,38 +38,57 @@ export default function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Session initiale
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (session?.user) {
-        setUser(session.user);
-        localStorage.setItem('access_token', session.access_token);
-        const p = await fetchProfile(session.user.id);
-        setProfile(p);
-      }
-      setLoading(false);
-    });
+    let mounted = true;
 
-    // Ecouter les changements d'auth
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+    const init = async () => {
+      try {
+        const result = await withTimeout(
+          supabase.auth.getSession(),
+          5000,
+          { data: { session: null } }
+        );
+        const session = result?.data?.session;
+
+        if (!mounted) return;
+
         if (session?.user) {
           setUser(session.user);
           localStorage.setItem('access_token', session.access_token);
           const p = await fetchProfile(session.user.id);
-          setProfile(p);
+          if (mounted) setProfile(p);
+        }
+      } catch (err) {
+        console.error('Auth init error:', err);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    init();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!mounted) return;
+        if (session?.user) {
+          setUser(session.user);
+          localStorage.setItem('access_token', session.access_token);
+          const p = await fetchProfile(session.user.id);
+          if (mounted) setProfile(p);
         } else {
           setUser(null);
           setProfile(null);
           localStorage.removeItem('access_token');
         }
-        if (event !== 'INITIAL_SESSION') setLoading(false);
+        if (event !== 'INITIAL_SESSION' && mounted) setLoading(false);
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
-  // Login DIRECT via Supabase (ne passe pas par le backend)
   const login = async (email, password) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw new Error('Identifiants invalides');
@@ -72,7 +99,6 @@ export default function AuthProvider({ children }) {
     return data.user;
   };
 
-  // Register via backend (cree le compte Supabase + profil users)
   const register = async (email, password, company_name) => {
     const res = await fetch('/api/auth/register', {
       method: 'POST',

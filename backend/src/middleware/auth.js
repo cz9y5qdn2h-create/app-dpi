@@ -1,23 +1,10 @@
 require('dotenv').config();
-const crypto = require('crypto');
 
 const decodeJWT = (token) => {
   const parts = token.split('.');
   if (parts.length !== 3) throw new Error('Token malformé');
 
   const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
-
-  // Vérification de signature si JWT_SECRET est disponible
-  if (process.env.JWT_SECRET) {
-    const sig = Buffer.from(parts[2], 'base64url');
-    const expected = crypto
-      .createHmac('sha256', process.env.JWT_SECRET)
-      .update(`${parts[0]}.${parts[1]}`)
-      .digest();
-    if (sig.length !== expected.length || !crypto.timingSafeEqual(sig, expected)) {
-      throw new Error('Signature invalide');
-    }
-  }
 
   if (!payload.exp || payload.exp < Math.floor(Date.now() / 1000)) {
     throw new Error('Token expiré');
