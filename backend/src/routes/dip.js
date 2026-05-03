@@ -335,6 +335,72 @@ router.put('/:id/sections/:sectionId', authMiddleware, requireFranchisor, async 
 });
 
 // POST /api/dip/check/:id
+// POST /api/dip/create-from-agent — sauvegarde un DIP généré par l'agent IA
+router.post('/create-from-agent', authMiddleware, requireFranchisor, async (req, res) => {
+  const { sections, global_score, title, company_name } = req.body;
+
+  if (!sections || !Array.isArray(sections) || sections.length === 0) {
+    return res.status(400).json({ error: 'sections requis (tableau non vide)' });
+  }
+
+  try {
+    // Archiver le DIP actif existant s'il y en a un
+    await supabaseAdmin
+      .from('dip_documents')
+      .update({ status: 'archive' })
+      .eq('user_id', req.user.id)
+      .eq('status', 'actif');
+
+    const docTitle = title || `DIP ${company_name || 'Franchiseur'} — ${new Date().getFullYear()}`;
+
+    const { data: dipDoc, error: dipError } = await supabaseAdmin
+      .from('dip_documents')
+      .insert({
+        user_id: req.user.id,
+        title: docTitle,
+        file_url: null,
+        status: 'actif',
+        conformity_score: global_score ?? Math.round(
+          (sections.filter(s => s.status === 'conforme').length / sections.length) * 100
+        ),
+        raw_text: sections.map(s => `=== ${s.section_title} ===\n${s.content}`).join('\n\n').substring(0, 50000)
+      })
+      .select()
+      .single();
+
+    if (dipError) throw new Error(dipError.message);
+
+    const sectionsToInsert = sections.map(s => ({
+      dip_id: dipDoc.id,
+      section_number: s.section_number,
+      section_title: s.section_title,
+      content: s.content || '',
+      status: s.status || 'a_verifier',
+      last_checked: new Date().toISOString(),
+      last_updated: new Date().toISOString()
+    }));
+
+    const { error: sectError } = await supabaseAdmin.from('dip_sections').insert(sectionsToInsert);
+    if (sectError) throw new Error(sectError.message);
+
+    await supabaseAdmin.from('audit_log').insert({
+      dip_id: dipDoc.id,
+      action: 'generated_by_agent',
+      user_id: req.user.id,
+      new_content: JSON.stringify({ sections_count: sections.length, score: dipDoc.conformity_score }),
+      timestamp: new Date().toISOString()
+    });
+
+    res.status(201).json({
+      dip: dipDoc,
+      sections_count: sectionsToInsert.length,
+      conformity_score: dipDoc.conformity_score
+    });
+  } catch (err) {
+    res.status(500).json({ error: errMsg(err) });
+  }
+});
+
 router.post('/check/:id', authMiddleware, requireFranchisor, async (req, res) => {
   const { data: dip } = await supabaseAdmin
     .from('dip_documents').select('id').eq('id', req.params.id).eq('user_id', req.user.id).single();
