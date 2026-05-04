@@ -8,9 +8,15 @@ import { fr } from 'date-fns/locale';
 
 const ACTION_LABELS = {
   upload_initial: { label: 'Import initial', color: 'text-gold', bg: 'bg-gold/10 border-gold/20' },
-  section_update: { label: 'Section modifiee', color: 'text-text-primary', bg: 'bg-bg-elevated border-border-subtle' },
-  alert_validated: { label: 'Alerte validee', color: 'text-success', bg: 'bg-success/10 border-success/20' },
-  alert_ignored: { label: 'Alerte ignoree', color: 'text-text-secondary', bg: 'bg-bg-elevated border-border-subtle' },
+  upload_nouvelle_version: { label: 'Nouvelle version uploadée', color: 'text-gold', bg: 'bg-gold/10 border-gold/20' },
+  version_approved: { label: 'Nouvelle version activée', color: 'text-success', bg: 'bg-success/10 border-success/20' },
+  generated_by_agent: { label: 'DIP généré par l\'IA', color: 'text-gold', bg: 'bg-gold/10 border-gold/20' },
+  section_update: { label: 'Section modifiée', color: 'text-text-primary', bg: 'bg-bg-elevated border-border-subtle' },
+  alert_validated: { label: 'Alerte validée', color: 'text-success', bg: 'bg-success/10 border-success/20' },
+  alert_ignored: { label: 'Alerte ignorée', color: 'text-text-secondary', bg: 'bg-bg-elevated border-border-subtle' },
+  alert_created: { label: 'Alerte créée', color: 'text-danger', bg: 'bg-danger/10 border-danger/20' },
+  notification_sent: { label: 'Notification envoyée', color: 'text-success', bg: 'bg-success/10 border-success/20' },
+  admin_password_reset: { label: 'Mot de passe réinitialisé', color: 'text-text-secondary', bg: 'bg-bg-elevated border-border-subtle' },
 };
 
 export default function HistoryPage() {

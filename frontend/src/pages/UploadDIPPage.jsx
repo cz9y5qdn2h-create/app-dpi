@@ -4,6 +4,7 @@ import { useDropzone } from 'react-dropzone';
 import { useQueryClient } from '@tanstack/react-query';
 import api from '../lib/api';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 import PageHeader from '../components/ui/PageHeader';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import {
@@ -65,27 +66,26 @@ export default function UploadDIPPage() {
     setError('');
 
     try {
-      // Étape 1 : obtenir une URL signée pour upload direct vers Supabase
       setStep('uploading');
-      setStepMsg('Préparation de l\'upload…');
+      setStepMsg('Upload du fichier vers le stockage sécurisé…');
 
-      const urlRes = await api.get(`/dip/upload-url?filename=${encodeURIComponent(file.name)}`);
-      const { signed_url, storage_path } = urlRes.data;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error('Session expirée, reconnectez-vous.');
 
-      // Étape 2 : uploader le fichier directement vers Supabase Storage (contourne la limite Vercel)
-      setStepMsg('Upload du fichier en cours…');
+      const storage_path = `${session.user.id}/${Date.now()}_${file.name}`;
 
-      const uploadRes = await fetch(signed_url, {
-        method: 'PUT',
-        body: file,
-        headers: { 'Content-Type': file.type || 'application/octet-stream' }
-      });
+      const { error: uploadError } = await supabase.storage
+        .from('dip-files')
+        .upload(storage_path, file, {
+          cacheControl: '3600',
+          upsert: false,
+          contentType: file.type || 'application/octet-stream'
+        });
 
-      if (!uploadRes.ok) {
-        throw new Error('Erreur lors de l\'upload. Vérifiez votre connexion et réessayez.');
+      if (uploadError) {
+        throw new Error('Upload impossible: ' + uploadError.message);
       }
 
-      // Étape 3 : demander au backend d'analyser le fichier
       setStep('analyzing');
       setStepMsg('Claude analyse votre DIP… (30 à 60 secondes)');
 

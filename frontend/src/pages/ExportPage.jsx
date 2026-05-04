@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import api from '../lib/api';
 import PageHeader from '../components/ui/PageHeader';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
-import { Download, FileText, Clock, BarChart2 } from 'lucide-react';
+import { Download, FileText, BarChart2, FileType } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function ExportPage() {
@@ -13,21 +13,34 @@ export default function ExportPage() {
 
   const dip = data?.dips?.find(d => d.status === 'actif') ?? data?.dips?.[0];
 
-  const handleExportReport = async () => {
+  const downloadBlob = async (path, filename, contentType) => {
     if (!dip) return toast.error('Aucun DIP disponible');
+    const t = toast.loading('Génération du document…');
     try {
-      const res = await api.get('/export/' + dip.id + '/report', { responseType: 'blob' });
-      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'text/html' }));
+      const res = await api.get(path, { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: contentType }));
       const a = document.createElement('a');
       a.href = url;
-      a.download = 'rapport-conformite-dip.html';
+      a.download = filename;
       a.click();
       window.URL.revokeObjectURL(url);
-      toast.success('Rapport telecharge');
+      toast.success('Téléchargement terminé', { id: t });
     } catch (err) {
-      toast.error('Erreur lors de l\'export');
+      toast.error('Erreur lors de l\'export', { id: t });
     }
   };
+
+  const handleExportPDF = () => downloadBlob(
+    '/export/' + dip.id + '/pdf',
+    'rapport-conformite-' + dip.id.substring(0, 8) + '.pdf',
+    'application/pdf'
+  );
+
+  const handleExportDOCX = () => downloadBlob(
+    '/export/' + dip.id + '/docx',
+    'dip-' + dip.id.substring(0, 8) + '.docx',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  );
 
   const handleExportJSON = async () => {
     if (!dip) return toast.error('Aucun DIP disponible');
@@ -40,7 +53,7 @@ export default function ExportPage() {
       a.download = 'dip-export.json';
       a.click();
       window.URL.revokeObjectURL(url);
-      toast.success('Export JSON telecharge');
+      toast.success('Export JSON téléchargé');
     } catch (err) {
       toast.error('Erreur lors de l\'export');
     }
@@ -48,15 +61,22 @@ export default function ExportPage() {
 
   const exports = [
     {
-      title: 'Rapport de conformite HTML',
-      description: 'Rapport complet avec toutes les sections, statuts et historique. Format HTML imprimable.',
+      title: 'DIP reformulé (Word)',
+      description: 'Le DIP complet avec toutes les sections reformulées par l\'IA, prêt à être signé. Format DOCX éditable.',
+      icon: FileType,
+      action: handleExportDOCX,
+      badge: 'DOCX'
+    },
+    {
+      title: 'Rapport de conformité (PDF)',
+      description: 'Rapport complet avec score global, statut de chaque section et synthèse Loi Doubin. Imprimable.',
       icon: BarChart2,
-      action: handleExportReport,
-      badge: 'HTML'
+      action: handleExportPDF,
+      badge: 'PDF'
     },
     {
       title: 'Export JSON complet',
-      description: 'Export brut de toutes les donnees DIP, sections et historique au format JSON.',
+      description: 'Export brut de toutes les données DIP, sections et historique au format JSON.',
       icon: FileText,
       action: handleExportJSON,
       badge: 'JSON'

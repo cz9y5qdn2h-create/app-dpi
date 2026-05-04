@@ -120,6 +120,51 @@ router.patch('/:id/validate', authMiddleware, requireFranchisor, async (req, res
   res.json({ message: 'Alerte validée, section mise à jour' });
 });
 
+// POST /api/alerts/check-renewal — Génère des alertes de renouvellement DIP
+// (DIP > 11 mois → alerte renouvellement annuel)
+router.post('/check-renewal', authMiddleware, requireFranchisor, async (req, res) => {
+  const { data: dips } = await supabaseAdmin
+    .from('dip_documents')
+    .select('id, title, created_at')
+    .eq('user_id', req.user.id)
+    .eq('status', 'actif');
+
+  if (!dips || dips.length === 0) return res.json({ alerts_created: 0 });
+
+  const now = Date.now();
+  const elevenMonths = 11 * 30 * 24 * 3600 * 1000;
+  const created = [];
+
+  for (const dip of dips) {
+    const age = now - new Date(dip.created_at).getTime();
+    if (age >= elevenMonths) {
+      const { data: existing } = await supabaseAdmin
+        .from('alerts')
+        .select('id')
+        .eq('dip_id', dip.id)
+        .eq('status', 'pending')
+        .like('source', '%Rappel renouvellement%')
+        .limit(1);
+
+      if (!existing || existing.length === 0) {
+        const { data: alert } = await supabaseAdmin.from('alerts').insert({
+          dip_id: dip.id,
+          old_value: 'DIP créé il y a plus de 11 mois',
+          new_value: 'Mise à jour annuelle requise (Loi Doubin)',
+          source: 'Rappel renouvellement annuel',
+          suggestion: 'Importez la nouvelle version du DIP pour rester conforme à la Loi Doubin (mise à jour annuelle obligatoire).',
+          status: 'pending',
+          urgency: 'haute',
+          created_at: new Date().toISOString()
+        }).select().single();
+        if (alert) created.push(alert);
+      }
+    }
+  }
+
+  res.json({ alerts_created: created.length, alerts: created });
+});
+
 // PATCH /api/alerts/:id/ignore — Ignorer une alerte
 router.patch('/:id/ignore', authMiddleware, requireFranchisor, async (req, res) => {
   const { reason } = req.body;

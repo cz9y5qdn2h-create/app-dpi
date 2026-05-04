@@ -5,12 +5,23 @@ const router = express.Router();
 
 // Middleware admin strict
 const requireAdmin = async (req, res, next) => {
-  const { data: profile } = await supabaseAdmin
-    .from('users').select('role').eq('id', req.user.id).single();
-  if (!profile || profile.role !== 'admin') {
-    return res.status(403).json({ error: 'Accès réservé aux administrateurs.' });
+  try {
+    const { data: profile, error } = await supabaseAdmin
+      .from('users').select('role').eq('id', req.user.id).single();
+
+    if (error && error.code !== 'PGRST116') {
+      console.error('requireAdmin DB error:', error.message);
+      return res.status(500).json({ error: 'Vérification du rôle impossible' });
+    }
+
+    if (!profile || profile.role !== 'admin') {
+      return res.status(403).json({ error: 'Accès réservé aux administrateurs.' });
+    }
+    next();
+  } catch (err) {
+    console.error('requireAdmin exception:', err.message);
+    return res.status(500).json({ error: 'Erreur de vérification du rôle' });
   }
-  next();
 };
 
 // GET /api/admin/stats — Vue globale
