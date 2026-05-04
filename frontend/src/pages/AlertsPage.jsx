@@ -4,7 +4,7 @@ import api from '../lib/api';
 import PageHeader from '../components/ui/PageHeader';
 import StatusBadge from '../components/ui/StatusBadge';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
-import { CheckCircle, XCircle, Bell, Edit3, X } from 'lucide-react';
+import { CheckCircle, XCircle, Bell, Edit3, X, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -61,8 +61,9 @@ export default function AlertsPage() {
         subtitle="Detections automatiques de changements necessitant une mise a jour du DIP"
       />
 
-      <div className="flex gap-2 flex-wrap">
-        {filters.map(f => (
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex gap-2 flex-wrap">
+          {filters.map(f => (
           <button
             key={f.key}
             onClick={() => setFilter(f.key)}
@@ -77,6 +78,23 @@ export default function AlertsPage() {
             )}
           </button>
         ))}
+        </div>
+        <button
+          onClick={async () => {
+            const t = toast.loading('Vérification en cours…');
+            try {
+              const res = await api.post('/alerts/check-renewal');
+              const n = res.data.alerts_created;
+              toast.success(n > 0 ? `${n} alerte(s) de renouvellement créée(s)` : 'Aucun renouvellement à signaler', { id: t });
+              queryClient.invalidateQueries({ queryKey: ['alerts'] });
+            } catch (err) {
+              toast.error(err.message, { id: t });
+            }
+          }}
+          className="btn-secondary flex items-center gap-2 text-sm py-2"
+        >
+          <RefreshCw className="w-4 h-4" /> Vérifier renouvellement
+        </button>
       </div>
 
       {isLoading ? (

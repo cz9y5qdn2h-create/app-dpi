@@ -4,7 +4,10 @@ import api from '../lib/api';
 import PageHeader from '../components/ui/PageHeader';
 import StatusBadge from '../components/ui/StatusBadge';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
-import { Plus, Users, Edit3, Trash2, Send, X, Check, AlertCircle, Mail, MessageCircle, Phone as PhoneIcon } from 'lucide-react';
+import {
+  Plus, Users, Edit3, Trash2, Send, X, Check,
+  AlertCircle, MessageCircle, Mail, Copy, ExternalLink
+} from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const EMPTY_FORM = {
@@ -13,16 +16,25 @@ const EMPTY_FORM = {
   whatsapp_number: '', phone: ''
 };
 
+function waLink(number, message) {
+  const clean = (number || '').replace(/\D/g, '');
+  if (!clean) return null;
+  return `https://wa.me/${clean}?text=${encodeURIComponent(message)}`;
+}
+
+function mailtoLink(email, subject, body) {
+  return `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+}
+
 export default function FranchiseesPage() {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
-  const [notifyLoading, setNotifyLoading] = useState(false);
   const [formError, setFormError] = useState('');
-  const [notifyChannels, setNotifyChannels] = useState(['email']);
-  const [notifyMsg, setNotifyMsg] = useState('');
   const [showNotifyModal, setShowNotifyModal] = useState(false);
+  const [notifyMsg, setNotifyMsg] = useState('');
+  const [copied, setCopied] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['franchisees'],
@@ -37,7 +49,7 @@ export default function FranchiseesPage() {
   const createMutation = useMutation({
     mutationFn: (d) => api.post('/franchisees', d),
     onSuccess: () => {
-      toast.success('Franchisé ajouté avec succès');
+      toast.success('Franchisé ajouté');
       queryClient.invalidateQueries({ queryKey: ['franchisees'] });
       setShowForm(false);
       setForm(EMPTY_FORM);
@@ -68,34 +80,16 @@ export default function FranchiseesPage() {
   });
 
   const franchisees = data?.franchisees || [];
+  const actifs = franchisees.filter(f => f.status === 'actif');
+  const dip = dipsData?.dips?.find(d => d.status === 'actif') ?? dipsData?.dips?.[0];
 
-  const handleNotify = async () => {
-    const dip = dipsData?.dips?.[0];
-    if (!dip) return toast.error('Aucun DIP disponible pour notifier');
-    const actifs = franchisees.filter(f => f.status === 'actif');
-    if (actifs.length === 0) return toast.error('Aucun franchisé actif');
-    if (!notifyMsg.trim()) return toast.error('Veuillez saisir un message');
-    setNotifyLoading(true);
-    setShowNotifyModal(false);
-    try {
-      const res = await api.post('/notifications/send', {
-        dip_id: dip.id,
-        message: notifyMsg,
-        channels: notifyChannels
-      });
-      toast.success(`${res.data.sent} franchisé(s) notifié(s)`);
-      setNotifyMsg('');
-    } catch (err) {
-      toast.error(err.message);
-    } finally {
-      setNotifyLoading(false);
-    }
-  };
+  const defaultMessage = dip
+    ? `Bonjour, votre franchiseur vous informe d'une mise à jour du Document d'Information Précontractuelle (DIP).\n\nDIP concerné : ${dip.title || 'DIP en vigueur'}\nScore de conformité : ${dip.conformity_score || 0}%\n\nMerci de prendre connaissance de cette mise à jour. Pour toute question, n'hésitez pas à nous contacter.\n\nCordialement,\nVotre franchiseur`
+    : `Bonjour, votre franchiseur vous informe d'une mise à jour du Document d'Information Précontractuelle (DIP).\n\nMerci de prendre connaissance de cette mise à jour.\n\nCordialement,\nVotre franchiseur`;
 
   const handleSubmit = (e) => {
     e.preventDefault();
     setFormError('');
-    // Validate dates
     if (form.contract_start && form.contract_end && form.contract_start > form.contract_end) {
       return setFormError('La date de fin doit être après la date de début');
     }
@@ -106,8 +100,7 @@ export default function FranchiseesPage() {
   const openEdit = (f) => {
     setEditingId(f.id);
     setForm({
-      name: f.name,
-      email: f.email,
+      name: f.name, email: f.email,
       territory: f.territory || '',
       contract_start: f.contract_start ? f.contract_start.split('T')[0] : '',
       contract_end: f.contract_end ? f.contract_end.split('T')[0] : '',
@@ -126,21 +119,28 @@ export default function FranchiseesPage() {
     setFormError('');
   };
 
+  const openNotifyModal = () => {
+    setNotifyMsg(defaultMessage);
+    setShowNotifyModal(true);
+  };
+
+  const copyMessage = async () => {
+    await navigator.clipboard.writeText(notifyMsg);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+    toast.success('Message copié');
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       <PageHeader
         title="Franchisés"
-        subtitle={`${franchisees.length} franchisé(s) dans le réseau`}
+        subtitle={`${franchisees.length} franchisé(s) — ${actifs.length} actif(s)`}
         action={
           <div className="flex gap-3">
-            {franchisees.length > 0 && (
-              <button
-                onClick={() => setShowNotifyModal(true)}
-                disabled={notifyLoading}
-                className="btn-secondary flex items-center gap-2"
-              >
-                {notifyLoading ? <LoadingSpinner size="sm" /> : <Send className="w-4 h-4" />}
-                Notifier tous
+            {actifs.length > 0 && (
+              <button onClick={openNotifyModal} className="btn-secondary flex items-center gap-2">
+                <Send className="w-4 h-4" /> Notifier
               </button>
             )}
             <button
@@ -153,63 +153,36 @@ export default function FranchiseesPage() {
         }
       />
 
-      {/* Form : Create or Edit */}
+      {/* Formulaire créer / modifier */}
       {(showForm || editingId) && (
         <div className="card border-border-default animate-slide-up">
           <div className="flex items-center justify-between mb-5">
-            <h3 className="font-cormorant text-xl">
-              {editingId ? 'Modifier le franchisé' : 'Ajouter un franchisé'}
-            </h3>
-            <button onClick={cancelForm} className="text-text-secondary hover:text-text-primary transition-colors">
-              <X className="w-5 h-5" />
-            </button>
+            <h3 className="font-cormorant text-xl">{editingId ? 'Modifier le franchisé' : 'Ajouter un franchisé'}</h3>
+            <button onClick={cancelForm} className="text-text-secondary hover:text-text-primary"><X className="w-5 h-5" /></button>
           </div>
 
           {formError && (
-            <div className="flex items-center gap-2 bg-danger/10 border border-danger/20 text-danger rounded p-3 mb-4 text-sm font-dm-sans">
-              <AlertCircle className="w-4 h-4 flex-shrink-0" />
-              {formError}
+            <div className="flex items-center gap-2 bg-danger/10 border border-danger/20 text-danger rounded p-3 mb-4 text-sm">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />{formError}
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="label">Nom complet *</label>
-              <input
-                className="input-field"
-                value={form.name}
-                onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                placeholder="Jean Dupont"
-                required
-              />
+              <input className="input-field" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Jean Dupont" required />
             </div>
             <div>
               <label className="label">Email *</label>
-              <input
-                type="email"
-                className="input-field"
-                value={form.email}
-                onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                placeholder="jean@franchise.fr"
-                required
-              />
+              <input type="email" className="input-field" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="jean@franchise.fr" required />
             </div>
             <div>
               <label className="label">Territoire</label>
-              <input
-                className="input-field"
-                value={form.territory}
-                onChange={e => setForm(f => ({ ...f, territory: e.target.value }))}
-                placeholder="Paris 15e"
-              />
+              <input className="input-field" value={form.territory} onChange={e => setForm(f => ({ ...f, territory: e.target.value }))} placeholder="Paris 15e" />
             </div>
             <div>
               <label className="label">Statut</label>
-              <select
-                className="input-field"
-                value={form.status}
-                onChange={e => setForm(f => ({ ...f, status: e.target.value }))}
-              >
+              <select className="input-field" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}>
                 <option value="actif">Actif</option>
                 <option value="en_cours">En cours de démarrage</option>
                 <option value="inactif">Inactif</option>
@@ -217,55 +190,26 @@ export default function FranchiseesPage() {
             </div>
             <div>
               <label className="label">Début de contrat</label>
-              <input
-                type="date"
-                className="input-field"
-                value={form.contract_start}
-                onChange={e => setForm(f => ({ ...f, contract_start: e.target.value }))}
-              />
+              <input type="date" className="input-field" value={form.contract_start} onChange={e => setForm(f => ({ ...f, contract_start: e.target.value }))} />
             </div>
             <div>
               <label className="label">Fin de contrat</label>
-              <input
-                type="date"
-                className="input-field"
-                value={form.contract_end}
-                min={form.contract_start || undefined}
-                onChange={e => setForm(f => ({ ...f, contract_end: e.target.value }))}
-              />
+              <input type="date" className="input-field" value={form.contract_end} min={form.contract_start || undefined} onChange={e => setForm(f => ({ ...f, contract_end: e.target.value }))} />
             </div>
             <div>
-              <label className="label">WhatsApp <span className="text-text-secondary">(+33...)</span></label>
-              <input
-                className="input-field"
-                value={form.whatsapp_number}
-                onChange={e => setForm(f => ({ ...f, whatsapp_number: e.target.value }))}
-                placeholder="+33612345678"
-              />
+              <label className="label">WhatsApp <span className="text-text-secondary text-xs">(+33...)</span></label>
+              <input className="input-field" value={form.whatsapp_number} onChange={e => setForm(f => ({ ...f, whatsapp_number: e.target.value }))} placeholder="+33612345678" />
             </div>
             <div>
-              <label className="label">Téléphone SMS</label>
-              <input
-                className="input-field"
-                value={form.phone}
-                onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
-                placeholder="+33612345678"
-              />
+              <label className="label">Email pour notifications</label>
+              <input className="input-field" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="+33612345678 (optionnel)" />
             </div>
             <div className="sm:col-span-2 flex gap-3">
-              <button
-                type="submit"
-                disabled={createMutation.isPending || updateMutation.isPending}
-                className="btn-primary flex items-center gap-2"
-              >
-                {(createMutation.isPending || updateMutation.isPending)
-                  ? <LoadingSpinner size="sm" />
-                  : <Check className="w-4 h-4" />}
+              <button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="btn-primary flex items-center gap-2">
+                {(createMutation.isPending || updateMutation.isPending) ? <LoadingSpinner size="sm" /> : <Check className="w-4 h-4" />}
                 {editingId ? 'Enregistrer' : 'Ajouter'}
               </button>
-              <button type="button" onClick={cancelForm} className="btn-secondary">
-                Annuler
-              </button>
+              <button type="button" onClick={cancelForm} className="btn-secondary">Annuler</button>
             </div>
           </form>
         </div>
@@ -280,12 +224,9 @@ export default function FranchiseesPage() {
           </div>
           <p className="font-cormorant text-2xl text-text-primary mb-2">Aucun franchisé</p>
           <p className="font-dm-sans text-sm text-text-secondary mb-6 max-w-sm mx-auto">
-            Ajoutez vos franchisés pour les notifier automatiquement des mises à jour du DIP.
+            Ajoutez vos franchisés pour les notifier des mises à jour du DIP.
           </p>
-          <button
-            onClick={() => setShowForm(true)}
-            className="btn-liquid-glass inline-flex"
-          >
+          <button onClick={() => setShowForm(true)} className="btn-liquid-glass inline-flex">
             <Plus className="w-4 h-4" /> Ajouter un franchisé
           </button>
         </div>
@@ -295,126 +236,133 @@ export default function FranchiseesPage() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border-subtle">
-                  {['Nom', 'Email', 'Territoire', 'Contrat', 'Statut', ''].map((h, i) => (
-                    <th key={i} className="text-left px-4 py-3 font-dm-mono text-xs text-text-secondary whitespace-nowrap">
-                      {h}
-                    </th>
+                  {['Nom', 'Email', 'Territoire', 'Contrat', 'Statut', 'Notifier', ''].map((h, i) => (
+                    <th key={i} className="text-left px-4 py-3 font-dm-mono text-xs text-text-secondary whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {franchisees.map((f, i) => (
-                  <tr
-                    key={f.id}
-                    className={`border-b border-border-subtle hover:bg-bg-elevated transition-colors ${
-                      i === franchisees.length - 1 ? 'border-0' : ''
-                    }`}
-                  >
-                    <td className="px-4 py-3 font-dm-sans text-sm text-text-primary font-medium whitespace-nowrap">
-                      {f.name}
-                    </td>
-                    <td className="px-4 py-3 font-dm-mono text-xs text-text-secondary">{f.email}</td>
-                    <td className="px-4 py-3 font-dm-sans text-xs text-text-secondary">{f.territory || '—'}</td>
-                    <td className="px-4 py-3 font-dm-mono text-xs text-text-secondary whitespace-nowrap">
-                      {f.contract_start
-                        ? new Date(f.contract_start).toLocaleDateString('fr-FR', { year: 'numeric', month: 'short' })
-                        : '—'}
-                      {f.contract_end
-                        ? ' → ' + new Date(f.contract_end).toLocaleDateString('fr-FR', { year: 'numeric', month: 'short' })
-                        : ''}
-                    </td>
-                    <td className="px-4 py-3"><StatusBadge status={f.status} /></td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => openEdit(f)}
-                          className="text-text-secondary hover:text-gold transition-colors"
-                          title="Modifier"
-                        >
-                          <Edit3 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (confirm(`Supprimer ${f.name} ?`)) deleteMutation.mutate(f.id);
-                          }}
-                          className="text-text-secondary hover:text-danger transition-colors"
-                          title="Supprimer"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {franchisees.map((f, i) => {
+                  const msg = notifyMsg || defaultMessage;
+                  const wa = waLink(f.whatsapp_number, msg);
+                  const mail = mailtoLink(f.email, `Mise à jour DIP${dip ? ' — ' + dip.title : ''}`, msg);
+                  return (
+                    <tr key={f.id} className={`border-b border-border-subtle hover:bg-bg-elevated transition-colors ${i === franchisees.length - 1 ? 'border-0' : ''}`}>
+                      <td className="px-4 py-3 font-dm-sans text-sm text-text-primary font-medium whitespace-nowrap">{f.name}</td>
+                      <td className="px-4 py-3 font-dm-mono text-xs text-text-secondary">{f.email}</td>
+                      <td className="px-4 py-3 font-dm-sans text-xs text-text-secondary">{f.territory || '—'}</td>
+                      <td className="px-4 py-3 font-dm-mono text-xs text-text-secondary whitespace-nowrap">
+                        {f.contract_start ? new Date(f.contract_start).toLocaleDateString('fr-FR', { year: 'numeric', month: 'short' }) : '—'}
+                        {f.contract_end ? ' → ' + new Date(f.contract_end).toLocaleDateString('fr-FR', { year: 'numeric', month: 'short' }) : ''}
+                      </td>
+                      <td className="px-4 py-3"><StatusBadge status={f.status} /></td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1.5">
+                          {wa && (
+                            <a href={wa} target="_blank" rel="noreferrer"
+                              title="Envoyer par WhatsApp"
+                              className="p-1.5 rounded hover:bg-bg-elevated text-text-secondary hover:text-[#25D366] transition-colors">
+                              <MessageCircle className="w-4 h-4" />
+                            </a>
+                          )}
+                          <a href={mail}
+                            title="Envoyer par email"
+                            className="p-1.5 rounded hover:bg-bg-elevated text-text-secondary hover:text-gold transition-colors">
+                            <Mail className="w-4 h-4" />
+                          </a>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1.5">
+                          <button onClick={() => openEdit(f)} title="Modifier" className="p-1.5 rounded hover:bg-bg-elevated text-text-secondary hover:text-gold transition-colors">
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+                          <button onClick={() => { if (confirm(`Supprimer ${f.name} ?`)) deleteMutation.mutate(f.id); }} title="Supprimer" className="p-1.5 rounded hover:bg-bg-elevated text-text-secondary hover:text-danger transition-colors">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         </div>
       )}
 
-      {/* Notify Modal */}
+      {/* Modal notification groupée */}
       {showNotifyModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="card w-full max-w-lg animate-slide-up">
-            <div className="flex items-center justify-between mb-5">
+          <div className="card w-full max-w-2xl animate-slide-up max-h-[90vh] flex flex-col">
+            <div className="flex items-center justify-between mb-5 flex-shrink-0">
               <h3 className="font-cormorant text-xl">Notifier les franchisés</h3>
-              <button onClick={() => setShowNotifyModal(false)} className="text-text-secondary hover:text-text-primary">
-                <X className="w-5 h-5" />
-              </button>
+              <button onClick={() => setShowNotifyModal(false)} className="text-text-secondary hover:text-text-primary"><X className="w-5 h-5" /></button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 overflow-y-auto flex-1">
+              {/* Message */}
               <div>
-                <label className="label">Canaux de notification</label>
-                <div className="flex gap-3 flex-wrap">
-                  {[
-                    { id: 'email', icon: Mail, label: 'Email' },
-                    { id: 'whatsapp', icon: MessageCircle, label: 'WhatsApp' },
-                    { id: 'sms', icon: PhoneIcon, label: 'SMS' }
-                  ].map(({ id, icon: Icon, label }) => (
-                    <button
-                      key={id}
-                      type="button"
-                      onClick={() => setNotifyChannels(prev =>
-                        prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]
-                      )}
-                      className={`flex items-center gap-2 px-4 py-2 rounded border text-sm font-dm-sans transition-all ${
-                        notifyChannels.includes(id)
-                          ? 'bg-gold/10 border-gold text-gold'
-                          : 'border-border-subtle text-text-secondary hover:border-border-default'
-                      }`}
-                    >
-                      <Icon className="w-4 h-4" />
-                      {label}
-                    </button>
-                  ))}
+                <div className="flex items-center justify-between mb-2">
+                  <label className="label">Message</label>
+                  <button onClick={copyMessage} className={`flex items-center gap-1.5 text-xs px-3 py-1 rounded border transition-all ${copied ? 'border-success/40 text-success bg-success/10' : 'border-border-subtle text-text-secondary hover:border-border-default'}`}>
+                    <Copy className="w-3 h-3" />
+                    {copied ? 'Copié !' : 'Copier'}
+                  </button>
                 </div>
-              </div>
-
-              <div>
-                <label className="label">Message *</label>
                 <textarea
-                  className="input-field min-h-[120px] resize-y"
+                  className="input-field min-h-[140px] resize-y"
                   value={notifyMsg}
                   onChange={e => setNotifyMsg(e.target.value)}
-                  placeholder="Suite aux modifications du DIP, veuillez prendre connaissance des changements suivants..."
-                  rows={5}
+                  rows={6}
                 />
               </div>
 
-              <div className="flex gap-3">
-                <button
-                  onClick={handleNotify}
-                  disabled={!notifyMsg.trim() || notifyChannels.length === 0}
-                  className="btn-primary flex items-center gap-2 flex-1"
-                >
-                  <Send className="w-4 h-4" />
-                  Envoyer aux {franchisees.filter(f => f.status === 'actif').length} actifs
-                </button>
-                <button onClick={() => setShowNotifyModal(false)} className="btn-secondary">
-                  Annuler
-                </button>
+              {/* Liens par franchisé */}
+              <div>
+                <p className="label mb-3">Envoyer individuellement ({actifs.length} franchisé(s) actif(s))</p>
+                <div className="space-y-2">
+                  {actifs.map(f => {
+                    const wa = waLink(f.whatsapp_number, notifyMsg);
+                    const mail = mailtoLink(f.email, `Mise à jour DIP${dip ? ' — ' + dip.title : ''}`, notifyMsg);
+                    return (
+                      <div key={f.id} className="flex items-center gap-3 bg-bg-elevated rounded px-4 py-3">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-dm-sans text-sm font-medium text-text-primary">{f.name}</p>
+                          <p className="font-dm-mono text-xs text-text-secondary truncate">{f.email}</p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {wa ? (
+                            <a href={wa} target="_blank" rel="noreferrer"
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-[#25D366]/30 text-[#25D366] hover:bg-[#25D366]/10 text-xs font-dm-sans transition-all">
+                              <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
+                            </a>
+                          ) : (
+                            <span className="text-xs text-text-muted font-dm-mono">pas de WA</span>
+                          )}
+                          <a href={mail}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-gold/30 text-gold hover:bg-gold/10 text-xs font-dm-sans transition-all">
+                            <Mail className="w-3.5 h-3.5" /> Email
+                          </a>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
+
+              <div className="bg-gold/5 border border-gold/20 rounded p-3 flex items-start gap-3">
+                <ExternalLink className="w-4 h-4 text-gold flex-shrink-0 mt-0.5" />
+                <p className="font-dm-sans text-xs text-text-secondary leading-relaxed">
+                  Les liens <strong className="text-text-primary">WhatsApp</strong> ouvrent l'app avec le message pré-rédigé.
+                  Les liens <strong className="text-text-primary">Email</strong> ouvrent votre client mail avec le message pré-rempli.
+                  Aucune clé API requise.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-4 flex-shrink-0 border-t border-border-subtle mt-4">
+              <button onClick={() => setShowNotifyModal(false)} className="btn-secondary">Fermer</button>
             </div>
           </div>
         </div>
