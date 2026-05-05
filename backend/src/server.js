@@ -62,16 +62,39 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/agent', agentRoutes);
 
-// Health check
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'ok',
+// Health check — teste réellement chaque clé
+app.get('/api/health', async (req, res) => {
+  const checks = {
+    supabase_url: { ok: !!process.env.SUPABASE_URL, value: process.env.SUPABASE_URL || null },
+    supabase_anon_key: { ok: !!process.env.SUPABASE_ANON_KEY, length: process.env.SUPABASE_ANON_KEY?.length || 0 },
+    supabase_service_role: { ok: !!process.env.SUPABASE_SERVICE_ROLE_KEY, length: process.env.SUPABASE_SERVICE_ROLE_KEY?.length || 0 },
+    anthropic_key: { ok: !!process.env.ANTHROPIC_API_KEY, length: process.env.ANTHROPIC_API_KEY?.length || 0, prefix: process.env.ANTHROPIC_API_KEY?.substring(0, 10) || null }
+  };
+
+  // Test réel : requête vers la BDD avec service_role
+  try {
+    const { supabaseAdmin } = require('./config/supabase');
+    const { error } = await supabaseAdmin.from('users').select('id').limit(1);
+    checks.supabase_admin_query = { ok: !error, error: error?.message || null };
+  } catch (e) {
+    checks.supabase_admin_query = { ok: false, error: e.message };
+  }
+
+  // Test réel : ping Anthropic
+  try {
+    const Anthropic = require('@anthropic-ai/sdk');
+    const c = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    await c.models.list();
+    checks.anthropic_ping = { ok: true };
+  } catch (e) {
+    checks.anthropic_ping = { ok: false, error: e.message, status: e.status || null };
+  }
+
+  const allOk = Object.values(checks).every(c => c.ok);
+  res.status(allOk ? 200 : 500).json({
+    status: allOk ? 'ok' : 'degraded',
     timestamp: new Date().toISOString(),
-    env: {
-      supabase: !!process.env.SUPABASE_URL,
-      anthropic: !!process.env.ANTHROPIC_API_KEY,
-      service_role: !!process.env.SUPABASE_SERVICE_ROLE_KEY
-    }
+    checks
   });
 });
 
