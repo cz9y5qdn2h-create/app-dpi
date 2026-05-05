@@ -70,19 +70,31 @@ router.get('/upload-url', authMiddleware, requireFranchisor, async (req, res) =>
 
 // POST /api/dip/process — télécharge depuis Storage, extrait le texte, analyse avec Claude
 router.post('/process', authMiddleware, requireFranchisor, async (req, res) => {
-  const { storage_path, title } = req.body;
+  const { storage_path, title, signed_url } = req.body;
   if (!storage_path) return res.status(400).json({ error: 'storage_path requis' });
 
   try {
-    // Télécharger le fichier depuis Supabase Storage (pas de limite de taille côté backend)
+    let buffer;
+
+    // Tentative 1 : téléchargement via service_role (rapide)
     const { data: fileBlob, error: dlError } = await supabaseAdmin.storage
       .from(BUCKET)
       .download(storage_path);
 
-    if (dlError) throw new Error('Téléchargement impossible: ' + dlError.message);
-
-    const arrayBuffer = await fileBlob.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    if (!dlError && fileBlob) {
+      const arrayBuffer = await fileBlob.arrayBuffer();
+      buffer = Buffer.from(arrayBuffer);
+    } else if (signed_url) {
+      // Fallback : utiliser l'URL signée fournie par le frontend
+      const httpRes = await fetch(signed_url);
+      if (!httpRes.ok) {
+        throw new Error('Impossible de récupérer le fichier (signed URL): ' + httpRes.status);
+      }
+      const arrayBuffer = await httpRes.arrayBuffer();
+      buffer = Buffer.from(arrayBuffer);
+    } else {
+      throw new Error('Téléchargement impossible: ' + (dlError?.message || 'bucket inaccessible. Aucune URL signée fournie.'));
+    }
 
     const rawText = await extractText(buffer, storage_path);
 
@@ -90,7 +102,12 @@ router.post('/process', authMiddleware, requireFranchisor, async (req, res) => {
       throw new Error('Le fichier ne contient pas assez de texte lisible. Vérifiez que le PDF n\'est pas scanné (image) ou protégé.');
     }
 
-    const fileUrl = supabaseAdmin.storage.from(BUCKET).getPublicUrl(storage_path).data.publicUrl;
+    let fileUrl = null;
+    try {
+      fileUrl = supabaseAdmin.storage.from(BUCKET).getPublicUrl(storage_path).data.publicUrl;
+    } catch {
+      fileUrl = signed_url || null;
+    }
     const docTitle = title || path.basename(storage_path).replace(/^\d+_/, '').replace(/\.(pdf|docx|doc)$/i, '');
 
     // Vérifier s'il existe déjà un DIP actif

@@ -86,11 +86,18 @@ export default function UploadDIPPage() {
         throw new Error('Upload impossible: ' + uploadError.message);
       }
 
+      // Générer une URL signée temporaire (60 min) au cas où le backend ne pourrait pas
+      // accéder au bucket via service_role (ex: SUPABASE_URL Vercel mal configurée).
+      const { data: signed } = await supabase.storage
+        .from('dip-files')
+        .createSignedUrl(storage_path, 3600);
+
       setStep('analyzing');
       setStepMsg('Claude analyse votre DIP… (30 à 60 secondes)');
 
       const processRes = await api.post('/dip/process', {
         storage_path,
+        signed_url: signed?.signedUrl,
         title: title || file.name.replace(/\.(pdf|docx|doc)$/i, '')
       }, { timeout: 120000 });
 
