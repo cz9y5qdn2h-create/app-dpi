@@ -15,7 +15,8 @@ router.put('/profile', authMiddleware, async (req, res) => {
   const {
     company_name, phone, address, siret, siren, renewal_alert_date,
     automation_level, notifications_email, notifications_inapp,
-    notifications_sms, notification_frequency
+    notifications_sms, notification_frequency,
+    brevo_api_key, brevo_sender_name, brevo_sender_email
   } = req.body;
 
   // Champs de base (toujours présents — migration 001/002)
@@ -34,6 +35,9 @@ router.put('/profile', authMiddleware, async (req, res) => {
   if (notifications_inapp !== undefined) extendedUpdates.notifications_inapp = notifications_inapp;
   if (notifications_sms !== undefined) extendedUpdates.notifications_sms = notifications_sms;
   if (notification_frequency !== undefined) extendedUpdates.notification_frequency = notification_frequency;
+  if (brevo_api_key !== undefined) extendedUpdates.brevo_api_key = brevo_api_key || null;
+  if (brevo_sender_name !== undefined) extendedUpdates.brevo_sender_name = brevo_sender_name || null;
+  if (brevo_sender_email !== undefined) extendedUpdates.brevo_sender_email = brevo_sender_email || null;
 
   // Essayer d'abord avec tous les champs
   let data, error;

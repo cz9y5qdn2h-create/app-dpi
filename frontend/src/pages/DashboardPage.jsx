@@ -12,7 +12,7 @@ import CalModal from '../components/CalModal';
 import {
   Upload, RefreshCw, Bell, FileText,
   AlertTriangle, CheckCircle, Clock, History,
-  Phone, Eye
+  Phone, Eye, Sparkles, Users, Download, ChevronRight
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -89,9 +89,9 @@ export default function DashboardPage() {
           <span>{dip ? 'Nouvelle version' : 'Importer le DIP'}</span>
         </Link>
 
-        <Link to="/dip" className={`btn-liquid-glass flex-col py-4 px-4 gap-2 h-auto ${!dip ? 'opacity-40 pointer-events-none' : ''}`}>
-          <Eye className="w-5 h-5" />
-          <span>Consulter le DIP</span>
+        <Link to="/dip/generate" className="btn-liquid-glass flex-col py-4 px-4 gap-2 h-auto">
+          <Sparkles className="w-5 h-5" />
+          <span>Générer un DIP</span>
         </Link>
 
         <Link to="/history" className={`btn-liquid-glass flex-col py-4 px-4 gap-2 h-auto ${!dip ? 'opacity-40 pointer-events-none' : ''}`}>
@@ -107,6 +107,9 @@ export default function DashboardPage() {
           <span>Contacter Iralink</span>
         </button>
       </div>
+
+      {/* Checklist onboarding — visible uniquement si aucun DIP et nouveau compte */}
+      {!dip && <OnboardingChecklist />}
 
       {!dip ? (
         /* État vide */
@@ -275,6 +278,37 @@ function SectionRow({ section }) {
         <span className="font-dm-sans text-sm text-text-primary truncate">{section.section_title}</span>
       </div>
       <StatusBadge status={section.status} />
+    </div>
+  );
+}
+
+function OnboardingChecklist() {
+  const STEPS = [
+    { icon: Upload, label: 'Importez votre DIP existant', sub: 'ou générez-en un depuis zéro', to: '/dip/upload', cta: 'Importer' },
+    { icon: Sparkles, label: 'Générez un DIP avec l\'IA', sub: 'Formulaire guidé, conforme Loi Doubin', to: '/dip/generate', cta: 'Générer' },
+    { icon: Users, label: 'Ajoutez vos franchisés', sub: 'Pour les notifier des mises à jour', to: '/franchisees', cta: 'Ajouter' },
+    { icon: Download, label: 'Exportez votre premier rapport', sub: 'PDF de conformité ou DIP en DOCX', to: '/export', cta: 'Exporter' },
+  ];
+  return (
+    <div className="card border-gold/15">
+      <h2 className="font-cormorant text-xl text-text-primary mb-1">Par où commencer ?</h2>
+      <p className="font-dm-sans text-xs text-text-secondary mb-5">Suivez ces étapes pour être opérationnel en quelques minutes.</p>
+      <div className="space-y-2">
+        {STEPS.map(({ icon: Icon, label, sub, to, cta }) => (
+          <Link key={to} to={to} className="flex items-center gap-4 p-3 rounded-lg hover:bg-bg-elevated transition-colors group">
+            <div className="w-9 h-9 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center flex-shrink-0">
+              <Icon className="w-4 h-4 text-gold" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-dm-sans text-sm text-text-primary">{label}</p>
+              <p className="font-dm-sans text-xs text-text-secondary">{sub}</p>
+            </div>
+            <span className="font-dm-sans text-xs text-gold opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+              {cta} <ChevronRight className="w-3 h-3" />
+            </span>
+          </Link>
+        ))}
+      </div>
     </div>
   );
 }

@@ -4,7 +4,7 @@ import api from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import PageHeader from '../components/ui/PageHeader';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
-import { Save, Plus, Trash2, Database, Mail, Cloud, Globe, CheckCircle } from 'lucide-react';
+import { Save, Plus, Trash2, Database, Mail, Cloud, Globe, CheckCircle, Eye, EyeOff, Send } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const SOURCE_TYPES = [
@@ -44,6 +44,8 @@ export default function SettingsPage() {
     notifications_email: true, notifications_inapp: true,
     notifications_sms: false, notification_frequency: 'immediate'
   });
+  const [brevoForm, setBrevoForm] = useState({ brevo_api_key: '', brevo_sender_name: 'DIPpro', brevo_sender_email: '' });
+  const [showBrevoKey, setShowBrevoKey] = useState(false);
   const [showSourceForm, setShowSourceForm] = useState(false);
   const [sourceForm, setSourceForm] = useState({ type: 'manual' });
 
@@ -64,6 +66,11 @@ export default function SettingsPage() {
         notifications_sms: data.profile.notifications_sms ?? false,
         notification_frequency: data.profile.notification_frequency || 'immediate'
       });
+      setBrevoForm({
+        brevo_api_key: data.profile.brevo_api_key || '',
+        brevo_sender_name: data.profile.brevo_sender_name || 'DIPpro',
+        brevo_sender_email: data.profile.brevo_sender_email || ''
+      });
     }
   }, [data]);
 
@@ -72,6 +79,21 @@ export default function SettingsPage() {
     onSuccess: () => {
       toast.success('Paramètres enregistrés');
       queryClient.invalidateQueries({ queryKey: ['settings'] });
+    },
+    onError: (err) => toast.error(err.message)
+  });
+
+  const saveBrevoMutation = useMutation({
+    mutationFn: (d) => api.put('/settings/profile', d),
+    onSuccess: () => { toast.success('Configuration email enregistrée'); queryClient.invalidateQueries({ queryKey: ['settings'] }); },
+    onError: (err) => toast.error(err.message)
+  });
+
+  const testEmailMutation = useMutation({
+    mutationFn: () => api.post('/notifications/test', { channel: 'email', target: data?.profile?.email }),
+    onSuccess: (res) => {
+      if (res.data.ok) toast.success('Email de test envoyé !');
+      else toast.error('Échec : ' + (res.data.error || 'Vérifiez votre clé Brevo'));
     },
     onError: (err) => toast.error(err.message)
   });
@@ -289,6 +311,80 @@ export default function SettingsPage() {
               {updateProfileMutation.isPending ? <LoadingSpinner size="sm" /> : <Save className="w-4 h-4" />}
               Enregistrer les notifications
             </button>
+          </div>
+        )}
+      </div>
+
+      {/* Configuration email Brevo */}
+      <div className="card">
+        <div className="mb-5">
+          <h2 className="font-cormorant text-xl">Envoi d'emails (Brevo)</h2>
+          <p className="font-dm-sans text-xs text-text-secondary mt-1">
+            Configurez votre compte Brevo pour envoyer des emails à vos franchisés. Obtenez une clé API gratuite sur{' '}
+            <a href="https://www.brevo.com" target="_blank" rel="noreferrer" className="text-gold hover:underline">brevo.com</a>.
+          </p>
+        </div>
+
+        {isLoading ? <LoadingSpinner /> : (
+          <div className="space-y-4">
+            <div>
+              <label className="label">Clé API Brevo</label>
+              <div className="relative">
+                <input
+                  className="input-field pr-10"
+                  type={showBrevoKey ? 'text' : 'password'}
+                  value={brevoForm.brevo_api_key}
+                  onChange={e => setBrevoForm(f => ({ ...f, brevo_api_key: e.target.value }))}
+                  placeholder="xkeysib-..."
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowBrevoKey(s => !s)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary transition-colors"
+                >
+                  {showBrevoKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+            <div>
+              <label className="label">Nom de l'expéditeur</label>
+              <input
+                className="input-field"
+                value={brevoForm.brevo_sender_name}
+                onChange={e => setBrevoForm(f => ({ ...f, brevo_sender_name: e.target.value }))}
+                placeholder="DIPpro"
+              />
+            </div>
+            <div>
+              <label className="label">Email de l'expéditeur</label>
+              <input
+                className="input-field"
+                type="email"
+                value={brevoForm.brevo_sender_email}
+                onChange={e => setBrevoForm(f => ({ ...f, brevo_sender_email: e.target.value }))}
+                placeholder="contact@monenseigne.fr"
+              />
+            </div>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => saveBrevoMutation.mutate(brevoForm)}
+                disabled={saveBrevoMutation.isPending}
+                className="btn-liquid-glass flex items-center gap-2"
+              >
+                {saveBrevoMutation.isPending ? <LoadingSpinner size="sm" /> : <Save className="w-4 h-4" />}
+                Enregistrer
+              </button>
+              <button
+                type="button"
+                onClick={() => testEmailMutation.mutate()}
+                disabled={testEmailMutation.isPending || !brevoForm.brevo_api_key}
+                className="btn-secondary flex items-center gap-2"
+              >
+                {testEmailMutation.isPending ? <LoadingSpinner size="sm" /> : <Send className="w-4 h-4" />}
+                Tester
+              </button>
+            </div>
           </div>
         )}
       </div>

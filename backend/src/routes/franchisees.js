@@ -4,6 +4,40 @@ const { authMiddleware, requireFranchisor } = require('../middleware/auth');
 const { generateUpdateSummary } = require('../config/claude');
 const router = express.Router();
 
+// POST /api/franchisees/import-csv — import CSV bulk
+router.post('/import-csv', authMiddleware, requireFranchisor, async (req, res) => {
+  const { rows } = req.body;
+  if (!Array.isArray(rows) || rows.length === 0) {
+    return res.status(400).json({ error: 'rows requis (tableau CSV parsé)' });
+  }
+
+  const toInsert = rows
+    .filter(r => r.email || r.name)
+    .map(r => ({
+      franchiseur_id: req.user.id,
+      name: (r.name || r.nom || '').trim(),
+      email: (r.email || '').trim().toLowerCase(),
+      phone: (r.phone || r.telephone || r.tel || '').trim() || null,
+      whatsapp_number: (r.whatsapp || r.whatsapp_number || '').trim() || null,
+      territory: (r.territory || r.territoire || '').trim() || null,
+      status: 'actif'
+    }))
+    .filter(r => r.name && r.email);
+
+  if (toInsert.length === 0) {
+    return res.status(400).json({ error: 'Aucune ligne valide (name + email requis)' });
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from('franchisees')
+    .insert(toInsert)
+    .select();
+
+  if (error) return res.status(500).json({ error: error.message });
+
+  res.status(201).json({ imported: data.length, franchisees: data });
+});
+
 // GET /api/franchisees
 router.get('/', authMiddleware, requireFranchisor, async (req, res) => {
   const { data, error } = await supabaseAdmin

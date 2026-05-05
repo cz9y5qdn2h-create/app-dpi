@@ -7,7 +7,7 @@ import api from '../lib/api';
 import CalModal from './CalModal';
 import {
   LayoutDashboard, FileText, Upload, Bell, History,
-  Users, Settings, Download, LogOut, Shield, Phone, Zap, ShieldAlert
+  Users, Settings, Download, LogOut, Shield, Phone, Zap, ShieldAlert, Sparkles
 } from 'lucide-react';
 
 export default function Sidebar({ open, onClose }) {
@@ -29,6 +29,7 @@ export default function Sidebar({ open, onClose }) {
     { to: '/dashboard',    icon: LayoutDashboard, label: 'Tableau de bord' },
     { to: '/dip',          icon: FileText,        label: 'Mon DIP' },
     { to: '/dip/upload',   icon: Upload,          label: 'Nouvelle version' },
+    { to: '/dip/generate', icon: Sparkles,        label: 'Générer un DIP' },
     { to: '/alerts',       icon: Bell,            label: 'Alertes', count: pendingCount },
     { to: '/history',      icon: History,         label: 'Historique' },
     { to: '/franchisees',  icon: Users,           label: 'Franchisés' },

@@ -3,18 +3,18 @@ const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware, requireFranchisor } = require('../middleware/auth');
 const router = express.Router();
 
-// Envoyer un email via Brevo
-async function sendEmail(to, name, subject, htmlContent) {
-  const key = process.env.BREVO_API_KEY;
-  if (!key) return { ok: false, error: 'BREVO_API_KEY non configurée' };
+// Envoyer un email via Brevo (clé de l'utilisateur ou clé env globale)
+async function sendEmail(to, name, subject, htmlContent, userBrevoKey, senderName, senderEmail) {
+  const key = userBrevoKey || process.env.BREVO_API_KEY;
+  if (!key) return { ok: false, error: 'Clé Brevo non configurée. Renseignez-la dans Paramètres > Emails.' };
 
   const res = await fetch('https://api.brevo.com/v3/smtp/email', {
     method: 'POST',
     headers: { 'api-key': key, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       sender: {
-        name: process.env.BREVO_SENDER_NAME || 'DIPpro',
-        email: process.env.BREVO_SENDER_EMAIL || 'noreply@dip-pilot.fr'
+        name: senderName || process.env.BREVO_SENDER_NAME || 'DIPpro',
+        email: senderEmail || process.env.BREVO_SENDER_EMAIL || 'noreply@dip-pilot.fr'
       },
       to: [{ email: to, name }],
       subject,
@@ -80,8 +80,10 @@ router.post('/send', authMiddleware, requireFranchisor, async (req, res) => {
 
   if (!franchisees?.length) return res.status(400).json({ error: 'Aucun franchisé actif à notifier' });
 
-  // Charger le profil du franchiseur pour l'expéditeur
-  const { data: franchisor } = await supabaseAdmin.from('users').select('company_name').eq('id', req.user.id).single();
+  // Charger le profil du franchiseur pour l'expéditeur (+ clé Brevo)
+  const { data: franchisor } = await supabaseAdmin.from('users')
+    .select('company_name, brevo_api_key, brevo_sender_name, brevo_sender_email')
+    .eq('id', req.user.id).single();
   const companyName = franchisor?.company_name || 'Votre franchiseur';
 
   const results = { email: [], whatsapp: [], sms: [], errors: [] };
@@ -104,7 +106,10 @@ router.post('/send', authMiddleware, requireFranchisor, async (req, res) => {
       const emailResult = await sendEmail(
         f.email, f.name,
         `[${companyName}] Mise à jour de votre DIP`,
-        html
+        html,
+        franchisor?.brevo_api_key,
+        franchisor?.brevo_sender_name,
+        franchisor?.brevo_sender_email
       );
       if (emailResult.ok) results.email.push(f.email);
       else results.errors.push({ channel: 'email', franchisee: f.name, error: emailResult.error });

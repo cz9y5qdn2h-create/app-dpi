@@ -6,7 +6,7 @@ import StatusBadge from '../components/ui/StatusBadge';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import {
   Plus, Users, Edit3, Trash2, Send, X, Check,
-  AlertCircle, MessageCircle, Mail, Copy, ExternalLink
+  AlertCircle, MessageCircle, Mail, Copy, ExternalLink, Upload, FileText
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -35,6 +35,9 @@ export default function FranchiseesPage() {
   const [showNotifyModal, setShowNotifyModal] = useState(false);
   const [notifyMsg, setNotifyMsg] = useState('');
   const [copied, setCopied] = useState(false);
+  const [showCsvModal, setShowCsvModal] = useState(false);
+  const [csvPreview, setCsvPreview] = useState([]);
+  const [csvError, setCsvError] = useState('');
 
   const { data, isLoading } = useQuery({
     queryKey: ['franchisees'],
@@ -78,6 +81,39 @@ export default function FranchiseesPage() {
     },
     onError: (err) => toast.error(err.message)
   });
+
+  const csvImportMutation = useMutation({
+    mutationFn: (rows) => api.post('/franchisees/import-csv', { rows }),
+    onSuccess: (res) => {
+      toast.success(`${res.data.imported} franchisé(s) importé(s) avec succès`);
+      queryClient.invalidateQueries({ queryKey: ['franchisees'] });
+      setShowCsvModal(false);
+      setCsvPreview([]);
+    },
+    onError: (err) => toast.error(err.message)
+  });
+
+  const handleCsvFile = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCsvError('');
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const text = ev.target.result;
+        const lines = text.split('\n').filter(l => l.trim());
+        if (lines.length < 2) { setCsvError('Le fichier doit contenir au moins une ligne de données + en-tête.'); return; }
+        const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/['"]/g, ''));
+        const rows = lines.slice(1).map(line => {
+          const values = line.split(',').map(v => v.trim().replace(/['"]/g, ''));
+          return Object.fromEntries(headers.map((h, i) => [h, values[i] || '']));
+        }).filter(r => r.name || r.nom || r.email);
+        if (rows.length === 0) { setCsvError('Aucune ligne valide trouvée.'); return; }
+        setCsvPreview(rows);
+      } catch { setCsvError('Erreur de lecture du fichier CSV.'); }
+    };
+    reader.readAsText(file, 'UTF-8');
+  };
 
   const franchisees = data?.franchisees || [];
   const actifs = franchisees.filter(f => f.status === 'actif');
@@ -143,12 +179,20 @@ export default function FranchiseesPage() {
                 <Send className="w-4 h-4" /> Notifier
               </button>
             )}
-            <button
-              onClick={() => { setShowForm(true); setEditingId(null); setForm(EMPTY_FORM); setFormError(''); }}
-              className="btn-primary flex items-center gap-2"
-            >
-              <Plus className="w-4 h-4" /> Ajouter
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowCsvModal(true)}
+                className="btn-secondary flex items-center gap-2 text-sm"
+              >
+                <Upload className="w-4 h-4" /> Import CSV
+              </button>
+              <button
+                onClick={() => { setShowForm(true); setEditingId(null); setForm(EMPTY_FORM); setFormError(''); }}
+                className="btn-primary flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" /> Ajouter
+              </button>
+            </div>
           </div>
         }
       />
@@ -364,6 +408,75 @@ export default function FranchiseesPage() {
             <div className="flex justify-end pt-4 flex-shrink-0 border-t border-border-subtle mt-4">
               <button onClick={() => setShowNotifyModal(false)} className="btn-secondary">Fermer</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Import CSV */}
+      {showCsvModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/70" onClick={() => { setShowCsvModal(false); setCsvPreview([]); setCsvError(''); }} />
+          <div className="relative card w-full max-w-2xl max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h3 className="font-cormorant text-xl text-text-primary">Import CSV</h3>
+                <p className="font-dm-sans text-xs text-text-secondary mt-0.5">
+                  Colonnes requises : <code className="text-gold">name, email</code> — Optionnelles : <code className="text-gold">phone, whatsapp, territory</code>
+                </p>
+              </div>
+              <button onClick={() => { setShowCsvModal(false); setCsvPreview([]); setCsvError(''); }}>
+                <X className="w-5 h-5 text-text-secondary" />
+              </button>
+            </div>
+
+            <div className="border-2 border-dashed border-border-default rounded-lg p-8 text-center mb-5">
+              <FileText className="w-8 h-8 text-text-muted mx-auto mb-3" />
+              <p className="font-dm-sans text-sm text-text-secondary mb-3">Glissez votre fichier CSV ou cliquez pour parcourir</p>
+              <input
+                type="file"
+                accept=".csv,text/csv"
+                onChange={handleCsvFile}
+                className="hidden"
+                id="csv-upload"
+              />
+              <label htmlFor="csv-upload" className="btn-secondary text-sm cursor-pointer">
+                Choisir un fichier CSV
+              </label>
+            </div>
+
+            {csvError && (
+              <div className="bg-danger/10 border border-danger/20 rounded-lg p-3 mb-4">
+                <p className="font-dm-sans text-sm text-danger">{csvError}</p>
+              </div>
+            )}
+
+            {csvPreview.length > 0 && (
+              <>
+                <div className="mb-4">
+                  <p className="font-dm-sans text-sm text-text-primary mb-2">{csvPreview.length} franchisé(s) à importer :</p>
+                  <div className="bg-bg-elevated rounded-lg overflow-hidden border border-border-subtle max-h-48 overflow-y-auto">
+                    {csvPreview.slice(0, 20).map((row, i) => (
+                      <div key={i} className="flex items-center gap-4 px-4 py-2 border-b border-border-subtle last:border-0 text-xs font-dm-sans">
+                        <span className="text-text-primary font-medium w-40 truncate">{row.name || row.nom}</span>
+                        <span className="text-text-secondary flex-1 truncate">{row.email}</span>
+                        <span className="text-text-muted truncate">{row.territory || row.territoire || '—'}</span>
+                      </div>
+                    ))}
+                    {csvPreview.length > 20 && (
+                      <p className="text-center py-2 text-xs text-text-muted">... et {csvPreview.length - 20} autres</p>
+                    )}
+                  </div>
+                </div>
+                <button
+                  onClick={() => csvImportMutation.mutate(csvPreview)}
+                  disabled={csvImportMutation.isPending}
+                  className="btn-liquid-glass-prominent w-full flex items-center gap-2"
+                >
+                  {csvImportMutation.isPending ? <LoadingSpinner size="sm" /> : <Check className="w-4 h-4" />}
+                  Importer {csvPreview.length} franchisé(s)
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}
