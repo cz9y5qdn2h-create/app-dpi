@@ -1,7 +1,29 @@
 const Anthropic = require('@anthropic-ai/sdk');
 
+if (!process.env.ANTHROPIC_API_KEY) {
+  console.error('FATAL: ANTHROPIC_API_KEY manquante dans les variables d\'environnement.');
+}
+
 const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const MODEL = process.env.ANTHROPIC_MODEL || 'claude-opus-4-7';
+
+// Wrapper pour donner des messages d'erreur explicites
+const callClaude = async (params) => {
+  try {
+    return await claude.messages.create(params);
+  } catch (err) {
+    if (err.status === 401 || /invalid.*api.?key/i.test(err.message || '')) {
+      throw new Error('Clé Anthropic invalide ou manquante. Vérifiez ANTHROPIC_API_KEY dans les variables Vercel.');
+    }
+    if (err.status === 429) {
+      throw new Error('Quota Anthropic dépassé. Vérifiez votre facturation sur console.anthropic.com.');
+    }
+    if (err.status === 529 || err.status === 503) {
+      throw new Error('Service Anthropic temporairement indisponible. Réessayez dans quelques secondes.');
+    }
+    throw err;
+  }
+};
 
 const SYSTEM_DIP_EXPERT = `Tu es un expert juridique senior spécialisé en droit de la franchise française.
 Tu maîtrises parfaitement :
@@ -25,7 +47,7 @@ const parseDIPSections = async (rawText) => {
     throw new Error('Le texte extrait du fichier est trop court. Vérifiez que le PDF n\'est pas scanné ou protégé.');
   }
 
-  const message = await claude.messages.create({
+  const message = await callClaude({
     model: MODEL,
     max_tokens: 8192,
     system: CACHED_SYSTEM,
@@ -124,7 +146,7 @@ const compareDIPVersions = async (previousText, newText) => {
     return { changements: [], resume: 'Texte manquant pour la comparaison', nb_changements_critiques: 0 };
   }
 
-  const message = await claude.messages.create({
+  const message = await callClaude({
     model: MODEL,
     max_tokens: 8192,
     system: CACHED_SYSTEM,
@@ -205,7 +227,7 @@ Si aucun changement significatif : { "changements": [], "resume": "Aucun changem
  * Détecter les changements entre un document source et une section DIP
  */
 const detectChanges = async (sectionContent, newDocumentText, sectionTitle) => {
-  const message = await claude.messages.create({
+  const message = await callClaude({
     model: MODEL,
     max_tokens: 2048,
     system: CACHED_SYSTEM,
@@ -245,7 +267,7 @@ Retourne ce JSON :
  * Générer un message de notification pour les franchisés
  */
 const generateUpdateSummary = async (updatedSections) => {
-  const message = await claude.messages.create({
+  const message = await callClaude({
     model: MODEL,
     max_tokens: 1024,
     system: [{ type: 'text', text: 'Tu es un expert en communication juridique franchise. Tu rédiges des messages clairs, professionnels et rassurants.', cache_control: { type: 'ephemeral' } }],

@@ -8,6 +8,23 @@ const {
 const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const MODEL = 'claude-opus-4-7';
 
+const callClaude = async (params) => {
+  try {
+    return await claude.messages.create(params);
+  } catch (err) {
+    if (err.status === 401 || /invalid.*api.?key/i.test(err.message || '')) {
+      throw new Error('Clé Anthropic invalide ou manquante. Vérifiez ANTHROPIC_API_KEY dans Vercel.');
+    }
+    if (err.status === 429) {
+      throw new Error('Quota Anthropic dépassé. Vérifiez votre facturation sur console.anthropic.com.');
+    }
+    if (err.status === 529 || err.status === 503) {
+      throw new Error('Service Anthropic temporairement indisponible. Réessayez.');
+    }
+    throw err;
+  }
+};
+
 const SECTION_TITLES = [
   '', // index 0 inutilisé
   'Identité du franchiseur',
@@ -53,7 +70,7 @@ const analyzeDIP = async (rawText) => {
     throw new Error('Texte trop court. Vérifiez que le PDF n\'est pas scanné ou protégé.');
   }
 
-  const message = await claude.messages.create({
+  const message = await callClaude({
     model: MODEL,
     max_tokens: 8192,
     system: CACHED_SYSTEM,
@@ -94,7 +111,7 @@ const generateDIPFromForm = async (formData, sourceText = '') => {
     ? `\nDOCUMENT SOURCE (à utiliser pour compléter les sections manquantes du formulaire) :\n${sourceText.substring(0, 12000)}\n`
     : '';
 
-  const message = await claude.messages.create({
+  const message = await callClaude({
     model: MODEL,
     max_tokens: 8192,
     system: CACHED_SYSTEM,
@@ -141,7 +158,7 @@ const compareDIPVersions = async (previousText, newText) => {
     return { changements: [], resume: 'Texte manquant pour la comparaison', nb_changements_critiques: 0 };
   }
 
-  const message = await claude.messages.create({
+  const message = await callClaude({
     model: MODEL,
     max_tokens: 8192,
     system: CACHED_SYSTEM,
@@ -196,7 +213,7 @@ Retourne ce JSON :
 // ─── 4. VÉRIFICATION DONNÉES LÉGALES ────────────────────────────────────────
 
 const verifyLegalData = async (companyInfo) => {
-  const message = await claude.messages.create({
+  const message = await callClaude({
     model: MODEL,
     max_tokens: 2048,
     system: CACHED_SYSTEM,
