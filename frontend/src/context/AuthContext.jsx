@@ -102,25 +102,6 @@ export default function AuthProvider({ children }) {
     return data.user;
   };
 
-  const loginWithGoogle = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: window.location.origin + '/dashboard',
-        queryParams: { access_type: 'offline', prompt: 'consent' }
-      }
-    });
-    if (error) throw new Error('Erreur Google OAuth : ' + error.message);
-  };
-
-  const loginWithApple = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'apple',
-      options: { redirectTo: window.location.origin + '/dashboard' }
-    });
-    if (error) throw new Error('Erreur Apple Sign-In : ' + error.message);
-  };
-
   const register = async (email, password, company_name, phone_number) => {
     const res = await fetch('/api/auth/register', {
       method: 'POST',
@@ -157,7 +138,7 @@ export default function AuthProvider({ children }) {
   return (
     <AuthContext.Provider value={{
       user, profile, loading,
-      login, loginWithGoogle, loginWithApple, register, logout, refreshProfile,
+      login, register, logout, refreshProfile,
       supabase,
       isTrialExpired,
       trialDaysLeft
