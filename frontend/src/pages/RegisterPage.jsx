@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 export default function RegisterPage() {
   const { register } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ email: '', password: '', confirmPassword: '', company_name: '' });
+  const [form, setForm] = useState({ email: '', password: '', confirmPassword: '', company_name: '', phone_number: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -37,7 +37,7 @@ export default function RegisterPage() {
     }
     setLoading(true);
     try {
-      await register(form.email, form.password, form.company_name);
+      await register(form.email, form.password, form.company_name, form.phone_number);
       toast.success('Compte créé avec succès !');
       navigate('/login');
     } catch (err) {
@@ -94,6 +94,18 @@ export default function RegisterPage() {
                 value={form.email}
                 onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
                 required
+              />
+            </div>
+
+            <div>
+              <label className="label">Numéro de téléphone</label>
+              <input
+                type="tel"
+                className="input-field"
+                placeholder="+33 6 12 34 56 78"
+                value={form.phone_number}
+                onChange={e => setForm(f => ({ ...f, phone_number: e.target.value }))}
+                autoComplete="tel"
               />
             </div>
 

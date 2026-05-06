@@ -5,9 +5,9 @@ const router = express.Router();
 
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
-  const { email, password, company_name, role = 'franchiseur' } = req.body;
+  const { email, password, company_name, phone_number, role = 'franchiseur' } = req.body;
   if (!email || !password || !company_name) {
-    return res.status(400).json({ error: 'Email, mot de passe et nom de societe requis' });
+    return res.status(400).json({ error: 'Email, mot de passe et nom de société requis' });
   }
   try {
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
@@ -17,53 +17,86 @@ router.post('/register', async (req, res) => {
     });
     if (authError) return res.status(400).json({ error: authError.message });
 
+    const trialExpiresAt = new Date(Date.now() + 5 * 24 * 3600 * 1000).toISOString();
+
     const { error: profileError } = await supabaseAdmin.from('users').insert({
       id: authData.user.id,
       email,
       role,
       company_name,
+      phone_number: phone_number || null,
+      trial_expires_at: trialExpiresAt,
+      appointment_booked: false,
       created_at: new Date().toISOString()
     });
 
     if (profileError) console.warn('Profile insert error:', profileError.message);
 
-    res.status(201).json({ message: 'Compte cree avec succes', user_id: authData.user.id });
+    res.status(201).json({ message: 'Compte créé avec succès', user_id: authData.user.id });
   } catch (err) {
     console.error('Register error:', err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// POST /api/auth/login
-router.post('/login', async (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) return res.status(400).json({ error: 'Email et mot de passe requis' });
+// POST /api/auth/provision-oauth — créer/mettre à jour le profil après OAuth Google/Apple
+// Appelé par le frontend après un sign-in OAuth réussi
+router.post('/provision-oauth', authMiddleware, async (req, res) => {
+  const { company_name, phone_number } = req.body;
 
   try {
-    const { createClient } = require('@supabase/supabase-js');
-    const supabase = createClient(
-      process.env.SUPABASE_URL,
-      process.env.SUPABASE_ANON_KEY
-    );
+    const { data: existing } = await supabaseAdmin
+      .from('users').select('id, trial_expires_at').eq('id', req.user.id).single();
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) {
-      console.error('Login error:', error.message);
-      return res.status(401).json({ error: 'Identifiants invalides' });
+    if (existing) {
+      const updates = {};
+      if (company_name && !existing.company_name) updates.company_name = company_name;
+      if (phone_number) updates.phone_number = phone_number;
+      if (Object.keys(updates).length > 0) {
+        await supabaseAdmin.from('users').update(updates).eq('id', req.user.id);
+      }
+      return res.json({ message: 'Profil mis à jour', existing: true });
     }
 
-    const { data: profile } = await supabaseAdmin
-      .from('users').select('*').eq('id', data.user.id).single();
-
-    res.json({
-      access_token: data.session.access_token,
-      refresh_token: data.session.refresh_token,
-      user: { ...data.user, ...(profile || {}) }
+    const trialExpiresAt = new Date(Date.now() + 5 * 24 * 3600 * 1000).toISOString();
+    await supabaseAdmin.from('users').insert({
+      id: req.user.id,
+      email: req.user.email,
+      role: 'franchiseur',
+      company_name: company_name || req.user.email.split('@')[0],
+      phone_number: phone_number || null,
+      trial_expires_at: trialExpiresAt,
+      appointment_booked: false,
+      created_at: new Date().toISOString()
     });
+
+    res.status(201).json({ message: 'Profil créé', existing: false });
   } catch (err) {
-    console.error('Login catch error:', err);
-    res.status(500).json({ error: 'Erreur serveur lors de la connexion' });
+    res.status(500).json({ error: err.message });
   }
+});
+
+// POST /api/auth/mark-appointment — admin marque un rendez-vous pris (débloque le compte)
+router.post('/mark-appointment/:userId', authMiddleware, async (req, res) => {
+  const { data: admin } = await supabaseAdmin.from('users').select('role').eq('id', req.user.id).single();
+  if (admin?.role !== 'admin') return res.status(403).json({ error: 'Accès refusé' });
+
+  await supabaseAdmin
+    .from('users')
+    .update({ appointment_booked: true })
+    .eq('id', req.params.userId);
+
+  res.json({ message: 'Accès débloqué' });
+});
+
+// POST /api/auth/request-appointment — l'utilisateur confirme qu'il a pris RDV
+router.post('/request-appointment', authMiddleware, async (req, res) => {
+  await supabaseAdmin
+    .from('users')
+    .update({ appointment_booked: false })
+    .eq('id', req.user.id);
+
+  res.json({ message: 'Demande enregistrée — accès réactivé par Iralink après confirmation du RDV' });
 });
 
 // GET /api/auth/me
@@ -79,7 +112,7 @@ router.get('/me', authMiddleware, async (req, res) => {
 
 // POST /api/auth/logout
 router.post('/logout', authMiddleware, async (req, res) => {
-  res.json({ message: 'Deconnexion reussie' });
+  res.json({ message: 'Déconnexion réussie' });
 });
 
 module.exports = router;

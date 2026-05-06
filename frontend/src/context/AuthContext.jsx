@@ -27,6 +27,14 @@ async function fetchProfile(userId) {
   }
 }
 
+function isTrialExpiredFn(profile) {
+  if (!profile) return false;
+  if (profile.role === 'admin') return false;
+  if (profile.appointment_booked === true) return false;
+  if (!profile.trial_expires_at) return false;
+  return new Date() > new Date(profile.trial_expires_at);
+}
+
 export default function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -94,14 +102,33 @@ export default function AuthProvider({ children }) {
     return data.user;
   };
 
-  const register = async (email, password, company_name) => {
+  const loginWithGoogle = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: window.location.origin + '/dashboard',
+        queryParams: { access_type: 'offline', prompt: 'consent' }
+      }
+    });
+    if (error) throw new Error('Erreur Google OAuth : ' + error.message);
+  };
+
+  const loginWithApple = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'apple',
+      options: { redirectTo: window.location.origin + '/dashboard' }
+    });
+    if (error) throw new Error('Erreur Apple Sign-In : ' + error.message);
+  };
+
+  const register = async (email, password, company_name, phone_number) => {
     const res = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, company_name })
+      body: JSON.stringify({ email, password, company_name, phone_number })
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Erreur lors de la creation du compte');
+    if (!res.ok) throw new Error(data.error || 'Erreur lors de la création du compte');
     return data;
   };
 
@@ -112,8 +139,29 @@ export default function AuthProvider({ children }) {
     setProfile(null);
   };
 
+  const refreshProfile = async () => {
+    if (user?.id) {
+      const p = await fetchProfile(user.id);
+      setProfile(p);
+    }
+  };
+
+  const isTrialExpired = isTrialExpiredFn(profile);
+
+  const trialDaysLeft = (() => {
+    if (!profile?.trial_expires_at || profile.role === 'admin' || profile.appointment_booked) return null;
+    const diff = new Date(profile.trial_expires_at) - new Date();
+    return Math.max(0, Math.ceil(diff / (1000 * 3600 * 24)));
+  })();
+
   return (
-    <AuthContext.Provider value={{ user, profile, loading, login, register, logout, supabase }}>
+    <AuthContext.Provider value={{
+      user, profile, loading,
+      login, loginWithGoogle, loginWithApple, register, logout, refreshProfile,
+      supabase,
+      isTrialExpired,
+      trialDaysLeft
+    }}>
       {children}
     </AuthContext.Provider>
   );

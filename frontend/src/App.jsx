@@ -18,6 +18,7 @@ import SettingsPage from './pages/SettingsPage';
 import ExportPage from './pages/ExportPage';
 import AdminPage from './pages/AdminPage';
 import ApiConfigPage from './pages/ApiConfigPage';
+import TrialExpiredPage from './pages/TrialExpiredPage';
 import LoadingSpinner from './components/ui/LoadingSpinner';
 
 function ProtectedRoute({ children }) {
@@ -41,6 +42,14 @@ function RootRedirect() {
   return <LandingPage />;
 }
 
+function TrialGuard({ children }) {
+  const { user, loading, isTrialExpired } = useAuth();
+  if (loading) return <div className="min-h-screen flex items-center justify-center bg-bg-primary"><LoadingSpinner size="lg" /></div>;
+  if (!user) return <Navigate to="/" replace />;
+  if (isTrialExpired) return <Navigate to="/trial-expired" replace />;
+  return children;
+}
+
 export default function App() {
   return (
     <AuthProvider>
@@ -57,8 +66,11 @@ export default function App() {
         <Route path="/login" element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
         <Route path="/register" element={<PublicOnlyRoute><RegisterPage /></PublicOnlyRoute>} />
 
-        {/* Pages protégées */}
-        <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
+        {/* Essai expiré — accessible aux utilisateurs connectés sans Layout */}
+        <Route path="/trial-expired" element={<ProtectedRoute><TrialExpiredPage /></ProtectedRoute>} />
+
+        {/* Pages protégées (bloquées si essai expiré) */}
+        <Route path="/" element={<TrialGuard><Layout /></TrialGuard>}>
           <Route path="dashboard" element={<ErrorBoundary><DashboardPage /></ErrorBoundary>} />
           <Route path="dip" element={<ErrorBoundary><DIPPage /></ErrorBoundary>} />
           <Route path="dip/upload" element={<ErrorBoundary><UploadDIPPage /></ErrorBoundary>} />

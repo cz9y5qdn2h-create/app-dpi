@@ -6,7 +6,7 @@ import LoadingSpinner from '../components/ui/LoadingSpinner';
 import StatusBadge from '../components/ui/StatusBadge';
 import {
   Users, FileText, AlertTriangle, TrendingUp, Shield,
-  Edit3, Trash2, Plus, Key, X, Check, Eye, ChevronDown, ChevronUp, Activity
+  Edit3, Trash2, Plus, Key, X, Check, Eye, ChevronDown, ChevronUp, Activity, Unlock
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
@@ -90,6 +90,15 @@ export default function AdminPage() {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] });
       queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
       setSelectedUser(null);
+    },
+    onError: (err) => toast.error(err.message)
+  });
+
+  const unlockMutation = useMutation({
+    mutationFn: (id) => api.post('/auth/mark-appointment/' + id),
+    onSuccess: () => {
+      toast.success('Accès débloqué — rendez-vous confirmé');
+      queryClient.invalidateQueries({ queryKey: ['admin-users'] });
     },
     onError: (err) => toast.error(err.message)
   });
@@ -248,7 +257,28 @@ export default function AdminPage() {
                     <span className={`font-dm-mono text-xs px-2 py-0.5 rounded border ${
                       u.role === 'admin' ? 'text-danger border-danger/30 bg-danger/10' : 'text-gold border-gold/20 bg-gold/5'
                     }`}>{u.role}</span>
+                    {u.role !== 'admin' && (
+                      <span className={`font-dm-mono text-xs px-2 py-0.5 rounded border ${
+                        u.appointment_booked
+                          ? 'text-success border-success/30 bg-success/10'
+                          : u.trial_expires_at && new Date() > new Date(u.trial_expires_at)
+                          ? 'text-danger border-danger/30 bg-danger/10'
+                          : 'text-text-secondary border-border-subtle bg-bg-elevated'
+                      }`}>
+                        {u.appointment_booked ? 'Actif' : u.trial_expires_at && new Date() > new Date(u.trial_expires_at) ? 'Expiré' : 'Essai'}
+                      </span>
+                    )}
                     <div className="flex items-center gap-2 flex-shrink-0">
+                      {u.role !== 'admin' && !u.appointment_booked && (
+                        <button
+                          onClick={() => { if (confirm(`Débloquer l'accès de ${u.email} ?`)) unlockMutation.mutate(u.id); }}
+                          title="Débloquer l'accès (RDV confirmé)"
+                          disabled={unlockMutation.isPending}
+                          className="p-1.5 rounded hover:bg-success/10 text-text-secondary hover:text-success transition-colors"
+                        >
+                          <Unlock className="w-4 h-4" />
+                        </button>
+                      )}
                       <button onClick={() => setSelectedUser(selectedUser === u.id ? null : u.id)} title="Voir détails"
                         className="p-1.5 rounded hover:bg-bg-elevated text-text-secondary hover:text-gold transition-colors">
                         <Eye className="w-4 h-4" />
