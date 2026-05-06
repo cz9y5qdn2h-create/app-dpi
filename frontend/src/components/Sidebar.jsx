@@ -2,17 +2,18 @@ import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
-import { useTheme, THEMES } from '../context/ThemeContext';
+import { useTheme } from '../context/ThemeContext';
 import api from '../lib/api';
 import CalModal from './CalModal';
 import {
   LayoutDashboard, FileText, Upload, Bell, History,
-  Users, Settings, Download, LogOut, Shield, Phone, Zap, ShieldAlert, Sparkles
+  Users, Settings, Download, LogOut, Shield, Phone, Zap, ShieldAlert, Sparkles,
+  Sun, Moon
 } from 'lucide-react';
 
 export default function Sidebar({ open, onClose }) {
   const { profile, logout } = useAuth();
-  const { theme, setTheme } = useTheme();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [calOpen, setCalOpen] = useState(false);
 
@@ -101,26 +102,14 @@ export default function Sidebar({ open, onClose }) {
             Contacter Iralink
           </button>
 
-          {/* Theme switcher */}
-          <div className="px-1">
-            <p className="font-dm-mono text-xs text-text-muted mb-2 uppercase tracking-widest">Thème</p>
-            <div className="flex items-center gap-2">
-              {THEMES.map(t => (
-                <button
-                  key={t.id}
-                  onClick={() => setTheme(t.id)}
-                  title={`${t.label} — ${t.desc}`}
-                  className="w-[22px] h-[22px] rounded-full transition-all duration-200 hover:scale-125 flex-shrink-0"
-                  style={{
-                    background: `linear-gradient(135deg, ${t.bg} 50%, ${t.accent} 50%)`,
-                    outline: theme === t.id ? `2px solid ${t.accent}` : '2px solid transparent',
-                    outlineOffset: '2px',
-                    transform: theme === t.id ? 'scale(1.2)' : undefined,
-                  }}
-                />
-              ))}
-            </div>
-          </div>
+          {/* Theme toggle */}
+          <button
+            onClick={toggleTheme}
+            className="nav-link w-full text-left"
+          >
+            {theme === 'clair' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+            <span>{theme === 'clair' ? 'Mode sombre' : 'Mode clair'}</span>
+          </button>
 
           {/* User info */}
           <div className="px-3 py-2.5 rounded-lg bg-gold/5 border border-border-subtle">

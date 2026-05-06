@@ -19,7 +19,17 @@ DIPpro est un outil SaaS d'aide à la gestion et à la conformité des Documents
 Iralink se réserve le droit de modifier les présentes CGU à tout moment. Les modifications prennent effet dès leur publication sur la plateforme. L'utilisation continue du service après modification vaut acceptation des nouvelles conditions.`
       },
       {
-        title: '3. Description du service',
+        title: '3. Période d\'essai',
+        content: `DIPpro propose une période d'essai gratuite de 5 (cinq) jours calendaires à compter de la date d'inscription.
+
+Durant cette période, l'utilisateur bénéficie d'un accès complet à l'ensemble des fonctionnalités de la plateforme.
+
+À l'issue de la période d'essai, l'accès est suspendu automatiquement. Pour continuer à utiliser DIPpro, l'utilisateur doit prendre rendez-vous avec l'équipe Iralink afin de souscrire à un abonnement. Ce rendez-vous peut être pris directement depuis l'interface ou en contactant theo@iralink-agency.com.
+
+Iralink se réserve le droit de prolonger ou de modifier la durée de la période d'essai sans préavis.`
+      },
+      {
+        title: '4. Description du service',
         content: `DIPpro propose les fonctionnalités suivantes :
 - Analyse automatique de la conformité des DIP par intelligence artificielle
 - Génération de DIP complets à partir d'un formulaire guidé
@@ -31,7 +41,7 @@ Iralink se réserve le droit de modifier les présentes CGU à tout moment. Les 
 L'analyse IA est fournie à titre indicatif et ne constitue pas un conseil juridique. L'utilisateur reste seul responsable de la conformité légale de son DIP.`
       },
       {
-        title: '4. Responsabilités de l\'utilisateur',
+        title: '5. Responsabilités de l\'utilisateur',
         content: `L'utilisateur s'engage à :
 - Fournir des informations exactes et à jour
 - Maintenir la confidentialité de ses identifiants
@@ -42,7 +52,7 @@ L'analyse IA est fournie à titre indicatif et ne constitue pas un conseil jurid
 L'utilisateur est seul responsable du contenu de son DIP et de sa conformité légale effective.`
       },
       {
-        title: '5. Limitation de responsabilité',
+        title: '6. Limitation de responsabilité',
         content: `Iralink ne saurait être tenu responsable :
 - Des erreurs ou omissions dans les analyses IA
 - Des conséquences juridiques résultant de l'utilisation du DIP généré
@@ -52,19 +62,19 @@ L'utilisateur est seul responsable du contenu de son DIP et de sa conformité l�
 Les analyses produites par l'IA sont des outils d'aide à la décision. Elles ne remplacent pas l'avis d'un avocat spécialisé en droit de la franchise.`
       },
       {
-        title: '6. Propriété intellectuelle',
+        title: '7. Propriété intellectuelle',
         content: `La plateforme DIPpro, son code source, son design et ses fonctionnalités sont la propriété exclusive d'Iralink Agency. Toute reproduction, modification ou exploitation sans autorisation préalable est interdite.
 
 Le contenu généré par l'IA à partir des données de l'utilisateur appartient à l'utilisateur, sous réserve des droits d'usage accordés à Iralink pour l'amélioration du service.`
       },
       {
-        title: '7. Résiliation',
+        title: '8. Résiliation',
         content: `L'utilisateur peut résilier son compte à tout moment depuis les paramètres ou en contactant support@iralink-agency.com.
 
 Iralink se réserve le droit de suspendre ou résilier un compte en cas de violation des présentes CGU, sans préavis.`
       },
       {
-        title: '8. Droit applicable',
+        title: '9. Droit applicable',
         content: `Les présentes CGU sont régies par le droit français. En cas de litige, les parties s'efforceront de trouver une solution amiable. À défaut, le litige sera soumis aux tribunaux compétents de Paris.`
       }
     ]
@@ -104,7 +114,9 @@ Nous ne collectons pas de données sensibles au sens du RGPD.`
         title: '4. Hébergement et sécurité',
         content: `Vos données sont hébergées sur Supabase (infrastructure AWS eu-west-1 — Europe) et Vercel (CDN international). Les communications sont chiffrées TLS. Les clés API sont stockées de manière sécurisée dans Vercel.
 
-L'IA est alimentée par Anthropic (Claude). Les textes des DIP sont transmis à l'API Anthropic pour analyse. Anthropic ne conserve pas les données au-delà du traitement immédiat selon leur politique.`
+L'IA est alimentée par Anthropic (Claude). Les textes des DIP sont transmis à l'API Anthropic pour analyse. Anthropic ne conserve pas les données au-delà du traitement immédiat selon leur politique.
+
+La prise de rendez-vous est gérée par Cal.com (Cal.com, Inc., San Francisco, CA, USA). Les données transmises lors de la prise de rendez-vous (nom, email) sont soumises à la politique de confidentialité de Cal.com disponible sur cal.com/privacy.`
       },
       {
         title: '5. Durée de conservation',

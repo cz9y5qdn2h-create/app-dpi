@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../lib/api';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import PageHeader from '../components/ui/PageHeader';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
-import { Save, Plus, Trash2, Database, Mail, Cloud, Globe, CheckCircle, Eye, EyeOff, Send } from 'lucide-react';
+import { Save, Plus, Trash2, Database, Mail, Cloud, Globe, CheckCircle, Eye, EyeOff, Send, Sun, Moon, Lock, Key, Calendar, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const SOURCE_TYPES = [
@@ -37,7 +38,8 @@ const AUTOMATION_LEVELS = [
 
 export default function SettingsPage() {
   const queryClient = useQueryClient();
-  const { profile } = useAuth();
+  const { profile, supabase, isTrialExpired, trialDaysLeft } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [profileForm, setProfileForm] = useState({
     company_name: '', phone: '', address: '',
     automation_level: 1,
@@ -48,6 +50,9 @@ export default function SettingsPage() {
   const [showBrevoKey, setShowBrevoKey] = useState(false);
   const [showSourceForm, setShowSourceForm] = useState(false);
   const [sourceForm, setSourceForm] = useState({ type: 'manual' });
+  const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassword: '' });
+  const [showNewPwd, setShowNewPwd] = useState(false);
+  const [showConfirmPwd, setShowConfirmPwd] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['settings'],
@@ -117,6 +122,18 @@ export default function SettingsPage() {
     onError: (err) => toast.error(err.message)
   });
 
+  const changePasswordMutation = useMutation({
+    mutationFn: async ({ newPassword }) => {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success('Mot de passe modifié');
+      setPasswordForm({ newPassword: '', confirmPassword: '' });
+    },
+    onError: (err) => toast.error(err.message)
+  });
+
   const sources = data?.data_sources || [];
 
   const handleSave = (e) => {
@@ -124,9 +141,132 @@ export default function SettingsPage() {
     updateProfileMutation.mutate(profileForm);
   };
 
+  const handleChangePassword = (e) => {
+    e.preventDefault();
+    if (passwordForm.newPassword.length < 8) {
+      toast.error('Le mot de passe doit contenir au moins 8 caractères');
+      return;
+    }
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast.error('Les mots de passe ne correspondent pas');
+      return;
+    }
+    changePasswordMutation.mutate({ newPassword: passwordForm.newPassword });
+  };
+
   return (
     <div className="max-w-2xl space-y-8 animate-fade-in">
       <PageHeader title="Paramètres" subtitle="Profil, automatisation et préférences de notification" />
+
+      {/* Statut d'essai */}
+      {profile && !profile.appointment_booked && (
+        <div className={`card border ${isTrialExpired ? 'border-danger/40 bg-danger/5' : 'border-gold/30 bg-gold/5'}`}>
+          <div className="flex items-start gap-4">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${isTrialExpired ? 'bg-danger/10' : 'bg-gold/10'}`}>
+              {isTrialExpired ? <AlertCircle className="w-5 h-5 text-danger" /> : <Calendar className="w-5 h-5 text-gold" />}
+            </div>
+            <div className="flex-1">
+              <h3 className="font-dm-sans text-sm font-semibold text-text-primary mb-1">
+                {isTrialExpired ? 'Période d\'essai expirée' : `Période d'essai — ${trialDaysLeft} jour${trialDaysLeft > 1 ? 's' : ''} restant${trialDaysLeft > 1 ? 's' : ''}`}
+              </h3>
+              <p className="font-dm-sans text-xs text-text-secondary mb-3">
+                {isTrialExpired
+                  ? 'Votre accès est suspendu. Prenez rendez-vous avec Iralink pour activer votre compte.'
+                  : 'Profitez de toutes les fonctionnalités pendant votre essai. Un rendez-vous est requis pour continuer après l\'essai.'
+                }
+              </p>
+              <a
+                href="https://cal.com/iralink"
+                target="_blank"
+                rel="noreferrer"
+                className="btn-primary inline-flex items-center gap-2 text-sm py-2"
+              >
+                <Calendar className="w-4 h-4" />
+                Prendre rendez-vous avec Iralink
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Apparence */}
+      <div className="card">
+        <h2 className="font-cormorant text-xl mb-5">Apparence</h2>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="font-dm-sans text-sm text-text-primary">Thème de l'interface</p>
+            <p className="font-dm-sans text-xs text-text-secondary mt-0.5">
+              {theme === 'clair' ? 'Mode clair actif' : 'Mode sombre actif'}
+            </p>
+          </div>
+          <button
+            onClick={toggleTheme}
+            className={`relative w-14 h-7 rounded-full transition-all duration-300 ${theme === 'sombre' ? 'bg-gold' : 'bg-border-default'}`}
+          >
+            <div className={`absolute top-1 w-5 h-5 rounded-full bg-bg-primary shadow transition-all duration-300 flex items-center justify-center ${theme === 'sombre' ? 'left-8' : 'left-1'}`}>
+              {theme === 'sombre' ? <Moon className="w-3 h-3 text-gold" /> : <Sun className="w-3 h-3 text-text-secondary" />}
+            </div>
+          </button>
+        </div>
+      </div>
+
+      {/* Sécurité */}
+      <div className="card">
+        <div className="mb-5">
+          <h2 className="font-cormorant text-xl">Sécurité</h2>
+          <p className="font-dm-sans text-xs text-text-secondary mt-1">Modifiez votre mot de passe de connexion</p>
+        </div>
+        <form onSubmit={handleChangePassword} className="space-y-4">
+          <div>
+            <label className="label">Nouveau mot de passe</label>
+            <div className="relative">
+              <input
+                className="input-field pr-10"
+                type={showNewPwd ? 'text' : 'password'}
+                value={passwordForm.newPassword}
+                onChange={e => setPasswordForm(f => ({ ...f, newPassword: e.target.value }))}
+                placeholder="8 caractères minimum"
+                autoComplete="new-password"
+              />
+              <button type="button" onClick={() => setShowNewPwd(s => !s)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary transition-colors">
+                {showNewPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+          <div>
+            <label className="label">Confirmer le nouveau mot de passe</label>
+            <div className="relative">
+              <input
+                className="input-field pr-10"
+                type={showConfirmPwd ? 'text' : 'password'}
+                value={passwordForm.confirmPassword}
+                onChange={e => setPasswordForm(f => ({ ...f, confirmPassword: e.target.value }))}
+                placeholder="Répétez le mot de passe"
+                autoComplete="new-password"
+              />
+              <button type="button" onClick={() => setShowConfirmPwd(s => !s)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary transition-colors">
+                {showConfirmPwd ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+          {passwordForm.newPassword.length > 0 && passwordForm.newPassword.length < 8 && (
+            <p className="font-dm-sans text-xs text-danger">Au moins 8 caractères requis</p>
+          )}
+          {passwordForm.confirmPassword.length > 0 && passwordForm.newPassword !== passwordForm.confirmPassword && (
+            <p className="font-dm-sans text-xs text-danger">Les mots de passe ne correspondent pas</p>
+          )}
+          <button
+            type="submit"
+            disabled={changePasswordMutation.isPending || !passwordForm.newPassword || !passwordForm.confirmPassword}
+            className="btn-primary flex items-center gap-2"
+          >
+            {changePasswordMutation.isPending ? <LoadingSpinner size="sm" /> : <Lock className="w-4 h-4" />}
+            Modifier le mot de passe
+          </button>
+        </form>
+      </div>
 
       {/* Profil */}
       <div className="card">

@@ -1,11 +1,8 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 
-export const THEMES = [
-  { id: 'glass',    label: 'Iralink Glass',  desc: 'Clair · Glassmorphisme', bg: '#dde2f5', accent: '#c8a96e' },
-  { id: 'nuit',     label: 'Nuit Dorée',     desc: 'Sombre · Or',            bg: '#141414', accent: '#c8a96e' },
-  { id: 'azur',     label: 'Azur',           desc: 'Marine · Glacé',         bg: '#0a1628', accent: '#60a5fa' },
-  { id: 'nacre',    label: 'Nacre',          desc: 'Blanc · Épuré',          bg: '#f8f8fa', accent: '#b8962a' },
-  { id: 'emeraude', label: 'Émeraude',       desc: 'Forêt · Sombre',         bg: '#0c180d', accent: '#4ade80' },
+const THEMES = [
+  { id: 'clair',  label: 'Clair',  icon: 'sun'  },
+  { id: 'sombre', label: 'Sombre', icon: 'moon' },
 ];
 
 const ThemeContext = createContext(null);
@@ -17,17 +14,21 @@ export function useTheme() {
 }
 
 export default function ThemeProvider({ children }) {
-  const [theme, setThemeState] = useState(
-    () => localStorage.getItem('dippro-theme') || 'glass'
-  );
+  const [theme, setThemeState] = useState(() => {
+    const saved = localStorage.getItem('dippro-theme');
+    if (saved === 'clair' || saved === 'sombre') return saved;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'sombre' : 'clair';
+  });
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     localStorage.setItem('dippro-theme', theme);
   }, [theme]);
 
+  const toggleTheme = () => setThemeState(t => t === 'clair' ? 'sombre' : 'clair');
+
   return (
-    <ThemeContext.Provider value={{ theme, setTheme: setThemeState, themes: THEMES }}>
+    <ThemeContext.Provider value={{ theme, setTheme: setThemeState, toggleTheme, themes: THEMES }}>
       {children}
     </ThemeContext.Provider>
   );
