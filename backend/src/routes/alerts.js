@@ -1,7 +1,7 @@
 const express = require('express');
 const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware, requireFranchisor } = require('../middleware/auth');
-const { detectChanges, correctSection } = require('../config/claude');
+const { detectChanges, correctSection, correctSectionWithAnswers } = require('../config/claude');
 const errMsg = require('../config/errorMessage');
 const router = express.Router();
 
@@ -216,20 +216,33 @@ router.post('/ai-corrections/:dipId', authMiddleware, requireFranchisor, async (
 
       const urgency = section.status === 'non_conforme' ? 'haute' : 'moyenne';
 
-      const alertData = {
-        dip_id: dipId,
-        section_id: section.id,
-        old_value: section.content || '(Section vide)',
-        new_value: correction.corrected_content,
-        source: 'Correction IA',
-        suggestion: correction.corrected_content,
-        status: 'pending',
-        urgency,
-        corrections_made: JSON.stringify(correction.corrections_made || []),
-        remaining_issues: JSON.stringify(correction.remaining_issues || []),
-        ai_confidence: correction.confidence || 'moyenne',
-        created_at: new Date().toISOString()
-      };
+      const alertData = correction.needs_info
+        ? {
+            dip_id: dipId,
+            section_id: section.id,
+            old_value: section.content || '(Section vide)',
+            source: 'Correction IA',
+            status: 'pending',
+            urgency,
+            needs_info: true,
+            questions: correction.questions || [],
+            created_at: new Date().toISOString()
+          }
+        : {
+            dip_id: dipId,
+            section_id: section.id,
+            old_value: section.content || '(Section vide)',
+            new_value: correction.corrected_content,
+            source: 'Correction IA',
+            suggestion: correction.corrected_content,
+            status: 'pending',
+            urgency,
+            needs_info: false,
+            corrections_made: JSON.stringify(correction.corrections_made || []),
+            remaining_issues: JSON.stringify(correction.remaining_issues || []),
+            ai_confidence: correction.confidence || 'moyenne',
+            created_at: new Date().toISOString()
+          };
 
       const { data: alert, error: alertErr } = await supabaseAdmin
         .from('alerts')
@@ -250,6 +263,62 @@ router.post('/ai-corrections/:dipId', authMiddleware, requireFranchisor, async (
     errors: errors.length > 0 ? errors : undefined,
     message: `${createdAlerts.length} correction(s) IA générée(s) sur ${sections.length} section(s) analysée(s).`
   });
+});
+
+// POST /api/alerts/:id/answer-questions — Franchiseur répond aux questions de l'IA, génère la correction
+router.post('/:id/answer-questions', authMiddleware, requireFranchisor, async (req, res) => {
+  const { answers } = req.body;
+  if (!answers || !Array.isArray(answers)) {
+    return res.status(400).json({ error: 'answers (tableau) requis' });
+  }
+
+  const { data: alert } = await supabaseAdmin
+    .from('alerts')
+    .select('*, dip_sections(*)')
+    .eq('id', req.params.id)
+    .single();
+
+  if (!alert) return res.status(404).json({ error: 'Alerte introuvable' });
+  if (!alert.needs_info) return res.status(400).json({ error: 'Cette alerte n\'attend pas de réponses' });
+
+  const { data: userDip } = await supabaseAdmin
+    .from('dip_documents')
+    .select('id')
+    .eq('id', alert.dip_id)
+    .eq('user_id', req.user.id)
+    .single();
+
+  if (!userDip) return res.status(403).json({ error: 'Accès refusé' });
+
+  try {
+    const questions = Array.isArray(alert.questions) ? alert.questions : [];
+    const questionsAndAnswers = questions.map((q, i) => ({
+      question: q,
+      answer: answers[i] || ''
+    }));
+
+    const correction = await correctSectionWithAnswers(
+      alert.dip_sections || { section_number: '?', section_title: 'Section', content: alert.old_value, status: 'non_conforme' },
+      questionsAndAnswers
+    );
+
+    await supabaseAdmin
+      .from('alerts')
+      .update({
+        needs_info: false,
+        answers: answers,
+        suggestion: correction.corrected_content,
+        new_value: correction.corrected_content,
+        corrections_made: JSON.stringify(correction.corrections_made || []),
+        remaining_issues: JSON.stringify(correction.remaining_issues || []),
+        ai_confidence: correction.confidence || 'moyenne'
+      })
+      .eq('id', req.params.id);
+
+    res.json({ message: 'Correction générée avec succès', alert_id: req.params.id });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // PATCH /api/alerts/:id/ignore — Ignorer une alerte

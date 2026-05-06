@@ -293,7 +293,8 @@ Réponds uniquement avec le texte du message.`
 };
 
 /**
- * Générer une correction IA pour une section non conforme ou à vérifier
+ * Générer une correction IA pour une section non conforme ou à vérifier.
+ * Retourne needs_info: true + questions si le contenu est trop vide pour corriger.
  */
 const correctSection = async (section) => {
   const { section_number, section_title, content, issues = [], status } = section;
@@ -304,29 +305,45 @@ const correctSection = async (section) => {
     system: CACHED_SYSTEM,
     messages: [{
       role: 'user',
-      content: `Tu dois corriger et améliorer cette section du DIP pour la rendre pleinement conforme à la Loi Doubin.
+      content: `Tu dois corriger cette section du DIP pour la rendre conforme à la Loi Doubin.
 
 SECTION ${section_number} — ${section_title}
 Statut actuel : ${status}
-Problèmes identifiés : ${issues.length > 0 ? issues.join('; ') : 'Section incomplète ou insuffisante'}
+Problèmes : ${issues.length > 0 ? issues.join('; ') : 'Section incomplète ou insuffisante'}
 
 CONTENU ACTUEL :
 ${content || '(Section vide ou non renseignée)'}
 
-INSTRUCTIONS :
-- Réécris le contenu pour qu'il soit complet, précis et conforme à la Loi Doubin
-- Conserve les informations factuelles présentes (ne pas inventer de données)
-- Pour les données manquantes, indique clairement "[À COMPLÉTER : ...]"
-- Le texte doit être directement utilisable dans le DIP officiel
-- Ton professionnel et juridiquement rigoureux
+RÈGLE CRITIQUE — ÉVALUE D'ABORD :
+Si le contenu actuel est vide ou trop vague pour produire une correction utile (moins de 3 informations factuelles exploitables), tu DOIS demander des informations au franchiseur plutôt que de générer une correction remplie de placeholders.
 
-Retourne ce JSON :
+CAS 1 — Tu as assez d'informations → corrige directement :
 {
-  "corrected_content": "Le texte complet et corrigé de la section, prêt à intégrer",
-  "corrections_made": ["liste des corrections apportées"],
-  "remaining_issues": ["données manquantes que le franchiseur doit encore renseigner"],
+  "needs_info": false,
+  "questions": [],
+  "corrected_content": "Texte complet et corrigé, prêt à intégrer dans le DIP",
+  "corrections_made": ["liste des améliorations apportées"],
+  "remaining_issues": ["données spécifiques encore manquantes"],
   "confidence": "haute|moyenne|faible"
-}`
+}
+
+CAS 2 — Le contenu est trop vide pour corriger correctement → pose des questions :
+{
+  "needs_info": true,
+  "questions": ["Question précise 1 ?", "Question précise 2 ?", "Question précise 3 ?"],
+  "corrected_content": null,
+  "corrections_made": [],
+  "remaining_issues": [],
+  "confidence": null
+}
+
+RÈGLES pour les questions (CAS 2) :
+- Maximum 4 questions, courtes et précises
+- Chaque question cible une donnée factuelle manquante indispensable
+- Questions en français, formulées pour un franchiseur non juriste
+- Ne pose des questions QUE si le contenu est vraiment insuffisant
+
+Retourne uniquement le JSON, sans markdown.`
     }]
   });
 
@@ -334,6 +351,8 @@ Retourne ce JSON :
   const match = raw.match(/\{[\s\S]*\}/);
   if (!match) {
     return {
+      needs_info: false,
+      questions: [],
       corrected_content: content,
       corrections_made: [],
       remaining_issues: ['Correction IA indisponible — réessayez'],
@@ -343,4 +362,63 @@ Retourne ce JSON :
   return JSON.parse(match[0]);
 };
 
-module.exports = { parseDIPSections, compareDIPVersions, detectChanges, generateUpdateSummary, correctSection };
+/**
+ * Générer une correction en utilisant les réponses du franchiseur aux questions posées.
+ */
+const correctSectionWithAnswers = async (section, questionsAndAnswers) => {
+  const { section_number, section_title, content, status } = section;
+
+  const qaBlock = questionsAndAnswers
+    .map((qa, i) => `Q${i + 1} : ${qa.question}\nRéponse : ${qa.answer}`)
+    .join('\n\n');
+
+  const message = await callClaude({
+    model: MODEL,
+    max_tokens: 2048,
+    system: CACHED_SYSTEM,
+    messages: [{
+      role: 'user',
+      content: `Tu dois rédiger le contenu complet de cette section du DIP en intégrant les informations fournies par le franchiseur.
+
+SECTION ${section_number} — ${section_title}
+Statut actuel : ${status}
+
+CONTENU EXISTANT (peut être vide) :
+${content || '(Section vide)'}
+
+INFORMATIONS FOURNIES PAR LE FRANCHISEUR :
+${qaBlock}
+
+INSTRUCTIONS :
+- Rédige un texte complet, professionnel et conforme à la Loi Doubin
+- Intègre toutes les informations fournies ci-dessus
+- Si une donnée est encore manquante, indique "[À COMPLÉTER : description]"
+- Le texte doit être directement utilisable dans le DIP officiel
+
+Retourne ce JSON :
+{
+  "corrected_content": "Texte complet de la section corrigée",
+  "corrections_made": ["liste des éléments rédigés ou améliorés"],
+  "remaining_issues": ["données encore manquantes si applicable"],
+  "confidence": "haute|moyenne|faible"
+}`
+    }]
+  });
+
+  const raw = message.content[0].text.trim();
+  const match = raw.match(/\{[\s\S]*\}/);
+  if (!match) {
+    return {
+      corrected_content: content || '',
+      corrections_made: [],
+      remaining_issues: ['Correction IA indisponible — réessayez'],
+      confidence: 'faible'
+    };
+  }
+  return JSON.parse(match[0]);
+};
+
+module.exports = {
+  parseDIPSections, compareDIPVersions, detectChanges,
+  generateUpdateSummary, correctSection, correctSectionWithAnswers
+};

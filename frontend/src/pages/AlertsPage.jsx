@@ -4,7 +4,7 @@ import api from '../lib/api';
 import PageHeader from '../components/ui/PageHeader';
 import StatusBadge from '../components/ui/StatusBadge';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
-import { CheckCircle, XCircle, Bell, Edit3, X, RefreshCw, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
+import { CheckCircle, XCircle, Bell, Edit3, X, RefreshCw, Sparkles, ChevronDown, ChevronUp, MessageSquare, Send } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -18,6 +18,7 @@ export default function AlertsPage() {
   const [ignoreId, setIgnoreId] = useState(null);
   const [ignoreReason, setIgnoreReason] = useState('');
   const [expandedCorrections, setExpandedCorrections] = useState({});
+  const [answersMap, setAnswersMap] = useState({});
 
   const { data, isLoading } = useQuery({
     queryKey: ['alerts', filter],
@@ -32,6 +33,16 @@ export default function AlertsPage() {
       queryClient.invalidateQueries({ queryKey: ['alerts'] });
       queryClient.invalidateQueries({ queryKey: ['dips'] });
       setValidatingId(null);
+    },
+    onError: (err) => toast.error(err.message)
+  });
+
+  const answerMutation = useMutation({
+    mutationFn: ({ id, answers }) => api.post('/alerts/' + id + '/answer-questions', { answers }),
+    onSuccess: (_, { id }) => {
+      toast.success('Correction générée avec vos réponses !');
+      queryClient.invalidateQueries({ queryKey: ['alerts'] });
+      setAnswersMap(prev => { const n = { ...prev }; delete n[id]; return n; });
     },
     onError: (err) => toast.error(err.message)
   });
@@ -64,6 +75,18 @@ export default function AlertsPage() {
   ];
 
   const toggleExpand = (id) => setExpandedCorrections(prev => ({ ...prev, [id]: !prev[id] }));
+
+  const setAnswer = (alertId, qIndex, value) =>
+    setAnswersMap(prev => ({
+      ...prev,
+      [alertId]: Object.assign([...(prev[alertId] || [])], { [qIndex]: value })
+    }));
+
+  const canSubmitAnswers = (alert) => {
+    const questions = alert.questions || [];
+    const answers = answersMap[alert.id] || [];
+    return questions.length > 0 && questions.every((_, i) => (answers[i] || '').trim().length > 0);
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -175,14 +198,23 @@ export default function AlertsPage() {
             try { correctionsMade = isIaCorrection && alert.corrections_made ? JSON.parse(alert.corrections_made) : []; } catch {}
             try { remainingIssues = isIaCorrection && alert.remaining_issues ? JSON.parse(alert.remaining_issues) : []; } catch {}
 
+            const needsInfo = alert.needs_info && !alert.suggestion;
+            const questions = needsInfo ? (alert.questions || []) : [];
+            const currentAnswers = answersMap[alert.id] || [];
+
             return (
             <div key={alert.id} className={`card transition-all ${isIaCorrection ? 'border-gold/25 bg-gold/2' : 'border-border-default'}`}>
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap mb-1">
                     {isIaCorrection && (
-                      <span className="inline-flex items-center gap-1.5 font-dm-mono text-xs px-2 py-0.5 rounded border bg-gold/10 text-gold border-gold/30">
-                        <Sparkles className="w-3 h-3" /> Correction IA
+                      <span className={`inline-flex items-center gap-1.5 font-dm-mono text-xs px-2 py-0.5 rounded border ${
+                        needsInfo
+                          ? 'bg-blue-500/10 text-blue-400 border-blue-400/30'
+                          : 'bg-gold/10 text-gold border-gold/30'
+                      }`}>
+                        {needsInfo ? <MessageSquare className="w-3 h-3" /> : <Sparkles className="w-3 h-3" />}
+                        {needsInfo ? 'Questions IA' : 'Correction IA'}
                       </span>
                     )}
                     {alert.dip_sections?.section_number && (
@@ -211,8 +243,55 @@ export default function AlertsPage() {
                 </div>
               </div>
 
+              {/* Questions IA \u2014 informations manquantes */}
+              {needsInfo && (
+                <div className="space-y-4 mb-4">
+                  <div className="flex items-start gap-3 p-4 rounded-xl" style={{
+                    background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.2)'
+                  }}>
+                    <MessageSquare className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-dm-sans text-sm font-medium text-text-primary">
+                        L'IA a besoin d'informations pour corriger cette section
+                      </p>
+                      <p className="font-dm-sans text-xs text-text-secondary mt-0.5">
+                        R\u00e9pondez aux questions ci-dessous pour g\u00e9n\u00e9rer une correction pr\u00e9cise et conforme.
+                      </p>
+                    </div>
+                  </div>
+
+                  {questions.map((question, i) => (
+                    <div key={i} className="space-y-1.5">
+                      <label className="font-dm-sans text-sm text-text-primary flex items-start gap-2">
+                        <span className="font-dm-mono text-xs text-gold mt-0.5 flex-shrink-0">{i + 1}.</span>
+                        {question}
+                      </label>
+                      <textarea
+                        rows={2}
+                        className="input-field text-sm resize-none"
+                        placeholder="Votre r\u00e9ponse\u2026"
+                        value={currentAnswers[i] || ''}
+                        onChange={e => setAnswer(alert.id, i, e.target.value)}
+                      />
+                    </div>
+                  ))}
+
+                  <button
+                    onClick={() => answerMutation.mutate({ id: alert.id, answers: Array.from({ length: questions.length }, (_, i) => currentAnswers[i] || '') })}
+                    disabled={!canSubmitAnswers(alert) || answerMutation.isPending}
+                    className="btn-liquid-glass-prominent flex items-center gap-2 text-sm py-2.5"
+                  >
+                    {answerMutation.isPending && answerMutation.variables?.id === alert.id
+                      ? <LoadingSpinner size="sm" />
+                      : <Send className="w-4 h-4" />
+                    }
+                    G\u00e9n\u00e9rer la correction IA
+                  </button>
+                </div>
+              )}
+
               {/* Correction IA \u2014 affichage sp\u00e9cialis\u00e9 */}
-              {isIaCorrection ? (
+              {isIaCorrection && !needsInfo ? (
                 <div className="space-y-3 mb-4">
                   {/* Texte corrig\u00e9 propos\u00e9 */}
                   <div className="bg-gold/5 border border-gold/20 rounded-lg p-4">
@@ -344,7 +423,7 @@ export default function AlertsPage() {
                     </>
                   ) : (
                     <>
-                      {isIaCorrection ? (
+                      {!needsInfo && (isIaCorrection ? (
                         <button
                           onClick={() => { setValidatingId(alert.id); setEditContent(alert.suggestion || ''); }}
                           className="btn-liquid-glass-prominent flex items-center gap-2 text-sm py-2"
@@ -358,13 +437,15 @@ export default function AlertsPage() {
                         >
                           <CheckCircle className="w-4 h-4" /> Valider
                         </button>
+                      ))}
+                      {!needsInfo && (
+                        <button
+                          onClick={() => { setValidatingId(alert.id); setEditContent(alert.suggestion || alert.new_value || ''); }}
+                          className="btn-secondary flex items-center gap-2 text-sm py-2"
+                        >
+                          <Edit3 className="w-4 h-4" /> Modifier avant d'appliquer
+                        </button>
                       )}
-                      <button
-                        onClick={() => { setValidatingId(alert.id); setEditContent(alert.suggestion || alert.new_value || ''); }}
-                        className="btn-secondary flex items-center gap-2 text-sm py-2"
-                      >
-                        <Edit3 className="w-4 h-4" /> Modifier avant d'appliquer
-                      </button>
                       <button
                         onClick={() => { setIgnoreId(alert.id); setIgnoreReason(''); }}
                         className="btn-ghost flex items-center gap-2 text-sm text-danger hover:text-danger"
