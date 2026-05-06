@@ -1,7 +1,8 @@
 const express = require('express');
 const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware, requireFranchisor } = require('../middleware/auth');
-const { detectChanges } = require('../config/claude');
+const { detectChanges, correctSection } = require('../config/claude');
+const errMsg = require('../config/errorMessage');
 const router = express.Router();
 
 // GET /api/alerts — Alertes de l'utilisateur connecté
@@ -163,6 +164,92 @@ router.post('/check-renewal', authMiddleware, requireFranchisor, async (req, res
   }
 
   res.json({ alerts_created: created.length, alerts: created });
+});
+
+// POST /api/alerts/ai-corrections/:dipId — Génère des corrections IA pour les sections non conformes
+router.post('/ai-corrections/:dipId', authMiddleware, requireFranchisor, async (req, res) => {
+  const { dipId } = req.params;
+
+  // Vérifier que le DIP appartient à l'utilisateur
+  const { data: dip, error: dipError } = await supabaseAdmin
+    .from('dip_documents')
+    .select('id, title')
+    .eq('id', dipId)
+    .eq('user_id', req.user.id)
+    .single();
+
+  if (dipError || !dip) return res.status(404).json({ error: 'DIP introuvable' });
+
+  // Charger les sections non conformes ou à vérifier
+  const { data: sections, error: sectError } = await supabaseAdmin
+    .from('dip_sections')
+    .select('*')
+    .eq('dip_id', dipId)
+    .in('status', ['non_conforme', 'a_verifier'])
+    .order('section_number');
+
+  if (sectError) return res.status(500).json({ error: sectError.message });
+  if (!sections || sections.length === 0) {
+    return res.json({ alerts_created: 0, message: 'Toutes les sections sont déjà conformes.' });
+  }
+
+  // Supprimer les anciennes corrections IA en attente pour ce DIP (éviter les doublons)
+  await supabaseAdmin
+    .from('alerts')
+    .delete()
+    .eq('dip_id', dipId)
+    .eq('source', 'Correction IA')
+    .eq('status', 'pending');
+
+  const createdAlerts = [];
+  const errors = [];
+
+  for (const section of sections) {
+    try {
+      const correction = await correctSection({
+        section_number: section.section_number,
+        section_title: section.section_title,
+        content: section.content,
+        issues: section.issues || [],
+        status: section.status
+      });
+
+      const urgency = section.status === 'non_conforme' ? 'haute' : 'moyenne';
+
+      const alertData = {
+        dip_id: dipId,
+        section_id: section.id,
+        old_value: section.content || '(Section vide)',
+        new_value: correction.corrected_content,
+        source: 'Correction IA',
+        suggestion: correction.corrected_content,
+        status: 'pending',
+        urgency,
+        corrections_made: JSON.stringify(correction.corrections_made || []),
+        remaining_issues: JSON.stringify(correction.remaining_issues || []),
+        ai_confidence: correction.confidence || 'moyenne',
+        created_at: new Date().toISOString()
+      };
+
+      const { data: alert, error: alertErr } = await supabaseAdmin
+        .from('alerts')
+        .insert(alertData)
+        .select()
+        .single();
+
+      if (alertErr) errors.push({ section: section.section_title, error: alertErr.message });
+      else createdAlerts.push(alert);
+    } catch (err) {
+      errors.push({ section: section.section_title, error: err.message });
+    }
+  }
+
+  res.json({
+    alerts_created: createdAlerts.length,
+    sections_analyzed: sections.length,
+    errors: errors.length > 0 ? errors : undefined,
+    message: `${createdAlerts.length} correction(s) IA générée(s) sur ${sections.length} section(s) analysée(s).`
+  });
 });
 
 // PATCH /api/alerts/:id/ignore — Ignorer une alerte

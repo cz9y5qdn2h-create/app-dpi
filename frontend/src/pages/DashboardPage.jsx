@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../lib/api';
+import toast from 'react-hot-toast';
 import PageHeader from '../components/ui/PageHeader';
 import StatusBadge from '../components/ui/StatusBadge';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
@@ -19,6 +20,7 @@ import { fr } from 'date-fns/locale';
 
 export default function DashboardPage() {
   const { profile } = useAuth();
+  const queryClient = useQueryClient();
   const [calOpen, setCalOpen] = useState(false);
 
   const { data: dipsData, isLoading: dipsLoading, isError: dipsError } = useQuery({
@@ -42,6 +44,22 @@ export default function DashboardPage() {
     a_verifier: sections.filter(s => s.status === 'a_verifier').length,
     non_conforme: sections.filter(s => s.status === 'non_conforme').length,
   };
+
+  const sectionsToCorrect = stats.non_conforme + stats.a_verifier;
+
+  const aiCorrectionMutation = useMutation({
+    mutationFn: () => api.post('/alerts/ai-corrections/' + dip.id, {}, { timeout: 180000 }),
+    onSuccess: (res) => {
+      const n = res.data.alerts_created;
+      if (n > 0) {
+        toast.success(`${n} correction(s) IA générée(s) — consultez les Alertes`, { duration: 5000 });
+        queryClient.invalidateQueries({ queryKey: ['alerts'] });
+      } else {
+        toast.success(res.data.message || 'Aucune correction nécessaire');
+      }
+    },
+    onError: (err) => toast.error(err.message)
+  });
 
   const handleCheck = async () => {
     if (!dip) return;
@@ -164,6 +182,41 @@ export default function DashboardPage() {
               />
             </div>
           </div>
+
+          {/* Bandeau Corrections IA — visible si sections non conformes */}
+          {sectionsToCorrect > 0 && (
+            <div className="card border-gold/25 bg-gold/4">
+              <div className="flex items-center gap-4 flex-wrap">
+                <div className="w-10 h-10 rounded-lg bg-gold/10 border border-gold/25 flex items-center justify-center flex-shrink-0">
+                  <Sparkles className="w-5 h-5 text-gold" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-dm-sans text-sm font-medium text-text-primary">
+                    {sectionsToCorrect} section{sectionsToCorrect > 1 ? 's' : ''} à améliorer
+                  </p>
+                  <p className="font-dm-sans text-xs text-text-secondary mt-0.5">
+                    L'IA peut analyser chaque section non conforme et proposer une version corrigée, prête à appliquer.
+                  </p>
+                </div>
+                <button
+                  onClick={() => aiCorrectionMutation.mutate()}
+                  disabled={aiCorrectionMutation.isPending}
+                  className="btn-liquid-glass flex items-center gap-2 flex-shrink-0"
+                >
+                  {aiCorrectionMutation.isPending ? (
+                    <><LoadingSpinner size="sm" /> Analyse en cours…</>
+                  ) : (
+                    <><Sparkles className="w-4 h-4" /> Générer les corrections IA</>
+                  )}
+                </button>
+              </div>
+              {aiCorrectionMutation.isPending && (
+                <p className="font-dm-mono text-xs text-text-muted mt-3">
+                  Claude analyse {sectionsToCorrect} section{sectionsToCorrect > 1 ? 's' : ''} — 30 à 90 secondes selon le nombre…
+                </p>
+              )}
+            </div>
+          )}
 
           {/* Ligne 2: Sections + Alertes */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

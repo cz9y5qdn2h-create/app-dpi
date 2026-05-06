@@ -4,7 +4,7 @@ import api from '../lib/api';
 import PageHeader from '../components/ui/PageHeader';
 import StatusBadge from '../components/ui/StatusBadge';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
-import { CheckCircle, XCircle, Bell, Edit3, X, RefreshCw } from 'lucide-react';
+import { CheckCircle, XCircle, Bell, Edit3, X, RefreshCw, Sparkles, ChevronDown, ChevronUp } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -12,10 +12,12 @@ import { fr } from 'date-fns/locale';
 export default function AlertsPage() {
   const queryClient = useQueryClient();
   const [filter, setFilter] = useState('pending');
+  const [filterSource, setFilterSource] = useState('all');
   const [validatingId, setValidatingId] = useState(null);
   const [editContent, setEditContent] = useState('');
   const [ignoreId, setIgnoreId] = useState(null);
   const [ignoreReason, setIgnoreReason] = useState('');
+  const [expandedCorrections, setExpandedCorrections] = useState({});
 
   const { data, isLoading } = useQuery({
     queryKey: ['alerts', filter],
@@ -44,40 +46,92 @@ export default function AlertsPage() {
     onError: (err) => toast.error(err.message)
   });
 
-  const alerts = data?.alerts || [];
-  const pendingCount = alerts.filter(a => a.status === 'pending').length;
+  const allAlerts = data?.alerts || [];
+  const alerts = filterSource === 'ia'
+    ? allAlerts.filter(a => a.source === 'Correction IA')
+    : filterSource === 'manual'
+    ? allAlerts.filter(a => a.source !== 'Correction IA')
+    : allAlerts;
+
+  const pendingCount = allAlerts.filter(a => a.status === 'pending').length;
+  const iaCount = allAlerts.filter(a => a.source === 'Correction IA' && a.status === 'pending').length;
 
   const filters = [
     { key: 'pending', label: 'En attente', count: pendingCount },
-    { key: 'validated', label: 'Validees', count: null },
-    { key: 'ignored', label: 'Ignorees', count: null },
+    { key: 'validated', label: 'Validées', count: null },
+    { key: 'ignored', label: 'Ignorées', count: null },
     { key: 'all', label: 'Toutes', count: null },
   ];
+
+  const toggleExpand = (id) => setExpandedCorrections(prev => ({ ...prev, [id]: !prev[id] }));
 
   return (
     <div className="space-y-6 animate-fade-in">
       <PageHeader
-        title="Alertes de mise a jour"
-        subtitle="Detections automatiques de changements necessitant une mise a jour du DIP"
+        title="Alertes & Corrections"
+        subtitle="Détections automatiques et corrections IA pour mettre à jour votre DIP"
       />
+
+      {/* Résumé corrections IA en attente */}
+      {iaCount > 0 && (
+        <div className="card border-gold/25 bg-gold/4">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center flex-shrink-0">
+              <Sparkles className="w-4 h-4 text-gold" />
+            </div>
+            <div className="flex-1">
+              <p className="font-dm-sans text-sm font-medium text-text-primary">
+                {iaCount} correction{iaCount > 1 ? 's' : ''} IA en attente de validation
+              </p>
+              <p className="font-dm-sans text-xs text-text-secondary mt-0.5">
+                Cliquez sur "Appliquer" pour mettre à jour la section et marquer la conformité.
+              </p>
+            </div>
+            <button
+              onClick={() => { setFilter('pending'); setFilterSource('ia'); }}
+              className="btn-secondary text-xs py-1.5 flex-shrink-0"
+            >
+              Voir uniquement les corrections IA
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex gap-2 flex-wrap">
           {filters.map(f => (
-          <button
-            key={f.key}
-            onClick={() => setFilter(f.key)}
-            className={'flex items-center gap-2 px-4 py-2 rounded font-dm-sans text-sm transition-all duration-300 ' +
-              (filter === f.key
-                ? 'bg-gold/10 text-gold border border-gold/30'
-                : 'text-text-secondary border border-border-subtle hover:border-border-default hover:text-text-primary')}
-          >
-            {f.label}
-            {f.count !== null && f.count > 0 && (
-              <span className="font-dm-mono text-xs bg-danger/20 text-danger px-1.5 rounded">{f.count}</span>
-            )}
-          </button>
-        ))}
+            <button
+              key={f.key}
+              onClick={() => setFilter(f.key)}
+              className={'flex items-center gap-2 px-4 py-2 rounded font-dm-sans text-sm transition-all duration-300 ' +
+                (filter === f.key
+                  ? 'bg-gold/10 text-gold border border-gold/30'
+                  : 'text-text-secondary border border-border-subtle hover:border-border-default hover:text-text-primary')}
+            >
+              {f.label}
+              {f.count !== null && f.count > 0 && (
+                <span className="font-dm-mono text-xs bg-danger/20 text-danger px-1.5 rounded">{f.count}</span>
+              )}
+            </button>
+          ))}
+          <div className="w-px h-6 bg-border-subtle self-center mx-1" />
+          {[
+            { key: 'all', label: 'Toutes sources' },
+            { key: 'ia', label: '✦ Corrections IA', count: iaCount },
+            { key: 'manual', label: 'Manuelles' }
+          ].map(s => (
+            <button
+              key={s.key}
+              onClick={() => setFilterSource(s.key)}
+              className={'flex items-center gap-2 px-3 py-2 rounded font-dm-sans text-xs transition-all duration-300 ' +
+                (filterSource === s.key
+                  ? 'bg-gold/10 text-gold border border-gold/30'
+                  : 'text-text-muted border border-border-subtle hover:text-text-secondary')}
+            >
+              {s.label}
+              {s.count > 0 && <span className="font-dm-mono text-xs bg-gold/20 text-gold px-1.5 rounded">{s.count}</span>}
+            </button>
+          ))}
         </div>
         <button
           onClick={async () => {
@@ -113,55 +167,134 @@ export default function AlertsPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {alerts.map(alert => (
-            <div key={alert.id} className="card border-border-default">
+          {alerts.map(alert => {
+            const isIaCorrection = alert.source === 'Correction IA';
+            const expanded = expandedCorrections[alert.id];
+            let correctionsMade = [];
+            let remainingIssues = [];
+            try { correctionsMade = isIaCorrection && alert.corrections_made ? JSON.parse(alert.corrections_made) : []; } catch {}
+            try { remainingIssues = isIaCorrection && alert.remaining_issues ? JSON.parse(alert.remaining_issues) : []; } catch {}
+
+            return (
+            <div key={alert.id} className={`card transition-all ${isIaCorrection ? 'border-gold/25 bg-gold/2' : 'border-border-default'}`}>
               <div className="flex items-start justify-between mb-4">
-                <div>
-                  <div className="flex items-center gap-3 mb-1">
-                    <span className="font-dm-mono text-xs text-gold/60">
-                      Section {alert.dip_sections?.section_number}
-                    </span>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                    {isIaCorrection && (
+                      <span className="inline-flex items-center gap-1.5 font-dm-mono text-xs px-2 py-0.5 rounded border bg-gold/10 text-gold border-gold/30">
+                        <Sparkles className="w-3 h-3" /> Correction IA
+                      </span>
+                    )}
+                    {alert.dip_sections?.section_number && (
+                      <span className="font-dm-mono text-xs text-gold/60">
+                        Section {alert.dip_sections.section_number}
+                      </span>
+                    )}
                     <StatusBadge status={alert.urgency || 'moyenne'} />
                     <StatusBadge status={alert.status} />
+                    {isIaCorrection && alert.ai_confidence && (
+                      <span className={`font-dm-mono text-xs px-2 py-0.5 rounded border ${
+                        alert.ai_confidence === 'haute' ? 'bg-success/10 text-success border-success/20' :
+                        alert.ai_confidence === 'moyenne' ? 'bg-gold/10 text-gold border-gold/20' :
+                        'bg-danger/10 text-danger border-danger/20'
+                      }`}>
+                        Confiance {alert.ai_confidence}
+                      </span>
+                    )}
                   </div>
                   <h3 className="font-dm-sans text-base text-text-primary">
                     {alert.dip_sections?.section_title || 'Section inconnue'}
                   </h3>
                   <p className="font-dm-mono text-xs text-text-secondary mt-1">
-                    Source: {alert.source} {alert.created_at && '\u2022 ' + formatDistanceToNow(new Date(alert.created_at), { addSuffix: true, locale: fr })}
+                    {alert.source} {alert.created_at && '\u00b7 ' + formatDistanceToNow(new Date(alert.created_at), { addSuffix: true, locale: fr })}
                   </p>
                 </div>
               </div>
 
-              {(alert.old_value || alert.new_value) && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-                  {alert.old_value && (
-                    <div className="bg-danger/5 border border-danger/20 rounded p-3">
-                      <p className="font-dm-mono text-xs text-danger mb-2">Ancienne valeur</p>
-                      <p className="font-dm-sans text-sm text-text-primary">{alert.old_value}</p>
+              {/* Correction IA \u2014 affichage sp\u00e9cialis\u00e9 */}
+              {isIaCorrection ? (
+                <div className="space-y-3 mb-4">
+                  {/* Texte corrig\u00e9 propos\u00e9 */}
+                  <div className="bg-gold/5 border border-gold/20 rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="font-dm-mono text-xs text-gold flex items-center gap-1.5">
+                        <Sparkles className="w-3 h-3" /> Texte corrig\u00e9 propos\u00e9 par l'IA
+                      </p>
+                      <button
+                        onClick={() => toggleExpand(alert.id)}
+                        className="font-dm-sans text-xs text-text-muted hover:text-text-secondary flex items-center gap-1"
+                      >
+                        {expanded ? <><ChevronUp className="w-3 h-3" /> R\u00e9duire</> : <><ChevronDown className="w-3 h-3" /> Voir tout</>}
+                      </button>
+                    </div>
+                    <p className={`font-dm-sans text-sm text-text-primary leading-relaxed whitespace-pre-wrap ${!expanded ? 'line-clamp-4' : ''}`}>
+                      {alert.suggestion}
+                    </p>
+                  </div>
+
+                  {/* Corrections apport\u00e9es */}
+                  {correctionsMade.length > 0 && (
+                    <div className="bg-success/5 border border-success/15 rounded-lg p-3">
+                      <p className="font-dm-mono text-xs text-success mb-2">Corrections apport\u00e9es</p>
+                      <ul className="space-y-1">
+                        {correctionsMade.map((c, i) => (
+                          <li key={i} className="font-dm-sans text-xs text-text-secondary flex items-start gap-2">
+                            <CheckCircle className="w-3 h-3 text-success flex-shrink-0 mt-0.5" /> {c}
+                          </li>
+                        ))}
+                      </ul>
                     </div>
                   )}
-                  {alert.new_value && (
-                    <div className="bg-success/5 border border-success/20 rounded p-3">
-                      <p className="font-dm-mono text-xs text-success mb-2">Nouvelle valeur</p>
-                      <p className="font-dm-sans text-sm text-text-primary">{alert.new_value}</p>
+
+                  {/* Donn\u00e9es encore \u00e0 compl\u00e9ter */}
+                  {remainingIssues.length > 0 && (
+                    <div className="bg-danger/5 border border-danger/15 rounded-lg p-3">
+                      <p className="font-dm-mono text-xs text-danger mb-2">\u00c0 compl\u00e9ter par vos soins</p>
+                      <ul className="space-y-1">
+                        {remainingIssues.map((issue, i) => (
+                          <li key={i} className="font-dm-sans text-xs text-text-secondary flex items-start gap-2">
+                            <XCircle className="w-3 h-3 text-danger flex-shrink-0 mt-0.5" /> {issue}
+                          </li>
+                        ))}
+                      </ul>
                     </div>
                   )}
                 </div>
+              ) : (
+                <>
+                  {(alert.old_value || alert.new_value) && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                      {alert.old_value && (
+                        <div className="bg-danger/5 border border-danger/20 rounded p-3">
+                          <p className="font-dm-mono text-xs text-danger mb-2">Ancienne valeur</p>
+                          <p className="font-dm-sans text-sm text-text-primary">{alert.old_value}</p>
+                        </div>
+                      )}
+                      {alert.new_value && (
+                        <div className="bg-success/5 border border-success/20 rounded p-3">
+                          <p className="font-dm-mono text-xs text-success mb-2">Nouvelle valeur</p>
+                          <p className="font-dm-sans text-sm text-text-primary">{alert.new_value}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {alert.suggestion && (
+                    <div className="bg-gold/5 border border-gold/20 rounded p-3 mb-4">
+                      <p className="font-dm-mono text-xs text-gold mb-2">Suggestion</p>
+                      <p className="font-dm-sans text-sm text-text-primary">{alert.suggestion}</p>
+                    </div>
+                  )}
+                </>
               )}
 
-              {alert.suggestion && (
-                <div className="bg-gold/5 border border-gold/20 rounded p-3 mb-4">
-                  <p className="font-dm-mono text-xs text-gold mb-2">Suggestion IA</p>
-                  <p className="font-dm-sans text-sm text-text-primary">{alert.suggestion}</p>
-                </div>
-              )}
-
+              {/* Zone de modification avant validation */}
               {validatingId === alert.id && (
                 <div className="mb-4 animate-slide-up">
-                  <label className="label">Modifier avant validation</label>
+                  <label className="label">
+                    {isIaCorrection ? 'Modifier le texte corrigé avant application' : 'Modifier avant validation'}
+                  </label>
                   <textarea
-                    className="input-field min-h-28 resize-none font-dm-mono text-sm"
+                    className="input-field min-h-36 resize-none font-dm-mono text-sm"
                     value={editContent}
                     onChange={e => setEditContent(e.target.value)}
                   />
@@ -170,10 +303,10 @@ export default function AlertsPage() {
 
               {ignoreId === alert.id && (
                 <div className="mb-4 animate-slide-up">
-                  <label className="label">Raison de l'ignorance (optionnel)</label>
+                  <label className="label">Raison (optionnel)</label>
                   <input type="text" className="input-field" value={ignoreReason}
                     onChange={e => setIgnoreReason(e.target.value)}
-                    placeholder="Ex: Information deja prise en compte..."
+                    placeholder="Ex : information déjà prise en compte…"
                   />
                 </div>
               )}
@@ -185,10 +318,11 @@ export default function AlertsPage() {
                       <button
                         onClick={() => validateMutation.mutate({ id: alert.id, modified_content: editContent || null })}
                         disabled={validateMutation.isPending}
-                        className="btn-primary flex items-center gap-2 text-sm py-2"
+                        className="btn-liquid-glass-prominent flex items-center gap-2 text-sm py-2"
                       >
                         {validateMutation.isPending && <LoadingSpinner size="sm" />}
-                        <CheckCircle className="w-4 h-4" /> Confirmer
+                        <CheckCircle className="w-4 h-4" />
+                        {isIaCorrection ? 'Appliquer la correction' : 'Confirmer'}
                       </button>
                       <button onClick={() => setValidatingId(null)} className="btn-ghost text-sm">
                         <X className="w-4 h-4" />
@@ -202,7 +336,7 @@ export default function AlertsPage() {
                         className="btn-secondary flex items-center gap-2 text-sm py-2"
                       >
                         {ignoreMutation.isPending && <LoadingSpinner size="sm" />}
-                        <XCircle className="w-4 h-4" /> Confirmer l'ignorance
+                        <XCircle className="w-4 h-4" /> Confirmer
                       </button>
                       <button onClick={() => setIgnoreId(null)} className="btn-ghost text-sm">
                         <X className="w-4 h-4" />
@@ -210,17 +344,26 @@ export default function AlertsPage() {
                     </>
                   ) : (
                     <>
-                      <button
-                        onClick={() => { setValidatingId(alert.id); setEditContent(alert.suggestion || alert.new_value || ''); }}
-                        className="btn-primary flex items-center gap-2 text-sm py-2"
-                      >
-                        <CheckCircle className="w-4 h-4" /> Valider
-                      </button>
+                      {isIaCorrection ? (
+                        <button
+                          onClick={() => { setValidatingId(alert.id); setEditContent(alert.suggestion || ''); }}
+                          className="btn-liquid-glass-prominent flex items-center gap-2 text-sm py-2"
+                        >
+                          <Sparkles className="w-4 h-4" /> Appliquer la correction IA
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => { setValidatingId(alert.id); setEditContent(alert.suggestion || alert.new_value || ''); }}
+                          className="btn-primary flex items-center gap-2 text-sm py-2"
+                        >
+                          <CheckCircle className="w-4 h-4" /> Valider
+                        </button>
+                      )}
                       <button
                         onClick={() => { setValidatingId(alert.id); setEditContent(alert.suggestion || alert.new_value || ''); }}
                         className="btn-secondary flex items-center gap-2 text-sm py-2"
                       >
-                        <Edit3 className="w-4 h-4" /> Modifier
+                        <Edit3 className="w-4 h-4" /> Modifier avant d'appliquer
                       </button>
                       <button
                         onClick={() => { setIgnoreId(alert.id); setIgnoreReason(''); }}
@@ -233,7 +376,8 @@ export default function AlertsPage() {
                 </div>
               )}
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

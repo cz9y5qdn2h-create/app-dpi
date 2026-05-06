@@ -292,4 +292,55 @@ Réponds uniquement avec le texte du message.`
   return message.content[0].text.trim();
 };
 
-module.exports = { parseDIPSections, compareDIPVersions, detectChanges, generateUpdateSummary };
+/**
+ * Générer une correction IA pour une section non conforme ou à vérifier
+ */
+const correctSection = async (section) => {
+  const { section_number, section_title, content, issues = [], status } = section;
+
+  const message = await callClaude({
+    model: MODEL,
+    max_tokens: 2048,
+    system: CACHED_SYSTEM,
+    messages: [{
+      role: 'user',
+      content: `Tu dois corriger et améliorer cette section du DIP pour la rendre pleinement conforme à la Loi Doubin.
+
+SECTION ${section_number} — ${section_title}
+Statut actuel : ${status}
+Problèmes identifiés : ${issues.length > 0 ? issues.join('; ') : 'Section incomplète ou insuffisante'}
+
+CONTENU ACTUEL :
+${content || '(Section vide ou non renseignée)'}
+
+INSTRUCTIONS :
+- Réécris le contenu pour qu'il soit complet, précis et conforme à la Loi Doubin
+- Conserve les informations factuelles présentes (ne pas inventer de données)
+- Pour les données manquantes, indique clairement "[À COMPLÉTER : ...]"
+- Le texte doit être directement utilisable dans le DIP officiel
+- Ton professionnel et juridiquement rigoureux
+
+Retourne ce JSON :
+{
+  "corrected_content": "Le texte complet et corrigé de la section, prêt à intégrer",
+  "corrections_made": ["liste des corrections apportées"],
+  "remaining_issues": ["données manquantes que le franchiseur doit encore renseigner"],
+  "confidence": "haute|moyenne|faible"
+}`
+    }]
+  });
+
+  const raw = message.content[0].text.trim();
+  const match = raw.match(/\{[\s\S]*\}/);
+  if (!match) {
+    return {
+      corrected_content: content,
+      corrections_made: [],
+      remaining_issues: ['Correction IA indisponible — réessayez'],
+      confidence: 'faible'
+    };
+  }
+  return JSON.parse(match[0]);
+};
+
+module.exports = { parseDIPSections, compareDIPVersions, detectChanges, generateUpdateSummary, correctSection };
