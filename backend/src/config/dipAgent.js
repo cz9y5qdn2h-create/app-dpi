@@ -6,7 +6,10 @@ const {
 } = require('docx');
 
 const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-const MODEL = 'claude-opus-4-7';
+
+const MODEL_OPUS   = 'claude-opus-4-7';   // Analyse juridique critique
+const MODEL_SONNET = 'claude-sonnet-4-6'; // Génération et comparaison structurée
+const MODEL_HAIKU  = 'claude-haiku-4-5';  // Vérifications simples
 
 const callClaude = async (params) => {
   try {
@@ -71,7 +74,8 @@ const analyzeDIP = async (rawText) => {
   }
 
   const message = await callClaude({
-    model: MODEL,
+    model: MODEL_OPUS,
+    thinking: { type: 'adaptive' },
     max_tokens: 8192,
     system: CACHED_SYSTEM,
     messages: [{
@@ -112,7 +116,8 @@ const generateDIPFromForm = async (formData, sourceText = '') => {
     : '';
 
   const message = await callClaude({
-    model: MODEL,
+    model: MODEL_SONNET,
+    thinking: { type: 'adaptive' },
     max_tokens: 8192,
     system: CACHED_SYSTEM,
     messages: [{
@@ -159,7 +164,7 @@ const compareDIPVersions = async (previousText, newText) => {
   }
 
   const message = await callClaude({
-    model: MODEL,
+    model: MODEL_SONNET,
     max_tokens: 8192,
     system: CACHED_SYSTEM,
     messages: [{
@@ -214,7 +219,7 @@ Retourne ce JSON :
 
 const verifyLegalData = async (companyInfo) => {
   const message = await callClaude({
-    model: MODEL,
+    model: MODEL_HAIKU,
     max_tokens: 2048,
     system: CACHED_SYSTEM,
     messages: [{

@@ -5,7 +5,10 @@ if (!process.env.ANTHROPIC_API_KEY) {
 }
 
 const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-const MODEL = process.env.ANTHROPIC_MODEL || 'claude-opus-4-7';
+
+const MODEL_OPUS   = process.env.ANTHROPIC_MODEL || 'claude-opus-4-7';   // Analyse et corrections critiques
+const MODEL_SONNET = 'claude-sonnet-4-6';                                 // Comparaison et corrections guidées
+const MODEL_HAIKU  = 'claude-haiku-4-5';                                  // Détections simples et résumés
 
 // Wrapper pour donner des messages d'erreur explicites
 const callClaude = async (params) => {
@@ -48,8 +51,9 @@ const parseDIPSections = async (rawText) => {
   }
 
   const message = await callClaude({
-    model: MODEL,
+    model: MODEL_OPUS,
     max_tokens: 8192,
+    thinking: { type: 'adaptive' },
     system: CACHED_SYSTEM,
     messages: [{
       role: 'user',
@@ -147,7 +151,7 @@ const compareDIPVersions = async (previousText, newText) => {
   }
 
   const message = await callClaude({
-    model: MODEL,
+    model: MODEL_SONNET,
     max_tokens: 8192,
     system: CACHED_SYSTEM,
     messages: [{
@@ -228,7 +232,7 @@ Si aucun changement significatif : { "changements": [], "resume": "Aucun changem
  */
 const detectChanges = async (sectionContent, newDocumentText, sectionTitle) => {
   const message = await callClaude({
-    model: MODEL,
+    model: MODEL_HAIKU,
     max_tokens: 2048,
     system: CACHED_SYSTEM,
     messages: [{
@@ -268,7 +272,7 @@ Retourne ce JSON :
  */
 const generateUpdateSummary = async (updatedSections) => {
   const message = await callClaude({
-    model: MODEL,
+    model: MODEL_HAIKU,
     max_tokens: 1024,
     system: [{ type: 'text', text: 'Tu es un expert en communication juridique franchise. Tu rédiges des messages clairs, professionnels et rassurants.', cache_control: { type: 'ephemeral' } }],
     messages: [{
@@ -300,8 +304,9 @@ const correctSection = async (section) => {
   const { section_number, section_title, content, issues = [], status } = section;
 
   const message = await callClaude({
-    model: MODEL,
+    model: MODEL_OPUS,
     max_tokens: 2048,
+    thinking: { type: 'adaptive' },
     system: CACHED_SYSTEM,
     messages: [{
       role: 'user',
@@ -373,7 +378,7 @@ const correctSectionWithAnswers = async (section, questionsAndAnswers) => {
     .join('\n\n');
 
   const message = await callClaude({
-    model: MODEL,
+    model: MODEL_SONNET,
     max_tokens: 2048,
     system: CACHED_SYSTEM,
     messages: [{

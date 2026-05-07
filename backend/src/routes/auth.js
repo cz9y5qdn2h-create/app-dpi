@@ -24,7 +24,7 @@ router.post('/register', async (req, res) => {
       email,
       role,
       company_name,
-      phone_number: phone_number || null,
+      phone: phone_number || null,
       trial_expires_at: trialExpiresAt,
       appointment_booked: false,
       created_at: new Date().toISOString()
@@ -51,7 +51,7 @@ router.post('/provision-oauth', authMiddleware, async (req, res) => {
     if (existing) {
       const updates = {};
       if (company_name && !existing.company_name) updates.company_name = company_name;
-      if (phone_number) updates.phone_number = phone_number;
+      if (phone_number) updates.phone = phone_number;
       if (Object.keys(updates).length > 0) {
         await supabaseAdmin.from('users').update(updates).eq('id', req.user.id);
       }
@@ -64,7 +64,7 @@ router.post('/provision-oauth', authMiddleware, async (req, res) => {
       email: req.user.email,
       role: 'franchiseur',
       company_name: company_name || req.user.email.split('@')[0],
-      phone_number: phone_number || null,
+      phone: phone_number || null,
       trial_expires_at: trialExpiresAt,
       appointment_booked: false,
       created_at: new Date().toISOString()
