@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Shield, Calendar, CheckCircle, LogOut, Mail, Clock } from 'lucide-react';
+import { Shield, Calendar, CheckCircle, LogOut, Mail, Clock, Send, ChevronDown, Users } from 'lucide-react';
+import api from '../lib/api';
 
 const CAL_URL = import.meta.env.VITE_CAL_COM_URL || 'https://cal.com/theo-coutard-mhdsix/call-clients';
 const CONTACT_EMAIL = import.meta.env.VITE_CONTACT_EMAIL || 'theo@iralink-agency.com';
@@ -9,6 +10,34 @@ export default function TrialExpiredPage() {
   const { profile, logout } = useAuth();
   const [booked, setBooked] = useState(false);
   const [showCal, setShowCal] = useState(false);
+  const [showWaitlist, setShowWaitlist] = useState(false);
+  const [waitlistForm, setWaitlistForm] = useState({ email: '', company_name: '' });
+  const [waitlistLoading, setWaitlistLoading] = useState(false);
+  const [waitlistSuccess, setWaitlistSuccess] = useState(false);
+  const [waitlistAlreadyExists, setWaitlistAlreadyExists] = useState(false);
+  const [waitlistError, setWaitlistError] = useState('');
+
+  const handleToggleWaitlist = () => {
+    if (!showWaitlist && !waitlistForm.email && profile) {
+      setWaitlistForm({ email: profile.email || '', company_name: profile.company_name || '' });
+    }
+    setShowWaitlist(v => !v);
+  };
+
+  const handleWaitlistSubmit = async () => {
+    if (!waitlistForm.email || !waitlistForm.company_name) return;
+    setWaitlistLoading(true);
+    setWaitlistError('');
+    try {
+      const res = await api.post('/waitlist', { ...waitlistForm, source: 'trial_expired', user_id: profile?.id });
+      if (res.data.already_exists) setWaitlistAlreadyExists(true);
+      else setWaitlistSuccess(true);
+    } catch (err) {
+      setWaitlistError(err.message || 'Une erreur est survenue');
+    } finally {
+      setWaitlistLoading(false);
+    }
+  };
 
   const handleBooked = () => {
     setBooked(true);
@@ -139,6 +168,72 @@ export default function TrialExpiredPage() {
                 <Mail className="w-4 h-4" />
                 Contacter par email
               </a>
+
+              {/* Option liste d'attente */}
+              <div>
+                <button
+                  onClick={handleToggleWaitlist}
+                  className="w-full text-center font-dm-sans text-xs py-2 flex items-center justify-center gap-1 transition-colors"
+                  style={{ color: '#94A3B8' }}
+                >
+                  Pas encore prêt pour un rendez-vous ?
+                  <ChevronDown className="w-3 h-3 transition-transform" style={{ transform: showWaitlist ? 'rotate(180deg)' : 'rotate(0deg)' }} />
+                </button>
+
+                {showWaitlist && (
+                  <div className="mt-3 p-4 rounded-xl" style={{ background: 'rgba(200,169,110,0.06)', border: '1px solid rgba(200,169,110,0.2)' }}>
+                    {waitlistSuccess ? (
+                      <div className="text-center space-y-2 py-2">
+                        <CheckCircle className="w-6 h-6 mx-auto" style={{ color: '#22C55E' }} />
+                        <p className="font-dm-sans text-sm font-medium" style={{ color: '#1A1826' }}>Inscription enregistrée !</p>
+                        <p className="font-dm-sans text-xs" style={{ color: '#64748B' }}>Nous vous contacterons dès que votre accès sera prêt.</p>
+                      </div>
+                    ) : waitlistAlreadyExists ? (
+                      <div className="text-center space-y-2 py-2">
+                        <Users className="w-6 h-6 mx-auto" style={{ color: '#C8A96E' }} />
+                        <p className="font-dm-sans text-sm font-medium" style={{ color: '#1A1826' }}>Déjà inscrit !</p>
+                        <p className="font-dm-sans text-xs" style={{ color: '#64748B' }}>Votre email est déjà sur notre liste d'attente.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        <p className="font-dm-mono text-xs text-center mb-3" style={{ color: '#C8A96E' }}>Rejoindre la liste d'attente</p>
+                        {waitlistError && <p className="font-dm-sans text-xs text-center" style={{ color: '#EF4444' }}>{waitlistError}</p>}
+                        <input
+                          type="text"
+                          value={waitlistForm.company_name}
+                          onChange={e => setWaitlistForm(f => ({ ...f, company_name: e.target.value }))}
+                          placeholder="Nom de la société"
+                          className="w-full px-3 py-2 rounded-lg font-dm-sans text-sm outline-none"
+                          style={{ background: 'rgba(255,255,255,0.8)', border: '1px solid rgba(200,200,220,0.5)', color: '#1A1826' }}
+                        />
+                        <input
+                          type="email"
+                          value={waitlistForm.email}
+                          onChange={e => setWaitlistForm(f => ({ ...f, email: e.target.value }))}
+                          placeholder="Email"
+                          className="w-full px-3 py-2 rounded-lg font-dm-sans text-sm outline-none"
+                          style={{ background: 'rgba(255,255,255,0.8)', border: '1px solid rgba(200,200,220,0.5)', color: '#1A1826' }}
+                        />
+                        <button
+                          onClick={handleWaitlistSubmit}
+                          disabled={waitlistLoading || !waitlistForm.email || !waitlistForm.company_name}
+                          className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg font-dm-sans text-sm font-medium transition-all"
+                          style={{
+                            background: waitlistForm.email && waitlistForm.company_name ? '#C8A96E' : 'rgba(200,169,110,0.4)',
+                            color: '#1A1826',
+                            cursor: waitlistForm.email && waitlistForm.company_name ? 'pointer' : 'not-allowed'
+                          }}
+                        >
+                          {waitlistLoading
+                            ? <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                            : <Send className="w-3.5 h-3.5" />}
+                          M'inscrire sur la liste
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
 
               {/* Ce qui vous attend */}
               <div className="rounded-xl p-4 space-y-2" style={{ background: 'rgba(200,169,110,0.06)', border: '1px solid rgba(200,169,110,0.15)' }}>

@@ -6,7 +6,8 @@ import LoadingSpinner from '../components/ui/LoadingSpinner';
 import StatusBadge from '../components/ui/StatusBadge';
 import {
   Users, FileText, AlertTriangle, TrendingUp, Shield,
-  Edit3, Trash2, Plus, Key, X, Check, Eye, ChevronDown, ChevronUp, Activity, Unlock
+  Edit3, Trash2, Plus, Key, X, Check, Eye, ChevronDown, ChevronUp, Activity, Unlock,
+  Clock, MessageSquare, Mail, PhoneCall
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
@@ -21,6 +22,8 @@ export default function AdminPage() {
   const [newPwd, setNewPwd] = useState('');
   const [createForm, setCreateForm] = useState({ email: '', password: '', company_name: '', role: 'franchiseur' });
   const [editUser, setEditUser] = useState(null);
+  const [waitlistFilter, setWaitlistFilter] = useState('all');
+  const [waitlistNotes, setWaitlistNotes] = useState({});
 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['admin-stats'],
@@ -43,6 +46,17 @@ export default function AdminPage() {
     queryKey: ['admin-activity'],
     queryFn: () => api.get('/admin/activity').then(r => r.data),
     enabled: activeTab === 'activity'
+  });
+
+  const { data: waitlistData, isLoading: waitlistLoading } = useQuery({
+    queryKey: ['admin-waitlist', waitlistFilter],
+    queryFn: () => api.get('/waitlist?status=' + waitlistFilter).then(r => r.data),
+    enabled: activeTab === 'waitlist'
+  });
+
+  const { data: waitlistCountData } = useQuery({
+    queryKey: ['admin-waitlist-count'],
+    queryFn: () => api.get('/waitlist?status=pending').then(r => r.data)
   });
 
   const { data: userDetail } = useQuery({
@@ -103,11 +117,34 @@ export default function AdminPage() {
     onError: (err) => toast.error(err.message)
   });
 
+  const updateWaitlistMutation = useMutation({
+    mutationFn: ({ id, ...d }) => api.patch('/waitlist/' + id, d),
+    onSuccess: () => {
+      toast.success('Mis à jour');
+      queryClient.invalidateQueries({ queryKey: ['admin-waitlist'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-waitlist-count'] });
+    },
+    onError: (err) => toast.error(err.message)
+  });
+
+  const deleteWaitlistMutation = useMutation({
+    mutationFn: (id) => api.delete('/waitlist/' + id),
+    onSuccess: () => {
+      toast.success('Supprimé');
+      queryClient.invalidateQueries({ queryKey: ['admin-waitlist'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-waitlist-count'] });
+    },
+    onError: (err) => toast.error(err.message)
+  });
+
+  const pendingWaitlist = waitlistCountData?.pending || 0;
+
   const tabs = [
     { key: 'dashboard', label: 'Dashboard', icon: TrendingUp },
     { key: 'users', label: 'Franchiseurs', icon: Users },
     { key: 'dips', label: 'Tous les DIPs', icon: FileText },
-    { key: 'activity', label: 'Activité', icon: Activity }
+    { key: 'activity', label: 'Activité', icon: Activity },
+    { key: 'waitlist', label: 'Liste d\'attente', icon: Clock, badge: pendingWaitlist }
   ];
 
   return (
@@ -124,7 +161,7 @@ export default function AdminPage() {
       />
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-bg-elevated rounded-lg p-1 w-fit">
+      <div className="flex flex-wrap gap-1 bg-bg-elevated rounded-lg p-1 w-fit">
         {tabs.map(t => (
           <button
             key={t.key}
@@ -135,6 +172,11 @@ export default function AdminPage() {
           >
             <t.icon className="w-4 h-4" />
             {t.label}
+            {t.badge > 0 && (
+              <span className="inline-flex items-center justify-center w-5 h-5 rounded-full text-xs font-dm-mono bg-danger text-white font-bold">
+                {t.badge}
+              </span>
+            )}
           </button>
         ))}
       </div>
@@ -378,6 +420,142 @@ export default function AdminPage() {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* WAITLIST */}
+      {activeTab === 'waitlist' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <h2 className="font-cormorant text-xl text-text-primary">Liste d'attente</h2>
+              {waitlistData?.pending > 0 && (
+                <span className="font-dm-mono text-xs px-2 py-0.5 rounded-full bg-danger/10 border border-danger/20 text-danger">
+                  {waitlistData.pending} en attente
+                </span>
+              )}
+            </div>
+            <span className="font-dm-sans text-sm text-text-secondary">{waitlistData?.total || 0} inscriptions</span>
+          </div>
+
+          {/* Filtres statut */}
+          <div className="flex flex-wrap gap-2">
+            {[
+              { key: 'all', label: 'Tous' },
+              { key: 'pending', label: 'En attente' },
+              { key: 'contacted', label: 'Contacté' },
+              { key: 'converted', label: 'Converti' },
+              { key: 'dismissed', label: 'Refusé' }
+            ].map(f => (
+              <button
+                key={f.key}
+                onClick={() => setWaitlistFilter(f.key)}
+                className={`px-3 py-1.5 rounded font-dm-sans text-xs transition-all ${
+                  waitlistFilter === f.key ? 'bg-gold text-bg-primary font-medium' : 'bg-bg-elevated text-text-secondary hover:text-text-primary'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+
+          {waitlistLoading ? <LoadingSpinner size="lg" /> : (
+            <div className="space-y-3">
+              {(waitlistData?.waitlist || []).length === 0 ? (
+                <div className="card text-center py-12">
+                  <Clock className="w-8 h-8 text-text-muted mx-auto mb-3" />
+                  <p className="font-dm-sans text-sm text-text-secondary">Aucune inscription{waitlistFilter !== 'all' ? ' dans cette catégorie' : ''}</p>
+                </div>
+              ) : (
+                (waitlistData?.waitlist || []).map(w => (
+                  <div key={w.id} className="card space-y-3">
+                    <div className="flex items-start gap-4">
+                      <div className="w-10 h-10 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center flex-shrink-0">
+                        <span className="font-cormorant text-lg text-gold">{(w.company_name || w.email)[0].toUpperCase()}</span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-dm-sans text-sm font-medium text-text-primary">{w.company_name}</p>
+                        <div className="flex items-center gap-3 mt-0.5 flex-wrap">
+                          <a href={`mailto:${w.email}`} className="font-dm-mono text-xs text-gold hover:underline flex items-center gap-1">
+                            <Mail className="w-3 h-3" />{w.email}
+                          </a>
+                          {w.phone && (
+                            <a href={`tel:${w.phone}`} className="font-dm-mono text-xs text-text-secondary hover:text-text-primary flex items-center gap-1">
+                              <PhoneCall className="w-3 h-3" />{w.phone}
+                            </a>
+                          )}
+                        </div>
+                        {w.message && (
+                          <p className="font-dm-sans text-xs text-text-secondary mt-1 italic">" {w.message} "</p>
+                        )}
+                      </div>
+                      <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                        <span className={`font-dm-mono text-xs px-2 py-0.5 rounded border ${
+                          w.status === 'pending' ? 'text-gold border-gold/30 bg-gold/5' :
+                          w.status === 'contacted' ? 'text-blue-400 border-blue-400/30 bg-blue-400/5' :
+                          w.status === 'converted' ? 'text-success border-success/30 bg-success/10' :
+                          'text-text-muted border-border-subtle bg-bg-elevated'
+                        }`}>{w.status}</span>
+                        <span className="font-dm-mono text-xs text-text-muted">
+                          {formatDistanceToNow(new Date(w.created_at), { addSuffix: true, locale: fr })}
+                        </span>
+                        <span className={`font-dm-mono text-xs px-1.5 py-0.5 rounded ${
+                          w.source === 'trial_expired' ? 'bg-danger/10 text-danger/80' :
+                          w.source === 'register' ? 'bg-bg-elevated text-text-muted' :
+                          'bg-bg-elevated text-text-muted'
+                        }`}>{w.source}</span>
+                      </div>
+                    </div>
+
+                    {/* Actions statut */}
+                    <div className="flex items-center gap-2 flex-wrap pt-1 border-t border-border-subtle">
+                      <span className="font-dm-sans text-xs text-text-muted mr-1">Statut :</span>
+                      {['pending', 'contacted', 'converted', 'dismissed'].map(s => (
+                        <button
+                          key={s}
+                          onClick={() => updateWaitlistMutation.mutate({ id: w.id, status: s })}
+                          disabled={w.status === s || updateWaitlistMutation.isPending}
+                          className={`px-2 py-1 rounded text-xs font-dm-sans transition-all ${
+                            w.status === s
+                              ? 'bg-gold text-bg-primary font-medium cursor-default'
+                              : 'bg-bg-elevated text-text-secondary hover:text-text-primary'
+                          }`}
+                        >
+                          {s}
+                        </button>
+                      ))}
+                      <div className="flex-1" />
+                      <button
+                        onClick={() => { if (confirm('Supprimer cette entrée ?')) deleteWaitlistMutation.mutate(w.id); }}
+                        disabled={deleteWaitlistMutation.isPending}
+                        className="p-1.5 rounded hover:bg-bg-elevated text-text-secondary hover:text-danger transition-colors"
+                        title="Supprimer"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+
+                    {/* Notes */}
+                    <div className="flex items-center gap-2">
+                      <MessageSquare className="w-3.5 h-3.5 text-text-muted flex-shrink-0" />
+                      <input
+                        className="input-field flex-1 text-xs py-1.5"
+                        placeholder="Note interne…"
+                        value={waitlistNotes[w.id] ?? (w.notes || '')}
+                        onChange={e => setWaitlistNotes(n => ({ ...n, [w.id]: e.target.value }))}
+                        onBlur={() => {
+                          const val = waitlistNotes[w.id];
+                          if (val !== undefined && val !== w.notes) {
+                            updateWaitlistMutation.mutate({ id: w.id, notes: val });
+                          }
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

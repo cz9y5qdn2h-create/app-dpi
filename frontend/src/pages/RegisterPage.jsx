@@ -330,7 +330,12 @@ export default function RegisterPage() {
             )}
           </form>
 
-          <p className="font-dm-sans text-xs text-center mt-8 leading-relaxed" style={{ color: '#94A3B8' }}>
+          <p className="font-dm-sans text-xs text-center mt-6" style={{ color: '#94A3B8' }}>
+            Pas encore prêt à vous lancer ?{' '}
+            <Link to="/waitlist" style={{ color: '#C8A96E' }}>Rejoindre la liste d'attente</Link>
+          </p>
+
+          <p className="font-dm-sans text-xs text-center mt-3 leading-relaxed" style={{ color: '#94A3B8' }}>
             En créant un compte, vous acceptez nos{' '}
             <Link to="/cgu" className="underline" style={{ color: '#C8A96E' }}>CGU</Link>
             {' '}et notre{' '}

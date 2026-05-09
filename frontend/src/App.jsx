@@ -19,6 +19,7 @@ import ExportPage from './pages/ExportPage';
 import AdminPage from './pages/AdminPage';
 import ApiConfigPage from './pages/ApiConfigPage';
 import TrialExpiredPage from './pages/TrialExpiredPage';
+import WaitlistPage from './pages/WaitlistPage';
 import LoadingSpinner from './components/ui/LoadingSpinner';
 
 function ProtectedRoute({ children }) {
@@ -65,6 +66,9 @@ export default function App() {
         {/* Auth (redirige si déjà connecté) */}
         <Route path="/login" element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
         <Route path="/register" element={<PublicOnlyRoute><RegisterPage /></PublicOnlyRoute>} />
+
+        {/* Liste d'attente — page publique */}
+        <Route path="/waitlist" element={<WaitlistPage />} />
 
         {/* Essai expiré — accessible aux utilisateurs connectés sans Layout */}
         <Route path="/trial-expired" element={<ProtectedRoute><TrialExpiredPage /></ProtectedRoute>} />

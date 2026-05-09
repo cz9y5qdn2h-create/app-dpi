@@ -14,6 +14,7 @@ const settingsRoutes = require('./routes/settings');
 const adminRoutes = require('./routes/admin');
 const notificationRoutes = require('./routes/notifications');
 const agentRoutes = require('./routes/agent');
+const waitlistRoutes = require('./routes/waitlist');
 
 const app = express();
 
@@ -61,6 +62,7 @@ app.use('/api/settings', settingsRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/agent', agentRoutes);
+app.use('/api/waitlist', waitlistRoutes);
 
 // Health check — teste réellement chaque clé
 app.get('/api/health', async (req, res) => {
