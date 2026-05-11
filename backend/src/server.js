@@ -18,32 +18,64 @@ const waitlistRoutes = require('./routes/waitlist');
 
 const app = express();
 
-// CRITIQUE: Necesaire sur Vercel (proxy) sinon express-rate-limit bloque tout
+// Nécessaire sur Vercel (proxy) sinon express-rate-limit bloque tout
 app.set('trust proxy', 1);
 
-// Securite (assouplie pour Vercel)
+// En-têtes de sécurité
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
-  contentSecurityPolicy: false
+  contentSecurityPolicy: false,
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
 }));
 
-// CORS ouvert pour la beta
+// CORS restreint aux origines autorisées
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '').split(',').map(o => o.trim()).filter(Boolean);
 app.use(cors({
-  origin: true,
+  origin: (origin, cb) => {
+    if (!origin) return cb(null, true); // curl / SSR / mobile
+    if (ALLOWED_ORIGINS.length === 0) return cb(null, true); // aucune restriction configurée
+    if (ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+    cb(new Error('CORS: origine non autorisée'));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 app.options('*', cors());
 
-// Rate limiting (desactive en dev)
+// Rate limiters spécifiques — actifs en toutes conditions
+const agentLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Trop de requêtes IA. Réessayez dans 15 minutes.' }
+});
+
+const waitlistLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Trop de tentatives d\'inscription. Réessayez dans une heure.' }
+});
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Trop de tentatives. Réessayez dans 15 minutes.' }
+});
+
+// Rate limiting global en production
 if (process.env.NODE_ENV === 'production') {
   const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 300,
     standardHeaders: true,
     legacyHeaders: false,
-    message: { error: 'Trop de requetes, reessayez dans 15 minutes.' }
+    message: { error: 'Trop de requêtes. Réessayez dans 15 minutes.' }
   });
   app.use('/api/', limiter);
 }
@@ -52,7 +84,7 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Routes
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/dip', dipRoutes);
 app.use('/api/alerts', alertRoutes);
 app.use('/api/franchisees', franchiseeRoutes);
@@ -61,19 +93,18 @@ app.use('/api/history', historyRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationRoutes);
-app.use('/api/agent', agentRoutes);
-app.use('/api/waitlist', waitlistRoutes);
+app.use('/api/agent', agentLimiter, agentRoutes);
+app.use('/api/waitlist', waitlistLimiter, waitlistRoutes);
 
-// Health check — teste réellement chaque clé
+// Health check — ne retourne jamais les clés en clair
 app.get('/api/health', async (req, res) => {
   const checks = {
-    supabase_url: { ok: !!process.env.SUPABASE_URL, value: process.env.SUPABASE_URL || null },
-    supabase_anon_key: { ok: !!process.env.SUPABASE_ANON_KEY, length: process.env.SUPABASE_ANON_KEY?.length || 0 },
-    supabase_service_role: { ok: !!process.env.SUPABASE_SERVICE_ROLE_KEY, length: process.env.SUPABASE_SERVICE_ROLE_KEY?.length || 0 },
-    anthropic_key: { ok: !!process.env.ANTHROPIC_API_KEY, length: process.env.ANTHROPIC_API_KEY?.length || 0, prefix: process.env.ANTHROPIC_API_KEY?.substring(0, 10) || null }
+    supabase_url: { ok: !!process.env.SUPABASE_URL },
+    supabase_anon_key: { ok: !!process.env.SUPABASE_ANON_KEY },
+    supabase_service_role: { ok: !!process.env.SUPABASE_SERVICE_ROLE_KEY },
+    anthropic_key: { ok: !!process.env.ANTHROPIC_API_KEY }
   };
 
-  // Test réel : requête vers la BDD avec service_role
   try {
     const { supabaseAdmin } = require('./config/supabase');
     const { error } = await supabaseAdmin.from('users').select('id').limit(1);
@@ -82,7 +113,6 @@ app.get('/api/health', async (req, res) => {
     checks.supabase_admin_query = { ok: false, error: e.message };
   }
 
-  // Test réel : ping Anthropic
   try {
     const Anthropic = require('@anthropic-ai/sdk');
     const c = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -106,11 +136,14 @@ app.get('/', (req, res) => {
 
 // 404 handler
 app.use((req, res) => {
-  res.status(404).json({ error: 'Route non trouvee: ' + req.method + ' ' + req.path });
+  res.status(404).json({ error: 'Route introuvable' });
 });
 
 // Erreurs globales
 app.use((err, req, res, next) => {
+  if (err.message?.includes('CORS')) {
+    return res.status(403).json({ error: 'Accès refusé' });
+  }
   console.error('[ERROR]', err.message);
   res.status(err.status || 500).json({ error: err.message || 'Erreur interne' });
 });
@@ -118,7 +151,7 @@ app.use((err, req, res, next) => {
 // Export pour Vercel serverless
 module.exports = app;
 
-// Demarrage local uniquement
+// Démarrage local uniquement
 if (require.main === module) {
   const PORT = process.env.PORT || 3001;
   app.listen(PORT, () => console.log('DIP Pilot API sur port ' + PORT));

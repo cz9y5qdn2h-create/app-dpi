@@ -3,6 +3,9 @@ const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware } = require('../middleware/auth');
 const router = express.Router();
 
+const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{2,}$/;
+const ALLOWED_STATUSES = ['pending', 'contacted', 'converted', 'dismissed'];
+
 const requireAdmin = async (req, res, next) => {
   const { data } = await supabaseAdmin.from('users').select('role').eq('id', req.user.id).single();
   if (data?.role !== 'admin') return res.status(403).json({ error: 'Accès refusé' });
@@ -17,18 +20,31 @@ router.post('/', async (req, res) => {
     return res.status(400).json({ error: 'Email et nom de société requis' });
   }
 
+  const cleanEmail = String(email).toLowerCase().trim();
+  if (!EMAIL_RE.test(cleanEmail)) {
+    return res.status(400).json({ error: 'Format d\'email invalide' });
+  }
+
+  if (String(company_name).trim().length > 200) {
+    return res.status(400).json({ error: 'Nom de société trop long (200 caractères max)' });
+  }
+
+  if (message && String(message).length > 2000) {
+    return res.status(400).json({ error: 'Message trop long (2000 caractères max)' });
+  }
+
   const { data: existing } = await supabaseAdmin
-    .from('waitlist').select('id').eq('email', email.toLowerCase().trim()).maybeSingle();
+    .from('waitlist').select('id').eq('email', cleanEmail).maybeSingle();
 
   if (existing) {
     return res.json({ message: 'Vous êtes déjà sur la liste d\'attente', already_exists: true });
   }
 
   const { error } = await supabaseAdmin.from('waitlist').insert({
-    email:        email.toLowerCase().trim(),
-    company_name: company_name.trim(),
-    phone:        phone?.trim() || null,
-    message:      message?.trim() || null,
+    email:        cleanEmail,
+    company_name: String(company_name).trim().substring(0, 200),
+    phone:        phone ? String(phone).trim().substring(0, 30) || null : null,
+    message:      message ? String(message).trim().substring(0, 2000) || null : null,
     source:       ['trial_expired', 'register', 'standalone'].includes(source) ? source : 'standalone',
     user_id:      user_id || null,
     status:       'pending'
@@ -43,7 +59,9 @@ router.post('/', async (req, res) => {
 router.get('/', authMiddleware, requireAdmin, async (req, res) => {
   const { status } = req.query;
   let query = supabaseAdmin.from('waitlist').select('*').order('created_at', { ascending: false });
-  if (status && status !== 'all') query = query.eq('status', status);
+  if (status && status !== 'all' && ALLOWED_STATUSES.includes(status)) {
+    query = query.eq('status', status);
+  }
 
   const { data, error } = await query;
   if (error) return res.status(500).json({ error: error.message });
@@ -57,8 +75,14 @@ router.get('/', authMiddleware, requireAdmin, async (req, res) => {
 router.patch('/:id', authMiddleware, requireAdmin, async (req, res) => {
   const { status, notes } = req.body;
   const updates = { updated_at: new Date().toISOString() };
-  if (status) updates.status = status;
-  if (notes !== undefined) updates.notes = notes;
+
+  if (status) {
+    if (!ALLOWED_STATUSES.includes(status)) {
+      return res.status(400).json({ error: 'Statut invalide' });
+    }
+    updates.status = status;
+  }
+  if (notes !== undefined) updates.notes = String(notes).substring(0, 1000);
 
   const { error } = await supabaseAdmin.from('waitlist').update(updates).eq('id', req.params.id);
   if (error) return res.status(500).json({ error: error.message });

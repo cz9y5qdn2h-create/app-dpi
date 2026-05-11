@@ -4,11 +4,17 @@ const { authMiddleware, requireFranchisor } = require('../middleware/auth');
 const { generateUpdateSummary } = require('../config/claude');
 const router = express.Router();
 
+const MAX_CSV_ROWS = 500;
+
 // POST /api/franchisees/import-csv — import CSV bulk
 router.post('/import-csv', authMiddleware, requireFranchisor, async (req, res) => {
   const { rows } = req.body;
   if (!Array.isArray(rows) || rows.length === 0) {
     return res.status(400).json({ error: 'rows requis (tableau CSV parsé)' });
+  }
+
+  if (rows.length > MAX_CSV_ROWS) {
+    return res.status(400).json({ error: `Maximum ${MAX_CSV_ROWS} lignes par import` });
   }
 
   const toInsert = rows
@@ -117,8 +123,18 @@ router.post('/notify', authMiddleware, requireFranchisor, async (req, res) => {
   res.json({ message: `Notifications envoyées à ${franchisees.length} franchisé(s)`, summary });
 });
 
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 async function sendBrevoEmail(email, name, summary, dipId) {
   try {
+    const frontendUrl = process.env.FRONTEND_URL || 'https://dippro.fr';
     const response = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: {
@@ -129,7 +145,7 @@ async function sendBrevoEmail(email, name, summary, dipId) {
         sender: { name: process.env.BREVO_SENDER_NAME || 'DIP Pilot', email: process.env.BREVO_SENDER_EMAIL || 'noreply@dip-pilot.fr' },
         to: [{ email, name }],
         subject: 'Mise à jour de votre DIP - Action requise',
-        htmlContent: `<div style="font-family:sans-serif;max-width:600px;margin:auto;background:#080808;color:#F4F2EE;padding:32px;border-radius:8px"><h2 style="color:#C8A96E">Mise à jour du DIP</h2><p>${summary}</p><p style="margin-top:24px"><a href="${process.env.FRONTEND_URL}/dip" style="background:#C8A96E;color:#080808;padding:12px 24px;text-decoration:none;border-radius:4px;font-weight:600">Consulter le DIP mis à jour</a></p></div>`
+        htmlContent: `<div style="font-family:sans-serif;max-width:600px;margin:auto;background:#080808;color:#F4F2EE;padding:32px;border-radius:8px"><h2 style="color:#C8A96E">Mise à jour du DIP</h2><p>${escapeHtml(summary)}</p><p style="margin-top:24px"><a href="${frontendUrl}/dip" style="background:#C8A96E;color:#080808;padding:12px 24px;text-decoration:none;border-radius:4px;font-weight:600">Consulter le DIP mis à jour</a></p></div>`
       })
     });
     return response.ok;

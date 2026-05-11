@@ -1,19 +1,8 @@
 require('dotenv').config();
+const { supabaseAdmin } = require('../config/supabase');
 
-const decodeJWT = (token) => {
-  const parts = token.split('.');
-  if (parts.length !== 3) throw new Error('Token malformé');
-
-  const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString('utf8'));
-
-  if (!payload.exp || payload.exp < Math.floor(Date.now() / 1000)) {
-    throw new Error('Token expiré');
-  }
-
-  return payload;
-};
-
-const authMiddleware = (req, res, next) => {
+// Vérifie le JWT via Supabase (signature + expiration + révocation)
+const authMiddleware = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'Token d\'authentification manquant' });
@@ -21,35 +10,33 @@ const authMiddleware = (req, res, next) => {
 
   const token = authHeader.split(' ')[1];
 
-  try {
-    const payload = decodeJWT(token);
+  if (!token || token.length > 4096) {
+    return res.status(401).json({ error: 'Token invalide' });
+  }
 
-    if (!payload.sub) {
-      return res.status(401).json({ error: 'Token invalide' });
+  try {
+    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+
+    if (error || !user) {
+      return res.status(401).json({ error: 'Session expirée. Reconnectez-vous.' });
     }
 
     req.user = {
-      id: payload.sub,
-      email: payload.email || '',
-      user_metadata: payload.user_metadata || {}
+      id: user.id,
+      email: user.email || '',
+      user_metadata: user.user_metadata || {}
     };
     req.token = token;
     next();
   } catch (err) {
-    return res.status(401).json({ error: err.message === 'Token expiré'
-      ? 'Session expirée. Reconnectez-vous.'
-      : 'Token invalide ou expiré. Reconnectez-vous.'
-    });
+    return res.status(401).json({ error: 'Token invalide ou expiré. Reconnectez-vous.' });
   }
 };
 
-// Vérifie le rôle franchiseur — crée le profil automatiquement s'il est manquant
 const requireFranchisor = async (req, res, next) => {
   if (!req.user) return res.status(401).json({ error: 'Non authentifié' });
 
   try {
-    const { supabaseAdmin } = require('../config/supabase');
-
     let { data: profile, error: profileError } = await supabaseAdmin
       .from('users')
       .select('role')
@@ -57,9 +44,8 @@ const requireFranchisor = async (req, res, next) => {
       .single();
 
     if (profileError && profileError.code !== 'PGRST116') {
-      console.error('requireFranchisor DB error:', profileError.message, profileError.code);
-      // DB inaccessible mais JWT valide → on laisse passer (utilisateur authentifié)
-      return next();
+      console.error('requireFranchisor DB error:', profileError.message);
+      return res.status(503).json({ error: 'Service temporairement indisponible.' });
     }
 
     if (!profile) {

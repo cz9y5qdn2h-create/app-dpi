@@ -6,6 +6,14 @@ const errMsg = require('../config/errorMessage');
 
 const router = express.Router();
 
+const MAX_TEXT_CHARS = 500_000;
+const MAX_FILE_BYTES = 50 * 1024 * 1024;
+
+const SAFE_FILENAME_RE = /^[a-zA-Z0-9._-]+$/;
+
+const sanitizeFilename = (name) =>
+  String(name || 'document.pdf').replace(/[^a-zA-Z0-9._-]/g, '_').substring(0, 255);
+
 const extractText = async (buffer, filename) => {
   const ext = path.extname(filename).toLowerCase();
   if (ext === '.pdf') {
@@ -21,17 +29,21 @@ const extractText = async (buffer, filename) => {
 };
 
 // POST /api/agent/analyze
-// Body: { text: string } OU { file: base64, filename: string }
 router.post('/analyze', authMiddleware, requireFranchisor, async (req, res) => {
   try {
     let rawText = req.body.text;
 
     if (!rawText && req.body.file) {
-      const buffer = Buffer.from(req.body.file, 'base64');
-      rawText = await extractText(buffer, req.body.filename || 'document.pdf');
+      const fileStr = String(req.body.file);
+      if (fileStr.length > MAX_FILE_BYTES * 1.4) {
+        return res.status(400).json({ error: 'Fichier trop volumineux (50 Mo max)' });
+      }
+      const buffer = Buffer.from(fileStr, 'base64');
+      rawText = await extractText(buffer, sanitizeFilename(req.body.filename));
     }
 
     if (!rawText) return res.status(400).json({ error: 'text ou file requis' });
+    if (rawText.length > MAX_TEXT_CHARS) rawText = rawText.substring(0, MAX_TEXT_CHARS);
 
     const result = await analyzeDIP(rawText);
     res.json({ success: true, ...result });
@@ -41,7 +53,6 @@ router.post('/analyze', authMiddleware, requireFranchisor, async (req, res) => {
 });
 
 // POST /api/agent/generate
-// Body: { formData: object, file?: base64, filename?: string }
 router.post('/generate', authMiddleware, requireFranchisor, async (req, res) => {
   try {
     const { formData, file, filename } = req.body;
@@ -49,8 +60,13 @@ router.post('/generate', authMiddleware, requireFranchisor, async (req, res) => 
 
     let sourceText = '';
     if (file) {
-      const buffer = Buffer.from(file, 'base64');
-      sourceText = await extractText(buffer, filename || 'document.pdf');
+      const fileStr = String(file);
+      if (fileStr.length > MAX_FILE_BYTES * 1.4) {
+        return res.status(400).json({ error: 'Fichier trop volumineux (50 Mo max)' });
+      }
+      const buffer = Buffer.from(fileStr, 'base64');
+      sourceText = await extractText(buffer, sanitizeFilename(filename));
+      if (sourceText.length > MAX_TEXT_CHARS) sourceText = sourceText.substring(0, MAX_TEXT_CHARS);
     }
 
     const result = await generateDIPFromForm(formData, sourceText);
@@ -61,22 +77,23 @@ router.post('/generate', authMiddleware, requireFranchisor, async (req, res) => 
 });
 
 // POST /api/agent/compare
-// Body: { previousText: string, newText: string }
-// OU   { previousFile: base64, newFile: base64, filename: string }
 router.post('/compare', authMiddleware, requireFranchisor, async (req, res) => {
   try {
     let { previousText, newText } = req.body;
 
     if (!previousText && req.body.previousFile) {
-      const buf = Buffer.from(req.body.previousFile, 'base64');
-      previousText = await extractText(buf, req.body.filename || 'document.pdf');
+      const buf = Buffer.from(String(req.body.previousFile), 'base64');
+      previousText = await extractText(buf, sanitizeFilename(req.body.filename));
     }
     if (!newText && req.body.newFile) {
-      const buf = Buffer.from(req.body.newFile, 'base64');
-      newText = await extractText(buf, req.body.filename || 'document.pdf');
+      const buf = Buffer.from(String(req.body.newFile), 'base64');
+      newText = await extractText(buf, sanitizeFilename(req.body.filename));
     }
 
     if (!previousText || !newText) return res.status(400).json({ error: 'previousText et newText requis' });
+
+    if (previousText.length > MAX_TEXT_CHARS) previousText = previousText.substring(0, MAX_TEXT_CHARS);
+    if (newText.length > MAX_TEXT_CHARS) newText = newText.substring(0, MAX_TEXT_CHARS);
 
     const result = await compareDIPVersions(previousText, newText);
     res.json({ success: true, ...result });
@@ -86,7 +103,6 @@ router.post('/compare', authMiddleware, requireFranchisor, async (req, res) => {
 });
 
 // POST /api/agent/verify
-// Body: { companyInfo: object }
 router.post('/verify', authMiddleware, requireFranchisor, async (req, res) => {
   try {
     const { companyInfo } = req.body;
@@ -100,15 +116,14 @@ router.post('/verify', authMiddleware, requireFranchisor, async (req, res) => {
 });
 
 // POST /api/agent/docx
-// Body: { sections: object (résultat d'analyze ou generate), companyName?: string }
-// Retourne le fichier DOCX en téléchargement
 router.post('/docx', authMiddleware, requireFranchisor, async (req, res) => {
   try {
     const { sections, companyName } = req.body;
     if (!sections) return res.status(400).json({ error: 'sections requis' });
 
-    const buffer = await generateDocx(sections, companyName || 'Franchiseur');
-    const filename = `DIP_${(companyName || 'franchiseur').replace(/[^a-z0-9]/gi, '_')}_${Date.now()}.docx`;
+    const safeName = String(companyName || 'franchiseur').replace(/[^a-z0-9]/gi, '_').substring(0, 100);
+    const buffer = await generateDocx(sections, safeName);
+    const filename = `DIP_${safeName}_${Date.now()}.docx`;
 
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);

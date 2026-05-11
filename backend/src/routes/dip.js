@@ -45,7 +45,8 @@ router.get('/upload-url', authMiddleware, requireFranchisor, async (req, res) =>
   const { filename } = req.query;
   if (!filename) return res.status(400).json({ error: 'filename requis' });
 
-  const ext = path.extname(filename).toLowerCase();
+  const sanitized = String(filename).replace(/[^a-zA-Z0-9._-]/g, '_').substring(0, 255);
+  const ext = path.extname(sanitized).toLowerCase();
   if (!['.pdf', '.docx', '.doc'].includes(ext)) {
     return res.status(400).json({ error: 'Format non supporté. Utilisez PDF ou DOCX.' });
   }
@@ -53,7 +54,7 @@ router.get('/upload-url', authMiddleware, requireFranchisor, async (req, res) =>
   try {
     await ensureBucket();
 
-    const storagePath = `${req.user.id}/${Date.now()}_${filename}`;
+    const storagePath = `${req.user.id}/${Date.now()}_${sanitized}`;
 
     const { data, error } = await supabaseAdmin.storage
       .from(BUCKET)

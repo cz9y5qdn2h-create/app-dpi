@@ -78,12 +78,19 @@ router.get('/users/:id', authMiddleware, requireAdmin, async (req, res) => {
   res.json({ user, dips: dips || [], franchisees: franchisees || [] });
 });
 
+const ALLOWED_ROLES = ['franchiseur', 'admin'];
+
 // PUT /api/admin/users/:id — Modifier un utilisateur
 router.put('/users/:id', authMiddleware, requireAdmin, async (req, res) => {
   const { company_name, role, email } = req.body;
   const updates = {};
-  if (company_name !== undefined) updates.company_name = company_name;
-  if (role !== undefined) updates.role = role;
+  if (company_name !== undefined) updates.company_name = String(company_name).substring(0, 200);
+  if (role !== undefined) {
+    if (!ALLOWED_ROLES.includes(role)) {
+      return res.status(400).json({ error: 'Rôle invalide' });
+    }
+    updates.role = role;
+  }
 
   const { data, error } = await supabaseAdmin
     .from('users').update(updates).eq('id', req.params.id).select().single();
