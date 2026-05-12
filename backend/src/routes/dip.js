@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const { v4: uuidv4 } = require('uuid');
 const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware, requireFranchisor } = require('../middleware/auth');
 const { parseDIPSections, compareDIPVersions } = require('../config/claude');
@@ -435,6 +436,79 @@ router.post('/check/:id', authMiddleware, requireFranchisor, async (req, res) =>
     .eq('dip_id', req.params.id);
 
   res.json({ message: 'Vérification lancée', checked_at: new Date().toISOString() });
+});
+
+// POST /api/dip/:id/share-link — génère un lien de partage pour les franchisés
+router.post('/:id/share-link', authMiddleware, requireFranchisor, async (req, res) => {
+  const { data: dip } = await supabaseAdmin
+    .from('dip_documents').select('id, share_token').eq('id', req.params.id).eq('user_id', req.user.id).single();
+  if (!dip) return res.status(404).json({ error: 'DIP introuvable' });
+
+  const token = dip.share_token || uuidv4();
+  const { error } = await supabaseAdmin.from('dip_documents').update({
+    share_token: token,
+    share_token_created_at: new Date().toISOString()
+  }).eq('id', req.params.id);
+
+  if (error) return res.status(500).json({ error: error.message });
+
+  const baseUrl = process.env.FRONTEND_URL || 'https://dippro.fr';
+  res.json({ token, share_url: `${baseUrl}/dip/partage/${token}` });
+});
+
+// DELETE /api/dip/:id/share-link — révoque le lien de partage
+router.delete('/:id/share-link', authMiddleware, requireFranchisor, async (req, res) => {
+  const { data: dip } = await supabaseAdmin
+    .from('dip_documents').select('id').eq('id', req.params.id).eq('user_id', req.user.id).single();
+  if (!dip) return res.status(404).json({ error: 'DIP introuvable' });
+
+  const { error } = await supabaseAdmin.from('dip_documents').update({
+    share_token: null, share_token_created_at: null, share_token_views: 0
+  }).eq('id', req.params.id);
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ message: 'Lien révoqué' });
+});
+
+// GET /api/dip/shared/:token — public, retourne le DIP pour les franchisés
+router.get('/shared/:token', async (req, res) => {
+  const token = req.params.token;
+  if (!token || token.length > 100) return res.status(400).json({ error: 'Token invalide' });
+
+  const { data: dip, error } = await supabaseAdmin
+    .from('dip_documents')
+    .select('id, title, conformity_score, status, created_at, dip_sections(*)')
+    .eq('share_token', token)
+    .single();
+
+  if (error || !dip) return res.status(404).json({ error: 'DIP introuvable ou lien expiré' });
+
+  // Incrémenter le compteur de vues
+  await supabaseAdmin.from('dip_documents')
+    .update({ share_token_views: (dip.share_token_views || 0) + 1 })
+    .eq('id', dip.id);
+
+  // Retourner uniquement les données non sensibles
+  const sections = (dip.dip_sections || [])
+    .sort((a, b) => a.section_number - b.section_number)
+    .map(s => ({
+      id: s.id,
+      section_number: s.section_number,
+      section_title: s.section_title,
+      content: s.content,
+      status: s.status,
+      last_updated: s.last_updated
+    }));
+
+  res.json({
+    dip: {
+      id: dip.id,
+      title: dip.title,
+      conformity_score: dip.conformity_score,
+      created_at: dip.created_at,
+      sections
+    }
+  });
 });
 
 module.exports = router;

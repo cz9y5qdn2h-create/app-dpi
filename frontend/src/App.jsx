@@ -20,6 +20,7 @@ import AdminPage from './pages/AdminPage';
 import ApiConfigPage from './pages/ApiConfigPage';
 import TrialExpiredPage from './pages/TrialExpiredPage';
 import WaitlistPage from './pages/WaitlistPage';
+import SharedDIPPage from './pages/SharedDIPPage';
 import LoadingSpinner from './components/ui/LoadingSpinner';
 
 function ProtectedRoute({ children }) {
@@ -69,6 +70,9 @@ export default function App() {
 
         {/* Liste d'attente — page publique */}
         <Route path="/waitlist" element={<WaitlistPage />} />
+
+        {/* Portail franchisé — page publique sans authentification */}
+        <Route path="/dip/partage/:token" element={<SharedDIPPage />} />
 
         {/* Essai expiré — accessible aux utilisateurs connectés sans Layout */}
         <Route path="/trial-expired" element={<ProtectedRoute><TrialExpiredPage /></ProtectedRoute>} />

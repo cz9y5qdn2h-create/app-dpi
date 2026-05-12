@@ -8,7 +8,8 @@ import StatusBadge from '../components/ui/StatusBadge';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import {
   Upload, ChevronDown, ChevronUp, Edit3, Check, X,
-  Sparkles, Download, FileText, Plus, Trash2, AlertCircle
+  Sparkles, Download, FileText, Plus, Trash2, AlertCircle,
+  Share2, Copy, Link2Off, Eye
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -57,6 +58,8 @@ export default function DIPPage() {
   const [formData, setFormData] = useState(emptyForm());
   const [generating, setGenerating] = useState(false);
   const [downloadingDocx, setDownloadingDocx] = useState(false);
+  const [shareLoading, setShareLoading] = useState(false);
+  const [showSharePanel, setShowSharePanel] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['dips'],
@@ -113,6 +116,41 @@ export default function DIPPage() {
     } finally {
       setGenerating(false);
     }
+  };
+
+  const handleGenerateShareLink = async () => {
+    if (!dip) return;
+    setShareLoading(true);
+    try {
+      const res = await api.post(`/dip/${dip.id}/share-link`);
+      queryClient.invalidateQueries({ queryKey: ['dips'] });
+      toast.success('Lien de partage généré');
+      return res.data;
+    } catch (err) {
+      toast.error('Impossible de générer le lien');
+    } finally {
+      setShareLoading(false);
+    }
+  };
+
+  const handleRevokeShareLink = async () => {
+    if (!dip) return;
+    setShareLoading(true);
+    try {
+      await api.delete(`/dip/${dip.id}/share-link`);
+      queryClient.invalidateQueries({ queryKey: ['dips'] });
+      toast.success('Lien révoqué — les franchisés n\'y ont plus accès');
+    } catch (err) {
+      toast.error('Impossible de révoquer le lien');
+    } finally {
+      setShareLoading(false);
+    }
+  };
+
+  const handleCopyShareLink = () => {
+    if (!dip?.share_token) return;
+    const url = `${window.location.origin}/dip/partage/${dip.share_token}`;
+    navigator.clipboard.writeText(url).then(() => toast.success('Lien copié dans le presse-papiers'));
   };
 
   const handleDownloadDocx = async () => {
@@ -176,6 +214,16 @@ export default function DIPPage() {
                 {downloadingDocx ? <LoadingSpinner size="sm" /> : <Download className="w-4 h-4" />}
                 DOCX
               </button>
+              <button
+                onClick={() => setShowSharePanel(v => !v)}
+                className={`btn-secondary flex items-center gap-2 text-sm ${showSharePanel ? 'border-gold/40 text-gold' : ''}`}
+              >
+                <Share2 className="w-4 h-4" />
+                Partager
+                {dip.share_token && (
+                  <span className="w-2 h-2 rounded-full bg-success flex-shrink-0" title="Lien actif" />
+                )}
+              </button>
               <Link to="/dip/upload" className="btn-secondary flex items-center gap-2 text-sm">
                 <Upload className="w-4 h-4" /> Mettre à jour
               </Link>
@@ -183,6 +231,62 @@ export default function DIPPage() {
           )
         }
       />
+
+      {/* Panneau de partage franchisés */}
+      {showSharePanel && (
+        <div className="card border-gold/20 animate-slide-up">
+          <div className="flex items-center gap-3 mb-4">
+            <Share2 className="w-4 h-4 text-gold" />
+            <p className="font-dm-sans text-sm font-medium text-text-primary">Portail franchisé — partage sécurisé</p>
+          </div>
+          <p className="font-dm-sans text-xs text-text-secondary mb-4">
+            Générez un lien unique pour permettre à vos franchisés de consulter ce DIP en lecture seule, sans créer de compte.
+            Vous pouvez révoquer l'accès à tout moment.
+          </p>
+
+          {dip.share_token ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 bg-bg-elevated rounded-lg px-3 py-2">
+                <Link2Off className="w-3.5 h-3.5 text-text-secondary flex-shrink-0" />
+                <span className="font-dm-mono text-xs text-text-primary truncate flex-1">
+                  {window.location.origin}/dip/partage/{dip.share_token}
+                </span>
+                <button onClick={handleCopyShareLink} className="btn-ghost p-1 flex-shrink-0" title="Copier le lien">
+                  <Copy className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 font-dm-sans text-xs text-text-secondary">
+                  <Eye className="w-3.5 h-3.5" />
+                  {dip.share_token_views || 0} consultation{(dip.share_token_views || 0) !== 1 ? 's' : ''}
+                </div>
+                <div className="flex gap-2">
+                  <button onClick={handleCopyShareLink} className="btn-primary flex items-center gap-2 text-xs py-1.5 px-3">
+                    <Copy className="w-3.5 h-3.5" /> Copier le lien
+                  </button>
+                  <button
+                    onClick={handleRevokeShareLink}
+                    disabled={shareLoading}
+                    className="btn-ghost flex items-center gap-2 text-xs text-danger hover:text-danger/80"
+                  >
+                    {shareLoading ? <LoadingSpinner size="sm" /> : <Link2Off className="w-3.5 h-3.5" />}
+                    Révoquer l'accès
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={handleGenerateShareLink}
+              disabled={shareLoading}
+              className="btn-liquid-glass-prominent flex items-center gap-2 text-sm"
+            >
+              {shareLoading ? <LoadingSpinner size="sm" /> : <Share2 className="w-4 h-4" />}
+              Générer le lien de partage
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Onglets */}
       <div className="flex gap-1 bg-bg-elevated rounded-lg p-1 w-fit">

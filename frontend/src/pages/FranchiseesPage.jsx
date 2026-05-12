@@ -6,7 +6,8 @@ import StatusBadge from '../components/ui/StatusBadge';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import {
   Plus, Users, Edit3, Trash2, Send, X, Check,
-  AlertCircle, MessageCircle, Mail, Copy, ExternalLink, Upload, FileText
+  AlertCircle, MessageCircle, Mail, Copy, ExternalLink, Upload, FileText,
+  Search, Download, Filter
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -38,6 +39,8 @@ export default function FranchiseesPage() {
   const [showCsvModal, setShowCsvModal] = useState(false);
   const [csvPreview, setCsvPreview] = useState([]);
   const [csvError, setCsvError] = useState('');
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('tous');
 
   const { data, isLoading } = useQuery({
     queryKey: ['franchisees'],
@@ -115,8 +118,36 @@ export default function FranchiseesPage() {
     reader.readAsText(file, 'UTF-8');
   };
 
-  const franchisees = data?.franchisees || [];
-  const actifs = franchisees.filter(f => f.status === 'actif');
+  const allFranchisees = data?.franchisees || [];
+  const actifs = allFranchisees.filter(f => f.status === 'actif');
+
+  const franchisees = allFranchisees
+    .filter(f => statusFilter === 'tous' || f.status === statusFilter)
+    .filter(f => {
+      if (!search.trim()) return true;
+      const q = search.toLowerCase();
+      return f.name?.toLowerCase().includes(q) || f.email?.toLowerCase().includes(q) || f.territory?.toLowerCase().includes(q);
+    });
+
+  const handleExportCsv = () => {
+    const headers = ['Nom', 'Email', 'Territoire', 'Statut', 'Début contrat', 'Fin contrat', 'WhatsApp', 'Téléphone'];
+    const rows = franchisees.map(f => [
+      f.name, f.email, f.territory || '',
+      f.status,
+      f.contract_start ? new Date(f.contract_start).toLocaleDateString('fr-FR') : '',
+      f.contract_end ? new Date(f.contract_end).toLocaleDateString('fr-FR') : '',
+      f.whatsapp_number || '', f.phone || ''
+    ]);
+    const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `franchises_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Export CSV téléchargé');
+  };
   const dip = dipsData?.dips?.find(d => d.status === 'actif') ?? dipsData?.dips?.[0];
 
   const defaultMessage = dip
@@ -171,31 +202,69 @@ export default function FranchiseesPage() {
     <div className="space-y-6 animate-fade-in">
       <PageHeader
         title="Franchisés"
-        subtitle={`${franchisees.length} franchisé(s) — ${actifs.length} actif(s)`}
+        subtitle={`${allFranchisees.length} franchisé(s) — ${actifs.length} actif(s)`}
         action={
-          <div className="flex gap-3">
+          <div className="flex gap-2 flex-wrap">
             {actifs.length > 0 && (
               <button onClick={openNotifyModal} className="btn-secondary flex items-center gap-2">
                 <Send className="w-4 h-4" /> Notifier
               </button>
             )}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setShowCsvModal(true)}
-                className="btn-secondary flex items-center gap-2 text-sm"
-              >
-                <Upload className="w-4 h-4" /> Import CSV
+            {franchisees.length > 0 && (
+              <button onClick={handleExportCsv} className="btn-secondary flex items-center gap-2 text-sm" title="Exporter la liste filtrée en CSV">
+                <Download className="w-4 h-4" /> Export CSV
               </button>
-              <button
-                onClick={() => { setShowForm(true); setEditingId(null); setForm(EMPTY_FORM); setFormError(''); }}
-                className="btn-primary flex items-center gap-2"
-              >
-                <Plus className="w-4 h-4" /> Ajouter
-              </button>
-            </div>
+            )}
+            <button onClick={() => setShowCsvModal(true)} className="btn-secondary flex items-center gap-2 text-sm">
+              <Upload className="w-4 h-4" /> Import CSV
+            </button>
+            <button
+              onClick={() => { setShowForm(true); setEditingId(null); setForm(EMPTY_FORM); setFormError(''); }}
+              className="btn-primary flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" /> Ajouter
+            </button>
           </div>
         }
       />
+
+      {/* Barre de recherche + filtres statut */}
+      {allFranchisees.length > 0 && (
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary pointer-events-none" />
+            <input
+              className="input-field pl-9"
+              placeholder="Rechercher par nom, email ou territoire…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center gap-1 bg-bg-elevated rounded-lg p-1">
+            {[
+              { key: 'tous', label: 'Tous' },
+              { key: 'actif', label: 'Actifs' },
+              { key: 'en_cours', label: 'En cours' },
+              { key: 'inactif', label: 'Inactifs' },
+            ].map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => setStatusFilter(key)}
+                className={`px-3 py-1.5 rounded text-xs font-dm-sans transition-all ${
+                  statusFilter === key ? 'bg-gold/20 text-gold font-medium' : 'text-text-secondary hover:text-text-primary'
+                }`}
+              >
+                {label}
+                {key !== 'tous' && (
+                  <span className="ml-1 font-dm-mono">
+                    ({allFranchisees.filter(f => f.status === key).length})
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Formulaire créer / modifier */}
       {(showForm || editingId) && (
@@ -261,7 +330,7 @@ export default function FranchiseesPage() {
 
       {isLoading ? (
         <div className="flex justify-center py-24"><LoadingSpinner size="lg" /></div>
-      ) : franchisees.length === 0 ? (
+      ) : allFranchisees.length === 0 ? (
         <div className="text-center py-24">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-lg bg-gold/10 border border-gold/20 mb-6">
             <Users className="w-8 h-8 text-gold" />
@@ -272,6 +341,14 @@ export default function FranchiseesPage() {
           </p>
           <button onClick={() => setShowForm(true)} className="btn-liquid-glass inline-flex">
             <Plus className="w-4 h-4" /> Ajouter un franchisé
+          </button>
+        </div>
+      ) : franchisees.length === 0 ? (
+        <div className="text-center py-16">
+          <Search className="w-10 h-10 text-text-muted mx-auto mb-4" />
+          <p className="font-dm-sans text-sm text-text-secondary">Aucun résultat pour « {search} »</p>
+          <button onClick={() => { setSearch(''); setStatusFilter('tous'); }} className="btn-ghost text-xs mt-3">
+            Réinitialiser les filtres
           </button>
         </div>
       ) : (
