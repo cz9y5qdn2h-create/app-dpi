@@ -17,6 +17,11 @@ export default function RegisterPage() {
     password: '',
     confirmPassword: '',
   });
+  const [consents, setConsents] = useState({
+    terms: false,
+    aiDisclaimer: false,
+    marketing: false,
+  });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -46,9 +51,14 @@ export default function RegisterPage() {
     e.preventDefault();
     if (form.password !== form.confirmPassword) return setError('Les mots de passe ne correspondent pas');
     if (strength < 2) return setError('Mot de passe trop faible (min. 8 caractères, 1 majuscule, 1 chiffre)');
+    if (!consents.terms) return setError('Vous devez accepter les CGU et la politique de confidentialité pour continuer');
+    if (!consents.aiDisclaimer) return setError('Vous devez confirmer avoir compris que les analyses IA ne constituent pas un conseil juridique');
     setLoading(true);
     try {
-      await register(form.email, form.password, form.company_name, form.phone_number);
+      await register(form.email, form.password, form.company_name, form.phone_number, {
+        marketing_consent: consents.marketing,
+        ai_disclaimer_accepted: consents.aiDisclaimer,
+      });
       toast.success('Compte créé ! Votre essai gratuit de 5 jours commence maintenant.');
       navigate('/login');
     } catch (err) {
@@ -295,9 +305,44 @@ export default function RegisterPage() {
               </>
             )}
 
+            {/* Checkboxes de consentement — visibles uniquement à l'étape 2 */}
+            {step === 2 && (
+              <div className="space-y-3 pt-1">
+                <ConsentCheckbox
+                  id="consent-terms"
+                  checked={consents.terms}
+                  onChange={v => setConsents(c => ({ ...c, terms: v }))}
+                  required
+                  label={
+                    <>
+                      J'ai lu et j'accepte les{' '}
+                      <a href="/cgu" target="_blank" rel="noopener noreferrer" style={{ color: '#C8A96E', textDecoration: 'underline' }}>CGU</a>
+                      {' '}et la{' '}
+                      <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: '#C8A96E', textDecoration: 'underline' }}>politique de confidentialité</a>
+                      {' '}de DIPpro *
+                    </>
+                  }
+                />
+                <ConsentCheckbox
+                  id="consent-ai"
+                  checked={consents.aiDisclaimer}
+                  onChange={v => setConsents(c => ({ ...c, aiDisclaimer: v }))}
+                  required
+                  label="Je comprends que les analyses de DIPpro sont des outils d'aide à la décision et ne constituent pas un conseil juridique. Tout DIP doit être validé par un avocat avant remise officielle. *"
+                />
+                <ConsentCheckbox
+                  id="consent-marketing"
+                  checked={consents.marketing}
+                  onChange={v => setConsents(c => ({ ...c, marketing: v }))}
+                  label="J'accepte de recevoir des informations et actualités sur DIPpro par email (facultatif — révocable à tout moment)"
+                />
+                <p className="font-dm-mono text-xs" style={{ color: '#94A3B8' }}>* Champs obligatoires</p>
+              </div>
+            )}
+
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || (step === 2 && (!consents.terms || !consents.aiDisclaimer))}
               className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-dm-sans text-sm font-medium transition-all"
               style={{
                 background: '#C8A96E',
@@ -336,13 +381,45 @@ export default function RegisterPage() {
           </p>
 
           <p className="font-dm-sans text-xs text-center mt-3 leading-relaxed" style={{ color: '#94A3B8' }}>
-            En créant un compte, vous acceptez nos{' '}
-            <Link to="/cgu" className="underline" style={{ color: '#C8A96E' }}>CGU</Link>
-            {' '}et notre{' '}
-            <Link to="/privacy" className="underline" style={{ color: '#C8A96E' }}>politique de confidentialité</Link>.
+            <Link to="/mentions-legales" className="hover:underline" style={{ color: '#94A3B8' }}>Mentions légales</Link>
+            {' · '}
+            <Link to="/cookies" className="hover:underline" style={{ color: '#94A3B8' }}>Cookies</Link>
           </p>
         </div>
       </div>
     </div>
+  );
+}
+
+function ConsentCheckbox({ id, checked, onChange, label, required = false }) {
+  return (
+    <label htmlFor={id} className="flex items-start gap-3 cursor-pointer group">
+      <div className="flex-shrink-0 mt-0.5">
+        <input
+          type="checkbox"
+          id={id}
+          checked={checked}
+          onChange={e => onChange(e.target.checked)}
+          className="sr-only"
+        />
+        <div
+          className="w-4 h-4 rounded flex items-center justify-center transition-all"
+          style={{
+            background: checked ? '#C8A96E' : 'rgba(255,255,255,0.75)',
+            border: checked ? '1px solid #C8A96E' : '1px solid rgba(200,200,220,0.5)',
+            boxShadow: checked ? '0 0 0 2px rgba(200,169,110,0.15)' : 'none'
+          }}
+        >
+          {checked && (
+            <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
+              <path d="M1 4L3.5 6.5L9 1" stroke="#1A1826" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          )}
+        </div>
+      </div>
+      <span className="font-dm-sans text-xs leading-relaxed" style={{ color: '#475569' }}>
+        {label}
+      </span>
+    </label>
   );
 }

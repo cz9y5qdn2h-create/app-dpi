@@ -102,11 +102,17 @@ export default function AuthProvider({ children }) {
     return data.user;
   };
 
-  const register = async (email, password, company_name, phone_number) => {
+  const register = async (email, password, company_name, phone_number, consentData = {}) => {
     const res = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, company_name, phone_number })
+      body: JSON.stringify({
+        email, password, company_name, phone_number,
+        marketing_consent: consentData.marketing_consent ?? false,
+        ai_disclaimer_accepted: consentData.ai_disclaimer_accepted ?? false,
+        terms_accepted_at: new Date().toISOString(),
+        terms_version: '2026-05-13',
+      })
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Erreur lors de la création du compte');

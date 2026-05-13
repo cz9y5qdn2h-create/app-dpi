@@ -5,10 +5,27 @@ const router = express.Router();
 
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
-  const { email, password, company_name, phone_number, role = 'franchiseur' } = req.body;
+  const {
+    email, password, company_name, phone_number,
+    marketing_consent = false,
+    ai_disclaimer_accepted = false,
+    terms_accepted_at,
+    terms_version = '2026-05-13',
+    role = 'franchiseur'
+  } = req.body;
+
   if (!email || !password || !company_name) {
     return res.status(400).json({ error: 'Email, mot de passe et nom de société requis' });
   }
+
+  if (!terms_accepted_at) {
+    return res.status(400).json({ error: 'Acceptation des CGU requise' });
+  }
+
+  if (!ai_disclaimer_accepted) {
+    return res.status(400).json({ error: 'Confirmation du disclaimer IA requise' });
+  }
+
   try {
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
@@ -27,7 +44,11 @@ router.post('/register', async (req, res) => {
       phone: phone_number || null,
       trial_expires_at: trialExpiresAt,
       appointment_booked: false,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      terms_accepted_at,
+      terms_version,
+      marketing_consent: Boolean(marketing_consent),
+      ai_disclaimer_accepted: Boolean(ai_disclaimer_accepted),
     });
 
     if (profileError) console.warn('Profile insert error:', profileError.message);

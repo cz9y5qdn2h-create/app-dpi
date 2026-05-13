@@ -63,6 +63,7 @@ export default function App() {
         <Route path="/cgu" element={<LegalPage />} />
         <Route path="/privacy" element={<LegalPage />} />
         <Route path="/mentions-legales" element={<LegalPage />} />
+        <Route path="/cookies" element={<LegalPage />} />
 
         {/* Auth (redirige si déjà connecté) */}
         <Route path="/login" element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
