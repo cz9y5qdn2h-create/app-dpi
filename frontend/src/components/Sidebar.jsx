@@ -8,7 +8,7 @@ import CalModal from './CalModal';
 import {
   LayoutDashboard, FileText, Upload, Bell, History,
   Users, Settings, Download, LogOut, Shield, Phone, Zap, ShieldAlert, Sparkles,
-  Sun, Moon
+  Sun, Moon, FolderSync
 } from 'lucide-react';
 
 export default function Sidebar({ open, onClose }) {
@@ -35,6 +35,7 @@ export default function Sidebar({ open, onClose }) {
     { to: '/history',      icon: History,         label: 'Historique' },
     { to: '/franchisees',  icon: Users,           label: 'Franchisés' },
     { to: '/export',       icon: Download,        label: 'Export' },
+    { to: '/monitor',      icon: FolderSync,      label: 'Surveillance docs' },
     { to: '/integrations', icon: Zap,             label: 'Intégrations' },
     { to: '/settings',     icon: Settings,        label: 'Paramètres' },
     ...(isAdmin ? [{ to: '/admin', icon: ShieldAlert, label: 'Admin', adminOnly: true }] : []),

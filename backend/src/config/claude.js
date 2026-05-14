@@ -423,7 +423,35 @@ Retourne ce JSON :
   return JSON.parse(match[0]);
 };
 
+const analyzeDocumentForDIPImpact = async (documentText, currentDipContext, fileName) => {
+  const message = await callClaude({
+    model: MODEL_HAIKU,
+    max_tokens: 400,
+    messages: [{
+      role: 'user',
+      content: `Tu es expert en conformité DIP (Loi Doubin, art. L.330-3 Code de commerce).
+
+Le document "${fileName}" a été modifié dans le drive du franchiseur.
+
+EXTRAIT DU DOCUMENT :
+${documentText.substring(0, 3000)}
+
+SECTIONS ACTUELLES DU DIP :
+${currentDipContext.substring(0, 2000)}
+
+En 3 phrases max, réponds :
+1. Ce que contient ce document
+2. Quelles sections du DIP sont potentiellement impactées (cite les numéros)
+3. Urgence : IMMÉDIATE / À VÉRIFIER / NON URGENT
+
+Sois direct et factuel.`
+    }]
+  });
+  return message.content[0].text.trim();
+};
+
 module.exports = {
   parseDIPSections, compareDIPVersions, detectChanges,
-  generateUpdateSummary, correctSection, correctSectionWithAnswers
+  generateUpdateSummary, correctSection, correctSectionWithAnswers,
+  analyzeDocumentForDIPImpact
 };

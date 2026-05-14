@@ -15,6 +15,7 @@ const adminRoutes = require('./routes/admin');
 const notificationRoutes = require('./routes/notifications');
 const agentRoutes = require('./routes/agent');
 const waitlistRoutes = require('./routes/waitlist');
+const monitorRoutes = require('./routes/monitor');
 
 const app = express();
 
@@ -95,6 +96,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/agent', agentLimiter, agentRoutes);
 app.use('/api/waitlist', waitlistLimiter, waitlistRoutes);
+app.use('/api/monitor', monitorRoutes);
 
 // Health check — ne retourne jamais les clés en clair
 app.get('/api/health', async (req, res) => {
