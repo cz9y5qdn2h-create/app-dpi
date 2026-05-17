@@ -325,15 +325,26 @@ En résumé : DIPpro n'utilise que des cookies strictement nécessaires au fonct
     lastUpdated: TODAY,
     sections: [
       {
-        title: 'Éditeur du site',
-        content: `Iralink Agency
-Forme juridique : [À compléter avant mise en production]
-Numéro SIREN/SIRET : [À compléter]
-Adresse du siège social : [À compléter], France
-Email : ${IRALINK_EMAIL}
-Directeur de la publication : [Nom et prénom du dirigeant]
+        title: '⚠️ Entreprise en cours de création — Informations légales provisoires',
+        content: `AVIS IMPORTANT — À LIRE AVANT TOUTE UTILISATION
 
-DIPpro est une marque déposée / en cours de dépôt par Iralink Agency.`
+Iralink Agency est actuellement en cours d'immatriculation au Registre du Commerce et des Sociétés (RCS). À la date de publication de ces mentions légales, la société n'est PAS encore formellement constituée en tant que personne morale.
+
+Raison sociale : Iralink Agency
+Statut actuel : En cours d'immatriculation — non encore immatriculée au RCS
+Forme juridique envisagée : [À compléter avant immatriculation — décision en cours]
+Numéro SIREN / SIRET : Non encore attribué par l'INSEE
+Capital social : [À définir lors de l'immatriculation]
+Adresse du siège social : [À compléter], France
+Fondateur et responsable : Théo [Nom de famille à compléter]
+Email de contact : ${IRALINK_EMAIL}
+Directeur de la publication : Théo [Nom de famille à compléter]
+
+ENGAGEMENT FORMEL : Les présentes mentions légales seront intégralement et définitivement complétées dès l'immatriculation officielle d'Iralink Agency auprès du RCS, et en tout état de cause AVANT toute ouverture commerciale payante de la plateforme DIPpro.
+
+PHASE ACTUELLE : DIPpro est en phase de démonstration (bêta fermée). Aucune transaction commerciale n'est réalisée, aucune facturation n'est émise tant que la société n'est pas régulièrement immatriculée et que les présentes mentions ne sont pas complétées.
+
+DIPpro est une marque en cours de dépôt auprès de l'INPI (Institut National de la Propriété Industrielle).`
       },
       {
         title: 'Hébergement',
@@ -481,6 +492,7 @@ export default function LegalPage() {
   }
 
   const isCgu = slug === 'cgu';
+  const isMentionsLegales = slug === 'mentions-legales';
 
   return (
     <div className="min-h-screen" style={{ background: 'linear-gradient(145deg, #dde2f5 0%, #ebe7fa 40%, #dceaf8 70%, #e3e1f6 100%)' }}>
@@ -514,6 +526,23 @@ export default function LegalPage() {
               <p className="font-dm-sans text-sm font-semibold mb-1" style={{ color: '#1A1826' }}>Avertissement important — Analyses par IA</p>
               <p className="font-dm-sans text-sm leading-relaxed" style={{ color: '#475569' }}>
                 Les analyses DIPpro sont des outils d'aide à la décision. Elles <strong>ne constituent pas un conseil juridique</strong>. Tout DIP doit être validé par un avocat spécialisé avant remise officielle.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {isMentionsLegales && (
+          <div className="mb-8 rounded-xl p-5 flex items-start gap-4" style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.3)' }}>
+            <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" style={{ color: '#F59E0B' }} />
+            <div>
+              <p className="font-dm-sans text-sm font-semibold mb-2" style={{ color: '#1A1826' }}>
+                Iralink Agency — Société non encore immatriculée
+              </p>
+              <p className="font-dm-sans text-sm leading-relaxed" style={{ color: '#475569' }}>
+                <strong>Iralink Agency n'est pas encore formellement constituée</strong> à ce jour. La société est en cours d'immatriculation au Registre du Commerce et des Sociétés (RCS). Le SIRET, la forme juridique définitive, l'adresse du siège et l'identité complète du dirigeant seront renseignés dès l'immatriculation officielle.
+              </p>
+              <p className="font-dm-sans text-xs mt-2" style={{ color: '#78716C' }}>
+                DIPpro est en phase bêta fermée (démonstration uniquement). Aucune transaction commerciale n'est réalisée tant que la société n'est pas immatriculée et que ces mentions légales ne sont pas complétées.
               </p>
             </div>
           </div>

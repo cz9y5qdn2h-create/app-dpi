@@ -7,17 +7,105 @@ const pdfParse = require('pdf-parse');
 const mammoth = require('mammoth');
 const router = express.Router();
 
+// ── OAuth constants ────────────────────────────────────────────────────────
+
 const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const GOOGLE_DRIVE_BASE = 'https://www.googleapis.com/drive/v3';
 const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/userinfo.email';
+
+const MS_AUTH_URL = 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize';
+const MS_TOKEN_URL = 'https://login.microsoftonline.com/common/oauth2/v2.0/token';
+const GRAPH_BASE = 'https://graph.microsoft.com/v1.0';
+const ONEDRIVE_SCOPE = 'Files.Read offline_access User.Read';
+
 const FREQUENCY_DAYS = { '2_days': 2, '3_days': 3, '1_week': 7 };
 const VALID_FREQUENCIES = Object.keys(FREQUENCY_DAYS);
 const MAX_TEXT_CHARS = 40000;
+const MAX_LOCAL_FILES = 50;
 
-// ── Helpers ────────────────────────────────────────────────────────────────
+// ── Generic helpers ────────────────────────────────────────────────────────
 
-async function getValidAccessToken(monitor) {
+async function extractText(buffer, mimeType, fileName) {
+  const isPdf = mimeType?.includes('pdf') || fileName?.toLowerCase().endsWith('.pdf');
+  try {
+    if (isPdf) {
+      const parsed = await pdfParse(buffer);
+      return (parsed.text || '').substring(0, MAX_TEXT_CHARS);
+    } else {
+      const result = await mammoth.extractRawText({ buffer });
+      return (result.value || '').substring(0, MAX_TEXT_CHARS);
+    }
+  } catch {
+    return '';
+  }
+}
+
+async function getDipContext(userId) {
+  const { data: dip } = await supabaseAdmin
+    .from('dip_documents')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('status', 'actif')
+    .maybeSingle();
+  if (!dip) return null;
+
+  const { data: secs } = await supabaseAdmin
+    .from('dip_sections')
+    .select('section_title, content')
+    .eq('dip_id', dip.id)
+    .order('section_number');
+  if (!secs?.length) return null;
+
+  return secs.map(s => `${s.section_title}: ${(s.content || '').substring(0, 400)}`).join('\n\n');
+}
+
+function nextCheckAt(frequency) {
+  const days = FREQUENCY_DAYS[frequency] || 7;
+  return new Date(Date.now() + days * 24 * 3600 * 1000).toISOString();
+}
+
+async function processFileChange(monitorId, userId, fileId, fileName, mimeType, modifiedAt, hash, size, autoAnalyze, dipContext, isNew) {
+  let summary = isNew ? `Nouveau document : ${fileName}` : `Document modifié : ${fileName}`;
+
+  if (autoAnalyze && dipContext) {
+    try {
+      const text = summary; // placeholder — text extraction happens in caller
+      if (text !== summary) {
+        summary = await analyzeDocumentForDIPImpact(text, dipContext, fileName);
+      }
+    } catch { }
+  }
+
+  await supabaseAdmin.from('monitored_files').upsert({
+    monitor_id: monitorId,
+    user_id: userId,
+    file_id: fileId,
+    file_name: fileName,
+    mime_type: mimeType || null,
+    file_size: size ? parseInt(size) : null,
+    last_modified: modifiedAt || null,
+    content_hash: hash || null,
+    last_analyzed_at: new Date().toISOString(),
+    status: isNew ? 'new' : 'changed',
+    change_summary: summary,
+  }, { onConflict: 'monitor_id,file_id' });
+
+  await supabaseAdmin.from('alerts').insert({
+    user_id: userId,
+    type: 'document_change',
+    title: isNew ? `Nouveau document : ${fileName}` : `Document modifié : ${fileName}`,
+    description: summary,
+    status: 'pending',
+    created_at: new Date().toISOString(),
+  });
+
+  return summary;
+}
+
+// ── Google Drive helpers ───────────────────────────────────────────────────
+
+async function getValidGoogleToken(monitor) {
   const bufferMs = 60 * 1000;
   if (monitor.token_expires_at && new Date(monitor.token_expires_at) > new Date(Date.now() + bufferMs)) {
     return decrypt(monitor.access_token);
@@ -79,67 +167,90 @@ async function extractTextFromDriveFile(accessToken, fileId, mimeType) {
   if (!resp.ok) return '';
 
   const buffer = Buffer.from(await resp.arrayBuffer());
-  const isPdf = mimeType.includes('pdf') || isGoogleDoc;
+  return extractText(buffer, isGoogleDoc ? 'application/pdf' : mimeType, null);
+}
 
-  try {
-    if (isPdf) {
-      const parsed = await pdfParse(buffer);
-      return (parsed.text || '').substring(0, MAX_TEXT_CHARS);
-    } else {
-      const result = await mammoth.extractRawText({ buffer });
-      return (result.value || '').substring(0, MAX_TEXT_CHARS);
-    }
-  } catch {
-    return '';
+// ── OneDrive helpers ───────────────────────────────────────────────────────
+
+async function getValidOneDriveToken(monitor) {
+  const bufferMs = 60 * 1000;
+  if (monitor.token_expires_at && new Date(monitor.token_expires_at) > new Date(Date.now() + bufferMs)) {
+    return decrypt(monitor.access_token);
   }
+  const refreshToken = decrypt(monitor.refresh_token);
+  if (!refreshToken || !process.env.MICROSOFT_CLIENT_ID) return null;
+
+  const resp = await fetch(MS_TOKEN_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'refresh_token',
+      refresh_token: refreshToken,
+      client_id: process.env.MICROSOFT_CLIENT_ID,
+      client_secret: process.env.MICROSOFT_CLIENT_SECRET || '',
+      scope: ONEDRIVE_SCOPE,
+    })
+  });
+  if (!resp.ok) return null;
+
+  const tokens = await resp.json();
+  const expiresAt = new Date(Date.now() + (tokens.expires_in || 3600) * 1000).toISOString();
+  await supabaseAdmin.from('document_monitors').update({
+    access_token: encrypt(tokens.access_token),
+    token_expires_at: expiresAt,
+    ...(tokens.refresh_token ? { refresh_token: encrypt(tokens.refresh_token) } : {})
+  }).eq('id', monitor.id);
+
+  return tokens.access_token;
+}
+
+async function listOneDriveFiles(accessToken, folderId) {
+  const endpoint = folderId
+    ? `${GRAPH_BASE}/me/drive/items/${folderId}/children`
+    : `${GRAPH_BASE}/me/drive/root/children`;
+
+  const resp = await fetch(
+    `${endpoint}?$select=id,name,lastModifiedDateTime,size,file,folder&$top=100`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+  if (!resp.ok) return [];
+  const data = await resp.json();
+
+  const supportedTypes = [
+    'application/pdf',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  ];
+
+  return (data.value || []).filter(item => {
+    if (!item.file) return false;
+    const mime = item.file.mimeType || '';
+    return supportedTypes.some(t => mime.includes(t.split('/')[1])) ||
+      item.name?.toLowerCase().match(/\.(pdf|docx|xlsx)$/);
+  });
+}
+
+async function extractTextFromOneDriveFile(accessToken, itemId, mimeType, fileName) {
+  const resp = await fetch(`${GRAPH_BASE}/me/drive/items/${itemId}/content`, {
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
+  if (!resp.ok) return '';
+  const buffer = Buffer.from(await resp.arrayBuffer());
+  return extractText(buffer, mimeType, fileName);
 }
 
 // ── Core check logic ───────────────────────────────────────────────────────
 
-async function runChecksForUser(userId) {
-  const { data: monitor } = await supabaseAdmin
-    .from('document_monitors')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('source', 'google_drive')
-    .eq('enabled', true)
-    .single();
-
-  if (!monitor) return { changes: 0, files_checked: 0 };
-
-  const accessToken = await getValidAccessToken(monitor);
+async function runGoogleDriveChecks(monitor, userId) {
+  const accessToken = await getValidGoogleToken(monitor);
   if (!accessToken) return { changes: 0, files_checked: 0, error: 'Token invalide' };
 
   const driveFiles = await listDriveFiles(accessToken, monitor.folder_id);
-
   const { data: tracked } = await supabaseAdmin
-    .from('monitored_files')
-    .select('*')
-    .eq('monitor_id', monitor.id);
+    .from('monitored_files').select('*').eq('monitor_id', monitor.id);
 
   const trackedMap = Object.fromEntries((tracked || []).map(f => [f.file_id, f]));
-
-  // Fetch active DIP once for all comparisons
-  let dipSections = null;
-  if (monitor.auto_analyze) {
-    const { data: dip } = await supabaseAdmin
-      .from('dip_documents')
-      .select('id')
-      .eq('user_id', userId)
-      .eq('status', 'actif')
-      .maybeSingle();
-
-    if (dip) {
-      const { data: secs } = await supabaseAdmin
-        .from('dip_sections')
-        .select('section_title, content')
-        .eq('dip_id', dip.id)
-        .order('section_number');
-      if (secs?.length) {
-        dipSections = secs.map(s => `${s.section_title}: ${(s.content || '').substring(0, 400)}`).join('\n\n');
-      }
-    }
-  }
+  const dipContext = monitor.auto_analyze ? await getDipContext(userId) : null;
 
   let changedCount = 0;
   const tasks = [];
@@ -147,23 +258,20 @@ async function runChecksForUser(userId) {
   for (const file of driveFiles) {
     const existing = trackedMap[file.id];
     const isNew = !existing;
-    const isChanged = existing &&
-      file.md5Checksum &&
-      existing.content_hash !== file.md5Checksum;
-
+    const isChanged = existing && file.md5Checksum && existing.content_hash !== file.md5Checksum;
     if (!isNew && !isChanged) continue;
     changedCount++;
 
     tasks.push((async () => {
-      let summary = isNew ? `Nouveau document détecté : ${file.name}` : `Document modifié : ${file.name}`;
+      let summary = isNew ? `Nouveau document : ${file.name}` : `Document modifié : ${file.name}`;
 
-      if (monitor.auto_analyze && dipSections) {
+      if (monitor.auto_analyze && dipContext) {
         try {
           const text = await extractTextFromDriveFile(accessToken, file.id, file.mimeType);
           if (text.length > 100) {
-            summary = await analyzeDocumentForDIPImpact(text, dipSections, file.name);
+            summary = await analyzeDocumentForDIPImpact(text, dipContext, file.name);
           }
-        } catch { /* keep default summary */ }
+        } catch { }
       }
 
       await supabaseAdmin.from('monitored_files').upsert({
@@ -193,18 +301,114 @@ async function runChecksForUser(userId) {
 
   await Promise.allSettled(tasks);
 
-  const days = FREQUENCY_DAYS[monitor.frequency] || 7;
   await supabaseAdmin.from('document_monitors').update({
     last_check_at: new Date().toISOString(),
-    next_check_at: new Date(Date.now() + days * 24 * 3600 * 1000).toISOString(),
+    next_check_at: nextCheckAt(monitor.frequency),
   }).eq('id', monitor.id);
 
   return { changes: changedCount, files_checked: driveFiles.length };
 }
 
-// ── Routes ─────────────────────────────────────────────────────────────────
+async function runOneDriveChecks(monitor, userId) {
+  const accessToken = await getValidOneDriveToken(monitor);
+  if (!accessToken) return { changes: 0, files_checked: 0, error: 'Token invalide' };
 
-// GET /api/monitor/config
+  const odFiles = await listOneDriveFiles(accessToken, monitor.folder_id);
+  const { data: tracked } = await supabaseAdmin
+    .from('monitored_files').select('*').eq('monitor_id', monitor.id);
+
+  const trackedMap = Object.fromEntries((tracked || []).map(f => [f.file_id, f]));
+  const dipContext = monitor.auto_analyze ? await getDipContext(userId) : null;
+
+  let changedCount = 0;
+  const tasks = [];
+
+  for (const item of odFiles) {
+    const existing = trackedMap[item.id];
+    const isNew = !existing;
+    const itemHash = `${item.lastModifiedDateTime}_${item.size}`;
+    const isChanged = existing && existing.content_hash !== itemHash;
+    if (!isNew && !isChanged) continue;
+    changedCount++;
+
+    tasks.push((async () => {
+      let summary = isNew ? `Nouveau document : ${item.name}` : `Document modifié : ${item.name}`;
+
+      if (monitor.auto_analyze && dipContext) {
+        try {
+          const mime = item.file?.mimeType || '';
+          const text = await extractTextFromOneDriveFile(accessToken, item.id, mime, item.name);
+          if (text.length > 100) {
+            summary = await analyzeDocumentForDIPImpact(text, dipContext, item.name);
+          }
+        } catch { }
+      }
+
+      await supabaseAdmin.from('monitored_files').upsert({
+        monitor_id: monitor.id,
+        user_id: userId,
+        file_id: item.id,
+        file_name: item.name,
+        mime_type: item.file?.mimeType || null,
+        file_size: item.size || null,
+        last_modified: item.lastModifiedDateTime,
+        content_hash: itemHash,
+        last_analyzed_at: new Date().toISOString(),
+        status: isNew ? 'new' : 'changed',
+        change_summary: summary,
+      }, { onConflict: 'monitor_id,file_id' });
+
+      await supabaseAdmin.from('alerts').insert({
+        user_id: userId,
+        type: 'document_change',
+        title: isNew ? `Nouveau document : ${item.name}` : `Document modifié : ${item.name}`,
+        description: summary,
+        status: 'pending',
+        created_at: new Date().toISOString(),
+      });
+    })());
+  }
+
+  await Promise.allSettled(tasks);
+
+  await supabaseAdmin.from('document_monitors').update({
+    last_check_at: new Date().toISOString(),
+    next_check_at: nextCheckAt(monitor.frequency),
+  }).eq('id', monitor.id);
+
+  return { changes: changedCount, files_checked: odFiles.length };
+}
+
+async function runChecksForUser(userId) {
+  const { data: monitors } = await supabaseAdmin
+    .from('document_monitors')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('enabled', true);
+
+  if (!monitors?.length) return { changes: 0, files_checked: 0 };
+
+  let totalChanges = 0;
+  let totalFiles = 0;
+
+  for (const monitor of monitors) {
+    if (monitor.source === 'local_folder') continue; // handled client-side
+    try {
+      let result = { changes: 0, files_checked: 0 };
+      if (monitor.source === 'google_drive') result = await runGoogleDriveChecks(monitor, userId);
+      else if (monitor.source === 'onedrive') result = await runOneDriveChecks(monitor, userId);
+      totalChanges += result.changes || 0;
+      totalFiles += result.files_checked || 0;
+    } catch (err) {
+      console.error(`Monitor check error source=${monitor.source}:`, err.message);
+    }
+  }
+
+  return { changes: totalChanges, files_checked: totalFiles };
+}
+
+// ── Routes — Config ────────────────────────────────────────────────────────
+
 router.get('/config', authMiddleware, requireFranchisor, async (req, res) => {
   const { data } = await supabaseAdmin
     .from('document_monitors')
@@ -213,7 +417,6 @@ router.get('/config', authMiddleware, requireFranchisor, async (req, res) => {
   res.json({ monitors: data || [] });
 });
 
-// PUT /api/monitor/config/:id
 router.put('/config/:id', authMiddleware, requireFranchisor, async (req, res) => {
   const { frequency, enabled, auto_analyze, folder_id, folder_name } = req.body;
   const updates = {};
@@ -221,7 +424,7 @@ router.put('/config/:id', authMiddleware, requireFranchisor, async (req, res) =>
   if (frequency !== undefined) {
     if (!VALID_FREQUENCIES.includes(frequency)) return res.status(400).json({ error: 'Fréquence invalide' });
     updates.frequency = frequency;
-    updates.next_check_at = new Date(Date.now() + FREQUENCY_DAYS[frequency] * 24 * 3600 * 1000).toISOString();
+    updates.next_check_at = nextCheckAt(frequency);
   }
   if (enabled !== undefined) updates.enabled = Boolean(enabled);
   if (auto_analyze !== undefined) updates.auto_analyze = Boolean(auto_analyze);
@@ -240,7 +443,8 @@ router.put('/config/:id', authMiddleware, requireFranchisor, async (req, res) =>
   res.json({ monitor: data });
 });
 
-// GET /api/monitor/google/auth — lance l'OAuth
+// ── Routes — Google Drive ──────────────────────────────────────────────────
+
 router.get('/google/auth', authMiddleware, requireFranchisor, async (req, res) => {
   if (!process.env.GOOGLE_CLIENT_ID) {
     return res.status(503).json({ error: 'Google Drive non configuré — ajoutez GOOGLE_CLIENT_ID dans Vercel' });
@@ -259,14 +463,10 @@ router.get('/google/auth', authMiddleware, requireFranchisor, async (req, res) =
   res.json({ auth_url: `${GOOGLE_AUTH_URL}?${params}` });
 });
 
-// GET /api/monitor/google/callback — reçoit le code OAuth
 router.get('/google/callback', async (req, res) => {
   const { code, state, error: oauthError } = req.query;
   const frontendUrl = process.env.FRONTEND_URL || 'https://dippro.business';
-
-  if (oauthError || !code || !state) {
-    return res.redirect(`${frontendUrl}/monitor?error=oauth_denied`);
-  }
+  if (oauthError || !code || !state) return res.redirect(`${frontendUrl}/monitor?error=oauth_denied`);
 
   try {
     const token = Buffer.from(String(state), 'base64url').toString('utf8');
@@ -293,7 +493,6 @@ router.get('/google/callback', async (req, res) => {
     const userInfo = userInfoResp.ok ? await userInfoResp.json() : {};
 
     const expiresAt = new Date(Date.now() + (tokens.expires_in || 3600) * 1000).toISOString();
-    const nextCheck = new Date(Date.now() + 7 * 24 * 3600 * 1000).toISOString();
 
     await supabaseAdmin.from('document_monitors').upsert({
       user_id: user.id,
@@ -304,31 +503,29 @@ router.get('/google/callback', async (req, res) => {
       drive_email: userInfo.email || null,
       enabled: true,
       frequency: '1_week',
-      next_check_at: nextCheck,
+      next_check_at: nextCheckAt('1_week'),
     }, { onConflict: 'user_id,source' });
 
     res.redirect(`${frontendUrl}/monitor?connected=google`);
   } catch (err) {
-    console.error('OAuth callback:', err.message);
+    console.error('Google OAuth callback:', err.message);
     res.redirect(`${frontendUrl}/monitor?error=server_error`);
   }
 });
 
-// DELETE /api/monitor/google/disconnect
 router.delete('/google/disconnect', authMiddleware, requireFranchisor, async (req, res) => {
   await supabaseAdmin.from('document_monitors')
     .delete().eq('user_id', req.user.id).eq('source', 'google_drive');
   res.json({ message: 'Google Drive déconnecté' });
 });
 
-// GET /api/monitor/google/folders — liste les dossiers Drive
 router.get('/google/folders', authMiddleware, requireFranchisor, async (req, res) => {
   const { data: monitor } = await supabaseAdmin
     .from('document_monitors').select('*')
     .eq('user_id', req.user.id).eq('source', 'google_drive').single();
   if (!monitor) return res.status(404).json({ error: 'Google Drive non connecté' });
 
-  const accessToken = await getValidAccessToken(monitor);
+  const accessToken = await getValidGoogleToken(monitor);
   if (!accessToken) return res.status(401).json({ error: 'Reconnectez Google Drive' });
 
   const resp = await fetch(
@@ -340,7 +537,221 @@ router.get('/google/folders', authMiddleware, requireFranchisor, async (req, res
   res.json({ folders: [{ id: null, name: 'Tout Mon Drive' }, ...(data.files || [])] });
 });
 
-// GET /api/monitor/files — liste les fichiers surveillés
+// ── Routes — OneDrive ──────────────────────────────────────────────────────
+
+router.get('/onedrive/auth', authMiddleware, requireFranchisor, async (req, res) => {
+  if (!process.env.MICROSOFT_CLIENT_ID) {
+    return res.status(503).json({ error: 'OneDrive non configuré — ajoutez MICROSOFT_CLIENT_ID dans Vercel' });
+  }
+  const redirectUri = `${process.env.BACKEND_URL || 'https://dippro.business'}/api/monitor/onedrive/callback`;
+  const state = Buffer.from(req.token).toString('base64url');
+  const params = new URLSearchParams({
+    client_id: process.env.MICROSOFT_CLIENT_ID,
+    redirect_uri: redirectUri,
+    response_type: 'code',
+    scope: ONEDRIVE_SCOPE,
+    response_mode: 'query',
+    state,
+  });
+  res.json({ auth_url: `${MS_AUTH_URL}?${params}` });
+});
+
+router.get('/onedrive/callback', async (req, res) => {
+  const { code, state, error: oauthError } = req.query;
+  const frontendUrl = process.env.FRONTEND_URL || 'https://dippro.business';
+  if (oauthError || !code || !state) return res.redirect(`${frontendUrl}/monitor?error=oauth_denied`);
+
+  try {
+    const token = Buffer.from(String(state), 'base64url').toString('utf8');
+    const { data: { user }, error: authErr } = await supabaseAdmin.auth.getUser(token);
+    if (authErr || !user) return res.redirect(`${frontendUrl}/monitor?error=invalid_session`);
+
+    const redirectUri = `${process.env.BACKEND_URL || 'https://dippro.business'}/api/monitor/onedrive/callback`;
+    const tokenResp = await fetch(MS_TOKEN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code, grant_type: 'authorization_code',
+        client_id: process.env.MICROSOFT_CLIENT_ID,
+        client_secret: process.env.MICROSOFT_CLIENT_SECRET || '',
+        redirect_uri: redirectUri,
+        scope: ONEDRIVE_SCOPE,
+      })
+    });
+    if (!tokenResp.ok) return res.redirect(`${frontendUrl}/monitor?error=token_failed`);
+
+    const tokens = await tokenResp.json();
+    const userInfoResp = await fetch(`${GRAPH_BASE}/me?$select=displayName,mail,userPrincipalName`, {
+      headers: { Authorization: `Bearer ${tokens.access_token}` }
+    });
+    const userInfo = userInfoResp.ok ? await userInfoResp.json() : {};
+
+    const expiresAt = new Date(Date.now() + (tokens.expires_in || 3600) * 1000).toISOString();
+
+    await supabaseAdmin.from('document_monitors').upsert({
+      user_id: user.id,
+      source: 'onedrive',
+      access_token: encrypt(tokens.access_token),
+      refresh_token: tokens.refresh_token ? encrypt(tokens.refresh_token) : undefined,
+      token_expires_at: expiresAt,
+      drive_email: userInfo.mail || userInfo.userPrincipalName || null,
+      enabled: true,
+      frequency: '1_week',
+      next_check_at: nextCheckAt('1_week'),
+    }, { onConflict: 'user_id,source' });
+
+    res.redirect(`${frontendUrl}/monitor?connected=onedrive`);
+  } catch (err) {
+    console.error('OneDrive OAuth callback:', err.message);
+    res.redirect(`${frontendUrl}/monitor?error=server_error`);
+  }
+});
+
+router.delete('/onedrive/disconnect', authMiddleware, requireFranchisor, async (req, res) => {
+  await supabaseAdmin.from('document_monitors')
+    .delete().eq('user_id', req.user.id).eq('source', 'onedrive');
+  res.json({ message: 'OneDrive déconnecté' });
+});
+
+router.get('/onedrive/folders', authMiddleware, requireFranchisor, async (req, res) => {
+  const { data: monitor } = await supabaseAdmin
+    .from('document_monitors').select('*')
+    .eq('user_id', req.user.id).eq('source', 'onedrive').single();
+  if (!monitor) return res.status(404).json({ error: 'OneDrive non connecté' });
+
+  const accessToken = await getValidOneDriveToken(monitor);
+  if (!accessToken) return res.status(401).json({ error: 'Reconnectez OneDrive' });
+
+  const resp = await fetch(
+    `${GRAPH_BASE}/me/drive/root/children?$select=id,name,folder&$top=50&$filter=folder ne null`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+
+  if (!resp.ok) {
+    // fallback: list all children and filter
+    const fallback = await fetch(`${GRAPH_BASE}/me/drive/root/children?$select=id,name,folder&$top=50`, {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
+    if (!fallback.ok) return res.status(502).json({ error: 'Impossible de lister les dossiers' });
+    const data = await fallback.json();
+    const folders = (data.value || []).filter(i => i.folder);
+    return res.json({ folders: [{ id: null, name: 'Tout Mon OneDrive' }, ...folders] });
+  }
+
+  const data = await resp.json();
+  res.json({ folders: [{ id: null, name: 'Tout Mon OneDrive' }, ...(data.value || [])] });
+});
+
+// ── Routes — Dossier local (Mac / Windows) ─────────────────────────────────
+
+router.post('/local/check', authMiddleware, requireFranchisor, async (req, res) => {
+  const { folder_name, files } = req.body;
+  if (!Array.isArray(files)) return res.status(400).json({ error: 'files requis' });
+
+  const { data: existingMonitor } = await supabaseAdmin
+    .from('document_monitors')
+    .select('*')
+    .eq('user_id', req.user.id)
+    .eq('source', 'local_folder')
+    .maybeSingle();
+
+  let monitor = existingMonitor;
+  if (!monitor) {
+    const { data: newMonitor, error } = await supabaseAdmin
+      .from('document_monitors')
+      .insert({
+        user_id: req.user.id,
+        source: 'local_folder',
+        folder_name: folder_name || 'Dossier local',
+        enabled: true,
+        frequency: '1_week',
+        auto_analyze: true,
+        next_check_at: nextCheckAt('1_week'),
+      })
+      .select('*')
+      .single();
+    if (error) return res.status(500).json({ error: error.message });
+    monitor = newMonitor;
+  } else if (folder_name && folder_name !== monitor.folder_name) {
+    await supabaseAdmin.from('document_monitors').update({ folder_name }).eq('id', monitor.id);
+    monitor.folder_name = folder_name;
+  }
+
+  const { data: tracked } = await supabaseAdmin
+    .from('monitored_files').select('*').eq('monitor_id', monitor.id);
+  const trackedMap = Object.fromEntries((tracked || []).map(f => [f.file_id, f]));
+
+  const dipContext = monitor.auto_analyze ? await getDipContext(req.user.id) : null;
+
+  let changedCount = 0;
+  const tasks = [];
+
+  for (const file of files.slice(0, MAX_LOCAL_FILES)) {
+    const { name, content_base64, mime_type, hash, last_modified } = file;
+    if (!name || !content_base64 || !hash) continue;
+
+    const existing = trackedMap[name];
+    const isNew = !existing;
+    const isChanged = existing && existing.content_hash !== hash;
+    if (!isNew && !isChanged) continue;
+    changedCount++;
+
+    tasks.push((async () => {
+      let summary = isNew ? `Nouveau document : ${name.split('/').pop()}` : `Document modifié : ${name.split('/').pop()}`;
+
+      if (monitor.auto_analyze && dipContext) {
+        try {
+          const buffer = Buffer.from(content_base64, 'base64');
+          const text = await extractText(buffer, mime_type, name);
+          if (text.length > 100) {
+            summary = await analyzeDocumentForDIPImpact(text, dipContext, name.split('/').pop());
+          }
+        } catch { }
+      }
+
+      const displayName = name.split('/').pop();
+      await supabaseAdmin.from('monitored_files').upsert({
+        monitor_id: monitor.id,
+        user_id: req.user.id,
+        file_id: name,
+        file_name: displayName,
+        mime_type: mime_type || null,
+        last_modified: last_modified || null,
+        content_hash: hash,
+        last_analyzed_at: new Date().toISOString(),
+        status: isNew ? 'new' : 'changed',
+        change_summary: summary,
+      }, { onConflict: 'monitor_id,file_id' });
+
+      await supabaseAdmin.from('alerts').insert({
+        user_id: req.user.id,
+        type: 'document_change',
+        title: isNew ? `Nouveau document : ${displayName}` : `Document modifié : ${displayName}`,
+        description: summary,
+        status: 'pending',
+        created_at: new Date().toISOString(),
+      });
+    })());
+  }
+
+  await Promise.allSettled(tasks);
+
+  await supabaseAdmin.from('document_monitors').update({
+    last_check_at: new Date().toISOString(),
+    next_check_at: nextCheckAt(monitor.frequency || '1_week'),
+  }).eq('id', monitor.id);
+
+  res.json({ changes: changedCount, files_checked: files.length, monitor_id: monitor.id });
+});
+
+router.delete('/local/disconnect', authMiddleware, requireFranchisor, async (req, res) => {
+  await supabaseAdmin.from('document_monitors')
+    .delete().eq('user_id', req.user.id).eq('source', 'local_folder');
+  res.json({ message: 'Dossier local déconnecté' });
+});
+
+// ── Routes — Fichiers & vérification ──────────────────────────────────────
+
 router.get('/files', authMiddleware, requireFranchisor, async (req, res) => {
   const { data } = await supabaseAdmin
     .from('monitored_files')
@@ -351,7 +762,6 @@ router.get('/files', authMiddleware, requireFranchisor, async (req, res) => {
   res.json({ files: data || [] });
 });
 
-// POST /api/monitor/check-now — vérification manuelle
 router.post('/check-now', authMiddleware, requireFranchisor, async (req, res) => {
   try {
     const result = await runChecksForUser(req.user.id);
@@ -372,20 +782,22 @@ router.get('/run', async (req, res) => {
     .from('document_monitors')
     .select('user_id')
     .eq('enabled', true)
+    .not('source', 'eq', 'local_folder')
     .lte('next_check_at', new Date().toISOString());
 
   if (!due?.length) return res.json({ checked: 0 });
 
+  const userIds = [...new Set(due.map(d => d.user_id))];
   let totalChanges = 0;
-  for (const { user_id } of due) {
+  for (const userId of userIds) {
     try {
-      const r = await runChecksForUser(user_id);
+      const r = await runChecksForUser(userId);
       totalChanges += r.changes || 0;
     } catch (err) {
-      console.error(`Monitor cron error user=${user_id}:`, err.message);
+      console.error(`Monitor cron error user=${userId}:`, err.message);
     }
   }
-  res.json({ checked: due.length, totalChanges });
+  res.json({ checked: userIds.length, totalChanges });
 });
 
 module.exports = router;
