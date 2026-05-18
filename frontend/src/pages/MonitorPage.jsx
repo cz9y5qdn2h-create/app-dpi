@@ -1,22 +1,24 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import api from '../lib/api';
+import { supabase } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
 import PageHeader from '../components/ui/PageHeader';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import {
-  FolderSync, CheckCircle, RefreshCw, Unlink, AlertTriangle,
-  FileText, Clock, Zap, Info, FolderOpen, Play, Settings2,
-  Laptop, Cloud, Smartphone, HardDrive
+  CheckCircle, Unlink, AlertTriangle, FileText, Clock, Zap,
+  Info, FolderOpen, Play, Settings2, Laptop, Cloud, Smartphone,
+  FolderSync, HardDrive, Upload, Trash2, RefreshCw, Shield
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-// ── Constants ──────────────────────────────────────────────────────────────
+// ── Constantes ─────────────────────────────────────────────────────────────
 
 const FREQ_OPTIONS = [
-  { value: '2_days',  label: 'Tous les 2 jours',    desc: 'Idéal si vos documents évoluent souvent' },
-  { value: '3_days',  label: 'Tous les 3 jours',    desc: 'Bon équilibre réactivité / performance' },
-  { value: '1_week',  label: 'Toutes les semaines', desc: 'Recommandé pour la plupart des franchiseurs' },
+  { value: '2_days', label: 'Tous les 2 jours',    desc: 'Documents très actifs' },
+  { value: '3_days', label: 'Tous les 3 jours',    desc: 'Recommandé' },
+  { value: '1_week', label: 'Toutes les semaines', desc: 'Documents stables' },
 ];
 
 const MIME_LABELS = {
@@ -34,151 +36,145 @@ const STATUS_CFG = {
   error:   { label: 'Erreur',  color: 'text-danger',  bg: 'bg-danger/10',  border: 'border-danger/20' },
 };
 
-const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024;
+const MAX_FILE_BYTES = 10 * 1024 * 1024; // 10 Mo
 
-// ── IndexedDB — persistance du FileSystemDirectoryHandle ──────────────────
+// ── IndexedDB — persistence du FileSystemDirectoryHandle ──────────────────
 
-const IDB_NAME = 'dippro-fs';
-const IDB_STORE = 'handles';
-
-function openIDB() {
+async function idbOp(mode, key, value) {
   return new Promise((resolve, reject) => {
-    const req = indexedDB.open(IDB_NAME, 1);
-    req.onupgradeneeded = () => req.result.createObjectStore(IDB_STORE);
-    req.onsuccess = () => resolve(req.result);
+    const req = indexedDB.open('dippro-fs', 1);
+    req.onupgradeneeded = () => req.result.createObjectStore('handles');
     req.onerror = () => reject(req.error);
+    req.onsuccess = () => {
+      const tx = req.result.transaction('handles', mode);
+      const store = tx.objectStore('handles');
+      const op = mode === 'readwrite'
+        ? (value !== undefined ? store.put(value, key) : store.delete(key))
+        : store.get(key);
+      op.onsuccess = () => resolve(op.result ?? null);
+      op.onerror = () => reject(op.error);
+    };
   });
 }
 
-async function idbGet(key) {
-  try {
-    const db = await openIDB();
-    return new Promise(resolve => {
-      const tx = db.transaction(IDB_STORE, 'readonly');
-      const req = tx.objectStore(IDB_STORE).get(key);
-      req.onsuccess = () => resolve(req.result || null);
-      req.onerror = () => resolve(null);
-    });
-  } catch { return null; }
-}
+const idbGet = (k) => idbOp('readonly', k).catch(() => null);
+const idbSet = (k, v) => idbOp('readwrite', k, v).catch(() => {});
+const idbDel = (k) => idbOp('readwrite', k).catch(() => {});
 
-async function idbSet(key, value) {
-  const db = await openIDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(IDB_STORE, 'readwrite');
-    const req = tx.objectStore(IDB_STORE).put(value, key);
-    req.onsuccess = () => resolve();
-    req.onerror = () => reject(req.error);
-  });
-}
+// ── Helpers fichiers ───────────────────────────────────────────────────────
 
-async function idbDel(key) {
-  try {
-    const db = await openIDB();
-    const tx = db.transaction(IDB_STORE, 'readwrite');
-    tx.objectStore(IDB_STORE).delete(key);
-  } catch { }
-}
-
-// ── File System API helpers ────────────────────────────────────────────────
-
-async function scanDir(dirHandle, depth = 0, basePath = '') {
-  const results = [];
-  if (depth > 3) return results;
-  for await (const [name, entry] of dirHandle.entries()) {
-    if (name.startsWith('.')) continue;
-    if (entry.kind === 'file') {
-      const lower = name.toLowerCase();
-      if (lower.endsWith('.pdf') || lower.endsWith('.docx') || lower.endsWith('.doc')) {
-        const file = await entry.getFile();
-        if (file.size <= MAX_FILE_SIZE_BYTES) {
-          results.push({ file, path: basePath ? `${basePath}/${name}` : name });
-        }
-      }
-    } else if (entry.kind === 'directory' && depth < 3) {
-      const sub = await scanDir(entry, depth + 1, basePath ? `${basePath}/${name}` : name);
-      results.push(...sub);
-    }
-  }
-  return results;
-}
-
-async function sha256(arrayBuffer) {
+async function sha256hex(arrayBuffer) {
   const hash = await crypto.subtle.digest('SHA-256', arrayBuffer);
   return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-function toBase64(arrayBuffer) {
-  const bytes = new Uint8Array(arrayBuffer);
-  let binary = '';
-  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-  return btoa(binary);
+function toBase64(buf) {
+  const b = new Uint8Array(buf);
+  let s = '';
+  for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]);
+  return btoa(s);
 }
 
-// ── Sub-components ─────────────────────────────────────────────────────────
+function isSupported(name) {
+  const l = name.toLowerCase();
+  return l.endsWith('.pdf') || l.endsWith('.docx') || l.endsWith('.doc') || l.endsWith('.xlsx');
+}
 
-function StatusBadge({ status }) {
-  const cfg = STATUS_CFG[status] || STATUS_CFG.ok;
+async function scanDirHandle(dirHandle, depth = 0, base = '') {
+  const out = [];
+  if (depth > 3) return out;
+  for await (const [name, entry] of dirHandle.entries()) {
+    if (name.startsWith('.')) continue;
+    if (entry.kind === 'file' && isSupported(name)) {
+      const file = await entry.getFile();
+      if (file.size <= MAX_FILE_BYTES) out.push({ file, path: base ? `${base}/${name}` : name });
+    } else if (entry.kind === 'directory' && depth < 3) {
+      out.push(...await scanDirHandle(entry, depth + 1, base ? `${base}/${name}` : name));
+    }
+  }
+  return out;
+}
+
+// Extrait les fichiers d'un drop (supporte les dossiers entiers)
+async function extractDroppedFiles(dataTransferItems) {
+  const out = [];
+  async function traverse(entry, base = '') {
+    if (entry.isFile) {
+      if (!isSupported(entry.name)) return;
+      const file = await new Promise(r => entry.file(r));
+      if (file.size <= MAX_FILE_BYTES) out.push({ file, path: base ? `${base}/${entry.name}` : entry.name });
+    } else if (entry.isDirectory) {
+      const reader = entry.createReader();
+      let entries = [];
+      await new Promise(r => reader.readEntries(e => { entries = e; r(); }));
+      for (const sub of entries) await traverse(sub, base ? `${base}/${entry.name}` : entry.name);
+    }
+  }
+  for (const item of dataTransferItems) {
+    const entry = item.webkitGetAsEntry?.();
+    if (entry) await traverse(entry);
+    else {
+      const file = item.getAsFile?.();
+      if (file && isSupported(file.name) && file.size <= MAX_FILE_BYTES)
+        out.push({ file, path: file.name });
+    }
+  }
+  return out;
+}
+
+// ── Sous-composants ────────────────────────────────────────────────────────
+
+function Badge({ status }) {
+  const c = STATUS_CFG[status] || STATUS_CFG.ok;
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded font-dm-mono text-xs border ${cfg.bg} ${cfg.color} ${cfg.border}`}>
-      {cfg.label}
+    <span className={`inline-flex items-center px-2 py-0.5 rounded font-dm-mono text-xs border ${c.bg} ${c.color} ${c.border}`}>
+      {c.label}
     </span>
   );
 }
 
-function InfoBox({ children }) {
+function Tip({ children }) {
   return (
-    <div className="flex items-start gap-3 rounded-xl p-4 bg-gold/5 border border-gold/15">
+    <div className="flex items-start gap-3 rounded-xl p-3.5 bg-gold/5 border border-gold/15">
       <Info className="w-4 h-4 text-gold flex-shrink-0 mt-0.5" />
       <p className="font-dm-sans text-xs text-text-secondary leading-relaxed">{children}</p>
     </div>
   );
 }
 
-function MonitorConfig({ monitor, updateMutation }) {
+function FreqConfig({ monitor, updateMutation }) {
   return (
-    <div className="space-y-5 pt-4 mt-4 border-t border-border-subtle">
+    <div className="space-y-4 pt-4 mt-4 border-t border-border-subtle">
       <div>
-        <div className="flex items-center gap-1.5 mb-3">
-          <Clock className="w-3.5 h-3.5 text-gold" />
-          <p className="font-dm-sans text-xs font-medium text-text-secondary">Fréquence de vérification</p>
-        </div>
+        <p className="font-dm-sans text-xs font-medium text-text-muted mb-2 flex items-center gap-1.5">
+          <Clock className="w-3.5 h-3.5" /> Fréquence
+        </p>
         <div className="space-y-1.5">
-          {FREQ_OPTIONS.map(opt => (
-            <label
-              key={opt.value}
-              className="flex items-center gap-3 p-2.5 rounded-lg border cursor-pointer transition-all"
+          {FREQ_OPTIONS.map(o => (
+            <label key={o.value}
+              className="flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer transition-all"
               style={{
-                borderColor: monitor.frequency === opt.value ? 'rgba(200,169,110,0.4)' : 'transparent',
-                background: monitor.frequency === opt.value ? 'rgba(200,169,110,0.05)' : undefined,
+                background: monitor.frequency === o.value ? 'rgba(200,169,110,0.06)' : undefined,
+                border: `1px solid ${monitor.frequency === o.value ? 'rgba(200,169,110,0.35)' : 'transparent'}`,
               }}
             >
-              <input
-                type="radio"
-                name={`freq-${monitor.id}`}
-                value={opt.value}
-                checked={monitor.frequency === opt.value}
-                onChange={() => updateMutation.mutate({ id: monitor.id, frequency: opt.value })}
-                className="sr-only"
-              />
-              <div className={`w-3.5 h-3.5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${monitor.frequency === opt.value ? 'border-gold' : 'border-border-default'}`}>
-                {monitor.frequency === opt.value && <div className="w-1.5 h-1.5 rounded-full bg-gold" />}
+              <input type="radio" name={`f-${monitor.id}`} className="sr-only"
+                checked={monitor.frequency === o.value}
+                onChange={() => updateMutation.mutate({ id: monitor.id, frequency: o.value })} />
+              <div className={`w-3.5 h-3.5 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${monitor.frequency === o.value ? 'border-gold' : 'border-border-default'}`}>
+                {monitor.frequency === o.value && <div className="w-1.5 h-1.5 rounded-full bg-gold" />}
               </div>
-              <span className="font-dm-sans text-sm text-text-primary">{opt.label}</span>
-              <span className="font-dm-sans text-xs text-text-muted">{opt.desc}</span>
+              <span className="font-dm-sans text-sm text-text-primary">{o.label}</span>
+              <span className="font-dm-sans text-xs text-text-muted">{o.desc}</span>
             </label>
           ))}
         </div>
         {monitor.last_check_at && (
           <p className="font-dm-mono text-xs text-text-muted mt-2">
-            Dernière vérif. : {new Date(monitor.last_check_at).toLocaleString('fr-FR')}
-            {monitor.next_check_at && (
-              <> · Prochaine : {new Date(monitor.next_check_at).toLocaleString('fr-FR')}</>
-            )}
+            Dernière synchro : {new Date(monitor.last_check_at).toLocaleString('fr-FR')}
           </p>
         )}
       </div>
-
       <label className="flex items-center justify-between cursor-pointer">
         <div className="flex items-center gap-2">
           <Zap className="w-3.5 h-3.5 text-gold" />
@@ -187,12 +183,9 @@ function MonitorConfig({ monitor, updateMutation }) {
             <p className="font-dm-sans text-xs text-text-muted">Claude identifie les sections DIP impactées</p>
           </div>
         </div>
-        <button
-          role="switch"
-          aria-checked={monitor.auto_analyze}
+        <button role="switch" aria-checked={monitor.auto_analyze}
           onClick={() => updateMutation.mutate({ id: monitor.id, auto_analyze: !monitor.auto_analyze })}
-          className={`w-11 h-6 rounded-full transition-all relative flex-shrink-0 ${monitor.auto_analyze ? 'bg-gold' : 'bg-bg-elevated border border-border-default'}`}
-        >
+          className={`w-11 h-6 rounded-full transition-all relative flex-shrink-0 ${monitor.auto_analyze ? 'bg-gold' : 'bg-bg-elevated border border-border-default'}`}>
           <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${monitor.auto_analyze ? 'translate-x-5' : 'translate-x-0.5'}`} />
         </button>
       </label>
@@ -200,54 +193,82 @@ function MonitorConfig({ monitor, updateMutation }) {
   );
 }
 
-// ── Main component ─────────────────────────────────────────────────────────
+// ── Composant principal ────────────────────────────────────────────────────
 
 export default function MonitorPage() {
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
+  const vaultInputRef = useRef(null);
 
-  const [showGoogleFolderPicker, setShowGoogleFolderPicker] = useState(false);
-  const [showOneDriveFolderPicker, setShowOneDriveFolderPicker] = useState(false);
-  const [checkingNow, setCheckingNow] = useState(false);
+  // États Vault
+  const [dragOver, setDragOver] = useState(false);
+  const [vaultUploading, setVaultUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState({ done: 0, total: 0 });
+
+  // États dossier local
+  const [localHandle, setLocalHandle] = useState(null);
+  const [localSupported] = useState(() => 'showDirectoryPicker' in window);
+  const [scanningLocal, setScanningLocal] = useState(false);
+  const [autoScanPending, setAutoScanPending] = useState(false);
+
+  // États OAuth
   const [connectingGoogle, setConnectingGoogle] = useState(false);
   const [connectingOneDrive, setConnectingOneDrive] = useState(false);
-  const [scanningLocal, setScanningLocal] = useState(false);
-  const [localHandle, setLocalHandle] = useState(null);
-  const [localSupported, setLocalSupported] = useState(true);
+  const [showGoogleFolders, setShowGoogleFolders] = useState(false);
+  const [showOneDriveFolders, setShowOneDriveFolders] = useState(false);
+  const [checkingNow, setCheckingNow] = useState(false);
 
-  // Detect File System Access API support
+  // Restore local handle depuis IndexedDB au montage
   useEffect(() => {
-    setLocalSupported('showDirectoryPicker' in window);
+    idbGet('local_folder').then(h => h && setLocalHandle(h));
   }, []);
 
-  // Restore local folder handle from IndexedDB on mount
+  // Auto-scan local folder si la permission est déjà accordée et fréquence dépassée
   useEffect(() => {
-    idbGet('local_folder').then(handle => {
-      if (handle) setLocalHandle(handle);
-    });
-  }, []);
+    if (!localHandle) return;
+    (async () => {
+      try {
+        const perm = await localHandle.queryPermission({ mode: 'read' });
+        if (perm !== 'granted') return;
+        const lastScan = localStorage.getItem('dippro-local-last-scan');
+        if (!lastScan) { setAutoScanPending(true); return; }
+        const elapsed = Date.now() - new Date(lastScan).getTime();
+        const freqDays = { '2_days': 2, '3_days': 3, '1_week': 7 };
+        const freqKey = localStorage.getItem('dippro-local-freq') || '1_week';
+        const limitMs = (freqDays[freqKey] || 7) * 86400000;
+        if (elapsed > limitMs) setAutoScanPending(true);
+      } catch { }
+    })();
+  }, [localHandle]);
 
-  // Handle OAuth redirect params
+  // Auto-scan silencieux si permission déjà accordée
+  useEffect(() => {
+    if (!autoScanPending || !localHandle || scanningLocal) return;
+    (async () => {
+      try {
+        const perm = await localHandle.queryPermission({ mode: 'read' });
+        if (perm === 'granted') await performLocalScan(true);
+      } catch { }
+    })();
+  }, [autoScanPending]);
+
+  // Gestion retours OAuth
   useEffect(() => {
     const connected = searchParams.get('connected');
     const error = searchParams.get('error');
     if (connected === 'google') {
-      toast.success('Google Drive connecté avec succès !');
+      toast.success('Google Drive connecté !');
       queryClient.invalidateQueries({ queryKey: ['monitor-config'] });
       setSearchParams({});
     }
     if (connected === 'onedrive') {
-      toast.success('OneDrive (Microsoft) connecté avec succès !');
+      toast.success('OneDrive connecté !');
       queryClient.invalidateQueries({ queryKey: ['monitor-config'] });
       setSearchParams({});
     }
     if (error) {
-      const msgs = {
-        oauth_denied: 'Connexion annulée',
-        invalid_session: 'Session expirée — reconnectez-vous',
-        token_failed: 'Erreur d\'échange de token — réessayez',
-        server_error: 'Erreur serveur — réessayez dans quelques instants',
-      };
+      const msgs = { oauth_denied: 'Connexion annulée', invalid_session: 'Session expirée', token_failed: 'Erreur de token', server_error: 'Erreur serveur' };
       toast.error(msgs[error] || 'Erreur de connexion');
       setSearchParams({});
     }
@@ -267,53 +288,171 @@ export default function MonitorPage() {
     retry: false,
   });
 
-  const { data: googleFoldersData, refetch: refetchGoogleFolders, isFetching: loadingGoogleFolders } = useQuery({
-    queryKey: ['monitor-google-folders'],
+  const { data: gFolders, refetch: refetchGF, isFetching: loadingGF } = useQuery({
+    queryKey: ['monitor-gfolders'],
     queryFn: () => api.get('/monitor/google/folders').then(r => r.data),
-    enabled: false,
-    retry: false,
+    enabled: false, retry: false,
   });
 
-  const { data: onedriveFoldersData, refetch: refetchOneDriveFolders, isFetching: loadingOneDriveFolders } = useQuery({
-    queryKey: ['monitor-onedrive-folders'],
+  const { data: odFolders, refetch: refetchODF, isFetching: loadingODF } = useQuery({
+    queryKey: ['monitor-odfolders'],
     queryFn: () => api.get('/monitor/onedrive/folders').then(r => r.data),
-    enabled: false,
-    retry: false,
+    enabled: false, retry: false,
   });
 
   // ── Mutations ─────────────────────────────────────────────────────────────
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, ...updates }) => api.put(`/monitor/config/${id}`, updates),
+    mutationFn: ({ id, ...u }) => api.put(`/monitor/config/${id}`, u),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['monitor-config'] }),
-    onError: (err) => toast.error(err.message),
+    onError: e => toast.error(e.message),
   });
 
   const disconnectMutation = useMutation({
-    mutationFn: (source) => {
-      if (source === 'google_drive') return api.delete('/monitor/google/disconnect');
-      if (source === 'onedrive') return api.delete('/monitor/onedrive/disconnect');
-      return Promise.resolve();
-    },
+    mutationFn: (source) => ({
+      google_drive: () => api.delete('/monitor/google/disconnect'),
+      onedrive:     () => api.delete('/monitor/onedrive/disconnect'),
+      vault:        () => api.delete('/monitor/vault/disconnect'),
+    }[source]?.() || Promise.resolve()),
     onSuccess: (_, source) => {
-      const names = { google_drive: 'Google Drive', onedrive: 'OneDrive' };
-      toast.success(`${names[source] || source} déconnecté`);
+      toast.success({ google_drive: 'Google Drive déconnecté', onedrive: 'OneDrive déconnecté', vault: 'Vault vidé' }[source] || 'Déconnecté');
       queryClient.invalidateQueries({ queryKey: ['monitor-config'] });
       queryClient.invalidateQueries({ queryKey: ['monitor-files'] });
     },
-    onError: (err) => toast.error(err.message),
+    onError: e => toast.error(e.message),
   });
 
-  // ── Handlers ──────────────────────────────────────────────────────────────
+  // ── Upload Vault ──────────────────────────────────────────────────────────
+
+  const uploadToVault = useCallback(async (fileList) => {
+    if (!fileList.length || !user) return;
+    setVaultUploading(true);
+    setUploadProgress({ done: 0, total: fileList.length });
+    const tid = toast.loading(`Analyse et upload… (0/${fileList.length})`);
+
+    const synced = [];
+    for (let i = 0; i < fileList.length; i++) {
+      const { file, path } = fileList[i];
+      try {
+        const buf = await file.arrayBuffer();
+        const hash = await sha256hex(buf);
+        const storagePath = `${user.id}/${path}`;
+        const mime = file.type || (path.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+
+        const { error } = await supabase.storage.from('vault').upload(storagePath, file, { upsert: true, contentType: mime });
+        if (!error) {
+          synced.push({ storage_path: storagePath, file_name: path.split('/').pop(), hash, size: file.size, last_modified: new Date(file.lastModified).toISOString(), mime_type: mime });
+        }
+      } catch { }
+
+      setUploadProgress({ done: i + 1, total: fileList.length });
+      toast.loading(`Analyse et upload… (${i + 1}/${fileList.length})`, { id: tid });
+    }
+
+    toast.dismiss(tid);
+    if (!synced.length) { toast.error('Aucun fichier uploadé'); setVaultUploading(false); return; }
+
+    try {
+      const res = await api.post('/monitor/vault/sync', { files: synced });
+      const { changes, files_checked } = res.data;
+      toast.success(changes > 0
+        ? `${changes} document(s) analysé(s) par IA sur ${files_checked} uploadé(s)`
+        : `${files_checked} document(s) synchronisé(s) — aucun changement`);
+      queryClient.invalidateQueries({ queryKey: ['monitor-files'] });
+      queryClient.invalidateQueries({ queryKey: ['monitor-config'] });
+    } catch (e) {
+      toast.error(e.response?.data?.error || e.message);
+    } finally {
+      setVaultUploading(false);
+    }
+  }, [user, queryClient]);
+
+  // ── Dossier local ─────────────────────────────────────────────────────────
+
+  const performLocalScan = useCallback(async (silent = false) => {
+    if (!localHandle) return;
+    setScanningLocal(true);
+    setAutoScanPending(false);
+    const tid = silent ? null : toast.loading('Scan en cours…');
+    try {
+      const perm = await localHandle.requestPermission({ mode: 'read' });
+      if (perm !== 'granted') {
+        if (tid) toast.dismiss(tid);
+        if (!silent) toast.error('Permission refusée');
+        return;
+      }
+
+      const scanned = await scanDirHandle(localHandle);
+      if (!scanned.length) {
+        if (tid) toast.dismiss(tid);
+        if (!silent) toast('Aucun fichier compatible trouvé', { icon: '📁' });
+        return;
+      }
+
+      const filesData = [];
+      for (const { file, path } of scanned) {
+        const buf = await file.arrayBuffer();
+        filesData.push({
+          name: path,
+          content_base64: toBase64(buf),
+          mime_type: file.type || (path.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
+          hash: await sha256hex(buf),
+          last_modified: new Date(file.lastModified).toISOString(),
+        });
+      }
+
+      if (tid) toast.dismiss(tid);
+      const res = await api.post('/monitor/local/check', { folder_name: localHandle.name, files: filesData });
+      const { changes, files_checked } = res.data;
+      localStorage.setItem('dippro-local-last-scan', new Date().toISOString());
+      if (!silent || changes > 0) {
+        toast.success(changes > 0
+          ? `${changes} modification(s) sur ${files_checked} fichier(s)`
+          : `${files_checked} fichier(s) analysé(s) — aucun changement`);
+      }
+      queryClient.invalidateQueries({ queryKey: ['monitor-files'] });
+      queryClient.invalidateQueries({ queryKey: ['monitor-config'] });
+    } catch (e) {
+      if (tid) toast.dismiss(tid);
+      if (!silent) toast.error(e.response?.data?.error || e.message || 'Erreur scan');
+    } finally {
+      setScanningLocal(false);
+    }
+  }, [localHandle, queryClient]);
+
+  const handleConnectLocal = async () => {
+    if (!localSupported) return toast.error('Utilisez Chrome ou Edge');
+    try {
+      const h = await window.showDirectoryPicker({ mode: 'read' });
+      await idbSet('local_folder', h);
+      setLocalHandle(h);
+      setAutoScanPending(true);
+      toast.success(`Dossier "${h.name}" connecté — scan en cours…`);
+    } catch (e) {
+      if (e.name !== 'AbortError') toast.error('Accès refusé');
+    }
+  };
+
+  const handleDisconnectLocal = async () => {
+    if (!confirm('Déconnecter le dossier local ?')) return;
+    await idbDel('local_folder');
+    await api.delete('/monitor/local/disconnect').catch(() => {});
+    setLocalHandle(null);
+    localStorage.removeItem('dippro-local-last-scan');
+    toast.success('Dossier local déconnecté');
+    queryClient.invalidateQueries({ queryKey: ['monitor-config'] });
+    queryClient.invalidateQueries({ queryKey: ['monitor-files'] });
+  };
+
+  // ── OAuth handlers ────────────────────────────────────────────────────────
 
   const handleConnectGoogle = async () => {
     setConnectingGoogle(true);
     try {
-      const res = await api.get('/monitor/google/auth');
-      window.location.href = res.data.auth_url;
-    } catch (err) {
-      const msg = err.response?.data?.error || err.message;
-      toast.error(msg.includes('GOOGLE_CLIENT_ID') ? 'Configurez GOOGLE_CLIENT_ID dans Vercel' : msg);
+      const r = await api.get('/monitor/google/auth');
+      window.location.href = r.data.auth_url;
+    } catch (e) {
+      toast.error(e.response?.data?.error?.includes('GOOGLE_CLIENT_ID') ? 'Configurez GOOGLE_CLIENT_ID dans Vercel' : e.response?.data?.error || e.message);
       setConnectingGoogle(false);
     }
   };
@@ -321,152 +460,58 @@ export default function MonitorPage() {
   const handleConnectOneDrive = async () => {
     setConnectingOneDrive(true);
     try {
-      const res = await api.get('/monitor/onedrive/auth');
-      window.location.href = res.data.auth_url;
-    } catch (err) {
-      const msg = err.response?.data?.error || err.message;
-      toast.error(msg.includes('MICROSOFT_CLIENT_ID') ? 'Configurez MICROSOFT_CLIENT_ID dans Vercel' : msg);
+      const r = await api.get('/monitor/onedrive/auth');
+      window.location.href = r.data.auth_url;
+    } catch (e) {
+      toast.error(e.response?.data?.error?.includes('MICROSOFT_CLIENT_ID') ? 'Configurez MICROSOFT_CLIENT_ID dans Vercel' : e.response?.data?.error || e.message);
       setConnectingOneDrive(false);
     }
   };
 
-  const handleConnectLocal = async () => {
-    if (!localSupported) {
-      toast.error('Votre navigateur ne supporte pas cette fonctionnalité. Utilisez Chrome ou Edge.');
-      return;
-    }
-    try {
-      const handle = await window.showDirectoryPicker({ mode: 'read' });
-      await idbSet('local_folder', handle);
-      setLocalHandle(handle);
-      toast.success(`Dossier "${handle.name}" connecté. Cliquez sur "Scanner" pour analyser vos fichiers.`);
-    } catch (err) {
-      if (err.name !== 'AbortError') toast.error('Accès au dossier refusé');
-    }
-  };
-
-  const handleDisconnectLocal = async () => {
-    if (!confirm('Déconnecter le dossier local ?')) return;
-    try {
-      await idbDel('local_folder');
-      await api.delete('/monitor/local/disconnect');
-      setLocalHandle(null);
-      toast.success('Dossier local déconnecté');
-      queryClient.invalidateQueries({ queryKey: ['monitor-config'] });
-      queryClient.invalidateQueries({ queryKey: ['monitor-files'] });
-    } catch (err) {
-      toast.error(err.response?.data?.error || err.message);
-    }
-  };
-
-  const handleScanLocal = async () => {
-    if (!localHandle) return;
-    setScanningLocal(true);
-    const toastId = toast.loading('Scan en cours…');
-    try {
-      const perm = await localHandle.requestPermission({ mode: 'read' });
-      if (perm !== 'granted') {
-        toast.dismiss(toastId);
-        toast.error('Accès refusé — cliquez à nouveau pour réessayer');
-        return;
-      }
-
-      const scanned = await scanDir(localHandle);
-      if (scanned.length === 0) {
-        toast.dismiss(toastId);
-        toast('Aucun fichier PDF ou Word trouvé dans ce dossier', { icon: '📁' });
-        return;
-      }
-
-      const filesData = [];
-      for (const { file, path } of scanned) {
-        const buffer = await file.arrayBuffer();
-        const hash = await sha256(buffer);
-        const content_base64 = toBase64(buffer);
-        filesData.push({
-          name: path,
-          content_base64,
-          mime_type: file.type || (path.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
-          hash,
-          last_modified: new Date(file.lastModified).toISOString(),
-        });
-      }
-
-      toast.dismiss(toastId);
-      const res = await api.post('/monitor/local/check', { folder_name: localHandle.name, files: filesData });
-      const { changes, files_checked } = res.data;
-
-      toast.success(
-        changes > 0
-          ? `${changes} modification(s) sur ${files_checked} fichier(s) analysé(s)`
-          : `${files_checked} fichier(s) analysé(s) — aucun changement`
-      );
-      queryClient.invalidateQueries({ queryKey: ['monitor-files'] });
-      queryClient.invalidateQueries({ queryKey: ['monitor-config'] });
-    } catch (err) {
-      toast.dismiss(toastId);
-      if (err.name === 'NotAllowedError') {
-        toast.error('Accès refusé — veuillez autoriser l\'accès au dossier');
-      } else {
-        toast.error(err.response?.data?.error || err.message || 'Erreur lors du scan');
-      }
-    } finally {
-      setScanningLocal(false);
-    }
+  const handleSelectFolder = (source, folder) => {
+    const m = source === 'google_drive' ? googleMonitor : onedriveMonitor;
+    if (!m) return;
+    updateMutation.mutate({ id: m.id, folder_id: folder.id, folder_name: folder.name });
+    source === 'google_drive' ? setShowGoogleFolders(false) : setShowOneDriveFolders(false);
   };
 
   const handleCheckNow = async () => {
     setCheckingNow(true);
     try {
-      const res = await api.post('/monitor/check-now');
-      const { changes, files_checked } = res.data;
-      toast.success(
-        changes > 0
-          ? `${changes} document(s) modifié(s) sur ${files_checked} analysé(s)`
-          : `${files_checked} document(s) analysé(s) — aucun changement`
-      );
+      const r = await api.post('/monitor/check-now');
+      toast.success(r.data.changes > 0 ? `${r.data.changes} document(s) modifié(s)` : `${r.data.files_checked} document(s) — aucun changement`);
       queryClient.invalidateQueries({ queryKey: ['monitor-files'] });
       queryClient.invalidateQueries({ queryKey: ['monitor-config'] });
-    } catch (err) {
-      toast.error(err.response?.data?.error || err.message);
+    } catch (e) {
+      toast.error(e.response?.data?.error || e.message);
     } finally {
       setCheckingNow(false);
     }
   };
 
-  const handleSelectFolder = (source, folder) => {
-    const monitor = source === 'google_drive' ? googleMonitor : onedriveMonitor;
-    if (!monitor) return;
-    updateMutation.mutate({ id: monitor.id, folder_id: folder.id, folder_name: folder.name });
-    if (source === 'google_drive') setShowGoogleFolderPicker(false);
-    else setShowOneDriveFolderPicker(false);
-    toast.success(folder.id ? `Dossier "${folder.name}" sélectionné` : 'Surveillance de tout le stockage cloud activée');
-  };
-
-  // ── Derived data ──────────────────────────────────────────────────────────
+  // ── Données dérivées ──────────────────────────────────────────────────────
 
   const monitors = configData?.monitors || [];
-  const googleMonitor = monitors.find(m => m.source === 'google_drive');
+  const vaultMonitor    = monitors.find(m => m.source === 'vault');
+  const localMonitor    = monitors.find(m => m.source === 'local_folder');
+  const googleMonitor   = monitors.find(m => m.source === 'google_drive');
   const onedriveMonitor = monitors.find(m => m.source === 'onedrive');
-  const localMonitor = monitors.find(m => m.source === 'local_folder');
   const files = filesData?.files || [];
-  const changedFiles = files.filter(f => f.status === 'new' || f.status === 'changed');
-  const anyConnected = googleMonitor || onedriveMonitor || localHandle;
+  const changed = files.filter(f => f.status === 'new' || f.status === 'changed');
+  const anyCloud = googleMonitor || onedriveMonitor;
 
   if (isLoading) return <div className="flex justify-center py-24"><LoadingSpinner size="lg" /></div>;
+
+  // ── Rendu ─────────────────────────────────────────────────────────────────
 
   return (
     <div className="space-y-6 animate-fade-in max-w-3xl">
       <PageHeader
         title="Surveillance documentaire"
-        subtitle="Connectez vos sources de documents pour que DIPpro détecte automatiquement les modifications impactant votre DIP"
+        subtitle="DIPpro détecte automatiquement les changements dans vos documents et met à jour votre DIP"
         action={
-          anyConnected && (
-            <button
-              onClick={handleCheckNow}
-              disabled={checkingNow}
-              className="btn-primary flex items-center gap-2 text-sm"
-            >
+          anyCloud && (
+            <button onClick={handleCheckNow} disabled={checkingNow} className="btn-primary flex items-center gap-2 text-sm">
               {checkingNow ? <LoadingSpinner size="sm" /> : <Play className="w-4 h-4" />}
               Vérifier maintenant
             </button>
@@ -474,90 +519,102 @@ export default function MonitorPage() {
         }
       />
 
-      {/* ── Google Drive ─────────────────────────────────────────────────── */}
+      {/* ══ DIPpro Vault ════════════════════════════════════════════════════ */}
       <div className="card">
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${googleMonitor ? 'bg-success/10 border-success/20' : 'bg-bg-elevated border-border-subtle'}`}>
-              <Cloud className={`w-5 h-5 ${googleMonitor ? 'text-success' : 'text-text-secondary'}`} />
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${vaultMonitor ? 'bg-success/10 border-success/20' : 'bg-gold/8 border-gold/20'}`}>
+              <Shield className={`w-5 h-5 ${vaultMonitor ? 'text-success' : 'text-gold'}`} />
             </div>
             <div>
-              <p className="font-dm-sans text-sm font-medium text-text-primary">Google Drive</p>
+              <div className="flex items-center gap-2">
+                <p className="font-dm-sans text-sm font-medium text-text-primary">DIPpro Vault</p>
+                <span className="font-dm-mono text-xs px-1.5 py-0.5 rounded bg-gold/10 text-gold border border-gold/20">Zéro config</span>
+              </div>
               <p className="font-dm-mono text-xs text-text-secondary mt-0.5">
-                {googleMonitor ? `Connecté : ${googleMonitor.drive_email || 'compte Google'}` : 'Non connecté — Mac, Windows, iOS, Android'}
+                {vaultMonitor
+                  ? `Actif — glissez des fichiers pour mettre à jour`
+                  : 'Stockage sécurisé intégré — tous appareils, tous navigateurs'}
               </p>
             </div>
           </div>
-          {googleMonitor ? (
-            <div className="flex items-center gap-3">
-              <span className="font-dm-mono text-xs text-success flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5" /> Actif</span>
-              <button
-                onClick={() => { if (confirm('Déconnecter Google Drive ?')) disconnectMutation.mutate('google_drive'); }}
-                disabled={disconnectMutation.isPending}
-                className="btn-ghost text-xs flex items-center gap-1.5 text-danger hover:text-danger/80"
-              >
-                <Unlink className="w-3.5 h-3.5" /> Déconnecter
-              </button>
-            </div>
-          ) : (
-            <button onClick={handleConnectGoogle} disabled={connectingGoogle} className="btn-liquid-glass-prominent flex items-center gap-2 text-sm">
-              {connectingGoogle ? <LoadingSpinner size="sm" /> : <Cloud className="w-4 h-4" />}
-              Connecter
+          {vaultMonitor && (
+            <button
+              onClick={() => { if (confirm('Vider le Vault et supprimer tous les fichiers stockés ?')) disconnectMutation.mutate('vault'); }}
+              disabled={disconnectMutation.isPending}
+              className="btn-ghost text-xs flex items-center gap-1.5 text-danger hover:text-danger/80"
+            >
+              <Trash2 className="w-3.5 h-3.5" /> Vider
             </button>
           )}
         </div>
 
-        {googleMonitor ? (
-          <>
-            {/* Folder picker */}
-            <div className="flex items-center justify-between bg-bg-elevated rounded-lg px-4 py-2.5 mb-3">
-              <div>
-                <p className="font-dm-sans text-sm text-text-primary">{googleMonitor.folder_name || 'Tout Mon Drive'}</p>
-                <p className="font-dm-mono text-xs text-text-muted mt-0.5">
-                  {googleMonitor.folder_id ? `ID: ${googleMonitor.folder_id}` : 'Tous les fichiers compatibles'}
-                </p>
+        {/* Zone drag & drop */}
+        <div
+          onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+          onDragLeave={e => { if (!e.currentTarget.contains(e.relatedTarget)) setDragOver(false); }}
+          onDrop={async e => {
+            e.preventDefault();
+            setDragOver(false);
+            const files = await extractDroppedFiles(Array.from(e.dataTransfer.items));
+            if (files.length) uploadToVault(files);
+            else toast.error('Aucun fichier PDF ou Word compatible');
+          }}
+          onClick={() => !vaultUploading && vaultInputRef.current?.click()}
+          className={`relative border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all select-none ${
+            dragOver ? 'border-gold bg-gold/5 scale-[1.01]' : 'border-border-default hover:border-gold/40 hover:bg-gold/3'
+          }`}
+        >
+          {vaultUploading ? (
+            <div className="space-y-3">
+              <LoadingSpinner size="md" className="mx-auto" />
+              <p className="font-dm-sans text-sm text-text-primary">
+                Upload {uploadProgress.done}/{uploadProgress.total}…
+              </p>
+              <div className="h-1.5 bg-bg-elevated rounded-full overflow-hidden max-w-xs mx-auto">
+                <div
+                  className="h-full bg-gold rounded-full transition-all duration-300"
+                  style={{ width: `${uploadProgress.total ? (uploadProgress.done / uploadProgress.total) * 100 : 0}%` }}
+                />
               </div>
-              <button
-                onClick={() => { setShowGoogleFolderPicker(v => !v); refetchGoogleFolders(); }}
-                className="btn-secondary text-xs flex items-center gap-1.5"
-              >
-                <Settings2 className="w-3.5 h-3.5" /> Changer
-              </button>
             </div>
+          ) : (
+            <>
+              <Upload className={`w-8 h-8 mx-auto mb-3 transition-colors ${dragOver ? 'text-gold' : 'text-text-muted'}`} />
+              <p className="font-dm-sans text-sm font-medium text-text-primary mb-1">
+                Glissez vos fichiers ou dossiers ici
+              </p>
+              <p className="font-dm-sans text-xs text-text-muted">PDF, Word, Excel · 10 Mo max · Analyse IA automatique</p>
+            </>
+          )}
+        </div>
 
-            {showGoogleFolderPicker && (
-              <div className="border border-border-default rounded-xl overflow-hidden mb-3">
-                {loadingGoogleFolders ? (
-                  <div className="flex justify-center py-6"><LoadingSpinner size="sm" /></div>
-                ) : (
-                  <div className="max-h-48 overflow-y-auto divide-y divide-border-subtle">
-                    {(googleFoldersData?.folders || []).map(folder => (
-                      <button
-                        key={folder.id || 'root'}
-                        onClick={() => handleSelectFolder('google_drive', folder)}
-                        className={`w-full text-left px-4 py-2.5 hover:bg-bg-elevated transition-colors flex items-center gap-3 ${googleMonitor.folder_id === folder.id ? 'bg-gold/5' : ''}`}
-                      >
-                        <FolderOpen className="w-4 h-4 text-gold flex-shrink-0" />
-                        <span className="font-dm-sans text-sm text-text-primary">{folder.name}</span>
-                        {googleMonitor.folder_id === folder.id && <CheckCircle className="w-3.5 h-3.5 text-success ml-auto" />}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
+        {/* Input file caché */}
+        <input
+          ref={vaultInputRef}
+          type="file"
+          multiple
+          accept=".pdf,.docx,.xlsx,.doc"
+          className="hidden"
+          onChange={async e => {
+            const list = Array.from(e.target.files || [])
+              .filter(f => f.size <= MAX_FILE_BYTES && isSupported(f.name))
+              .map(f => ({ file: f, path: f.name }));
+            if (list.length) await uploadToVault(list);
+            e.target.value = '';
+          }}
+        />
 
-            <MonitorConfig monitor={googleMonitor} updateMutation={updateMutation} />
-          </>
-        ) : (
-          <InfoBox>
-            DIPpro surveille votre Google Drive et détecte les modifications (bilans INPI, contrats, actes...) pouvant nécessiter une mise à jour de votre DIP.
-            Accès en lecture seule — aucune donnée Drive n'est modifiée.
-          </InfoBox>
+        {vaultMonitor && <FreqConfig monitor={vaultMonitor} updateMutation={updateMutation} />}
+
+        {!vaultMonitor && (
+          <p className="font-dm-sans text-xs text-text-muted text-center mt-3">
+            Vos fichiers sont chiffrés et stockés dans votre espace Supabase privé.
+          </p>
         )}
       </div>
 
-      {/* ── Dossier local — Mac & Windows ────────────────────────────────── */}
+      {/* ══ Dossier local — Mac & Windows ════════════════════════════════════ */}
       <div className="card">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
@@ -568,64 +625,101 @@ export default function MonitorPage() {
               <p className="font-dm-sans text-sm font-medium text-text-primary">Dossier local</p>
               <p className="font-dm-mono text-xs text-text-secondary mt-0.5">
                 {localHandle
-                  ? `Connecté : ${localHandle.name}`
-                  : localSupported
-                    ? 'Non connecté — Mac & Windows (Chrome / Edge)'
-                    : 'Navigateur non compatible — utilisez Chrome ou Edge'}
+                  ? `${localHandle.name}${autoScanPending ? ' · scan en attente…' : ''}`
+                  : localSupported ? 'Mac & Windows · Chrome / Edge' : 'Requiert Chrome ou Edge'}
               </p>
             </div>
           </div>
           {localHandle ? (
-            <div className="flex items-center gap-2">
+            <div className="flex gap-2">
               <button
-                onClick={handleScanLocal}
+                onClick={() => performLocalScan(false)}
                 disabled={scanningLocal}
                 className="btn-primary text-xs flex items-center gap-1.5"
               >
                 {scanningLocal ? <LoadingSpinner size="sm" /> : <RefreshCw className="w-3.5 h-3.5" />}
                 Scanner
               </button>
-              <button
-                onClick={handleDisconnectLocal}
-                className="btn-ghost text-xs flex items-center gap-1.5 text-danger hover:text-danger/80"
-              >
-                <Unlink className="w-3.5 h-3.5" /> Déconnecter
+              <button onClick={handleDisconnectLocal} className="btn-ghost text-xs flex items-center gap-1.5 text-danger hover:text-danger/80">
+                <Unlink className="w-3.5 h-3.5" />
               </button>
             </div>
           ) : (
-            <button
-              onClick={handleConnectLocal}
-              disabled={!localSupported}
-              className="btn-liquid-glass-prominent flex items-center gap-2 text-sm disabled:opacity-40"
-            >
-              <HardDrive className="w-4 h-4" />
-              Connecter
+            <button onClick={handleConnectLocal} disabled={!localSupported} className="btn-liquid-glass-prominent flex items-center gap-2 text-sm disabled:opacity-40">
+              <HardDrive className="w-4 h-4" /> Connecter
             </button>
           )}
         </div>
 
-        {localHandle && localMonitor && (
-          <MonitorConfig monitor={localMonitor} updateMutation={updateMutation} />
-        )}
+        {localHandle && localMonitor && <FreqConfig monitor={localMonitor} updateMutation={updateMutation} />}
+        {!localHandle && <Tip>Accès direct aux PDF et Word de votre Mac ou PC. Les fichiers sont lus localement — rien n'est envoyé sans votre déclenchement.</Tip>}
+      </div>
 
-        {!localHandle && (
-          <InfoBox>
-            Donnez accès à un dossier de votre Mac ou PC. DIPpro lit vos PDF et Word en local et analyse les changements — vos fichiers ne quittent jamais votre appareil sans votre consentement.
-            {!localSupported && ' ⚠️ Firefox et Safari ne supportent pas encore cette API. Utilisez Chrome ou Edge.'}
-          </InfoBox>
-        )}
-
-        {localHandle && (
-          <div className="mt-3 flex items-start gap-3 rounded-xl p-3 bg-bg-elevated border border-border-subtle">
-            <Info className="w-3.5 h-3.5 text-gold flex-shrink-0 mt-0.5" />
-            <p className="font-dm-sans text-xs text-text-muted">
-              Cliquez sur <strong className="text-text-secondary">Scanner</strong> pour analyser le dossier. L'accès est réinitialisé à chaque session — votre navigateur peut redemander la permission.
-            </p>
+      {/* ══ Google Drive ══════════════════════════════════════════════════════ */}
+      <div className="card">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-3">
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center border ${googleMonitor ? 'bg-success/10 border-success/20' : 'bg-bg-elevated border-border-subtle'}`}>
+              <Cloud className={`w-5 h-5 ${googleMonitor ? 'text-success' : 'text-text-secondary'}`} />
+            </div>
+            <div>
+              <p className="font-dm-sans text-sm font-medium text-text-primary">Google Drive</p>
+              <p className="font-dm-mono text-xs text-text-secondary mt-0.5">
+                {googleMonitor ? `Connecté : ${googleMonitor.drive_email || 'compte Google'}` : 'Mac · Windows · iOS · Android · Samsung'}
+              </p>
+            </div>
           </div>
+          {googleMonitor ? (
+            <div className="flex items-center gap-3">
+              <span className="font-dm-mono text-xs text-success flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5" /> Actif</span>
+              <button onClick={() => { if (confirm('Déconnecter Google Drive ?')) disconnectMutation.mutate('google_drive'); }} className="btn-ghost text-xs flex items-center gap-1.5 text-danger hover:text-danger/80">
+                <Unlink className="w-3.5 h-3.5" /> Déconnecter
+              </button>
+            </div>
+          ) : (
+            <button onClick={handleConnectGoogle} disabled={connectingGoogle} className="btn-liquid-glass-prominent flex items-center gap-2 text-sm">
+              {connectingGoogle ? <LoadingSpinner size="sm" /> : <Cloud className="w-4 h-4" />} Connecter
+            </button>
+          )}
+        </div>
+
+        {googleMonitor && (
+          <>
+            <div className="flex items-center justify-between bg-bg-elevated rounded-lg px-4 py-2.5 mb-3">
+              <div>
+                <p className="font-dm-sans text-sm text-text-primary">{googleMonitor.folder_name || 'Tout Mon Drive'}</p>
+                <p className="font-dm-mono text-xs text-text-muted mt-0.5">{googleMonitor.folder_id || 'Tous les fichiers compatibles'}</p>
+              </div>
+              <button onClick={() => { setShowGoogleFolders(v => !v); refetchGF(); }} className="btn-secondary text-xs flex items-center gap-1.5">
+                <Settings2 className="w-3.5 h-3.5" /> Changer
+              </button>
+            </div>
+            {showGoogleFolders && (
+              <div className="border border-border-default rounded-xl overflow-hidden mb-3">
+                {loadingGF ? <div className="flex justify-center py-4"><LoadingSpinner size="sm" /></div> : (
+                  <div className="max-h-44 overflow-y-auto divide-y divide-border-subtle">
+                    {(gFolders?.folders || []).map(f => (
+                      <button key={f.id || 'root'} onClick={() => handleSelectFolder('google_drive', f)}
+                        className={`w-full text-left px-4 py-2.5 hover:bg-bg-elevated flex items-center gap-3 ${googleMonitor.folder_id === f.id ? 'bg-gold/5' : ''}`}>
+                        <FolderOpen className="w-4 h-4 text-gold flex-shrink-0" />
+                        <span className="font-dm-sans text-sm text-text-primary">{f.name}</span>
+                        {googleMonitor.folder_id === f.id && <CheckCircle className="w-3.5 h-3.5 text-success ml-auto" />}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            <FreqConfig monitor={googleMonitor} updateMutation={updateMutation} />
+          </>
+        )}
+
+        {!googleMonitor && (
+          <Tip>Surveillance automatique en arrière-plan toutes les N jours. Détecte les bilans, actes INPI, contrats. Nécessite une configuration OAuth (15 min) — voir guide ci-dessous.</Tip>
         )}
       </div>
 
-      {/* ── OneDrive (Microsoft) ──────────────────────────────────────────── */}
+      {/* ══ OneDrive ══════════════════════════════════════════════════════════ */}
       <div className="card">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
@@ -633,129 +727,98 @@ export default function MonitorPage() {
               <FolderSync className={`w-5 h-5 ${onedriveMonitor ? 'text-success' : 'text-text-secondary'}`} />
             </div>
             <div>
-              <p className="font-dm-sans text-sm font-medium text-text-primary">OneDrive <span className="font-dm-mono text-xs text-text-muted ml-1">Microsoft</span></p>
+              <p className="font-dm-sans text-sm font-medium text-text-primary">
+                OneDrive <span className="font-dm-mono text-xs text-text-muted">Microsoft</span>
+              </p>
               <p className="font-dm-mono text-xs text-text-secondary mt-0.5">
-                {onedriveMonitor ? `Connecté : ${onedriveMonitor.drive_email || 'compte Microsoft'}` : 'Non connecté — Windows, Mac, SharePoint'}
+                {onedriveMonitor ? `Connecté : ${onedriveMonitor.drive_email || 'compte Microsoft'}` : 'Windows · Mac · SharePoint · Microsoft 365'}
               </p>
             </div>
           </div>
           {onedriveMonitor ? (
             <div className="flex items-center gap-3">
               <span className="font-dm-mono text-xs text-success flex items-center gap-1"><CheckCircle className="w-3.5 h-3.5" /> Actif</span>
-              <button
-                onClick={() => { if (confirm('Déconnecter OneDrive ?')) disconnectMutation.mutate('onedrive'); }}
-                disabled={disconnectMutation.isPending}
-                className="btn-ghost text-xs flex items-center gap-1.5 text-danger hover:text-danger/80"
-              >
+              <button onClick={() => { if (confirm('Déconnecter OneDrive ?')) disconnectMutation.mutate('onedrive'); }} className="btn-ghost text-xs flex items-center gap-1.5 text-danger hover:text-danger/80">
                 <Unlink className="w-3.5 h-3.5" /> Déconnecter
               </button>
             </div>
           ) : (
             <button onClick={handleConnectOneDrive} disabled={connectingOneDrive} className="btn-liquid-glass-prominent flex items-center gap-2 text-sm">
-              {connectingOneDrive ? <LoadingSpinner size="sm" /> : <FolderSync className="w-4 h-4" />}
-              Connecter
+              {connectingOneDrive ? <LoadingSpinner size="sm" /> : <FolderSync className="w-4 h-4" />} Connecter
             </button>
           )}
         </div>
 
-        {onedriveMonitor ? (
+        {onedriveMonitor && (
           <>
             <div className="flex items-center justify-between bg-bg-elevated rounded-lg px-4 py-2.5 mb-3">
               <div>
                 <p className="font-dm-sans text-sm text-text-primary">{onedriveMonitor.folder_name || 'Tout Mon OneDrive'}</p>
-                <p className="font-dm-mono text-xs text-text-muted mt-0.5">
-                  {onedriveMonitor.folder_id ? `ID: ${onedriveMonitor.folder_id}` : 'Tous les dossiers compatibles'}
-                </p>
+                <p className="font-dm-mono text-xs text-text-muted mt-0.5">{onedriveMonitor.folder_id || 'Tous les dossiers compatibles'}</p>
               </div>
-              <button
-                onClick={() => { setShowOneDriveFolderPicker(v => !v); refetchOneDriveFolders(); }}
-                className="btn-secondary text-xs flex items-center gap-1.5"
-              >
+              <button onClick={() => { setShowOneDriveFolders(v => !v); refetchODF(); }} className="btn-secondary text-xs flex items-center gap-1.5">
                 <Settings2 className="w-3.5 h-3.5" /> Changer
               </button>
             </div>
-
-            {showOneDriveFolderPicker && (
+            {showOneDriveFolders && (
               <div className="border border-border-default rounded-xl overflow-hidden mb-3">
-                {loadingOneDriveFolders ? (
-                  <div className="flex justify-center py-6"><LoadingSpinner size="sm" /></div>
-                ) : (
-                  <div className="max-h-48 overflow-y-auto divide-y divide-border-subtle">
-                    {(onedriveFoldersData?.folders || []).map(folder => (
-                      <button
-                        key={folder.id || 'root'}
-                        onClick={() => handleSelectFolder('onedrive', folder)}
-                        className={`w-full text-left px-4 py-2.5 hover:bg-bg-elevated transition-colors flex items-center gap-3 ${onedriveMonitor.folder_id === folder.id ? 'bg-gold/5' : ''}`}
-                      >
+                {loadingODF ? <div className="flex justify-center py-4"><LoadingSpinner size="sm" /></div> : (
+                  <div className="max-h-44 overflow-y-auto divide-y divide-border-subtle">
+                    {(odFolders?.folders || []).map(f => (
+                      <button key={f.id || 'root'} onClick={() => handleSelectFolder('onedrive', f)}
+                        className={`w-full text-left px-4 py-2.5 hover:bg-bg-elevated flex items-center gap-3 ${onedriveMonitor.folder_id === f.id ? 'bg-gold/5' : ''}`}>
                         <FolderOpen className="w-4 h-4 text-gold flex-shrink-0" />
-                        <span className="font-dm-sans text-sm text-text-primary">{folder.name}</span>
-                        {onedriveMonitor.folder_id === folder.id && <CheckCircle className="w-3.5 h-3.5 text-success ml-auto" />}
+                        <span className="font-dm-sans text-sm text-text-primary">{f.name}</span>
+                        {onedriveMonitor.folder_id === f.id && <CheckCircle className="w-3.5 h-3.5 text-success ml-auto" />}
                       </button>
                     ))}
                   </div>
                 )}
               </div>
             )}
-
-            <MonitorConfig monitor={onedriveMonitor} updateMutation={updateMutation} />
+            <FreqConfig monitor={onedriveMonitor} updateMutation={updateMutation} />
           </>
-        ) : (
-          <InfoBox>
-            Connectez votre OneDrive personnel ou professionnel (Microsoft 365 / SharePoint). DIPpro surveille vos fichiers Word, Excel et PDF — accès en lecture seule.
-          </InfoBox>
+        )}
+
+        {!onedriveMonitor && (
+          <Tip>Surveillance automatique de votre OneDrive ou SharePoint. Nécessite une configuration Azure (15 min) — voir guide ci-dessous.</Tip>
         )}
       </div>
 
-      {/* ── Samsung ───────────────────────────────────────────────────────── */}
+      {/* ══ Samsung ═══════════════════════════════════════════════════════════ */}
       <div className="card">
         <div className="flex items-center gap-3 mb-3">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center border bg-bg-elevated border-border-subtle">
             <Smartphone className="w-5 h-5 text-text-secondary" />
           </div>
           <div>
-            <p className="font-dm-sans text-sm font-medium text-text-primary">Samsung <span className="font-dm-mono text-xs text-text-muted ml-1">Galaxy / Android</span></p>
-            <p className="font-dm-mono text-xs text-text-secondary mt-0.5">Synchronisation via Google Drive ou OneDrive</p>
+            <p className="font-dm-sans text-sm font-medium text-text-primary">Samsung Galaxy <span className="font-dm-mono text-xs text-text-muted">Android</span></p>
+            <p className="font-dm-mono text-xs text-text-secondary mt-0.5">Fonctionne via Google Drive ou OneDrive</p>
           </div>
         </div>
-        <div className="flex items-start gap-3 rounded-xl p-4 bg-bg-elevated border border-border-subtle">
-          <Info className="w-4 h-4 text-gold flex-shrink-0 mt-0.5" />
-          <div className="font-dm-sans text-xs text-text-secondary space-y-2">
-            <p>
-              Les appareils Samsung Galaxy synchronisent automatiquement les fichiers via <strong className="text-text-primary">Google Drive</strong> (My Files) ou <strong className="text-text-primary">OneDrive</strong> (Microsoft 365 for Business).
-            </p>
-            <p>
-              <strong className="text-text-primary">Comment configurer :</strong>
-            </p>
-            <ol className="list-decimal ml-4 space-y-1">
-              <li>Sur votre Samsung : Paramètres → Comptes → Google → activez la synchronisation Drive</li>
-              <li>Dans DIPpro : connectez Google Drive (ci-dessus) et sélectionnez le dossier "Mes documents"</li>
-              <li>DIPpro détectera automatiquement les nouveaux fichiers synchronisés depuis votre Galaxy</li>
-            </ol>
-          </div>
-        </div>
+        <Tip>
+          Sur votre Samsung : Paramètres → Comptes → Google → activez la sync Drive. Puis connectez Google Drive ici → DIPpro détecte automatiquement vos fichiers Galaxy synchronisés.
+        </Tip>
       </div>
 
-      {/* ── Fichiers détectés ─────────────────────────────────────────────── */}
+      {/* ══ Fichiers détectés ══════════════════════════════════════════════ */}
       <div>
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-cormorant text-xl text-text-primary">
             Fichiers détectés
             {files.length > 0 && <span className="font-dm-mono text-sm text-text-secondary ml-2">({files.length})</span>}
           </h2>
-          {changedFiles.length > 0 && (
+          {changed.length > 0 && (
             <span className="font-dm-mono text-xs px-2 py-1 rounded bg-warning/10 text-warning border border-warning/20">
-              {changedFiles.length} modification(s) à examiner
+              {changed.length} à examiner
             </span>
           )}
         </div>
 
         {files.length === 0 ? (
-          <div className="card text-center py-12">
-            <FileText className="w-10 h-10 text-text-muted mx-auto mb-4" />
-            <p className="font-dm-sans text-sm text-text-secondary mb-1">Aucun fichier détecté pour l'instant</p>
-            <p className="font-dm-sans text-xs text-text-muted">
-              Connectez une source et cliquez sur « Vérifier maintenant » ou « Scanner »
-            </p>
+          <div className="card text-center py-10">
+            <FileText className="w-9 h-9 text-text-muted mx-auto mb-3" />
+            <p className="font-dm-sans text-sm text-text-secondary">Glissez des fichiers dans le Vault pour commencer</p>
           </div>
         ) : (
           <div className="card p-0 overflow-hidden">
@@ -769,27 +832,22 @@ export default function MonitorPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {files.map((file, i) => (
-                    <tr key={file.id} className={`border-b border-border-subtle hover:bg-bg-elevated transition-colors ${i === files.length - 1 ? 'border-0' : ''}`}>
+                  {files.map((f, i) => (
+                    <tr key={f.id} className={`border-b border-border-subtle hover:bg-bg-elevated transition-colors ${i === files.length - 1 ? 'border-0' : ''}`}>
                       <td className="px-4 py-3">
-                        <p className="font-dm-sans text-sm text-text-primary font-medium truncate max-w-[180px]">{file.file_name}</p>
+                        <p className="font-dm-sans text-sm text-text-primary font-medium truncate max-w-[160px]">{f.file_name}</p>
                       </td>
                       <td className="px-4 py-3 font-dm-mono text-xs text-text-secondary whitespace-nowrap">
-                        {MIME_LABELS[file.mime_type] || 'Document'}
+                        {MIME_LABELS[f.mime_type] || 'Document'}
                       </td>
                       <td className="px-4 py-3 font-dm-mono text-xs text-text-secondary whitespace-nowrap">
-                        {file.last_modified
-                          ? new Date(file.last_modified).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })
-                          : '—'}
+                        {f.last_modified ? new Date(f.last_modified).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'}
                       </td>
-                      <td className="px-4 py-3">
-                        <StatusBadge status={file.status} />
-                      </td>
+                      <td className="px-4 py-3"><Badge status={f.status} /></td>
                       <td className="px-4 py-3 max-w-xs">
-                        {file.change_summary
-                          ? <p className="font-dm-sans text-xs text-text-secondary line-clamp-2">{file.change_summary}</p>
-                          : <span className="font-dm-mono text-xs text-text-muted">—</span>
-                        }
+                        {f.change_summary
+                          ? <p className="font-dm-sans text-xs text-text-secondary line-clamp-2">{f.change_summary}</p>
+                          : <span className="font-dm-mono text-xs text-text-muted">—</span>}
                       </td>
                     </tr>
                   ))}
@@ -799,41 +857,6 @@ export default function MonitorPage() {
           </div>
         )}
       </div>
-
-      {/* ── Guide de configuration (si rien n'est connecté) ──────────────── */}
-      {!anyConnected && (
-        <div className="card space-y-4">
-          <div className="flex items-center gap-2">
-            <Settings2 className="w-4 h-4 text-gold" />
-            <p className="font-dm-sans text-sm font-medium text-text-primary">Variables d'environnement à configurer</p>
-          </div>
-          <p className="font-dm-sans text-xs text-text-secondary">
-            Pour activer Google Drive ou OneDrive, ajoutez ces variables dans <strong className="text-text-primary">Vercel → Settings → Environment Variables</strong> :
-          </p>
-          {[
-            { key: 'GOOGLE_CLIENT_ID', desc: 'OAuth Client ID Google (Google Cloud Console → APIs → Credentials)' },
-            { key: 'GOOGLE_CLIENT_SECRET', desc: 'OAuth Client Secret Google' },
-            { key: 'MICROSOFT_CLIENT_ID', desc: 'Application (client) ID Azure (portail.azure.com → App registrations)' },
-            { key: 'MICROSOFT_CLIENT_SECRET', desc: 'Secret client Azure AD' },
-            { key: 'BACKEND_URL', desc: 'URL de votre API (ex: https://dippro.business)' },
-            { key: 'MONITOR_CRON_SECRET', desc: 'Secret pour sécuriser l\'endpoint cron' },
-            { key: 'MONITOR_ENCRYPTION_KEY', desc: 'Clé 64 hex chars — générez avec: openssl rand -hex 32' },
-          ].map(({ key, desc }) => (
-            <div key={key} className="bg-bg-elevated rounded-lg px-4 py-3">
-              <p className="font-dm-mono text-xs text-gold mb-1">{key}</p>
-              <p className="font-dm-sans text-xs text-text-secondary">{desc}</p>
-            </div>
-          ))}
-          <div className="flex items-start gap-3 p-4 rounded-xl bg-gold/5 border border-gold/15">
-            <AlertTriangle className="w-4 h-4 text-gold flex-shrink-0 mt-0.5" />
-            <div className="font-dm-sans text-xs text-text-secondary space-y-1">
-              <p><strong className="text-text-primary">URIs de redirection OAuth à configurer :</strong></p>
-              <p className="font-dm-mono text-gold break-all">https://votre-domaine.vercel.app/api/monitor/google/callback</p>
-              <p className="font-dm-mono text-gold break-all">https://votre-domaine.vercel.app/api/monitor/onedrive/callback</p>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

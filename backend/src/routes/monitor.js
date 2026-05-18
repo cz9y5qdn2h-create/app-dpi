@@ -750,6 +750,117 @@ router.delete('/local/disconnect', authMiddleware, requireFranchisor, async (req
   res.json({ message: 'Dossier local déconnecté' });
 });
 
+// ── Routes — DIPpro Vault (Supabase Storage, zéro config) ─────────────────
+
+router.post('/vault/sync', authMiddleware, requireFranchisor, async (req, res) => {
+  const { files } = req.body;
+  if (!Array.isArray(files)) return res.status(400).json({ error: 'files requis' });
+
+  let { data: monitor } = await supabaseAdmin
+    .from('document_monitors').select('*')
+    .eq('user_id', req.user.id).eq('source', 'vault').maybeSingle();
+
+  if (!monitor) {
+    const { data, error } = await supabaseAdmin
+      .from('document_monitors')
+      .insert({
+        user_id: req.user.id, source: 'vault', folder_name: 'DIPpro Vault',
+        enabled: true, frequency: '1_week', auto_analyze: true,
+        next_check_at: nextCheckAt('1_week'),
+      })
+      .select('*').single();
+    if (error) return res.status(500).json({ error: error.message });
+    monitor = data;
+  }
+
+  const { data: tracked } = await supabaseAdmin
+    .from('monitored_files').select('*').eq('monitor_id', monitor.id);
+  const trackedMap = Object.fromEntries((tracked || []).map(f => [f.file_id, f]));
+  const dipContext = monitor.auto_analyze ? await getDipContext(req.user.id) : null;
+
+  let changedCount = 0;
+  const tasks = [];
+
+  for (const file of files.slice(0, 50)) {
+    const { storage_path, file_name, hash, size, last_modified, mime_type } = file;
+    if (!storage_path || !hash) continue;
+    if (!storage_path.startsWith(req.user.id + '/')) continue; // sécurité
+
+    const existing = trackedMap[storage_path];
+    const isNew = !existing;
+    const isChanged = existing && existing.content_hash !== hash;
+    if (!isNew && !isChanged) continue;
+    changedCount++;
+
+    tasks.push((async () => {
+      let summary = isNew ? `Nouveau document : ${file_name}` : `Document modifié : ${file_name}`;
+
+      if (monitor.auto_analyze && dipContext) {
+        try {
+          const { data: blob, error } = await supabaseAdmin.storage.from('vault').download(storage_path);
+          if (!error && blob) {
+            const buffer = Buffer.from(await blob.arrayBuffer());
+            const text = await extractText(buffer, mime_type, file_name);
+            if (text.length > 100) {
+              summary = await analyzeDocumentForDIPImpact(text, dipContext, file_name);
+            }
+          }
+        } catch { }
+      }
+
+      await supabaseAdmin.from('monitored_files').upsert({
+        monitor_id: monitor.id, user_id: req.user.id,
+        file_id: storage_path, file_name,
+        mime_type: mime_type || null, file_size: size || null,
+        last_modified: last_modified || null, content_hash: hash,
+        last_analyzed_at: new Date().toISOString(),
+        status: isNew ? 'new' : 'changed', change_summary: summary,
+      }, { onConflict: 'monitor_id,file_id' });
+
+      await supabaseAdmin.from('alerts').insert({
+        user_id: req.user.id, type: 'document_change',
+        title: isNew ? `Nouveau document : ${file_name}` : `Document modifié : ${file_name}`,
+        description: summary, status: 'pending',
+        created_at: new Date().toISOString(),
+      });
+    })());
+  }
+
+  await Promise.allSettled(tasks);
+  await supabaseAdmin.from('document_monitors').update({
+    last_check_at: new Date().toISOString(),
+  }).eq('id', monitor.id);
+
+  res.json({ changes: changedCount, files_checked: files.length });
+});
+
+router.delete('/vault/file', authMiddleware, requireFranchisor, async (req, res) => {
+  const { storage_path } = req.body;
+  if (!storage_path) return res.status(400).json({ error: 'storage_path requis' });
+  if (!storage_path.startsWith(req.user.id + '/')) return res.status(403).json({ error: 'Accès refusé' });
+
+  await supabaseAdmin.storage.from('vault').remove([storage_path]);
+
+  const { data: monitor } = await supabaseAdmin
+    .from('document_monitors').select('id')
+    .eq('user_id', req.user.id).eq('source', 'vault').maybeSingle();
+  if (monitor) {
+    await supabaseAdmin.from('monitored_files')
+      .delete().eq('monitor_id', monitor.id).eq('file_id', storage_path);
+  }
+  res.json({ message: 'Fichier supprimé' });
+});
+
+router.delete('/vault/disconnect', authMiddleware, requireFranchisor, async (req, res) => {
+  const { data: fileList } = await supabaseAdmin.storage.from('vault').list(req.user.id + '/');
+  if (fileList?.length) {
+    await supabaseAdmin.storage.from('vault').remove(fileList.map(f => `${req.user.id}/${f.name}`));
+  }
+  await supabaseAdmin.from('document_monitors')
+    .delete().eq('user_id', req.user.id).eq('source', 'vault');
+  res.json({ message: 'DIPpro Vault vidé' });
+});
+
 // ── Routes — Fichiers & vérification ──────────────────────────────────────
 
 router.get('/files', authMiddleware, requireFranchisor, async (req, res) => {
