@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import LiquidGlassBtn from '../components/ui/LiquidGlassBtn';
 import {
   Shield, CheckCircle, Send, ArrowLeft, ArrowRight,
   Sparkles, Bell, Users, Download, TrendingUp, Lock,
@@ -399,6 +400,7 @@ const MOCKUP_TABS = [
 ];
 
 export default function WaitlistPage() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(0);
   const formRef = useRef(null);
 
@@ -449,14 +451,39 @@ export default function WaitlistPage() {
           </p>
 
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-            <button onClick={scrollToForm} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 32px', borderRadius: 14, border: 'none', cursor: 'pointer', background: GOLD, color: DARK, fontFamily: 'DM Sans, sans-serif', fontSize: 15, fontWeight: 600, boxShadow: '0 6px 28px rgba(200,169,110,0.4)' }}>
-              <Send style={{ width: 18, height: 18 }} />
-              Rejoindre la liste d&apos;attente
-            </button>
-            <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '14px 24px', borderRadius: 14, border: '1px solid rgba(200,169,110,0.3)', background: 'rgba(255,255,255,0.5)', color: '#64748B', fontFamily: 'DM Sans, sans-serif', fontSize: 14, textDecoration: 'none' }}>
-              <ArrowLeft style={{ width: 16, height: 16 }} />
-              Retour au site
-            </Link>
+            <LiquidGlassBtn
+              onClick={scrollToForm}
+              padding="16px 32px"
+              cornerRadius={14}
+              displacementScale={80}
+              blurAmount={0.12}
+              saturation={160}
+              aberrationIntensity={2}
+              elasticity={0.25}
+              mode="prominent"
+            >
+              <span style={{ display: 'flex', alignItems: 'center', gap: 10, fontFamily: 'DM Sans, sans-serif', fontSize: 15, fontWeight: 600, color: 'white', whiteSpace: 'nowrap' }}>
+                <Send style={{ width: 18, height: 18 }} />
+                Rejoindre la liste d&apos;attente
+              </span>
+            </LiquidGlassBtn>
+
+            <LiquidGlassBtn
+              onClick={() => navigate('/')}
+              padding="14px 24px"
+              cornerRadius={14}
+              displacementScale={50}
+              blurAmount={0.06}
+              saturation={130}
+              aberrationIntensity={1}
+              elasticity={0.18}
+              mode="standard"
+            >
+              <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'DM Sans, sans-serif', fontSize: 14, color: 'rgba(255,255,255,0.8)', whiteSpace: 'nowrap' }}>
+                <ArrowLeft style={{ width: 16, height: 16 }} />
+                Retour au site
+              </span>
+            </LiquidGlassBtn>
           </div>
 
           {/* Trust */}

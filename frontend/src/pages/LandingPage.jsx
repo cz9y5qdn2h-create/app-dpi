@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Shield, CheckCircle, FileText, Bell, Users, Download, Zap, ArrowRight,
   Star, ChevronDown, Quote, TrendingUp, Lock, Clock, Sparkles, Play
 } from 'lucide-react';
+import LiquidGlassBtn from '../components/ui/LiquidGlassBtn';
 
 const FEATURES = [
   { icon: Sparkles, title: 'Analyse IA en 30 secondes', desc: 'Importez votre DIP — Claude Opus analyse les 10 sections Loi Doubin et génère un score de conformité instantané avec recommandations détaillées.' },
@@ -85,6 +86,7 @@ function FAQItem({ q, a }) {
 }
 
 export default function LandingPage() {
+  const navigate = useNavigate();
   return (
     <div className="min-h-screen" style={{ background: 'linear-gradient(145deg, #dde2f5 0%, #ebe7fa 40%, #dceaf8 70%, #e3e1f6 100%)' }}>
 
@@ -138,14 +140,39 @@ export default function LandingPage() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link to="/register" className="font-dm-sans font-medium px-8 py-4 rounded-xl flex items-center gap-3 text-base transition-all hover:shadow-xl" style={{ background: '#C8A96E', color: '#1A1826', boxShadow: '0 4px 24px rgba(200,169,110,0.35)' }}>
-              Commencer maintenant — c'est gratuit
-              <ArrowRight className="w-5 h-5" />
-            </Link>
-            <a href="#comment" className="font-dm-sans text-sm px-6 py-4 rounded-xl border flex items-center gap-2 transition-all" style={{ border: '1px solid rgba(200,169,110,0.3)', color: '#64748B', background: 'rgba(255,255,255,0.5)' }}>
-              <Play className="w-4 h-4" style={{ color: '#C8A96E' }} />
-              Voir comment ça marche
-            </a>
+            <LiquidGlassBtn
+              onClick={() => navigate('/register')}
+              padding="16px 32px"
+              cornerRadius={14}
+              displacementScale={80}
+              blurAmount={0.12}
+              saturation={160}
+              aberrationIntensity={2}
+              elasticity={0.25}
+              mode="prominent"
+            >
+              <span style={{ display: 'flex', alignItems: 'center', gap: 10, fontFamily: 'DM Sans, sans-serif', fontSize: 15, fontWeight: 600, color: 'white', whiteSpace: 'nowrap' }}>
+                Commencer maintenant — c&apos;est gratuit
+                <ArrowRight style={{ width: 20, height: 20 }} />
+              </span>
+            </LiquidGlassBtn>
+
+            <LiquidGlassBtn
+              onClick={() => document.getElementById('comment')?.scrollIntoView({ behavior: 'smooth' })}
+              padding="14px 24px"
+              cornerRadius={14}
+              displacementScale={50}
+              blurAmount={0.06}
+              saturation={130}
+              aberrationIntensity={1}
+              elasticity={0.18}
+              mode="standard"
+            >
+              <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'DM Sans, sans-serif', fontSize: 14, color: 'rgba(255,255,255,0.85)', whiteSpace: 'nowrap' }}>
+                <Play style={{ width: 16, height: 16, color: '#C8A96E' }} />
+                Voir comment ça marche
+              </span>
+            </LiquidGlassBtn>
           </div>
 
           {/* Trust badges */}
@@ -360,13 +387,38 @@ export default function LandingPage() {
               Rejoignez les franchiseurs qui font confiance à DIPpro pour leur conformité légale.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link to="/register" className="inline-flex items-center gap-3 font-dm-sans font-medium px-8 py-4 rounded-xl text-base transition-all hover:shadow-lg" style={{ background: '#C8A96E', color: '#1A1826' }}>
-                Créer mon compte gratuitement
-                <ArrowRight className="w-5 h-5" />
-              </Link>
-              <Link to="/waitlist" className="font-dm-sans text-sm px-6 py-4 rounded-xl border transition-all" style={{ border: '1px solid rgba(200,169,110,0.3)', color: '#94A3B8' }}>
-                Rejoindre la liste d'attente
-              </Link>
+              <LiquidGlassBtn
+                onClick={() => navigate('/register')}
+                padding="16px 32px"
+                cornerRadius={14}
+                displacementScale={80}
+                blurAmount={0.12}
+                saturation={160}
+                aberrationIntensity={2}
+                elasticity={0.25}
+                mode="prominent"
+              >
+                <span style={{ display: 'flex', alignItems: 'center', gap: 10, fontFamily: 'DM Sans, sans-serif', fontSize: 15, fontWeight: 600, color: 'white', whiteSpace: 'nowrap' }}>
+                  Créer mon compte gratuitement
+                  <ArrowRight style={{ width: 20, height: 20 }} />
+                </span>
+              </LiquidGlassBtn>
+
+              <LiquidGlassBtn
+                onClick={() => navigate('/waitlist')}
+                padding="14px 24px"
+                cornerRadius={14}
+                displacementScale={50}
+                blurAmount={0.06}
+                saturation={130}
+                aberrationIntensity={1}
+                elasticity={0.18}
+                mode="standard"
+              >
+                <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 14, color: 'rgba(255,255,255,0.75)', whiteSpace: 'nowrap' }}>
+                  Rejoindre la liste d&apos;attente
+                </span>
+              </LiquidGlassBtn>
             </div>
           </div>
         </FadeIn>
