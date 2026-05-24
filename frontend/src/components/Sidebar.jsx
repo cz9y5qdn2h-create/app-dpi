@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import api from '../lib/api';
 import CalModal from './CalModal';
+import LiquidGlassBtn from './ui/LiquidGlassBtn';
 import {
   LayoutDashboard, FileText, Upload, Bell, History,
   Users, Settings, Download, LogOut, Shield, Phone, Zap, ShieldAlert, Sparkles,
@@ -95,13 +96,23 @@ export default function Sidebar({ open, onClose }) {
         <div className="px-3 py-4 border-t border-border-subtle space-y-3">
 
           {/* Contacter Iralink */}
-          <button
+          <LiquidGlassBtn
             onClick={() => { setCalOpen(true); onClose?.(); }}
-            className="btn-liquid-glass-prominent w-full text-sm py-2.5"
+            padding="10px 20px"
+            cornerRadius={10}
+            displacementScale={60}
+            blurAmount={0.08}
+            saturation={140}
+            aberrationIntensity={1.5}
+            elasticity={0.2}
+            mode="prominent"
+            className="w-full"
           >
-            <Phone className="w-4 h-4" />
-            Contacter Iralink
-          </button>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'DM Sans, sans-serif', fontSize: 13, color: 'white' }}>
+              <Phone style={{ width: 14, height: 14 }} />
+              Contacter Iralink
+            </span>
+          </LiquidGlassBtn>
 
           {/* Theme toggle */}
           <button

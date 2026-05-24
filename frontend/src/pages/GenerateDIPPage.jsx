@@ -6,6 +6,7 @@ import api from '../lib/api';
 import PageHeader from '../components/ui/PageHeader';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import StatusBadge from '../components/ui/StatusBadge';
+import LiquidGlassBtn from '../components/ui/LiquidGlassBtn';
 import toast from 'react-hot-toast';
 import {
   ChevronRight, ChevronLeft, Sparkles, Save, Download,
@@ -529,18 +530,30 @@ export default function GenerateDIPPage() {
             >
               Suivant <ChevronRight className="w-4 h-4" />
             </button>
-          ) : (
+          ) : generateMutation.isPending ? (
             <button
-              onClick={() => generateMutation.mutate()}
-              disabled={generateMutation.isPending}
-              className="btn-liquid-glass-prominent flex items-center gap-2"
+              disabled
+              className="btn-liquid-glass-prominent flex items-center gap-2 opacity-70 cursor-not-allowed"
             >
-              {generateMutation.isPending ? (
-                <><LoadingSpinner size="sm" /> Génération en cours (30-60s)…</>
-              ) : (
-                <><Sparkles className="w-4 h-4" /> Générer le DIP</>
-              )}
+              <LoadingSpinner size="sm" /> Génération en cours (30-60s)…
             </button>
+          ) : (
+            <LiquidGlassBtn
+              onClick={() => generateMutation.mutate()}
+              padding="10px 22px"
+              cornerRadius={10}
+              displacementScale={60}
+              blurAmount={0.08}
+              saturation={140}
+              aberrationIntensity={1.5}
+              elasticity={0.2}
+              mode="prominent"
+            >
+              <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'DM Sans, sans-serif', fontSize: 14, color: 'white' }}>
+                <Sparkles style={{ width: 16, height: 16 }} />
+                Générer le DIP
+              </span>
+            </LiquidGlassBtn>
           )}
         </div>
       </div>

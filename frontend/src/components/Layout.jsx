@@ -17,7 +17,7 @@ export default function Layout() {
   const pendingCount = alertsData?.alerts?.length || 0;
 
   return (
-    <div className="flex min-h-screen bg-bg-primary">
+    <div className="flex min-h-screen">
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-black/60 z-20 lg:hidden"
@@ -26,7 +26,10 @@ export default function Layout() {
       )}
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <main className="flex-1 min-h-screen lg:ml-64">
-        <header className="lg:hidden sticky top-0 z-10 flex items-center justify-between px-4 py-4 border-b border-border-subtle bg-bg-card/90 backdrop-blur-sm">
+        <header
+          className="lg:hidden sticky top-0 z-10 flex items-center justify-between px-4 py-4 border-b"
+          style={{ background: 'rgba(255,255,255,0.72)', backdropFilter: 'blur(40px) saturate(200%)', WebkitBackdropFilter: 'blur(40px) saturate(200%)', borderColor: 'rgba(255,255,255,0.5)' }}
+        >
           <button
             onClick={() => setSidebarOpen(true)}
             className="text-text-secondary hover:text-gold transition-colors p-1"
