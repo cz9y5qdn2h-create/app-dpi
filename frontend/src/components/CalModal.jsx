@@ -32,7 +32,8 @@ export default function CalModal({ open, onClose }) {
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative w-full max-w-2xl bg-bg-card border border-border-default rounded-xl shadow-2xl overflow-hidden animate-slide-up">
+      <div className="relative w-full max-w-2xl rounded-xl shadow-2xl overflow-hidden animate-slide-up"
+        style={{ background: 'rgba(255,255,255,0.75)', backdropFilter: 'blur(32px) saturate(200%)', WebkitBackdropFilter: 'blur(32px) saturate(200%)', border: '1px solid rgba(255,255,255,0.72)' }}>
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
           <div className="flex items-center gap-3">

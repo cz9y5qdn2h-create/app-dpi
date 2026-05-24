@@ -388,3 +388,29 @@ html[data-theme="sombre"] body {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   GLASS OVERRIDES — toutes les surfaces → frosted glass
+   Ces règles sont hors @layer → elles écrasent les utilities
+   Tailwind peu importe l'ordre dans le fichier.
+   ═══════════════════════════════════════════════════════════════ */
+
+.bg-bg-elevated {
+  background: rgba(255, 255, 255, 0.32);
+  backdrop-filter: blur(10px) saturate(160%);
+  -webkit-backdrop-filter: blur(10px) saturate(160%);
+}
+html[data-theme="sombre"] .bg-bg-elevated {
+  background: rgba(18, 28, 48, 0.48);
+}
+
+.bg-bg-card {
+  background: rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(24px) saturate(200%);
+  -webkit-backdrop-filter: blur(24px) saturate(200%);
+  border: 1px solid rgba(255, 255, 255, 0.70);
+}
+html[data-theme="sombre"] .bg-bg-card {
+  background: rgba(30, 41, 59, 0.58);
+  border-color: rgba(255, 255, 255, 0.07);
+}
