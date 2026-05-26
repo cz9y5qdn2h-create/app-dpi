@@ -1,12 +1,15 @@
-import { Outlet, Link } from 'react-router-dom';
+import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
+import BottomNav from './BottomNav';
+import CommandPalette from './CommandPalette';
 import api from '../lib/api';
-import { Bell, Menu } from 'lucide-react';
+import { Bell, Menu, Search } from 'lucide-react';
 
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [cmdOpen, setCmdOpen] = useState(false);
 
   const { data: alertsData } = useQuery({
     queryKey: ['alerts', 'pending'],
@@ -16,6 +19,17 @@ export default function Layout() {
   });
   const pendingCount = alertsData?.alerts?.length || 0;
 
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setCmdOpen(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
   return (
     <div className="flex min-h-screen">
       {sidebarOpen && (
@@ -24,32 +38,65 @@ export default function Layout() {
           onClick={() => setSidebarOpen(false)}
         />
       )}
+
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+
       <main className="flex-1 min-h-screen lg:ml-64">
+        {/* Mobile header */}
         <header
-          className="lg:hidden sticky top-0 z-10 flex items-center justify-between px-4 py-4 border-b"
-          style={{ background: 'rgba(255,255,255,0.72)', backdropFilter: 'blur(40px) saturate(200%)', WebkitBackdropFilter: 'blur(40px) saturate(200%)', borderColor: 'rgba(255,255,255,0.5)' }}
+          className="lg:hidden sticky top-0 z-10 flex items-center justify-between px-4 py-3 border-b"
+          style={{ background: 'rgba(255,255,255,0.82)', backdropFilter: 'blur(40px) saturate(200%)', WebkitBackdropFilter: 'blur(40px) saturate(200%)', borderColor: 'rgba(255,255,255,0.5)' }}
         >
           <button
             onClick={() => setSidebarOpen(true)}
-            className="text-text-secondary hover:text-gold transition-colors p-1"
+            className="text-text-secondary hover:text-gold transition-colors p-1.5 rounded-lg"
+            style={{ background: 'rgba(0,0,0,0.04)' }}
           >
-            <Menu className="w-5 h-5" />
+            <Menu className="w-4.5 h-4.5" />
           </button>
+
           <span className="font-cormorant text-xl text-gold">DIPpro</span>
-          <Link to="/alerts" className="relative p-1 text-text-secondary hover:text-gold transition-colors">
-            <Bell className="w-5 h-5" />
-            {pendingCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-danger text-white text-xs rounded-full flex items-center justify-center font-dm-mono leading-none">
-                {pendingCount > 9 ? '9+' : pendingCount}
-              </span>
-            )}
-          </Link>
+
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => setCmdOpen(true)}
+              className="p-1.5 rounded-lg text-text-secondary hover:text-gold transition-colors"
+              style={{ background: 'rgba(0,0,0,0.04)' }}
+              aria-label="Recherche (⌘K)"
+            >
+              <Search className="w-4 h-4" />
+            </button>
+            <Link to="/alerts" className="relative p-1.5 text-text-secondary hover:text-gold transition-colors rounded-lg" style={{ background: 'rgba(0,0,0,0.04)' }}>
+              <Bell className="w-4 h-4" />
+              {pendingCount > 0 && (
+                <span className="absolute top-0.5 right-0.5 w-3.5 h-3.5 bg-danger text-white rounded-full flex items-center justify-center font-dm-mono leading-none" style={{ fontSize: 9 }}>
+                  {pendingCount > 9 ? '9+' : pendingCount}
+                </span>
+              )}
+            </Link>
+          </div>
         </header>
-        <div className="p-6 lg:p-8 animate-fade-in">
+
+        {/* Desktop search hint */}
+        <div className="hidden lg:flex items-center justify-end px-8 pt-6 pb-0">
+          <button
+            onClick={() => setCmdOpen(true)}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all hover:scale-[1.02] active:scale-[0.98]"
+            style={{ background: 'rgba(255,255,255,0.5)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.65)', color: 'rgb(148,163,184)' }}
+          >
+            <Search className="w-3.5 h-3.5" />
+            <span className="font-dm-sans text-xs">Recherche & navigation</span>
+            <kbd className="font-dm-mono text-xs ml-1 px-1 rounded" style={{ background: 'rgba(0,0,0,0.06)', color: 'rgb(71,85,105)' }}>⌘K</kbd>
+          </button>
+        </div>
+
+        <div className="p-6 lg:p-8 pb-24 lg:pb-8 animate-fade-in">
           <Outlet />
         </div>
       </main>
+
+      <BottomNav />
+      <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} />
     </div>
   );
 }
