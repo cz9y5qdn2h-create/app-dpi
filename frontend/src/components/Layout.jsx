@@ -45,7 +45,7 @@ export default function Layout() {
         {/* Mobile header */}
         <header
           className="lg:hidden sticky top-0 z-10 flex items-center justify-between px-4 py-3 border-b"
-          style={{ background: 'rgba(255,255,255,0.82)', backdropFilter: 'blur(40px) saturate(200%)', WebkitBackdropFilter: 'blur(40px) saturate(200%)', borderColor: 'rgba(255,255,255,0.5)' }}
+          style={{ background: 'var(--header-bg)', backdropFilter: 'var(--sidebar-blur)', WebkitBackdropFilter: 'var(--sidebar-blur)', borderColor: 'var(--border-subtle)' }}
         >
           <button
             onClick={() => setSidebarOpen(true)}
@@ -82,11 +82,11 @@ export default function Layout() {
           <button
             onClick={() => setCmdOpen(true)}
             className="flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all hover:scale-[1.02] active:scale-[0.98]"
-            style={{ background: 'rgba(255,255,255,0.5)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.65)', color: 'rgb(148,163,184)' }}
+            style={{ background: 'var(--glass-elevated)', backdropFilter: 'var(--glass-blur)', border: '1px solid var(--glass-border)', color: 'rgb(var(--text-muted))' }}
           >
             <Search className="w-3.5 h-3.5" />
             <span className="font-dm-sans text-xs">Recherche & navigation</span>
-            <kbd className="font-dm-mono text-xs ml-1 px-1 rounded" style={{ background: 'rgba(0,0,0,0.06)', color: 'rgb(71,85,105)' }}>⌘K</kbd>
+            <kbd className="font-dm-mono text-xs ml-1 px-1 rounded" style={{ background: 'var(--input-bg)', color: 'rgb(var(--text-secondary))' }}>⌘K</kbd>
           </button>
         </div>
 

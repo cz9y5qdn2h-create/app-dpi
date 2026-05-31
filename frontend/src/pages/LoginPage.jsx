@@ -34,30 +34,36 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex" style={{
-      background: 'linear-gradient(145deg, #dde2f5 0%, #ebe7fa 40%, #dceaf8 70%, #e3e1f6 100%)'
+      background: `
+        radial-gradient(ellipse 55% 50% at 15% 70%, rgba(200,169,110,0.20) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 60% at 80% 20%, rgba(180,140,70,0.14) 0%, transparent 55%),
+        radial-gradient(ellipse 60% 40% at 60% 85%, rgba(140,100,40,0.10) 0%, transparent 60%),
+        linear-gradient(160deg, #0a0805 0%, #0f0d08 25%, #080808 55%, #060606 100%)
+      `
     }}>
+
       {/* Panneau gauche — branding */}
       <div className="hidden lg:flex lg:w-2/5 flex-col justify-between p-12" style={{
-        background: 'rgba(26,24,38,0.92)', backdropFilter: 'blur(24px)'
+        background: 'rgba(8,8,8,0.60)',
+        backdropFilter: 'blur(40px)',
+        borderRight: '0.5px solid rgba(200,169,110,0.10)'
       }}>
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{
-            background: 'rgba(200,169,110,0.15)', border: '1px solid rgba(200,169,110,0.3)'
-          }}>
-            <Shield className="w-5 h-5" style={{ color: '#C8A96E' }} />
+          <div className="lg-avatar">
+            <Shield className="w-4 h-4" style={{ color: '#C8A96E' }} />
           </div>
           <div>
-            <p className="font-cormorant text-xl" style={{ color: '#F8F6F0' }}>DIPpro</p>
-            <p className="font-dm-mono text-xs" style={{ color: '#64748B' }}>by Iralink</p>
+            <p className="font-cormorant text-xl" style={{ color: '#F4F2EE' }}>DIPpro</p>
+            <p className="font-dm-mono text-xs" style={{ color: 'rgba(244,242,238,0.35)' }}>by Iralink</p>
           </div>
         </div>
 
         <div className="space-y-8">
           <div>
-            <p className="font-cormorant text-4xl leading-snug mb-4" style={{ color: '#F8F6F0' }}>
+            <p className="font-cormorant text-4xl leading-snug mb-4" style={{ color: '#F4F2EE', fontWeight: 300 }}>
               Conformité DIP<br />sans effort.
             </p>
-            <p className="font-dm-sans text-sm leading-relaxed" style={{ color: '#94A3B8' }}>
+            <p className="font-dm-sans text-sm leading-relaxed" style={{ color: 'rgba(244,242,238,0.45)' }}>
               Analysez, corrigez et partagez vos Documents d'Information Précontractuelle en toute conformité avec la Loi Doubin.
             </p>
           </div>
@@ -69,12 +75,12 @@ export default function LoginPage() {
           ].map((item, i) => (
             <div key={i} className="flex items-center gap-3">
               <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: '#C8A96E' }} />
-              <span className="font-dm-sans text-sm" style={{ color: '#CBD5E1' }}>{item}</span>
+              <span className="font-dm-sans text-sm" style={{ color: 'rgba(244,242,238,0.60)' }}>{item}</span>
             </div>
           ))}
         </div>
 
-        <p className="font-dm-mono text-xs" style={{ color: '#475569' }}>
+        <p className="font-dm-mono text-xs" style={{ color: 'rgba(244,242,238,0.22)' }}>
           Art. L.330-3 Code de commerce
         </p>
       </div>
@@ -82,19 +88,18 @@ export default function LoginPage() {
       {/* Panneau droit — formulaire */}
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-sm">
+
           {/* Mobile logo */}
           <div className="flex items-center gap-3 mb-10 lg:hidden">
-            <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{
-              background: 'rgba(200,169,110,0.12)', border: '1px solid rgba(200,169,110,0.3)'
-            }}>
-              <Shield className="w-4.5 h-4.5" style={{ color: '#C8A96E' }} />
+            <div className="lg-avatar">
+              <Shield className="w-4 h-4" style={{ color: '#C8A96E' }} />
             </div>
-            <p className="font-cormorant text-xl" style={{ color: '#1A1826' }}>DIPpro</p>
+            <p className="font-cormorant text-xl" style={{ color: '#F4F2EE' }}>DIPpro</p>
           </div>
 
           <div className="mb-8">
-            <h1 className="font-cormorant text-3xl mb-1" style={{ color: '#1A1826' }}>Connexion</h1>
-            <p className="font-dm-sans text-sm" style={{ color: '#64748B' }}>
+            <h1 className="font-cormorant text-3xl mb-1" style={{ color: '#F4F2EE', fontWeight: 300 }}>Connexion</h1>
+            <p className="font-dm-sans text-sm" style={{ color: 'rgba(244,242,238,0.44)' }}>
               Pas encore de compte ?{' '}
               <Link to="/register" className="font-medium" style={{ color: '#C8A96E' }}>
                 Commencer l'essai gratuit
@@ -104,7 +109,9 @@ export default function LoginPage() {
 
           {error && (
             <div className="flex items-center gap-2.5 rounded-xl px-4 py-3 mb-5 font-dm-sans text-sm" style={{
-              background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#EF4444'
+              background: 'rgba(248,113,113,0.08)',
+              border: '0.5px solid rgba(248,113,113,0.25)',
+              color: '#F87171'
             }}>
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               {error}
@@ -112,10 +119,8 @@ export default function LoginPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-1">
-              <label className="font-dm-sans text-xs font-medium" style={{ color: '#475569' }}>
-                Adresse email
-              </label>
+            <div>
+              <label className="lg-label">Adresse email</label>
               <input
                 type="email"
                 value={form.email}
@@ -123,22 +128,12 @@ export default function LoginPage() {
                 placeholder="vous@entreprise.fr"
                 required
                 autoComplete="email"
-                className="w-full px-4 py-3 rounded-xl font-dm-sans text-sm outline-none transition-all"
-                style={{
-                  background: 'rgba(255,255,255,0.75)',
-                  border: '1px solid rgba(200,200,220,0.5)',
-                  color: '#1A1826',
-                  backdropFilter: 'blur(8px)'
-                }}
-                onFocus={e => e.target.style.border = '1px solid rgba(200,169,110,0.6)'}
-                onBlur={e => e.target.style.border = '1px solid rgba(200,200,220,0.5)'}
+                className="lg-input"
               />
             </div>
 
-            <div className="space-y-1">
-              <label className="font-dm-sans text-xs font-medium" style={{ color: '#475569' }}>
-                Mot de passe
-              </label>
+            <div>
+              <label className="lg-label">Mot de passe</label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
@@ -147,21 +142,14 @@ export default function LoginPage() {
                   placeholder="••••••••"
                   required
                   autoComplete="current-password"
-                  className="w-full px-4 py-3 pr-11 rounded-xl font-dm-sans text-sm outline-none transition-all"
-                  style={{
-                    background: 'rgba(255,255,255,0.75)',
-                    border: '1px solid rgba(200,200,220,0.5)',
-                    color: '#1A1826',
-                    backdropFilter: 'blur(8px)'
-                  }}
-                  onFocus={e => e.target.style.border = '1px solid rgba(200,169,110,0.6)'}
-                  onBlur={e => e.target.style.border = '1px solid rgba(200,200,220,0.5)'}
+                  className="lg-input"
+                  style={{ paddingRight: '44px' }}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(v => !v)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
-                  style={{ color: '#94A3B8' }}
+                  style={{ color: 'rgba(244,242,238,0.35)' }}
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -171,16 +159,15 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading || !form.email || !form.password}
-              className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-dm-sans text-sm font-medium transition-all mt-2"
+              className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-dm-sans text-sm transition-all mt-2"
               style={{
                 background: loading || !form.email || !form.password
-                  ? 'rgba(200,169,110,0.4)'
-                  : '#C8A96E',
-                color: '#1A1826',
-                boxShadow: loading || !form.email || !form.password
-                  ? 'none'
-                  : '0 4px 16px rgba(200,169,110,0.35)',
-                cursor: loading || !form.email || !form.password ? 'not-allowed' : 'pointer'
+                  ? 'rgba(200,169,110,0.25)'
+                  : 'rgba(200,169,110,0.16)',
+                border: `0.5px solid ${loading || !form.email || !form.password ? 'rgba(200,169,110,0.20)' : 'rgba(200,169,110,0.42)'}`,
+                color: loading || !form.email || !form.password ? 'rgba(200,169,110,0.50)' : '#C8A96E',
+                cursor: loading || !form.email || !form.password ? 'not-allowed' : 'pointer',
+                fontWeight: 500
               }}
             >
               {loading ? (
@@ -197,7 +184,7 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <p className="font-dm-mono text-xs text-center mt-8" style={{ color: '#94A3B8' }}>
+          <p className="font-dm-mono text-xs text-center mt-8" style={{ color: 'rgba(244,242,238,0.22)' }}>
             Données sécurisées · Conforme RGPD
           </p>
         </div>

@@ -124,8 +124,8 @@ export default function Sidebar({ open, onClose }) {
           </button>
 
           {/* User info */}
-          <div className="px-3 py-2.5 rounded-lg bg-gold/5 border border-border-subtle">
-            <p className="font-dm-sans text-sm text-text-primary truncate font-medium">
+          <div className="lg-user-chip">
+            <p className="font-dm-sans text-sm text-text-primary truncate" style={{ fontWeight: 500 }}>
               {profile?.company_name || 'Franchiseur'}
             </p>
             <p className="font-dm-mono text-xs text-text-secondary truncate mt-0.5">

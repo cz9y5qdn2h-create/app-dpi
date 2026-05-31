@@ -6,6 +6,7 @@ import { Toaster } from 'react-hot-toast';
 import App from './App';
 import ThemeProvider, { useTheme } from './context/ThemeContext';
 import './index.css';
+import './styles/liquid-glass.css';
 
 const queryClient = new QueryClient({
   defaultOptions: {

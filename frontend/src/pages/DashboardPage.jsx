@@ -185,7 +185,7 @@ export default function DashboardPage() {
 
           {/* Bandeau Corrections IA — visible si sections non conformes */}
           {sectionsToCorrect > 0 && (
-            <div className="card border-gold/25 bg-gold/4">
+            <div className="card lg-alert-gold p-6">
               <div className="flex items-center gap-4 flex-wrap">
                 <div className="w-10 h-10 rounded-lg bg-gold/10 border border-gold/25 flex items-center justify-center flex-shrink-0">
                   <Sparkles className="w-5 h-5 text-gold" />
@@ -325,9 +325,9 @@ function StatCard({ icon, label, value, color }) {
 
 function SectionRow({ section }) {
   return (
-    <div className="flex items-center justify-between py-3 px-4 rounded bg-bg-elevated hover:bg-bg-elevated/80 transition-colors group">
+    <div className="lg-row justify-between gap-3">
       <div className="flex items-center gap-3 min-w-0">
-        <span className="font-dm-mono text-xs text-gold/60 w-6 flex-shrink-0">{section.section_number}</span>
+        <span className="font-dm-mono text-xs w-6 flex-shrink-0" style={{ color: 'rgba(200,169,110,0.50)' }}>{section.section_number}</span>
         <span className="font-dm-sans text-sm text-text-primary truncate">{section.section_title}</span>
       </div>
       <StatusBadge status={section.status} />
@@ -348,9 +348,9 @@ function OnboardingChecklist() {
       <p className="font-dm-sans text-xs text-text-secondary mb-5">Suivez ces étapes pour être opérationnel en quelques minutes.</p>
       <div className="space-y-2">
         {STEPS.map(({ icon: Icon, label, sub, to, cta }) => (
-          <Link key={to} to={to} className="flex items-center gap-4 p-3 rounded-lg hover:bg-bg-elevated transition-colors group">
-            <div className="w-9 h-9 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center flex-shrink-0">
-              <Icon className="w-4 h-4 text-gold" />
+          <Link key={to} to={to} className="lg-step group">
+            <div className="lg-step-num">
+              <Icon className="w-3.5 h-3.5" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-dm-sans text-sm text-text-primary">{label}</p>

@@ -17,7 +17,7 @@ export default function ThemeProvider({ children }) {
   const [theme, setThemeState] = useState(() => {
     const saved = localStorage.getItem('dippro-theme');
     if (saved === 'clair' || saved === 'sombre') return saved;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'sombre' : 'clair';
+    return 'sombre';
   });
 
   useEffect(() => {

@@ -37,7 +37,7 @@ export default function RegisterPage() {
     return s;
   };
   const strength = passwordStrength(form.password);
-  const strengthColors = ['#EF4444', '#EF4444', '#F59E0B', '#C8A96E', '#22C55E'];
+  const strengthColors = ['#EF4444', '#EF4444', '#FBBF24', '#C8A96E', '#34D399'];
   const strengthLabels = ['', 'Faible', 'Moyen', 'Bon', 'Excellent'];
 
   const nextStep = () => {
@@ -68,37 +68,36 @@ export default function RegisterPage() {
     }
   };
 
-  const inputStyle = {
-    background: 'rgba(255,255,255,0.75)',
-    border: '1px solid rgba(200,200,220,0.5)',
-    color: '#1A1826',
-    backdropFilter: 'blur(8px)'
-  };
-
   return (
     <div className="min-h-screen flex" style={{
-      background: 'linear-gradient(145deg, #dde2f5 0%, #ebe7fa 40%, #dceaf8 70%, #e3e1f6 100%)'
+      background: `
+        radial-gradient(ellipse 55% 50% at 15% 70%, rgba(200,169,110,0.20) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 60% at 80% 20%, rgba(180,140,70,0.14) 0%, transparent 55%),
+        radial-gradient(ellipse 60% 40% at 60% 85%, rgba(140,100,40,0.10) 0%, transparent 60%),
+        linear-gradient(160deg, #0a0805 0%, #0f0d08 25%, #080808 55%, #060606 100%)
+      `
     }}>
+
       {/* Panneau gauche */}
       <div className="hidden lg:flex lg:w-2/5 flex-col justify-between p-12" style={{
-        background: 'rgba(26,24,38,0.92)', backdropFilter: 'blur(24px)'
+        background: 'rgba(8,8,8,0.60)',
+        backdropFilter: 'blur(40px)',
+        borderRight: '0.5px solid rgba(200,169,110,0.10)'
       }}>
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{
-            background: 'rgba(200,169,110,0.15)', border: '1px solid rgba(200,169,110,0.3)'
-          }}>
-            <Shield className="w-5 h-5" style={{ color: '#C8A96E' }} />
+          <div className="lg-avatar">
+            <Shield className="w-4 h-4" style={{ color: '#C8A96E' }} />
           </div>
           <div>
-            <p className="font-cormorant text-xl" style={{ color: '#F8F6F0' }}>DIPpro</p>
-            <p className="font-dm-mono text-xs" style={{ color: '#64748B' }}>by Iralink</p>
+            <p className="font-cormorant text-xl" style={{ color: '#F4F2EE' }}>DIPpro</p>
+            <p className="font-dm-mono text-xs" style={{ color: 'rgba(244,242,238,0.35)' }}>by Iralink</p>
           </div>
         </div>
 
         <div className="space-y-6">
           <div>
-            <p className="font-dm-mono text-xs mb-3" style={{ color: '#C8A96E' }}>Essai gratuit 5 jours</p>
-            <p className="font-cormorant text-4xl leading-snug mb-4" style={{ color: '#F8F6F0' }}>
+            <p className="font-dm-mono text-xs mb-3" style={{ color: '#C8A96E', textTransform: 'uppercase', letterSpacing: '0.10em' }}>Essai gratuit 5 jours</p>
+            <p className="font-cormorant text-4xl leading-snug mb-4" style={{ color: '#F4F2EE', fontWeight: 300 }}>
               Votre DIP conforme<br />en quelques minutes.
             </p>
           </div>
@@ -109,13 +108,13 @@ export default function RegisterPage() {
             'Accès complet pendant 5 jours',
           ].map((item, i) => (
             <div key={i} className="flex items-center gap-3">
-              <CheckCircle className="w-4 h-4 flex-shrink-0" style={{ color: '#22C55E' }} />
-              <span className="font-dm-sans text-sm" style={{ color: '#CBD5E1' }}>{item}</span>
+              <CheckCircle className="w-4 h-4 flex-shrink-0" style={{ color: '#34D399' }} />
+              <span className="font-dm-sans text-sm" style={{ color: 'rgba(244,242,238,0.60)' }}>{item}</span>
             </div>
           ))}
         </div>
 
-        <p className="font-dm-mono text-xs" style={{ color: '#475569' }}>
+        <p className="font-dm-mono text-xs" style={{ color: 'rgba(244,242,238,0.22)' }}>
           Art. L.330-3 Code de commerce
         </p>
       </div>
@@ -123,19 +122,18 @@ export default function RegisterPage() {
       {/* Panneau droit */}
       <div className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-sm">
+
           {/* Mobile logo */}
           <div className="flex items-center gap-3 mb-8 lg:hidden">
-            <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{
-              background: 'rgba(200,169,110,0.12)', border: '1px solid rgba(200,169,110,0.3)'
-            }}>
+            <div className="lg-avatar">
               <Shield className="w-4 h-4" style={{ color: '#C8A96E' }} />
             </div>
-            <p className="font-cormorant text-xl" style={{ color: '#1A1826' }}>DIPpro</p>
+            <p className="font-cormorant text-xl" style={{ color: '#F4F2EE' }}>DIPpro</p>
           </div>
 
           <div className="mb-7">
-            <h1 className="font-cormorant text-3xl mb-1" style={{ color: '#1A1826' }}>Créer un compte</h1>
-            <p className="font-dm-sans text-sm" style={{ color: '#64748B' }}>
+            <h1 className="font-cormorant text-3xl mb-1" style={{ color: '#F4F2EE', fontWeight: 300 }}>Créer un compte</h1>
+            <p className="font-dm-sans text-sm" style={{ color: 'rgba(244,242,238,0.44)' }}>
               Déjà un compte ?{' '}
               <Link to="/login" className="font-medium" style={{ color: '#C8A96E' }}>Se connecter</Link>
             </p>
@@ -146,20 +144,22 @@ export default function RegisterPage() {
             {STEPS.map((label, i) => (
               <div key={i} className="flex items-center gap-2 flex-1">
                 <div className="flex items-center gap-1.5">
-                  <div className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-dm-mono transition-all" style={{
-                    background: i < step ? '#22C55E' : i === step ? '#C8A96E' : 'rgba(200,200,220,0.3)',
-                    color: i <= step ? '#fff' : '#94A3B8',
-                    fontSize: 11
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center transition-all" style={{
+                    background: i < step ? 'rgba(52,211,153,0.20)' : i === step ? 'rgba(200,169,110,0.20)' : 'rgba(244,242,238,0.06)',
+                    border: i < step ? '0.5px solid rgba(52,211,153,0.40)' : i === step ? '0.5px solid rgba(200,169,110,0.40)' : '0.5px solid rgba(244,242,238,0.12)',
+                    color: i < step ? '#34D399' : i === step ? '#C8A96E' : 'rgba(244,242,238,0.30)',
+                    fontSize: 11,
+                    fontFamily: 'DM Mono, monospace'
                   }}>
                     {i < step ? '✓' : i + 1}
                   </div>
                   <span className="font-dm-sans text-xs hidden sm:block" style={{
-                    color: i === step ? '#1A1826' : '#94A3B8'
+                    color: i === step ? '#F4F2EE' : 'rgba(244,242,238,0.35)'
                   }}>{label}</span>
                 </div>
                 {i < STEPS.length - 1 && (
                   <div className="flex-1 h-px" style={{
-                    background: i < step ? '#22C55E' : 'rgba(200,200,220,0.4)'
+                    background: i < step ? 'rgba(52,211,153,0.30)' : 'rgba(244,242,238,0.08)'
                   }} />
                 )}
               </div>
@@ -168,7 +168,9 @@ export default function RegisterPage() {
 
           {error && (
             <div className="flex items-center gap-2.5 rounded-xl px-4 py-3 mb-4 font-dm-sans text-sm" style={{
-              background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', color: '#EF4444'
+              background: 'rgba(248,113,113,0.08)',
+              border: '0.5px solid rgba(248,113,113,0.25)',
+              color: '#F87171'
             }}>
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               {error}
@@ -176,12 +178,11 @@ export default function RegisterPage() {
           )}
 
           <form onSubmit={step < 2 ? (e) => { e.preventDefault(); nextStep(); } : handleSubmit} className="space-y-4">
+
             {/* Étape 0 — Société */}
             {step === 0 && (
-              <div className="space-y-1">
-                <label className="font-dm-sans text-xs font-medium" style={{ color: '#475569' }}>
-                  Nom de la société / Enseigne
-                </label>
+              <div>
+                <label className="lg-label">Nom de la société / Enseigne</label>
                 <input
                   type="text"
                   value={form.company_name}
@@ -189,12 +190,9 @@ export default function RegisterPage() {
                   placeholder="Ma Franchise SAS"
                   required
                   autoFocus
-                  className="w-full px-4 py-3 rounded-xl font-dm-sans text-sm outline-none transition-all"
-                  style={inputStyle}
-                  onFocus={e => e.target.style.border = '1px solid rgba(200,169,110,0.6)'}
-                  onBlur={e => e.target.style.border = '1px solid rgba(200,200,220,0.5)'}
+                  className="lg-input"
                 />
-                <p className="font-dm-sans text-xs pt-1" style={{ color: '#94A3B8' }}>
+                <p className="font-dm-sans text-xs mt-1.5" style={{ color: 'rgba(244,242,238,0.30)' }}>
                   Nom qui apparaîtra sur vos DIPs
                 </p>
               </div>
@@ -203,8 +201,8 @@ export default function RegisterPage() {
             {/* Étape 1 — Contact */}
             {step === 1 && (
               <>
-                <div className="space-y-1">
-                  <label className="font-dm-sans text-xs font-medium" style={{ color: '#475569' }}>Adresse email</label>
+                <div>
+                  <label className="lg-label">Adresse email</label>
                   <input
                     type="email"
                     value={form.email}
@@ -213,15 +211,12 @@ export default function RegisterPage() {
                     required
                     autoFocus
                     autoComplete="email"
-                    className="w-full px-4 py-3 rounded-xl font-dm-sans text-sm outline-none transition-all"
-                    style={inputStyle}
-                    onFocus={e => e.target.style.border = '1px solid rgba(200,169,110,0.6)'}
-                    onBlur={e => e.target.style.border = '1px solid rgba(200,200,220,0.5)'}
+                    className="lg-input"
                   />
                 </div>
-                <div className="space-y-1">
-                  <label className="font-dm-sans text-xs font-medium" style={{ color: '#475569' }}>
-                    Téléphone <span style={{ color: '#94A3B8', fontWeight: 400 }}>(optionnel)</span>
+                <div>
+                  <label className="lg-label">
+                    Téléphone <span style={{ color: 'rgba(244,242,238,0.28)', textTransform: 'none', fontSize: 10 }}>(optionnel)</span>
                   </label>
                   <input
                     type="tel"
@@ -229,10 +224,7 @@ export default function RegisterPage() {
                     onChange={e => set('phone_number', e.target.value)}
                     placeholder="+33 6 12 34 56 78"
                     autoComplete="tel"
-                    className="w-full px-4 py-3 rounded-xl font-dm-sans text-sm outline-none transition-all"
-                    style={inputStyle}
-                    onFocus={e => e.target.style.border = '1px solid rgba(200,169,110,0.6)'}
-                    onBlur={e => e.target.style.border = '1px solid rgba(200,200,220,0.5)'}
+                    className="lg-input"
                   />
                 </div>
               </>
@@ -241,8 +233,8 @@ export default function RegisterPage() {
             {/* Étape 2 — Sécurité */}
             {step === 2 && (
               <>
-                <div className="space-y-1">
-                  <label className="font-dm-sans text-xs font-medium" style={{ color: '#475569' }}>Mot de passe</label>
+                <div>
+                  <label className="lg-label">Mot de passe</label>
                   <div className="relative">
                     <input
                       type={showPassword ? 'text' : 'password'}
@@ -252,13 +244,11 @@ export default function RegisterPage() {
                       required
                       autoFocus
                       autoComplete="new-password"
-                      className="w-full px-4 py-3 pr-11 rounded-xl font-dm-sans text-sm outline-none transition-all"
-                      style={inputStyle}
-                      onFocus={e => e.target.style.border = '1px solid rgba(200,169,110,0.6)'}
-                      onBlur={e => e.target.style.border = '1px solid rgba(200,200,220,0.5)'}
+                      className="lg-input"
+                      style={{ paddingRight: '44px' }}
                     />
                     <button type="button" onClick={() => setShowPassword(v => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: '#94A3B8' }}>
+                      className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: 'rgba(244,242,238,0.35)' }}>
                       {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                   </div>
@@ -266,19 +256,19 @@ export default function RegisterPage() {
                     <div className="mt-2 space-y-1">
                       <div className="flex gap-1">
                         {[1, 2, 3, 4].map(i => (
-                          <div key={i} className="h-1 flex-1 rounded-full transition-all" style={{
-                            background: i <= strength ? strengthColors[strength] : 'rgba(200,200,220,0.3)'
+                          <div key={i} className="h-0.5 flex-1 rounded-full transition-all" style={{
+                            background: i <= strength ? strengthColors[strength] : 'rgba(244,242,238,0.08)'
                           }} />
                         ))}
                       </div>
-                      <p className="font-dm-mono text-xs" style={{ color: strengthColors[strength] }}>
+                      <p className="font-dm-mono text-xs" style={{ color: strengthColors[strength], fontSize: 10 }}>
                         {strengthLabels[strength]}
                       </p>
                     </div>
                   )}
                 </div>
-                <div className="space-y-1">
-                  <label className="font-dm-sans text-xs font-medium" style={{ color: '#475569' }}>Confirmer le mot de passe</label>
+                <div>
+                  <label className="lg-label">Confirmer le mot de passe</label>
                   <div className="relative">
                     <input
                       type="password"
@@ -287,32 +277,31 @@ export default function RegisterPage() {
                       placeholder="••••••••"
                       required
                       autoComplete="new-password"
-                      className="w-full px-4 py-3 pr-11 rounded-xl font-dm-sans text-sm outline-none transition-all"
+                      className="lg-input"
                       style={{
-                        ...inputStyle,
-                        border: form.confirmPassword
+                        paddingRight: '44px',
+                        borderColor: form.confirmPassword
                           ? form.password === form.confirmPassword
-                            ? '1px solid rgba(34,197,94,0.5)'
-                            : '1px solid rgba(239,68,68,0.5)'
-                          : inputStyle.border
+                            ? 'rgba(52,211,153,0.45)'
+                            : 'rgba(248,113,113,0.45)'
+                          : undefined
                       }}
                     />
                     {form.confirmPassword && form.password === form.confirmPassword && (
-                      <CheckCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#22C55E' }} />
+                      <CheckCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#34D399' }} />
                     )}
                   </div>
                 </div>
               </>
             )}
 
-            {/* Checkboxes de consentement — visibles uniquement à l'étape 2 */}
+            {/* Consentements — étape 2 */}
             {step === 2 && (
               <div className="space-y-3 pt-1">
                 <ConsentCheckbox
                   id="consent-terms"
                   checked={consents.terms}
                   onChange={v => setConsents(c => ({ ...c, terms: v }))}
-                  required
                   label={
                     <>
                       J'ai lu et j'accepte les{' '}
@@ -327,28 +316,30 @@ export default function RegisterPage() {
                   id="consent-ai"
                   checked={consents.aiDisclaimer}
                   onChange={v => setConsents(c => ({ ...c, aiDisclaimer: v }))}
-                  required
-                  label="Je comprends que les analyses de DIPpro sont des outils d'aide à la décision et ne constituent pas un conseil juridique. Tout DIP doit être validé par un avocat avant remise officielle. *"
+                  label="Je comprends que les analyses de DIPpro sont des outils d'aide à la décision et ne constituent pas un conseil juridique. Tout DIP doit être validé par un avocat. *"
                 />
                 <ConsentCheckbox
                   id="consent-marketing"
                   checked={consents.marketing}
                   onChange={v => setConsents(c => ({ ...c, marketing: v }))}
-                  label="J'accepte de recevoir des informations et actualités sur DIPpro par email (facultatif — révocable à tout moment)"
+                  label="J'accepte de recevoir des informations sur DIPpro par email (facultatif)"
                 />
-                <p className="font-dm-mono text-xs" style={{ color: '#94A3B8' }}>* Champs obligatoires</p>
+                <p className="font-dm-mono" style={{ fontSize: 10, color: 'rgba(244,242,238,0.28)' }}>* Champs obligatoires</p>
               </div>
             )}
 
             <button
               type="submit"
               disabled={loading || (step === 2 && (!consents.terms || !consents.aiDisclaimer))}
-              className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-dm-sans text-sm font-medium transition-all"
+              className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-dm-sans text-sm transition-all"
               style={{
-                background: '#C8A96E',
-                color: '#1A1826',
-                boxShadow: '0 4px 16px rgba(200,169,110,0.35)',
-                opacity: loading ? 0.7 : 1
+                background: loading || (step === 2 && (!consents.terms || !consents.aiDisclaimer))
+                  ? 'rgba(200,169,110,0.20)'
+                  : 'rgba(200,169,110,0.16)',
+                border: `0.5px solid ${loading || (step === 2 && (!consents.terms || !consents.aiDisclaimer)) ? 'rgba(200,169,110,0.18)' : 'rgba(200,169,110,0.42)'}`,
+                color: loading || (step === 2 && (!consents.terms || !consents.aiDisclaimer)) ? 'rgba(200,169,110,0.45)' : '#C8A96E',
+                cursor: loading || (step === 2 && (!consents.terms || !consents.aiDisclaimer)) ? 'not-allowed' : 'pointer',
+                fontWeight: 500
               }}
             >
               {loading ? (
@@ -368,22 +359,22 @@ export default function RegisterPage() {
                 type="button"
                 onClick={() => { setStep(s => s - 1); setError(''); }}
                 className="w-full py-2 font-dm-sans text-sm transition-colors"
-                style={{ color: '#94A3B8' }}
+                style={{ color: 'rgba(244,242,238,0.35)', background: 'transparent', border: 'none' }}
               >
                 ← Retour
               </button>
             )}
           </form>
 
-          <p className="font-dm-sans text-xs text-center mt-6" style={{ color: '#94A3B8' }}>
-            Pas encore prêt à vous lancer ?{' '}
+          <p className="font-dm-sans text-xs text-center mt-6" style={{ color: 'rgba(244,242,238,0.30)' }}>
+            Pas encore prêt ?{' '}
             <Link to="/waitlist" style={{ color: '#C8A96E' }}>Rejoindre la liste d'attente</Link>
           </p>
 
-          <p className="font-dm-sans text-xs text-center mt-3 leading-relaxed" style={{ color: '#94A3B8' }}>
-            <Link to="/mentions-legales" className="hover:underline" style={{ color: '#94A3B8' }}>Mentions légales</Link>
+          <p className="font-dm-sans text-xs text-center mt-3" style={{ color: 'rgba(244,242,238,0.22)' }}>
+            <Link to="/mentions-legales" style={{ color: 'rgba(244,242,238,0.22)' }}>Mentions légales</Link>
             {' · '}
-            <Link to="/cookies" className="hover:underline" style={{ color: '#94A3B8' }}>Cookies</Link>
+            <Link to="/cookies" style={{ color: 'rgba(244,242,238,0.22)' }}>Cookies</Link>
           </p>
         </div>
       </div>
@@ -391,9 +382,9 @@ export default function RegisterPage() {
   );
 }
 
-function ConsentCheckbox({ id, checked, onChange, label, required = false }) {
+function ConsentCheckbox({ id, checked, onChange, label }) {
   return (
-    <label htmlFor={id} className="flex items-start gap-3 cursor-pointer group">
+    <label htmlFor={id} className="flex items-start gap-3 cursor-pointer">
       <div className="flex-shrink-0 mt-0.5">
         <input
           type="checkbox"
@@ -405,19 +396,18 @@ function ConsentCheckbox({ id, checked, onChange, label, required = false }) {
         <div
           className="w-4 h-4 rounded flex items-center justify-center transition-all"
           style={{
-            background: checked ? '#C8A96E' : 'rgba(255,255,255,0.75)',
-            border: checked ? '1px solid #C8A96E' : '1px solid rgba(200,200,220,0.5)',
-            boxShadow: checked ? '0 0 0 2px rgba(200,169,110,0.15)' : 'none'
+            background: checked ? 'rgba(200,169,110,0.20)' : 'rgba(244,242,238,0.04)',
+            border: checked ? '0.5px solid rgba(200,169,110,0.50)' : '0.5px solid rgba(244,242,238,0.14)',
           }}
         >
           {checked && (
             <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-              <path d="M1 4L3.5 6.5L9 1" stroke="#1A1826" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M1 4L3.5 6.5L9 1" stroke="#C8A96E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           )}
         </div>
       </div>
-      <span className="font-dm-sans text-xs leading-relaxed" style={{ color: '#475569' }}>
+      <span className="font-dm-sans text-xs leading-relaxed" style={{ color: 'rgba(244,242,238,0.50)' }}>
         {label}
       </span>
     </label>
