@@ -13,7 +13,7 @@ import CalModal from '../components/CalModal';
 import {
   Upload, RefreshCw, FileText,
   AlertTriangle, CheckCircle, History,
-  Phone, Sparkles, Users, Download, ChevronRight
+  Phone, Sparkles, Users, Download, ChevronRight, Clock
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
