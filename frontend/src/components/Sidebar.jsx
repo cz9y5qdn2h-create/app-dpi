@@ -8,7 +8,7 @@ import CalModal from './CalModal';
 import LiquidGlassBtn from './ui/LiquidGlassBtn';
 import {
   LayoutDashboard, FileText, Upload, Bell, History,
-  Users, Settings, Download, LogOut, Shield, Phone, Zap, ShieldAlert, Sparkles,
+  Users, Settings, Download, LogOut, Phone, Zap, ShieldAlert, Sparkles,
   Sun, Moon, FolderSync
 } from 'lucide-react';
 
@@ -56,16 +56,12 @@ export default function Sidebar({ open, onClose }) {
         ${open ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0
       `}>
         {/* Logo */}
-        <div className="px-6 py-8 border-b border-border-subtle">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gold/10 border border-gold/30 flex items-center justify-center">
-              <Shield className="w-4 h-4 text-gold" />
-            </div>
-            <div>
-              <p className="font-cormorant text-xl text-text-primary leading-none">DIPpro</p>
-              <p className="font-dm-mono text-xs text-text-secondary mt-0.5">by Iralink</p>
-            </div>
+        <div className="px-4 py-5" style={{ borderBottom: '0.5px solid rgba(200,169,110,0.12)', marginBottom: 8 }}>
+          <div className="lg-logo-brand-pill">
+            <div className="lg-logo-brand-icon">D</div>
+            <span className="lg-logo-brand-text">DIPpro</span>
           </div>
+          <p className="lg-logo-brand-sub">by Iralink</p>
         </div>
 
         {/* Navigation */}

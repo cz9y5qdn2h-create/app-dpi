@@ -1,13 +1,11 @@
 export default function PageHeader({ title, subtitle, action }) {
   return (
-    <div className="flex items-start justify-between mb-8">
+    <div className="flex items-start justify-between">
       <div>
-        <h1 className="font-cormorant text-h1 text-text-primary">{title}</h1>
-        {subtitle && (
-          <p className="font-dm-sans text-sm text-text-secondary mt-1">{subtitle}</p>
-        )}
+        <h1 className="lg-greeting">{title}</h1>
+        {subtitle && <p className="lg-gsub">{subtitle}</p>}
       </div>
-      {action && <div>{action}</div>}
+      {action && <div className="flex items-center gap-2 flex-wrap">{action}</div>}
     </div>
   );
 }

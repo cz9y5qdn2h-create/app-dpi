@@ -345,9 +345,11 @@
       2px 0 24px rgba(0,0,0,0.06) !important;
   }
   [data-theme="sombre"] .sidebar-panel {
-    background: rgba(8, 8, 8, 0.88) !important;
-    border-right: 0.5px solid rgba(200, 169, 110, 0.12) !important;
-    box-shadow: 2px 0 32px rgba(0, 0, 0, 0.45) !important;
+    background: rgba(200, 169, 110, 0.04) !important;
+    backdrop-filter: blur(60px) saturate(160%) brightness(1.05) !important;
+    -webkit-backdrop-filter: blur(60px) saturate(160%) brightness(1.05) !important;
+    border-right: 0.5px solid rgba(200, 169, 110, 0.18) !important;
+    box-shadow: inset 1px 0 0 rgba(200,169,110,0.08), inset 0 1px 0 rgba(200,169,110,0.15) !important;
   }
 
   /* ── Form fields ── */

@@ -11,9 +11,9 @@ import ConformityGauge from '../components/dashboard/ConformityGauge';
 import AlertCard from '../components/dashboard/AlertCard';
 import CalModal from '../components/CalModal';
 import {
-  Upload, RefreshCw, Bell, FileText,
-  AlertTriangle, CheckCircle, Clock, History,
-  Phone, Eye, Sparkles, Users, Download, ChevronRight
+  Upload, RefreshCw, FileText,
+  AlertTriangle, CheckCircle, History,
+  Phone, Sparkles, Users, Download, ChevronRight
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -86,45 +86,31 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="space-y-8 animate-fade-in">
+    <div className="space-y-6 animate-fade-in">
       <PageHeader
         title={`Bonjour, ${profile?.company_name || 'Franchiseur'}`}
-        subtitle="Vue d'ensemble de la conformité de votre DIP"
+        subtitle="Vue d'ensemble · conformité DIP"
         action={
-          dip ? (
-            <button onClick={handleCheck} className="btn-secondary flex items-center gap-2">
-              <RefreshCw className="w-4 h-4" />
-              Vérifier
+          <>
+            <Link to="/dip/upload" className="lg-pill-btn">
+              <Upload className="w-3 h-3" style={{ opacity: 0.6 }} />
+              {dip ? 'Nouvelle version' : 'Importer'}
+            </Link>
+            <Link to="/dip/generate" className="lg-pill-btn">
+              <Sparkles className="w-3 h-3" style={{ opacity: 0.6 }} />
+              Générer
+            </Link>
+            <Link to="/history" className={`lg-pill-btn ${!dip ? 'opacity-40 pointer-events-none' : ''}`}>
+              <History className="w-3 h-3" style={{ opacity: 0.6 }} />
+              Historique
+            </Link>
+            <button onClick={() => setCalOpen(true)} className="lg-pill-btn lg-pill-btn-gold">
+              <Phone className="w-3 h-3" />
+              Contacter Iralink
             </button>
-          ) : null
+          </>
         }
       />
-
-      {/* CTA Principal Buttons — liquid glass */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <Link to="/dip/upload" className="btn-liquid-glass flex-col py-4 px-4 gap-2 h-auto">
-          <Upload className="w-5 h-5" />
-          <span>{dip ? 'Nouvelle version' : 'Importer le DIP'}</span>
-        </Link>
-
-        <Link to="/dip/generate" className="btn-liquid-glass flex-col py-4 px-4 gap-2 h-auto">
-          <Sparkles className="w-5 h-5" />
-          <span>Générer un DIP</span>
-        </Link>
-
-        <Link to="/history" className={`btn-liquid-glass flex-col py-4 px-4 gap-2 h-auto ${!dip ? 'opacity-40 pointer-events-none' : ''}`}>
-          <History className="w-5 h-5" />
-          <span>Historique complet</span>
-        </Link>
-
-        <button
-          onClick={() => setCalOpen(true)}
-          className="btn-liquid-glass-prominent flex-col py-4 px-4 gap-2 h-auto w-full"
-        >
-          <Phone className="w-5 h-5" />
-          <span>Contacter Iralink</span>
-        </button>
-      </div>
 
       {/* Checklist onboarding — visible uniquement si aucun DIP et nouveau compte */}
       {!dip && <OnboardingChecklist />}
@@ -155,31 +141,11 @@ export default function DashboardPage() {
               <p className="font-dm-sans text-xs text-text-secondary mt-3">Score de conformité</p>
             </div>
 
-            <div className="lg:col-span-3 grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <StatCard
-                icon={<FileText className="w-5 h-5" />}
-                label="Sections totales"
-                value={stats.total}
-                color="text-text-primary"
-              />
-              <StatCard
-                icon={<CheckCircle className="w-5 h-5" />}
-                label="Conformes"
-                value={stats.conforme}
-                color="text-success"
-              />
-              <StatCard
-                icon={<Clock className="w-5 h-5" />}
-                label="À vérifier"
-                value={stats.a_verifier}
-                color="text-gold"
-              />
-              <StatCard
-                icon={<AlertTriangle className="w-5 h-5" />}
-                label="Non conformes"
-                value={stats.non_conforme}
-                color="text-danger"
-              />
+            <div className="lg:col-span-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <StatCard label="Sections totales" value={stats.total} tag="DIP" tagVariant="gold" />
+              <StatCard label="Conformes" value={stats.conforme} tag="✓ OK" tagVariant="green" />
+              <StatCard label="À vérifier" value={stats.a_verifier} tag="⚠ Attente" tagVariant="gold" />
+              <StatCard label="Non conformes" value={stats.non_conforme} tag="✗ Critique" tagVariant="red" />
             </div>
           </div>
 
@@ -221,11 +187,9 @@ export default function DashboardPage() {
           {/* Ligne 2: Sections + Alertes */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 card">
-              <div className="flex items-center justify-between mb-5">
-                <h2 className="font-cormorant text-xl text-text-primary">Sections du DIP</h2>
-                <Link to="/dip" className="text-gold text-sm font-dm-sans hover:text-gold-light transition-colors">
-                  Voir tout
-                </Link>
+              <div className="lg-card-header">
+                Sections du DIP
+                <Link to="/dip" className="lg-card-header-pill">Voir tout</Link>
               </div>
               <div className="space-y-2">
                 {sections
@@ -242,18 +206,14 @@ export default function DashboardPage() {
             </div>
 
             <div className="card">
-              <div className="flex items-center justify-between mb-5">
-                <div className="flex items-center gap-2">
-                  <h2 className="font-cormorant text-xl text-text-primary">Alertes</h2>
+              <div className="lg-card-header">
+                <span className="flex items-center gap-2">
+                  Alertes
                   {pendingAlerts.length > 0 && (
-                    <span className="font-dm-mono text-xs bg-danger/10 text-danger border border-danger/20 px-2 py-0.5 rounded">
-                      {pendingAlerts.length}
-                    </span>
+                    <span className="lg-badge lg-badge-danger">{pendingAlerts.length}</span>
                   )}
-                </div>
-                <Link to="/alerts" className="text-gold text-sm font-dm-sans hover:text-gold-light transition-colors">
-                  Voir tout
-                </Link>
+                </span>
+                <Link to="/alerts" className="lg-card-header-pill">Voir tout</Link>
               </div>
 
               {alertsLoading ? (
@@ -313,12 +273,12 @@ export default function DashboardPage() {
   );
 }
 
-function StatCard({ icon, label, value, color }) {
+function StatCard({ label, value, tag, tagVariant = 'gold' }) {
   return (
-    <div className="card">
-      <div className={`${color} mb-3`}>{icon}</div>
-      <p className={`font-cormorant text-3xl font-light ${color}`}>{value}</p>
-      <p className="font-dm-sans text-xs text-text-secondary mt-1">{label}</p>
+    <div className="card" style={{ padding: '12px 13px' }}>
+      <p className="lg-metric-label">{label}</p>
+      <p className="lg-metric-val">{value ?? '—'}</p>
+      {tag && <span className={`lg-metric-tag lg-metric-tag-${tagVariant}`}>{tag}</span>}
     </div>
   );
 }
@@ -344,8 +304,10 @@ function OnboardingChecklist() {
   ];
   return (
     <div className="card border-gold/15">
-      <h2 className="font-cormorant text-xl text-text-primary mb-1">Par où commencer ?</h2>
-      <p className="font-dm-sans text-xs text-text-secondary mb-5">Suivez ces étapes pour être opérationnel en quelques minutes.</p>
+      <div className="lg-card-header">
+        Par où commencer
+        <span className="lg-card-header-pill">4 étapes</span>
+      </div>
       <div className="space-y-2">
         {STEPS.map(({ icon: Icon, label, sub, to, cta }) => (
           <Link key={to} to={to} className="lg-step group">

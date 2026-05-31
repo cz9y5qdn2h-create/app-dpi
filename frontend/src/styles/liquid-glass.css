@@ -49,11 +49,13 @@ html[data-theme="sombre"] .card-hover {
 
 /* ── .sidebar-panel — sombre ────────────────────────────────── */
 html[data-theme="sombre"] .sidebar-panel {
-  background: rgba(8, 8, 8, 0.88) !important;
-  backdrop-filter: blur(40px) saturate(160%) !important;
-  -webkit-backdrop-filter: blur(40px) saturate(160%) !important;
-  border-right: 0.5px solid rgba(200, 169, 110, 0.12) !important;
-  box-shadow: 2px 0 32px rgba(0, 0, 0, 0.40) !important;
+  background: rgba(200, 169, 110, 0.04) !important;
+  backdrop-filter: blur(60px) saturate(160%) brightness(1.05) !important;
+  -webkit-backdrop-filter: blur(60px) saturate(160%) brightness(1.05) !important;
+  border-right: 0.5px solid rgba(200, 169, 110, 0.18) !important;
+  box-shadow:
+    inset 1px 0 0 rgba(200, 169, 110, 0.08),
+    inset 0 1px 0 rgba(200, 169, 110, 0.15) !important;
 }
 
 /* ── .nav-link-active — sombre ──────────────────────────────── */
@@ -131,11 +133,13 @@ html[data-theme="sombre"] .input-field:focus {
 
 /* ── lg-sidebar ─────────────────────────────────────────────── */
 .lg-sidebar {
-  background: rgba(8, 8, 8, 0.88) !important;
-  backdrop-filter: blur(40px) saturate(160%) !important;
-  -webkit-backdrop-filter: blur(40px) saturate(160%) !important;
-  border-right: 0.5px solid rgba(200, 169, 110, 0.12) !important;
-  box-shadow: 2px 0 32px rgba(0, 0, 0, 0.40) !important;
+  background: rgba(200, 169, 110, 0.04) !important;
+  backdrop-filter: blur(60px) saturate(160%) brightness(1.05) !important;
+  -webkit-backdrop-filter: blur(60px) saturate(160%) brightness(1.05) !important;
+  border-right: 0.5px solid rgba(200, 169, 110, 0.18) !important;
+  box-shadow:
+    inset 1px 0 0 rgba(200, 169, 110, 0.08),
+    inset 0 1px 0 rgba(200, 169, 110, 0.15) !important;
 }
 
 /* ── lg-logo-pill ───────────────────────────────────────────── */
@@ -428,6 +432,147 @@ html[data-theme="sombre"] .input-field:focus {
   padding: 2px 7px;
   display: inline-flex;
   align-items: center;
+}
+
+/* ── lg-pill-btn ────────────────────────────────────────────── */
+.lg-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 13px;
+  background: rgba(244, 242, 238, 0.05);
+  backdrop-filter: blur(40px) saturate(140%);
+  -webkit-backdrop-filter: blur(40px) saturate(140%);
+  border: 0.5px solid rgba(244, 242, 238, 0.12);
+  border-radius: 50px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  color: rgba(244, 242, 238, 0.65);
+  cursor: pointer;
+  text-decoration: none;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.08) inset, 0 4px 16px rgba(0,0,0,0.25);
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+.lg-pill-btn:hover {
+  background: rgba(244, 242, 238, 0.10);
+  color: rgba(244, 242, 238, 0.90);
+  transform: translateY(-1px);
+}
+.lg-pill-btn-gold {
+  background: rgba(200, 169, 110, 0.12);
+  border-color: rgba(200, 169, 110, 0.35);
+  color: rgba(200, 169, 110, 0.90);
+  box-shadow: 0 1px 0 rgba(200,169,110,0.20) inset, 0 4px 16px rgba(0,0,0,0.25);
+}
+.lg-pill-btn-gold:hover {
+  background: rgba(200, 169, 110, 0.20);
+  color: #C8A96E;
+}
+
+/* ── lg-card-header ─────────────────────────────────────────── */
+.lg-card-header {
+  font-family: 'DM Mono', monospace;
+  font-size: 10.5px;
+  font-weight: 500;
+  color: rgba(244, 242, 238, 0.50);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.lg-card-header-pill {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 9px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 20px;
+  background: rgba(200, 169, 110, 0.12);
+  border: 0.5px solid rgba(200, 169, 110, 0.30);
+  color: rgba(200, 169, 110, 0.75);
+  text-transform: none;
+  letter-spacing: 0;
+  box-shadow: 0 1px 0 rgba(200, 169, 110, 0.10) inset;
+}
+
+/* ── lg-metric-card ─────────────────────────────────────────── */
+.lg-metric-val {
+  font-family: 'DM Mono', monospace;
+  font-size: 20px;
+  font-weight: 500;
+  color: rgba(244, 242, 238, 0.88);
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+.lg-metric-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-top: 6px;
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  font-weight: 500;
+  padding: 2px 6px;
+  border-radius: 20px;
+}
+.lg-metric-tag-gold  { background: rgba(200,169,110,0.15); color: rgba(200,169,110,0.85); }
+.lg-metric-tag-green { background: rgba(52,211,153,0.12);  color: rgba(100,220,170,0.85); }
+.lg-metric-tag-red   { background: rgba(248,113,113,0.12); color: rgba(248,113,113,0.85); }
+
+/* ── lg-logo-pill (sidebar) ─────────────────────────────────── */
+.lg-logo-brand-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px 5px 5px;
+  background: rgba(200, 169, 110, 0.10);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border: 0.5px solid rgba(200, 169, 110, 0.30);
+  border-radius: 50px;
+  box-shadow: 0 1px 0 rgba(200, 169, 110, 0.20) inset, 0 4px 14px rgba(0,0,0,0.30);
+}
+.lg-logo-brand-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #C8A96E, #a07840);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: #080808;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.20) inset;
+  flex-shrink: 0;
+}
+.lg-logo-brand-text {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 15px;
+  font-weight: 500;
+  color: rgba(244, 242, 238, 0.88);
+  letter-spacing: 0.01em;
+}
+.lg-logo-brand-sub {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: rgba(200, 169, 110, 0.45);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 3px 14px 0;
+}
+
+/* ── lg-gsub (greeting subtitle) ───────────────────────────── */
+.lg-gsub {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 11px;
+  color: rgba(200, 169, 110, 0.50);
+  margin-top: 2px;
+  letter-spacing: 0.02em;
 }
 
 /* ── Scrollbar sombre ───────────────────────────────────────── */
