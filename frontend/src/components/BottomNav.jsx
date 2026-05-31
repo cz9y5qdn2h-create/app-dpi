@@ -31,21 +31,13 @@ export default function BottomNav({ onClose }) {
   const { theme } = useTheme();
   const dark = theme === 'sombre';
 
-  const navBg = dark
-    ? 'rgba(12,18,32,0.82)'
-    : 'rgba(255,255,255,0.82)';
-  const sheetBg = dark
-    ? 'rgba(18,26,44,0.92)'
-    : 'rgba(255,255,255,0.88)';
-  const sheetBorder = dark
-    ? 'rgba(255,255,255,0.07)'
-    : 'rgba(255,255,255,0.72)';
-  const dividerColor = dark
-    ? 'rgba(255,255,255,0.07)'
-    : 'rgba(0,0,0,0.07)';
-  const iconBgDefault = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.06)';
-  const labelColor = dark ? 'rgb(148,163,184)' : 'rgb(71,85,105)';
-  const titleColor = dark ? 'rgb(241,245,249)' : 'rgb(15,23,42)';
+  const navBg      = dark ? 'rgba(8,8,8,0.88)'      : 'rgba(255,255,255,0.82)';
+  const sheetBg    = dark ? 'rgba(12,10,8,0.96)'    : 'rgba(255,255,255,0.88)';
+  const sheetBorder= dark ? 'rgba(200,169,110,0.14)' : 'rgba(255,255,255,0.72)';
+  const dividerColor= dark? 'rgba(200,169,110,0.08)' : 'rgba(0,0,0,0.07)';
+  const iconBgDefault = dark ? 'rgba(200,169,110,0.06)' : 'rgba(0,0,0,0.06)';
+  const labelColor = dark ? 'rgba(244,242,238,0.42)' : 'rgb(71,85,105)';
+  const titleColor = dark ? '#F4F2EE'                : 'rgb(15,23,42)';
 
   const { data: alertsData } = useQuery({
     queryKey: ['alerts', 'pending'],
@@ -130,7 +122,7 @@ export default function BottomNav({ onClose }) {
               key={to}
               to={to}
               className={({ isActive }) =>
-                `flex-1 flex flex-col items-center justify-center gap-0.5 py-2 rounded-xl mx-0.5 transition-all ${isActive ? 'text-gold' : 'text-text-muted'}`
+                `relative flex-1 flex flex-col items-center justify-center gap-0.5 py-2 rounded-xl mx-0.5 transition-all ${isActive ? 'text-gold' : 'text-text-muted'}`
               }
             >
               {({ isActive }) => (
@@ -143,9 +135,9 @@ export default function BottomNav({ onClose }) {
                       </span>
                     )}
                   </div>
-                  <span className="font-dm-sans text-xs" style={{ fontSize: 10, fontWeight: isActive ? 500 : 400 }}>{label}</span>
+                  <span className="font-dm-sans" style={{ fontSize: 10, fontWeight: isActive ? 500 : 400 }}>{label}</span>
                   {isActive && (
-                    <span className="absolute bottom-1.5 w-1 h-1 rounded-full bg-gold" />
+                    <span className="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-gold" />
                   )}
                 </>
               )}

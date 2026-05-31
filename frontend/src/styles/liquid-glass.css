@@ -580,3 +580,36 @@ html[data-theme="sombre"]::-webkit-scrollbar             { width: 4px; }
 html[data-theme="sombre"]::-webkit-scrollbar-track        { background: transparent; }
 html[data-theme="sombre"]::-webkit-scrollbar-thumb        { background: rgba(200,169,110,0.18); border-radius: 2px; }
 html[data-theme="sombre"]::-webkit-scrollbar-thumb:hover  { background: rgba(200,169,110,0.32); }
+
+/* ── Responsive mobile (< 640px) ───────────────────────────── */
+@media (max-width: 639px) {
+  .lg-greeting {
+    font-size: 1.5rem;
+  }
+
+  html[data-theme="sombre"] .card {
+    border-radius: 16px;
+    padding: 1rem !important;
+  }
+
+  .lg-card {
+    border-radius: 16px;
+    padding: 1rem;
+  }
+
+  .lg-step {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+
+  .lg-row {
+    padding: 9px 12px;
+  }
+
+  .lg-card-header {
+    margin-bottom: 10px;
+  }
+
+  /* Masquer scrollbar sur le scroll horizontal des actions */
+  .overflow-x-auto::-webkit-scrollbar { display: none; }
+}

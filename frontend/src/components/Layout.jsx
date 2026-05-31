@@ -90,7 +90,7 @@ export default function Layout() {
           </button>
         </div>
 
-        <div className="p-6 lg:p-8 pb-24 lg:pb-8 animate-fade-in">
+        <div className="p-4 sm:p-6 lg:p-8 pb-24 lg:pb-8 animate-fade-in">
           <Outlet />
         </div>
       </main>
