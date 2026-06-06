@@ -159,7 +159,7 @@ html[data-theme="sombre"] .input-field:focus {
   border-radius: 10px;
   font-family: 'DM Sans', sans-serif;
   font-size: 13.5px;
-  color: rgba(244, 242, 238, 0.45);
+  color: #787878;
   transition: color 0.3s ease, background 0.3s ease, transform 0.15s ease;
   text-decoration: none;
   cursor: pointer;
@@ -169,7 +169,7 @@ html[data-theme="sombre"] .input-field:focus {
   border: none;
 }
 .lg-nav-link:hover {
-  color: rgba(244, 242, 238, 0.82);
+  color: #F4F2EE;
   background: rgba(244, 242, 238, 0.05);
   transform: translateX(2px);
 }
@@ -228,7 +228,7 @@ html[data-theme="sombre"] .input-field:focus {
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.10em;
-  color: rgba(244, 242, 238, 0.38);
+  color: #787878;
 }
 
 /* ── lg-input ───────────────────────────────────────────────── */
@@ -260,7 +260,7 @@ html[data-theme="sombre"] .input-field:focus {
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.10em;
-  color: rgba(244, 242, 238, 0.42);
+  color: #787878;
   display: block;
   margin-bottom: 6px;
 }
@@ -332,14 +332,14 @@ html[data-theme="sombre"] .input-field:focus {
   align-items: center;
 }
 .lg-badge-gold    { background: rgba(200,169,110,0.12); border: 0.5px solid rgba(200,169,110,0.30); color: #C8A96E; }
-.lg-badge-success { background: rgba(52,211,153,0.10);  border: 0.5px solid rgba(52,211,153,0.25);  color: #34D399; }
-.lg-badge-warn    { background: rgba(251,191,36,0.10);  border: 0.5px solid rgba(251,191,36,0.25);  color: #FBBF24; }
-.lg-badge-danger  { background: rgba(239,68,68,0.10);   border: 0.5px solid rgba(239,68,68,0.25);   color: #EF4444; }
+.lg-badge-success { background: rgba(76,175,128,0.10);  border: 0.5px solid rgba(76,175,128,0.25);  color: #4CAF80; }
+.lg-badge-warn    { background: rgba(200,169,110,0.10); border: 0.5px solid rgba(200,169,110,0.25); color: #C8A96E; }
+.lg-badge-danger  { background: rgba(232,114,114,0.10); border: 0.5px solid rgba(232,114,114,0.25); color: #E87272; }
 
 /* ── lg-alert-* ─────────────────────────────────────────────── */
-.lg-alert-warn    { background: rgba(251,191,36,0.05);  border: 0.5px solid rgba(251,191,36,0.18);  border-radius: 16px; }
-.lg-alert-success { background: rgba(52,211,153,0.05);  border: 0.5px solid rgba(52,211,153,0.18);  border-radius: 16px; }
-.lg-alert-danger  { background: rgba(239,68,68,0.05);   border: 0.5px solid rgba(239,68,68,0.18);   border-radius: 16px; }
+.lg-alert-warn    { background: rgba(200,169,110,0.05); border: 0.5px solid rgba(200,169,110,0.18); border-radius: 16px; }
+.lg-alert-success { background: rgba(76,175,128,0.05);  border: 0.5px solid rgba(76,175,128,0.18);  border-radius: 16px; }
+.lg-alert-danger  { background: rgba(232,114,114,0.05); border: 0.5px solid rgba(232,114,114,0.18); border-radius: 16px; }
 .lg-alert-gold    { background: rgba(200,169,110,0.05); border: 0.5px solid rgba(200,169,110,0.18); border-radius: 16px; }
 
 /* ── lg-step ────────────────────────────────────────────────── */
@@ -413,11 +413,11 @@ html[data-theme="sombre"] .input-field:focus {
 .lg-subtitle {
   font-family: 'DM Sans', sans-serif;
   font-size: 13px;
-  color: rgba(244, 242, 238, 0.44);
+  color: #A0A0A0;
 }
 .lg-gold   { color: #C8A96E; }
 .lg-white  { color: #F4F2EE; }
-.lg-muted  { color: rgba(244, 242, 238, 0.38); }
+.lg-muted  { color: #787878; }
 
 /* ── lg-tag ─────────────────────────────────────────────────── */
 .lg-tag {
@@ -476,7 +476,7 @@ html[data-theme="sombre"] .input-field:focus {
   font-family: 'DM Mono', monospace;
   font-size: 10.5px;
   font-weight: 500;
-  color: rgba(244, 242, 238, 0.50);
+  color: #A0A0A0;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   display: flex;
@@ -518,9 +518,9 @@ html[data-theme="sombre"] .input-field:focus {
   padding: 2px 6px;
   border-radius: 20px;
 }
-.lg-metric-tag-gold  { background: rgba(200,169,110,0.15); color: rgba(200,169,110,0.85); }
-.lg-metric-tag-green { background: rgba(52,211,153,0.12);  color: rgba(100,220,170,0.85); }
-.lg-metric-tag-red   { background: rgba(248,113,113,0.12); color: rgba(248,113,113,0.85); }
+.lg-metric-tag-gold  { background: rgba(200,169,110,0.15); color: #C8A96E; }
+.lg-metric-tag-green { background: rgba(76,175,128,0.12);  color: #4CAF80; }
+.lg-metric-tag-red   { background: rgba(232,114,114,0.12); color: #E87272; }
 
 /* ── lg-logo-pill (sidebar) ─────────────────────────────────── */
 .lg-logo-brand-pill {
@@ -570,7 +570,7 @@ html[data-theme="sombre"] .input-field:focus {
 .lg-gsub {
   font-family: 'DM Sans', sans-serif;
   font-size: 11px;
-  color: rgba(200, 169, 110, 0.50);
+  color: #787878;
   margin-top: 2px;
   letter-spacing: 0.02em;
 }
