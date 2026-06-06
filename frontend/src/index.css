@@ -69,7 +69,7 @@
   --bg-elevated:    20 20 20;
   --text-primary:   244 242 238;
   --text-secondary: 160 160 160;
-  --text-muted:     120 120 120;
+  --text-muted:     90 90 90;
   --gold:           200 169 110;
   --gold-light:     232 213 168;
   --success:        76 175 128;
@@ -80,6 +80,7 @@
   --accent-text:    8 8 8;
   --border-subtle:  rgba(200, 169, 110, 0.10);
   --border-default: rgba(200, 169, 110, 0.18);
+  --border-dim:     rgba(244, 242, 238, 0.06);
 
   /* Liquid Glass sombre — DA Iralink */
   --glass-bg:        rgba(200, 169, 110, 0.04);
