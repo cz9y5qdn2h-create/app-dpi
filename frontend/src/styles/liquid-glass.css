@@ -575,6 +575,36 @@ html[data-theme="sombre"] .input-field:focus {
   letter-spacing: 0.02em;
 }
 
+/* ── Thème clair — overrides de contraste ─────────────────────── */
+/* Les classes lg-* utilisent des couleurs hardcodées sombre.
+   Ces overrides rétablissent la lisibilité en thème clair. */
+
+html[data-theme="clair"] .lg-greeting,
+html[data-theme="clair"] .lg-section-title,
+html[data-theme="clair"] .lg-metric,
+html[data-theme="clair"] .lg-metric-val,
+html[data-theme="clair"] .lg-white       { color: rgb(15, 23, 42); }
+
+html[data-theme="clair"] .lg-subtitle,
+html[data-theme="clair"] .lg-card-header { color: rgb(51, 65, 85); }
+
+html[data-theme="clair"] .lg-nav-link    { color: rgb(71, 85, 105); }
+
+html[data-theme="clair"] .lg-muted,
+html[data-theme="clair"] .lg-metric-label,
+html[data-theme="clair"] .lg-label,
+html[data-theme="clair"] .lg-gsub        { color: rgb(100, 116, 139); }
+
+/* Bordure de carte visible au survol en thème clair */
+html[data-theme="clair"] .card:hover,
+html[data-theme="clair"] .card-hover:hover { border-color: rgba(15, 23, 42, 0.20); }
+
+/* Fond de carte légèrement opaque pour délimiter sur fond clair */
+html[data-theme="clair"] .lg-card {
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(15, 23, 42, 0.10);
+}
+
 /* ── Scrollbar sombre ───────────────────────────────────────── */
 html[data-theme="sombre"]::-webkit-scrollbar             { width: 4px; }
 html[data-theme="sombre"]::-webkit-scrollbar-track        { background: transparent; }

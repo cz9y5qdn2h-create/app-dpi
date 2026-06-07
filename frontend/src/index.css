@@ -14,21 +14,25 @@
   --bg-card:        255 255 255;
   --bg-elevated:    249 250 251;
   --text-primary:   15 23 42;
-  --text-secondary: 71 85 105;
-  --text-muted:     148 163 184;
+  --text-secondary: 51 65 85;
+  --text-muted:     100 116 139;
   --gold:           184 147 87;
   --gold-light:     200 168 112;
   --success:        22 163 74;
+  --success-light:  74 222 128;
   --danger:         220 38 38;
+  --error:          220 38 38;
+  --ai-color:       99 102 241;
   --accent-text:    255 255 255;
-  --border-subtle:  rgba(15, 23, 42, 0.07);
-  --border-default: rgba(15, 23, 42, 0.13);
+  --border-subtle:  rgba(15, 23, 42, 0.09);
+  --border-default: rgba(15, 23, 42, 0.18);
+  --border-dim:     rgba(15, 23, 42, 0.05);
 
   /* Liquid Glass — formule Apple avec relief */
-  --glass-bg:        rgba(255, 255, 255, 0.48);
-  --glass-elevated:  rgba(255, 255, 255, 0.68);
+  --glass-bg:        rgba(255, 255, 255, 0.65);
+  --glass-elevated:  rgba(255, 255, 255, 0.82);
   --glass-blur:      blur(28px) saturate(200%) brightness(1.02);
-  --glass-border:    rgba(255, 255, 255, 0.70);
+  --glass-border:    rgba(15, 23, 42, 0.11);
   /* Specular overlay (gradient stacked sur la couleur de fond) */
   --glass-specular:  linear-gradient(145deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.22) 22%, rgba(255,255,255,0.06) 48%, transparent 68%);
   /* Relief: inset haut lumineux + bas sombre = lentille convexe + élévation extérieure */
@@ -52,12 +56,12 @@
     0 36px 72px rgba(0,0,0,0.04);
 
   --body-bg:        #dde2f5;
-  --sidebar-bg:     rgba(255,255,255,0.72);
+  --sidebar-bg:     rgba(255,255,255,0.82);
   --sidebar-blur:   blur(48px) saturate(220%);
-  --sidebar-border: rgba(255,255,255,0.55);
-  --header-bg:      rgba(255,255,255,0.72);
-  --input-bg:       rgba(255,255,255,0.7);
-  --input-border:   rgba(255,255,255,0.6);
+  --sidebar-border: rgba(15, 23, 42, 0.10);
+  --header-bg:      rgba(255,255,255,0.82);
+  --input-bg:       rgba(255,255,255,0.88);
+  --input-border:   rgba(15, 23, 42, 0.20);
   --scrollbar-track: #E5E7EB;
   --scrollbar-thumb: rgba(184, 147, 87, 0.35);
 }
