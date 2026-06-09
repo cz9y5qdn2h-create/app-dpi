@@ -44,6 +44,7 @@ const CACHED_SYSTEM = [{ type: 'text', text: SYSTEM_DIP_EXPERT, cache_control: {
 
 /**
  * Analyser et extraire les 10 sections réglementaires d'un DIP
+ * Scoring à deux niveaux : conformité bloquante (légale) + qualité globale
  */
 const parseDIPSections = async (rawText) => {
   if (!rawText || rawText.trim().length < 50) {
@@ -57,45 +58,91 @@ const parseDIPSections = async (rawText) => {
     system: CACHED_SYSTEM,
     messages: [{
       role: 'user',
-      content: `Analyse ce DIP et extrais les 10 sections réglementaires obligatoires selon la Loi Doubin.
+      content: `Analyse ce DIP selon les exigences strictes de la Loi Doubin (art. L.330-3 Code de commerce) et du Décret n°91-337 du 4 avril 1991.
 
 TEXTE DU DIP :
 ${rawText.substring(0, 18000)}
 
-INSTRUCTIONS :
-- Extrais le contenu réel de chaque section depuis le document
-- Évalue le statut de conformité selon les critères ci-dessous
-- Si une section est absente ou incomplète, note-le dans "issues"
+DEUX NIVEAUX D'ANALYSE :
 
-CRITÈRES DE CONFORMITÉ PAR SECTION :
-1. Identité du franchiseur → conforme si : raison sociale, forme juridique, capital, RCS, siège, dirigeants présents
-2. Historique enseigne/dirigeant → conforme si : date création, parcours dirigeant (5 ans min), historique enseigne
-3. État du réseau → conforme si : liste franchisés avec adresses, ouvertures/fermetures sur 12 mois
-4. Comptes annuels → conforme si : 2 derniers exercices comptables complets fournis
-5. Marque/PI → conforme si : numéro dépôt INPI, date, territoire, validité mentionnés
-6. Informations financières → conforme si : droits d'entrée, redevances, conditions paiement explicites
-7. Territoire exclusif → conforme si : zone géographique définie et exclusive clairement
-8. Contrat → conforme si : durée, conditions renouvellement, résiliation/cession détaillées
-9. Litiges → conforme si : mention explicite litiges passés et en cours (ou attestation d'absence)
-10. Comptes prévisionnels → conforme si : projections financières sur 3 ans avec hypothèses
+NIVEAU 1 — ÉLÉMENTS LÉGALEMENT BLOQUANTS
+Leur absence rend le DIP invalide et expose le franchiseur à la nullité du contrat + dommages-intérêts.
+→ legal_blocking: true sur la section concernée.
 
-Retourne ce JSON exactement :
+NIVEAU 2 — QUALITÉ ET COMPLÉTUDE
+Améliore la robustesse du DIP mais ne bloque pas l'envoi immédiat.
+→ legal_blocking: false, status: "a_verifier".
+
+GRILLE DE CONFORMITÉ OBLIGATOIRE PAR SECTION (Décret 91-337) :
+
+SECTION 1 — Identité du franchiseur [Réf. Décret art.1 §1]
+BLOQUANT si absent : dénomination sociale, forme juridique, numéro RCS + ville, adresse siège, nom du dirigeant responsable
+À VÉRIFIER : capital social, date immatriculation
+
+SECTION 2 — Historique dirigeant et enseigne [Réf. Décret art.1 §2]
+BLOQUANT si absent : historique professionnel du dirigeant sur 5 ans minimum (exigence légale explicite), date de création de l'enseigne
+À VÉRIFIER : parcours détaillé, expériences antérieures dans la franchise
+
+SECTION 3 — État du réseau [Réf. Décret art.1 §3 — jurisprudence Cass. com.]
+BLOQUANT si absent : nombre exact de franchisés actifs, nombre exact d'entrées sur 12 mois, nombre exact de sorties sur 12 mois avec motifs (résiliation, non-renouvellement, cession, fermeture volontaire, autre)
+À VÉRIFIER : adresses des franchisés ou liste disponible sur demande, nombre d'établissements en propre
+
+SECTION 4 — Comptes annuels [Réf. Décret art.1 §4 — BLOQUANT absolu]
+BLOQUANT si absent : résultats des 2 derniers exercices comptables clos (chiffre d'affaires ET résultat net pour chaque exercice), dates de clôture
+Les bilans complets peuvent être en annexe mais les chiffres clés doivent figurer dans le DIP.
+
+SECTION 5 — Marque et propriété intellectuelle [Réf. Décret art.1 §5]
+BLOQUANT si absent : numéro de dépôt INPI de la marque principale, statut de la marque (déposée/enregistrée)
+À VÉRIFIER : date de dépôt, classes de protection, date d'expiration, marques secondaires
+
+SECTION 6 — Informations financières [Réf. Décret art.1 §6 — BLOQUANT absolu]
+BLOQUANT si absent : montant du droit d'entrée (ou mention explicite "aucun droit d'entrée"), taux ou montant de la redevance d'exploitation, taux ou montant de la redevance publicitaire (ou "aucune"), estimation de l'investissement global requis
+À VÉRIFIER : conditions de paiement détaillées, aides au financement
+
+SECTION 7 — Territoire exclusif [Réf. Décret art.1 §7]
+BLOQUANT si absent : définition du périmètre territorial (même si non exclusif, la mention doit être explicite), mention du caractère exclusif ou non
+À VÉRIFIER : critères de délimitation précis, conditions de modification
+
+SECTION 8 — Contrat [Réf. Décret art.1 §8 — BLOQUANT absolu]
+BLOQUANT si absent : durée du contrat en années, conditions de renouvellement, conditions et motifs de résiliation par chaque partie
+À VÉRIFIER : conditions de cession du fonds, droit de préemption, clause de non-concurrence post-contractuelle
+
+SECTION 9 — Litiges [Réf. Décret art.1 §9 — BLOQUANT absolu]
+BLOQUANT si absent : TOUTE mention de litiges passés et en cours est obligatoire. Si aucun litige : la phrase "Aucun litige en cours à la date de remise du présent document" ou équivalent doit figurer explicitement. L'absence totale de cette section est un motif régulier d'annulation.
+À VÉRIFIER : précision sur la nature des litiges mentionnés
+
+SECTION 10 — Comptes prévisionnels [Réf. Décret art.1 §10]
+BLOQUANT si absent : aucun prévisionnel = non bloquant si les 9 autres sections sont conformes, mais fortement recommandé
+À VÉRIFIER : présence de projections sur 2-3 ans, hypothèses documentées, avertissement sur le caractère prévisionnel (non-garantie)
+
+RETOURNE CE JSON EXACTEMENT — sans markdown, sans texte avant ou après :
 {
   "sections": [
     {
       "section_number": 1,
       "section_title": "Identité du franchiseur",
-      "content": "Texte extrait du document pour cette section (verbatim si possible)",
+      "content": "Texte extrait verbatim du document pour cette section",
       "status": "conforme",
-      "issues": []
+      "legal_blocking": false,
+      "mandatory_elements_found": ["dénomination sociale", "RCS", "siège", "dirigeant"],
+      "mandatory_elements_missing": [],
+      "issues": [],
+      "legal_reference": "Décret 91-337 art.1 §1"
     }
   ],
-  "global_score": 75,
-  "summary": "Résumé de l'état global du DIP : points forts, lacunes principales, risques juridiques"
+  "compliance_level": "CONFORME",
+  "blocking_issues": [],
+  "global_score": 85,
+  "summary": "Analyse synthétique : points conformes, lacunes bloquantes, risques juridiques prioritaires"
 }
 
-Valeurs possibles pour status : "conforme" | "a_verifier" | "non_conforme"
-global_score : entier entre 0 et 100 basé sur le nombre de sections conformes et leur qualité`
+Valeurs pour status : "conforme" | "a_verifier" | "non_conforme"
+Valeurs pour compliance_level :
+  "CONFORME"                → DIP envoyable légalement, toutes sections conformes ou a_verifier sans blocking
+  "RÉVISIONS_MINEURES"      → Quelques a_verifier sans blocking — envoyable mais améliorations recommandées
+  "RÉVISIONS_MAJEURES"      → Une ou plusieurs non_conforme sans blocking légal immédiat
+  "BLOQUANT_NON_ENVOYABLE"  → Au moins une section legal_blocking:true — NE PAS ENVOYER CE DIP
+global_score : 0-100. Pénalités : -20 par section non_conforme, -8 par a_verifier, -0 si conforme.`
     }]
   });
 
@@ -105,7 +152,6 @@ global_score : entier entre 0 et 100 basé sur le nombre de sections conformes e
 
   const result = JSON.parse(match[0]);
 
-  // Garantir que toutes les sections existent même si l'IA en a oublié
   const SECTIONS_DEFAULT = [
     'Identité du franchiseur',
     'Historique de l\'enseigne et du dirigeant',
@@ -119,24 +165,65 @@ global_score : entier entre 0 et 100 basé sur le nombre de sections conformes e
     'Comptes prévisionnels'
   ];
 
+  const LEGAL_REFS = [
+    'Décret 91-337 art.1 §1', 'Décret 91-337 art.1 §2', 'Décret 91-337 art.1 §3',
+    'Décret 91-337 art.1 §4', 'Décret 91-337 art.1 §5', 'Décret 91-337 art.1 §6',
+    'Décret 91-337 art.1 §7', 'Décret 91-337 art.1 §8', 'Décret 91-337 art.1 §9',
+    'Décret 91-337 art.1 §10'
+  ];
+
+  // Compléter les sections manquantes
   if (!result.sections || result.sections.length < 10) {
     const existing = new Set((result.sections || []).map(s => s.section_number));
     for (let i = 1; i <= 10; i++) {
       if (!existing.has(i)) {
+        const isHardBlocking = [1,3,4,6,8,9].includes(i);
         result.sections.push({
           section_number: i,
           section_title: SECTIONS_DEFAULT[i - 1],
           content: 'Section non trouvée dans le document',
           status: 'non_conforme',
-          issues: ['Section obligatoire absente du DIP — non conforme Loi Doubin']
+          legal_blocking: isHardBlocking,
+          mandatory_elements_found: [],
+          mandatory_elements_missing: ['Section entière absente'],
+          issues: ['Section obligatoire absente du DIP — non conforme Loi Doubin'],
+          legal_reference: LEGAL_REFS[i - 1]
         });
       }
     }
     result.sections.sort((a, b) => a.section_number - b.section_number);
   }
 
-  result.global_score = result.global_score ?? Math.round(
-    (result.sections.filter(s => s.status === 'conforme').length / 10) * 100
+  // Normaliser les champs nouveaux sur les sections retournées par l'IA
+  result.sections = result.sections.map((s, idx) => ({
+    legal_blocking: false,
+    mandatory_elements_found: [],
+    mandatory_elements_missing: [],
+    legal_reference: LEGAL_REFS[s.section_number - 1] || LEGAL_REFS[idx],
+    ...s
+  }));
+
+  // Recalculer compliance_level si absent
+  if (!result.compliance_level) {
+    const hasBlocking = result.sections.some(s => s.legal_blocking);
+    const nonConformes = result.sections.filter(s => s.status === 'non_conforme').length;
+    const aVerifier    = result.sections.filter(s => s.status === 'a_verifier').length;
+    if (hasBlocking)        result.compliance_level = 'BLOQUANT_NON_ENVOYABLE';
+    else if (nonConformes)  result.compliance_level = 'RÉVISIONS_MAJEURES';
+    else if (aVerifier)     result.compliance_level = 'RÉVISIONS_MINEURES';
+    else                    result.compliance_level = 'CONFORME';
+  }
+
+  if (!result.blocking_issues) {
+    result.blocking_issues = result.sections
+      .filter(s => s.legal_blocking)
+      .map(s => `Section ${s.section_number} (${s.section_title}) : ${(s.issues || []).join('; ') || 'éléments obligatoires manquants'}`);
+  }
+
+  result.global_score = result.global_score ?? Math.max(0,
+    100
+    - result.sections.filter(s => s.status === 'non_conforme').length * 20
+    - result.sections.filter(s => s.status === 'a_verifier').length * 8
   );
 
   return result;
@@ -450,8 +537,94 @@ Sois direct et factuel.`
   return message.content[0].text.trim();
 };
 
+/**
+ * Générer un certificat de conformité et de remise pour un DIP ou une modification.
+ * Ce certificat constitue une pièce de traçabilité opposable en cas de litige.
+ *
+ * @param {object} params
+ *   dipVersion       — objet version DIP (numéro, date, hash SHA-256, compliance_level)
+ *   changes          — tableau de changements (depuis compareDIPVersions) ou []
+ *   franchiseur      — { nom, rcs, siège }
+ *   deliveries       — [{ franchisee_name, sent_at, read_at, email }] ou []
+ *   certificateType  — "INITIAL" | "MISE_A_JOUR" | "REMISE"
+ */
+const generateChangesCertificate = async ({ dipVersion, changes = [], franchiseur, deliveries = [], certificateType }) => {
+  const now = new Date().toISOString();
+
+  const changesBlock = changes.length
+    ? changes.map(c =>
+        `- [${c.impact_legal}] ${c.section} : "${c.ancien}" → "${c.nouveau}" (${c.type})`
+      ).join('\n')
+    : 'Aucune modification — certificat de remise initiale.';
+
+  const deliveryBlock = deliveries.length
+    ? deliveries.map(d =>
+        `- ${d.franchisee_name} <${d.email}> : envoyé le ${d.sent_at}${d.read_at ? `, lu le ${d.read_at}` : ' — lecture non confirmée'}`
+      ).join('\n')
+    : 'Aucune remise enregistrée à ce stade.';
+
+  const message = await callClaude({
+    model: MODEL_SONNET,
+    max_tokens: 2048,
+    system: CACHED_SYSTEM,
+    messages: [{
+      role: 'user',
+      content: `Rédige un certificat juridique de ${certificateType === 'INITIAL' ? 'conformité et de remise initiale' : certificateType === 'MISE_A_JOUR' ? 'mise à jour et de notification' : 'remise'} d'un Document d'Information Précontractuelle (DIP) au sens de l'article L.330-3 du Code de commerce.
+
+DONNÉES DU CERTIFICAT :
+Franchiseur : ${franchiseur.nom} — RCS ${franchiseur.rcs} — ${franchiseur.siege}
+Version DIP  : n°${dipVersion.version} — créée le ${dipVersion.created_at}
+Empreinte SHA-256 : ${dipVersion.sha256 || 'non calculée'}
+Niveau de conformité : ${dipVersion.compliance_level}
+Score de conformité  : ${dipVersion.global_score}/100
+Date d'émission du certificat : ${now}
+
+MODIFICATIONS DOCUMENTÉES :
+${changesBlock}
+
+REMISES EFFECTUÉES :
+${deliveryBlock}
+
+INSTRUCTIONS DE RÉDACTION :
+- Rédige un document formel en français juridique
+- Commence par "CERTIFICAT DE ${certificateType === 'INITIAL' ? 'CONFORMITÉ ET DE REMISE' : 'MISE À JOUR ET DE NOTIFICATION'}"
+- Atteste de : l'intégrité du document (hash), la conformité légale au moment de la remise, les modifications apportées et leur nature, la liste des destinataires et les dates de remise
+- Inclus une clause sur le délai réglementaire des 20 jours (art. L.330-3)
+- Termine par une section "Valeur probatoire" expliquant en quoi ce certificat constitue une preuve opposable
+- Ton : professionnel, précis, sobre — pas de formulations commerciales
+- Maximum 400 mots
+
+Retourne ce JSON :
+{
+  "certificate_text": "Texte complet du certificat",
+  "certificate_title": "Titre court du certificat",
+  "legal_summary": "Résumé en 2 phrases de ce que ce certificat atteste",
+  "warnings": ["Avertissements éventuels si délai 20 jours non respecté, sections non conformes, etc."]
+}`
+    }]
+  });
+
+  const raw = message.content[0].text.trim();
+  const match = raw.match(/\{[\s\S]*\}/);
+  if (!match) {
+    return {
+      certificate_text: `CERTIFICAT DE REMISE DIP\n\nVersion : ${dipVersion.version}\nDate : ${now}\nFranchiseur : ${franchiseur.nom}\nConformité : ${dipVersion.compliance_level}\n\nCe certificat atteste de la remise du DIP ci-dessus référencé.`,
+      certificate_title: `Certificat DIP v${dipVersion.version}`,
+      legal_summary: 'Certificat de remise du DIP.',
+      warnings: []
+    };
+  }
+
+  const result = JSON.parse(match[0]);
+  result.generated_at = now;
+  result.certificate_type = certificateType;
+  result.dip_version = dipVersion.version;
+  result.sha256 = dipVersion.sha256 || null;
+  return result;
+};
+
 module.exports = {
   parseDIPSections, compareDIPVersions, detectChanges,
   generateUpdateSummary, correctSection, correctSectionWithAnswers,
-  analyzeDocumentForDIPImpact
+  analyzeDocumentForDIPImpact, generateChangesCertificate
 };
