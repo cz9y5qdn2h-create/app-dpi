@@ -1,11 +1,14 @@
 const express = require('express');
 const path = require('path');
+const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware, requireFranchisor } = require('../middleware/auth');
 const { parseDIPSections, compareDIPVersions } = require('../config/claude');
 const errMsg = require('../config/errorMessage');
 const router = express.Router();
+
+const sha256hex = (buffer) => crypto.createHash('sha256').update(buffer).digest('hex');
 
 const BUCKET = 'dip-files';
 
@@ -98,7 +101,8 @@ router.post('/process', authMiddleware, requireFranchisor, async (req, res) => {
       throw new Error('Téléchargement impossible: ' + (dlError?.message || 'bucket inaccessible. Aucune URL signée fournie.'));
     }
 
-    const rawText = await extractText(buffer, storage_path);
+    const fileHash = sha256hex(buffer);
+    const rawText  = await extractText(buffer, storage_path);
 
     if (!rawText || rawText.trim().length < 50) {
       throw new Error('Le fichier ne contient pas assez de texte lisible. Vérifiez que le PDF n\'est pas scanné (image) ou protégé.');
@@ -130,12 +134,13 @@ router.post('/process', authMiddleware, requireFranchisor, async (req, res) => {
       const { data: draftDip, error: draftError } = await supabaseAdmin
         .from('dip_documents')
         .insert({
-          user_id: req.user.id,
-          title: docTitle,
-          file_url: fileUrl,
-          status: 'brouillon',
+          user_id:          req.user.id,
+          title:            docTitle,
+          file_url:         fileUrl,
+          status:           'brouillon',
           conformity_score: previousDip.conformity_score,
-          raw_text: rawText.substring(0, 50000)
+          raw_text:         rawText.substring(0, 50000),
+          sha256:           fileHash
         })
         .select()
         .single();
@@ -155,11 +160,12 @@ router.post('/process', authMiddleware, requireFranchisor, async (req, res) => {
       });
 
       return res.json({
-        mode: 'comparison',
-        draft_dip_id: draftDip.id,
-        previous_dip_id: previousDip.id,
-        changements: comparison.changements || [],
-        resume: comparison.resume,
+        mode:                    'comparison',
+        draft_dip_id:            draftDip.id,
+        previous_dip_id:         previousDip.id,
+        sha256:                  fileHash,
+        changements:             comparison.changements || [],
+        resume:                  comparison.resume,
         nb_changements_critiques: comparison.nb_changements_critiques || 0
       });
     }
@@ -170,12 +176,15 @@ router.post('/process', authMiddleware, requireFranchisor, async (req, res) => {
     const { data: dipDoc, error: dipError } = await supabaseAdmin
       .from('dip_documents')
       .insert({
-        user_id: req.user.id,
-        title: docTitle,
-        file_url: fileUrl,
-        status: 'actif',
+        user_id:          req.user.id,
+        title:            docTitle,
+        file_url:         fileUrl,
+        status:           'actif',
         conformity_score: parsed.global_score || 0,
-        raw_text: rawText.substring(0, 50000)
+        raw_text:         rawText.substring(0, 50000),
+        sha256:           fileHash,
+        compliance_level: parsed.compliance_level || null,
+        blocking_issues:  parsed.blocking_issues  || []
       })
       .select()
       .single();
@@ -183,13 +192,17 @@ router.post('/process', authMiddleware, requireFranchisor, async (req, res) => {
     if (dipError) throw new Error(dipError.message);
 
     const sectionsToInsert = (parsed.sections || []).map(s => ({
-      dip_id: dipDoc.id,
-      section_number: s.section_number,
-      section_title: s.section_title,
-      content: s.content,
-      status: s.status || 'a_verifier',
-      last_checked: new Date().toISOString(),
-      last_updated: new Date().toISOString()
+      dip_id:                      dipDoc.id,
+      section_number:              s.section_number,
+      section_title:               s.section_title,
+      content:                     s.content,
+      status:                      s.status || 'a_verifier',
+      legal_blocking:              s.legal_blocking              || false,
+      mandatory_elements_found:    s.mandatory_elements_found    || [],
+      mandatory_elements_missing:  s.mandatory_elements_missing  || [],
+      legal_reference:             s.legal_reference             || null,
+      last_checked:                new Date().toISOString(),
+      last_updated:                new Date().toISOString()
     }));
 
     if (sectionsToInsert.length > 0) {
@@ -209,11 +222,14 @@ router.post('/process', authMiddleware, requireFranchisor, async (req, res) => {
     });
 
     res.status(201).json({
-      mode: 'initial',
-      dip: dipDoc,
-      sections_count: sectionsToInsert.length,
+      mode:             'initial',
+      dip:              dipDoc,
+      sha256:           fileHash,
+      sections_count:   sectionsToInsert.length,
       conformity_score: parsed.global_score,
-      summary: parsed.summary
+      compliance_level: parsed.compliance_level,
+      blocking_issues:  parsed.blocking_issues || [],
+      summary:          parsed.summary
     });
 
   } catch (err) {
