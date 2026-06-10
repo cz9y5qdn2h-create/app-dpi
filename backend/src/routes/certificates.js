@@ -2,6 +2,7 @@ const express = require('express');
 const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware, requireFranchisor } = require('../middleware/auth');
 const { generateChangesCertificate } = require('../config/claude');
+const { generateCertificatePDF } = require('../config/certificatePdf');
 const errMsg = require('../config/errorMessage');
 const router = express.Router();
 
@@ -104,6 +105,34 @@ router.get('/:id', authMiddleware, async (req, res) => {
 
   if (error || !data) return res.status(404).json({ error: 'Certificat introuvable' });
   res.json({ certificate: data });
+});
+
+// GET /api/certificates/:id/pdf — télécharge le certificat en PDF
+router.get('/:id/pdf', authMiddleware, async (req, res) => {
+  const { data, error } = await supabaseAdmin
+    .from('dip_certificates')
+    .select('*')
+    .eq('id', req.params.id)
+    .eq('user_id', req.user.id)
+    .single();
+
+  if (error || !data) return res.status(404).json({ error: 'Certificat introuvable' });
+
+  try {
+    const pdfBuffer = await generateCertificatePDF(data);
+    const filename  = `certificat-dip-${data.certificate_type.toLowerCase()}-${data.id.split('-')[0]}.pdf`;
+
+    res.set({
+      'Content-Type':        'application/pdf',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Content-Length':      pdfBuffer.length,
+      'Cache-Control':       'no-store'
+    });
+    res.send(pdfBuffer);
+  } catch (err) {
+    console.error('PDF generation error:', err.message);
+    res.status(500).json({ error: errMsg(err) });
+  }
 });
 
 module.exports = router;
