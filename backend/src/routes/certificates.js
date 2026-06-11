@@ -23,14 +23,29 @@ const fetchFranchiseur = async (userId, fallbackEmail) => {
   };
 };
 
-const sendPdf = async (res, cert, franchiseur) => {
-  const pdfBuffer = await generateCertificatePDF(cert, franchiseur);
-  const filename  = `attestation-dip-${cert.certificate_type.toLowerCase()}-${cert.id.split('-')[0]}.pdf`;
+const uploadPdfToStorage = async (pdfBuffer, certId, certType, publicToken) => {
+  const path = `${certId}/attestation-${certType.toLowerCase()}.pdf`;
+  const { error } = await supabaseAdmin.storage
+    .from('dip-certificates')
+    .upload(path, pdfBuffer, {
+      contentType: 'application/pdf',
+      upsert: true,
+    });
+  if (error) throw new Error(`Storage upload failed: ${error.message}`);
+
+  const { data } = supabaseAdmin.storage
+    .from('dip-certificates')
+    .getPublicUrl(path);
+  return data.publicUrl;
+};
+
+const sendPdfFromBuffer = (res, pdfBuffer, cert) => {
+  const filename = `attestation-dip-${cert.certificate_type.toLowerCase()}-${cert.id.split('-')[0]}.pdf`;
   res.set({
     'Content-Type':        'application/pdf',
     'Content-Disposition': `inline; filename="${filename}"`,
     'Content-Length':      pdfBuffer.length,
-    'Cache-Control':       'no-store',
+    'Cache-Control':       'public, max-age=86400',
   });
   res.send(pdfBuffer);
 };
@@ -94,10 +109,27 @@ router.post('/', authMiddleware, requireFranchisor, async (req, res) => {
 
     if (saveErr) throw new Error(saveErr.message);
 
+    // Génère le PDF une fois et le stocke — évite la regénération à chaque accès
+    let pdfUrl = null;
+    try {
+      const pdfBuffer = await generateCertificatePDF(saved, franchiseur);
+      pdfUrl = await uploadPdfToStorage(pdfBuffer, saved.id, certificate_type, publicToken);
+
+      await supabaseAdmin
+        .from('dip_certificates')
+        .update({ pdf_url: pdfUrl })
+        .eq('id', saved.id);
+
+      saved.pdf_url = pdfUrl;
+    } catch (pdfErr) {
+      console.error('PDF storage error (non-bloquant):', pdfErr.message);
+    }
+
     const baseUrl = process.env.FRONTEND_URL || 'https://dippro.fr';
     res.status(201).json({
       certificate:  saved,
       public_url:   `${baseUrl}/attestation/${publicToken}`,
+      pdf_url:      pdfUrl,
     });
   } catch (err) {
     console.error('Certificate generate error:', err.message);
@@ -110,7 +142,7 @@ router.get('/', authMiddleware, async (req, res) => {
   const limit = Math.min(parseInt(req.query.limit) || 20, 100);
   const { data, error } = await supabaseAdmin
     .from('dip_certificates')
-    .select('id, dip_id, certificate_type, certificate_title, legal_summary, warnings, compliance_level, global_score, changes_count, generated_at, public_token')
+    .select('id, dip_id, certificate_type, certificate_title, legal_summary, warnings, compliance_level, global_score, changes_count, generated_at, public_token, pdf_url')
     .eq('user_id', req.user.id)
     .order('generated_at', { ascending: false })
     .limit(limit);
@@ -140,10 +172,11 @@ router.get('/:id', authMiddleware, async (req, res) => {
   res.json({
     certificate: data,
     public_url:  data.public_token ? `${baseUrl}/attestation/${data.public_token}` : null,
+    pdf_url:     data.pdf_url || null,
   });
 });
 
-// ─── GET /api/certificates/:id/pdf — PDF (authentifié, téléchargement) ───────
+// ─── GET /api/certificates/:id/pdf — PDF (authentifié) ───────────────────────
 router.get('/:id/pdf', authMiddleware, async (req, res) => {
   const { data, error } = await supabaseAdmin
     .from('dip_certificates')
@@ -154,9 +187,21 @@ router.get('/:id/pdf', authMiddleware, async (req, res) => {
 
   if (error || !data) return res.status(404).json({ error: 'Certificat introuvable' });
 
+  // Redirect vers le PDF stocké si disponible (servi par CDN Supabase)
+  if (data.pdf_url) return res.redirect(302, data.pdf_url);
+
+  // Fallback : génère à la volée si le PDF n'est pas encore en storage
   try {
     const franchiseur = await fetchFranchiseur(data.user_id, '');
-    await sendPdf(res, data, franchiseur);
+    const pdfBuffer   = await generateCertificatePDF(data, franchiseur);
+
+    // Tente de stocker pour les prochains accès
+    try {
+      const url = await uploadPdfToStorage(pdfBuffer, data.id, data.certificate_type, data.public_token);
+      await supabaseAdmin.from('dip_certificates').update({ pdf_url: url }).eq('id', data.id);
+    } catch { /* silencieux */ }
+
+    sendPdfFromBuffer(res, pdfBuffer, data);
   } catch (err) {
     console.error('PDF generation error:', err.message);
     res.status(500).json({ error: errMsg(err) });
@@ -164,7 +209,6 @@ router.get('/:id/pdf', authMiddleware, async (req, res) => {
 });
 
 // ─── GET /api/certificates/public/:token — accès public sans auth ─────────────
-// Ce lien est partageable : franchisés, avocats, juges peuvent consulter/télécharger.
 router.get('/public/:token', async (req, res) => {
   const token = req.params.token;
   if (!token || token.length > 64) return res.status(400).json({ error: 'Token invalide' });
@@ -177,24 +221,24 @@ router.get('/public/:token', async (req, res) => {
 
   if (error || !data) return res.status(404).json({ error: 'Attestation introuvable ou lien invalide' });
 
-  // Si ?format=json → retourne les données brutes (pour intégration frontend)
   if (req.query.format === 'json') {
     return res.json({ certificate: data });
   }
 
-  // Par défaut → PDF inline (visible dans le navigateur)
+  // Redirect vers le PDF stocké si disponible (CDN, aucune CPU serveur)
+  if (data.pdf_url) return res.redirect(302, data.pdf_url);
+
+  // Fallback : génère à la volée et stocke pour les prochains accès
   try {
     const franchiseur = await fetchFranchiseur(data.user_id, '');
     const pdfBuffer   = await generateCertificatePDF(data, franchiseur);
-    const filename    = `attestation-dip-${data.certificate_type.toLowerCase()}-${data.id.split('-')[0]}.pdf`;
 
-    res.set({
-      'Content-Type':        'application/pdf',
-      'Content-Disposition': `inline; filename="${filename}"`,
-      'Content-Length':      pdfBuffer.length,
-      'Cache-Control':       'public, max-age=86400',  // cacheable 24h — doc immuable
-    });
-    res.send(pdfBuffer);
+    try {
+      const url = await uploadPdfToStorage(pdfBuffer, data.id, data.certificate_type, data.public_token);
+      await supabaseAdmin.from('dip_certificates').update({ pdf_url: url }).eq('id', data.id);
+    } catch { /* silencieux */ }
+
+    sendPdfFromBuffer(res, pdfBuffer, data);
   } catch (err) {
     console.error('Public PDF error:', err.message);
     res.status(500).json({ error: 'Erreur de génération du PDF' });
