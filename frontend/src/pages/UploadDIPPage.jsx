@@ -9,7 +9,8 @@ import PageHeader from '../components/ui/PageHeader';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import {
   Upload, FileText, X, CheckCircle, AlertCircle, Sparkles,
-  ChevronDown, ChevronUp, Check, XCircle, AlertTriangle
+  ChevronDown, ChevronUp, Check, XCircle, AlertTriangle,
+  FileCheck, ExternalLink, Copy
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -36,6 +37,7 @@ export default function UploadDIPPage() {
   const [rejectedIds, setRejectedIds] = useState(new Set());
   const [expandedId, setExpandedId]   = useState(null);
   const [initialResult, setInitialResult] = useState(null);
+  const [attestationUrl, setAttestationUrl] = useState(null);
 
   const onDrop = useCallback((accepted) => {
     if (accepted[0]) {
@@ -115,8 +117,9 @@ export default function UploadDIPPage() {
         }
       } else {
         setInitialResult(data);
-        setStep('done');
         queryClient.invalidateQueries({ queryKey: ['dips'] });
+        await generateAttestation(data.dip.id, [], 'INITIAL');
+        setStep('done');
         toast.success(`DIP analysé — ${data.sections_count} sections extraites`);
       }
 
@@ -127,15 +130,30 @@ export default function UploadDIPPage() {
     }
   };
 
+  const generateAttestation = async (dipId, changes, type = 'MISE_A_JOUR') => {
+    try {
+      const res = await api.post('/certificates', {
+        dip_id:           dipId,
+        certificate_type: type,
+        changes,
+        deliveries: []
+      });
+      if (res.data?.public_url) setAttestationUrl(res.data.public_url);
+    } catch {
+      // non-bloquant — l'attestation peut être générée manuellement ensuite
+    }
+  };
+
   const handleAutoApprove = async (data) => {
     setStep('approving');
     try {
       await api.post('/dip/approve-changes', {
-        draft_dip_id: data.draft_dip_id,
-        previous_dip_id: data.previous_dip_id,
+        draft_dip_id:     data.draft_dip_id,
+        previous_dip_id:  data.previous_dip_id,
         approved_changes: data.changements
       });
       queryClient.invalidateQueries({ queryKey: ['dips'] });
+      await generateAttestation(data.draft_dip_id, data.changements);
       setStep('done');
       toast.success('Nouvelle version activée automatiquement');
     } catch (err) {
@@ -150,11 +168,12 @@ export default function UploadDIPPage() {
     try {
       const approved = comparisonResult.changements.filter(c => approvedIds.has(c.id));
       await api.post('/dip/approve-changes', {
-        draft_dip_id: comparisonResult.draft_dip_id,
-        previous_dip_id: comparisonResult.previous_dip_id,
+        draft_dip_id:     comparisonResult.draft_dip_id,
+        previous_dip_id:  comparisonResult.previous_dip_id,
         approved_changes: approved
       });
       queryClient.invalidateQueries({ queryKey: ['dips'] });
+      await generateAttestation(comparisonResult.draft_dip_id, approved);
       setStep('done');
       toast.success('Nouvelle version activée avec succès');
     } catch (err) {
@@ -180,7 +199,7 @@ export default function UploadDIPPage() {
 
   const reset = () => {
     setFile(null); setTitle(''); setStep('idle'); setError(''); setStepMsg('');
-    setComparisonResult(null); setInitialResult(null);
+    setComparisonResult(null); setInitialResult(null); setAttestationUrl(null);
     setApprovedIds(new Set()); setRejectedIds(new Set());
   };
 
@@ -214,12 +233,13 @@ export default function UploadDIPPage() {
   /* ── Succès ── */
   if (step === 'done') {
     return (
-      <div className="max-w-2xl mx-auto space-y-8 animate-fade-in">
+      <div className="max-w-2xl mx-auto space-y-5 animate-fade-in">
         <PageHeader title="Analyse terminée" subtitle="Votre DIP a été traité avec succès" />
+
         <div className="card border-success/30">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 rounded-lg bg-success/10 border border-success/20 flex items-center justify-center">
-              <CheckCircle className="w-6 h-6 text-success" />
+          <div className="flex items-center gap-3 mb-5">
+            <div className="w-11 h-11 rounded-lg bg-success/10 border border-success/20 flex items-center justify-center flex-shrink-0">
+              <CheckCircle className="w-5 h-5 text-success" />
             </div>
             <div>
               <p className="font-dm-sans text-sm font-medium text-text-primary">
@@ -239,6 +259,60 @@ export default function UploadDIPPage() {
             <button onClick={reset} className="btn-secondary">Importer un autre</button>
           </div>
         </div>
+
+        {/* Carte attestation */}
+        {attestationUrl ? (
+          <div className="card" style={{ borderColor: 'rgba(200,169,110,0.30)', background: 'rgba(200,169,110,0.04)' }}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
+                   style={{ background: 'rgba(200,169,110,0.12)', border: '1px solid rgba(200,169,110,0.28)' }}>
+                <FileCheck className="w-5 h-5 text-gold" />
+              </div>
+              <div>
+                <p className="font-dm-sans text-sm font-medium text-text-primary">Attestation de modification générée</p>
+                <p className="font-dm-sans text-xs text-text-secondary">
+                  Accessible publiquement — valeur probatoire en cas de litige
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-lg px-3 py-2.5 mb-4 font-dm-mono text-xs break-all select-all"
+                 style={{ background: 'rgba(200,169,110,0.06)', border: '1px solid rgba(200,169,110,0.18)', color: 'rgba(200,169,110,0.85)' }}>
+              {attestationUrl}
+            </div>
+
+            <div className="flex gap-2">
+              <a
+                href={attestationUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-liquid-glass flex-1 flex items-center justify-center gap-2"
+              >
+                <ExternalLink className="w-4 h-4" /> Voir l'attestation PDF
+              </a>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(attestationUrl);
+                  toast.success('Lien copié');
+                }}
+                className="btn-secondary flex items-center gap-2 px-4"
+              >
+                <Copy className="w-4 h-4" /> Copier le lien
+              </button>
+            </div>
+
+            <p className="font-dm-sans text-xs text-text-secondary mt-3 text-center">
+              Ce lien peut être partagé à vos franchisés, avocats ou au tribunal sans authentification.
+            </p>
+          </div>
+        ) : (
+          <div className="card text-center py-4"
+               style={{ borderColor: 'rgba(200,169,110,0.15)', background: 'rgba(200,169,110,0.03)' }}>
+            <p className="font-dm-sans text-xs text-text-secondary">
+              Génération de l'attestation en cours… disponible dans quelques instants.
+            </p>
+          </div>
+        )}
       </div>
     );
   }
