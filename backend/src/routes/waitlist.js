@@ -55,6 +55,15 @@ router.post('/', async (req, res) => {
   res.status(201).json({ message: 'Inscription confirmée — nous vous contacterons très bientôt.' });
 });
 
+// GET /api/waitlist/count — public, retourne uniquement le nombre d'inscrits
+router.get('/count', async (req, res) => {
+  const { count, error } = await supabaseAdmin
+    .from('waitlist')
+    .select('id', { count: 'exact', head: true });
+  if (error) return res.status(500).json({ count: 0 });
+  res.json({ count: count || 0 });
+});
+
 // GET /api/waitlist — admin uniquement
 router.get('/', authMiddleware, requireAdmin, async (req, res) => {
   const { status } = req.query;
