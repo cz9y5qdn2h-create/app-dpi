@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDropzone } from 'react-dropzone';
 import { useQueryClient } from '@tanstack/react-query';
@@ -10,7 +10,7 @@ import LoadingSpinner from '../components/ui/LoadingSpinner';
 import {
   Upload, FileText, X, CheckCircle, AlertCircle, Sparkles,
   ChevronDown, ChevronUp, Check, XCircle, AlertTriangle,
-  FileCheck, ExternalLink, Copy
+  FileCheck, ExternalLink, Copy, Loader2
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -37,7 +37,25 @@ export default function UploadDIPPage() {
   const [rejectedIds, setRejectedIds] = useState(new Set());
   const [expandedId, setExpandedId]   = useState(null);
   const [initialResult, setInitialResult] = useState(null);
-  const [attestationUrl, setAttestationUrl] = useState(null);
+  const [attestationUrl, setAttestationUrl]       = useState(null);
+  const [attestationCertId, setAttestationCertId] = useState(null);
+  const [attestationStatus, setAttestationStatus] = useState(null);
+  const pollRef = useRef(null);
+
+  useEffect(() => {
+    if (!attestationCertId || attestationStatus !== 'pending') return;
+    pollRef.current = setInterval(async () => {
+      try {
+        const { data } = await api.get(`/certificates/${attestationCertId}`);
+        const s = data?.certificate?.status;
+        if (s && s !== 'pending') {
+          setAttestationStatus(s);
+          clearInterval(pollRef.current);
+        }
+      } catch { /* silencieux */ }
+    }, 3000);
+    return () => clearInterval(pollRef.current);
+  }, [attestationCertId, attestationStatus]);
 
   const onDrop = useCallback((accepted) => {
     if (accepted[0]) {
@@ -139,8 +157,10 @@ export default function UploadDIPPage() {
         deliveries: []
       });
       if (res.data?.public_url) setAttestationUrl(res.data.public_url);
+      if (res.data?.certificate?.id) setAttestationCertId(res.data.certificate.id);
+      setAttestationStatus(res.data?.certificate?.status ?? 'pending');
     } catch {
-      // non-bloquant — l'attestation peut être générée manuellement ensuite
+      // non-bloquant
     }
   };
 
@@ -198,8 +218,10 @@ export default function UploadDIPPage() {
   };
 
   const reset = () => {
+    clearInterval(pollRef.current);
     setFile(null); setTitle(''); setStep('idle'); setError(''); setStepMsg('');
-    setComparisonResult(null); setInitialResult(null); setAttestationUrl(null);
+    setComparisonResult(null); setInitialResult(null);
+    setAttestationUrl(null); setAttestationCertId(null); setAttestationStatus(null);
     setApprovedIds(new Set()); setRejectedIds(new Set());
   };
 
@@ -261,17 +283,23 @@ export default function UploadDIPPage() {
         </div>
 
         {/* Carte attestation */}
-        {attestationUrl ? (
+        {attestationUrl && (
           <div className="card" style={{ borderColor: 'rgba(200,169,110,0.30)', background: 'rgba(200,169,110,0.04)' }}>
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
                    style={{ background: 'rgba(200,169,110,0.12)', border: '1px solid rgba(200,169,110,0.28)' }}>
-                <FileCheck className="w-5 h-5 text-gold" />
+                {attestationStatus === 'pending'
+                  ? <Loader2 className="w-5 h-5 text-gold animate-spin" />
+                  : <FileCheck className="w-5 h-5 text-gold" />}
               </div>
               <div>
-                <p className="font-dm-sans text-sm font-medium text-text-primary">Attestation de modification générée</p>
+                <p className="font-dm-sans text-sm font-medium text-text-primary">
+                  {attestationStatus === 'pending' ? "Génération de l’attestation…" : 'Attestation de modification générée'}
+                </p>
                 <p className="font-dm-sans text-xs text-text-secondary">
-                  Accessible publiquement — valeur probatoire en cas de litige
+                  {attestationStatus === 'pending'
+                    ? 'Le PDF sera prêt dans quelques secondes'
+                    : 'Accessible publiquement — valeur probatoire en cas de litige'}
                 </p>
               </div>
             </div>
@@ -283,12 +311,15 @@ export default function UploadDIPPage() {
 
             <div className="flex gap-2">
               <a
-                href={attestationUrl}
+                href={attestationStatus !== 'pending' ? attestationUrl : undefined}
+                onClick={attestationStatus === 'pending' ? e => e.preventDefault() : undefined}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="btn-liquid-glass flex-1 flex items-center justify-center gap-2"
+                className={`btn-liquid-glass flex-1 flex items-center justify-center gap-2 ${attestationStatus === 'pending' ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
-                <ExternalLink className="w-4 h-4" /> Voir l'attestation PDF
+                {attestationStatus === 'pending'
+                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Génération en cours…</>
+                  : <><ExternalLink className="w-4 h-4" /> Voir l'attestation PDF</>}
               </a>
               <button
                 onClick={() => {
@@ -303,13 +334,6 @@ export default function UploadDIPPage() {
 
             <p className="font-dm-sans text-xs text-text-secondary mt-3 text-center">
               Ce lien peut être partagé à vos franchisés, avocats ou au tribunal sans authentification.
-            </p>
-          </div>
-        ) : (
-          <div className="card text-center py-4"
-               style={{ borderColor: 'rgba(200,169,110,0.15)', background: 'rgba(200,169,110,0.03)' }}>
-            <p className="font-dm-sans text-xs text-text-secondary">
-              Génération de l'attestation en cours… disponible dans quelques instants.
             </p>
           </div>
         )}
