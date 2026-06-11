@@ -1,268 +1,249 @@
 const PDFDocument = require('pdfkit');
 
-const COLOR = {
-  black:      '#0F172A',
-  gold:       '#B89357',
-  goldLight:  '#D4AA6A',
-  muted:      '#64748B',
-  border:     '#E2E8F0',
-  white:      '#FFFFFF',
-  conforme:   '#16A34A',
-  revisions:  '#D97706',
-  bloquant:   '#DC2626',
-  bgLight:    '#F8FAFC',
-  bgGold:     '#FBF7EE',
-};
-
-const COMPLIANCE_COLOR = {
-  'CONFORME':               COLOR.conforme,
-  'RÉVISIONS_MINEURES':     COLOR.revisions,
-  'RÉVISIONS_MAJEURES':     COLOR.revisions,
-  'BLOQUANT_NON_ENVOYABLE': COLOR.bloquant,
-};
-
-const COMPLIANCE_LABEL = {
-  'CONFORME':               '✓  CONFORME — Envoi autorisé',
-  'RÉVISIONS_MINEURES':     '⚠  RÉVISIONS MINEURES',
-  'RÉVISIONS_MAJEURES':     '⚠  RÉVISIONS MAJEURES',
-  'BLOQUANT_NON_ENVOYABLE': '✗  BLOQUANT — Ne pas envoyer',
+const C = {
+  black:    '#0F172A',
+  blue:     '#1E40AF',
+  blueHead: '#2563EB',
+  muted:    '#64748B',
+  border:   '#CBD5E1',
+  bg:       '#F8FAFC',
+  white:    '#FFFFFF',
+  gold:     '#B89357',
+  red:      '#DC2626',
+  green:    '#16A34A',
+  orange:   '#D97706',
 };
 
 const IMPACT_COLOR = {
-  'High':     COLOR.bloquant,
-  'Moderate': COLOR.revisions,
-  'Low':      COLOR.muted,
+  'High':     C.red,
+  'Moderate': C.orange,
+  'Low':      C.muted,
+};
+
+const fmt = (iso) => {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    + ' à '
+    + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' });
+};
+
+const fmtDate = (iso) => {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' });
 };
 
 /**
- * Génère le PDF d'un certificat DIPpro.
+ * Génère le PDF d'une attestation de modification DIPpro.
+ * Fidèle au modèle : titre, deux colonnes, une entrée par modification.
  * @param {object} cert  — enregistrement dip_certificates complet
+ * @param {object} franchiseur — { nom, adresse, telephone }
  * @returns {Promise<Buffer>}
  */
-const generateCertificatePDF = (cert) => new Promise((resolve, reject) => {
-  const doc = new PDFDocument({ size: 'A4', margin: 0, bufferPages: true });
+const generateCertificatePDF = (cert, franchiseur = {}) => new Promise((resolve, reject) => {
+  const doc = new PDFDocument({ size: 'A4', margins: { top: 52, bottom: 52, left: 56, right: 48 }, bufferPages: true });
   const chunks = [];
   doc.on('data',  c => chunks.push(c));
   doc.on('end',   () => resolve(Buffer.concat(chunks)));
   doc.on('error', reject);
 
-  const W = doc.page.width;   // 595.28
-  const M = 48;                // marge horizontale
-  const CW = W - M * 2;       // largeur de contenu
+  const W   = doc.page.width;
+  const ML  = 56;   // marge gauche
+  const MR  = 48;   // marge droite
+  const CW  = W - ML - MR;   // largeur contenu totale
 
-  let y = 0;
+  const COL_L = 152;          // largeur colonne gauche
+  const COL_G = 12;           // gouttière
+  const COL_R = CW - COL_L - COL_G; // largeur colonne droite
 
-  // ─── Helpers ────────────────────────────────────────────────────────────────
-
-  const rule = (yPos, color = COLOR.border, thickness = 0.5) => {
-    doc.save().strokeColor(color).lineWidth(thickness)
-       .moveTo(M, yPos).lineTo(W - M, yPos).stroke().restore();
-    return yPos + thickness;
-  };
-
-  const rect = (x, yPos, w, h, fill, radius = 4) => {
-    doc.save().roundedRect(x, yPos, w, h, radius).fill(fill).restore();
-  };
-
-  const field = (label, value, yPos, labelW = 120) => {
-    doc.font('Helvetica-Bold').fontSize(7.5).fillColor(COLOR.muted)
-       .text(label.toUpperCase(), M, yPos, { width: labelW });
-    doc.font('Helvetica').fontSize(9).fillColor(COLOR.black)
-       .text(value || '—', M + labelW, yPos, { width: CW - labelW });
-    return yPos + 16;
-  };
-
-  const sectionHeader = (title, yPos) => {
-    doc.save().fillColor(COLOR.bgGold)
-       .rect(M, yPos, CW, 22).fill().restore();
-    doc.font('Helvetica-Bold').fontSize(8.5).fillColor(COLOR.gold)
-       .text(title.toUpperCase(), M + 10, yPos + 7, { width: CW - 20 });
-    return yPos + 30;
-  };
-
-  const fmt = (iso) => {
-    if (!iso) return '—';
-    const d = new Date(iso);
-    return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
-      + ' à '
-      + d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' })
-      + ' (heure de Paris)';
-  };
-
-  // ─── BANDE HEADER ──────────────────────────────────────────────────────────
-  rect(0, 0, W, 72, COLOR.black, 0);
-
-  // Titre gauche
-  doc.font('Helvetica-Bold').fontSize(18).fillColor(COLOR.gold)
-     .text('DIPpro', M, 18, { continued: true })
-     .font('Helvetica').fontSize(10).fillColor(COLOR.white)
-     .text('  —  Document d\'Information Précontractuelle', { continued: false });
-
-  doc.font('Helvetica-Bold').fontSize(8).fillColor(COLOR.goldLight)
-     .text('CERTIFICAT DE ' + (cert.certificate_type === 'INITIAL'
-       ? 'CONFORMITÉ ET DE REMISE INITIALE'
-       : cert.certificate_type === 'MISE_A_JOUR'
-         ? 'MISE À JOUR ET DE NOTIFICATION'
-         : 'REMISE DU DIP'), M, 40);
-
-  // Référence droite
-  const ref = `Réf. CERT-${cert.id.split('-')[0].toUpperCase()}-${cert.id.split('-')[1].toUpperCase()}`;
-  doc.font('Helvetica').fontSize(7.5).fillColor(COLOR.muted)
-     .text(ref, 0, 26, { align: 'right', width: W - M });
-  doc.font('Helvetica').fontSize(7.5).fillColor(COLOR.muted)
-     .text('Généré le ' + fmt(cert.generated_at), 0, 38, { align: 'right', width: W - M });
-
-  y = 88;
-
-  // ─── BLOC STATUT CONFORMITÉ ────────────────────────────────────────────────
-  const compLevel = cert.compliance_level || '';
-  const compColor = COMPLIANCE_COLOR[compLevel] || COLOR.muted;
-  const compLabel = COMPLIANCE_LABEL[compLevel] || compLevel;
-
-  rect(M, y, CW, 36, compLevel === 'BLOQUANT_NON_ENVOYABLE' ? '#FEF2F2' : '#F0FDF4', 6);
-  doc.save().roundedRect(M, y, CW, 36, 6).strokeColor(compColor).lineWidth(1).stroke().restore();
-
-  doc.font('Helvetica-Bold').fontSize(11).fillColor(compColor)
-     .text(compLabel, M + 12, y + 8, { width: CW / 2 });
-
-  const scoreLabel = `Score de conformité : ${cert.global_score ?? '—'}/100`;
-  doc.font('Helvetica').fontSize(9).fillColor(COLOR.muted)
-     .text(scoreLabel, M + CW / 2, y + 13, { width: CW / 2, align: 'right' });
-
-  y += 48;
-
-  // ─── IDENTIFICATION ────────────────────────────────────────────────────────
-  y = sectionHeader('1. Identification du document et du franchiseur', y);
-
+  const changes   = cert.changes_snapshot || [];
   const deliveries = cert.deliveries || [];
-  const changes    = cert.changes_snapshot || [];
 
-  y = field('DIP concerné',     cert.dip_id,      y);
-  y = field('Type de certificat', cert.certificate_type, y);
-  y = field('Date de génération', fmt(cert.generated_at), y);
-  y = field('Empreinte SHA-256',  cert.sha256_dip || 'Non calculée', y);
-  y += 8;
+  // ─── TITRE ──────────────────────────────────────────────────────────────────
+  doc.font('Helvetica').fontSize(28).fillColor(C.black)
+     .text('DIPpro - attestation de modification', ML, 52, { width: CW });
 
-  // Avertissements
-  const warnings = cert.warnings || [];
-  if (warnings.length > 0) {
-    rect(M, y, CW, 14 + warnings.length * 14, '#FFFBEB', 4);
-    doc.save().roundedRect(M, y, CW, 14 + warnings.length * 14, 4)
-       .strokeColor(COLOR.revisions).lineWidth(0.5).stroke().restore();
-    doc.font('Helvetica-Bold').fontSize(8).fillColor(COLOR.revisions)
-       .text('⚠  Points d\'attention', M + 10, y + 5);
-    warnings.forEach((w, i) => {
-      doc.font('Helvetica').fontSize(8).fillColor(COLOR.black)
-         .text('• ' + w, M + 10, y + 18 + i * 14, { width: CW - 20 });
+  // ligne de séparation fine sous le titre
+  const titleBottom = doc.y + 6;
+  doc.save().strokeColor(C.border).lineWidth(0.5)
+     .moveTo(ML, titleBottom).lineTo(W - MR, titleBottom).stroke().restore();
+
+  let y = titleBottom + 18;
+
+  // ─── BLOC EN-TÊTE DEUX COLONNES ──────────────────────────────────────────────
+  const headerY = y;
+
+  // Colonne gauche : infos franchiseur
+  const lx = ML;
+  const rx = ML + COL_L + COL_G;
+
+  doc.font('Helvetica-Bold').fontSize(8).fillColor(C.black)
+     .text('Effectué le :', lx, headerY);
+  doc.font('Helvetica').fontSize(8).fillColor(C.muted)
+     .text(fmtDate(cert.generated_at), lx, headerY + 11, { width: COL_L });
+
+  doc.font('Helvetica-Bold').fontSize(8).fillColor(C.black)
+     .text('Par :', lx, headerY + 26);
+  doc.font('Helvetica').fontSize(8).fillColor(C.muted)
+     .text(franchiseur.nom || '—', lx, headerY + 37, { width: COL_L });
+
+  doc.font('Helvetica-Bold').fontSize(8).fillColor(C.black)
+     .text('Adresse du franchiseur :', lx, headerY + 54);
+  doc.font('Helvetica').fontSize(8).fillColor(C.muted)
+     .text(franchiseur.adresse || '—', lx, headerY + 65, { width: COL_L });
+
+  doc.font('Helvetica-Bold').fontSize(8).fillColor(C.black)
+     .text('Numéro du franchiseur :', lx, headerY + 90);
+  doc.font('Helvetica').fontSize(8).fillColor(C.muted)
+     .text(franchiseur.telephone || '—', lx, headerY + 101, { width: COL_L });
+
+  // Colonne droite : première modification (ou "aucune")
+  const firstChange = changes[0];
+  if (firstChange) {
+    y = renderChangeBlock(doc, firstChange, 0, rx, headerY, COL_R);
+  } else {
+    doc.font('Helvetica').fontSize(8.5).fillColor(C.muted)
+       .text('Aucune modification documentée.', rx, headerY + 20, { width: COL_R });
+    y = headerY + 40;
+  }
+
+  // s'assurer que y est en dessous du bloc gauche aussi
+  y = Math.max(y, headerY + 120);
+  y += 16;
+
+  // ─── MODIFICATIONS SUIVANTES (à partir de la 2e) ─────────────────────────────
+  for (let i = 1; i < changes.length; i++) {
+    if (y > 740) {
+      addFooter(doc, cert);
+      doc.addPage();
+      y = 52;
+    }
+
+    // séparateur
+    doc.save().strokeColor(C.border).lineWidth(0.4)
+       .moveTo(ML, y).lineTo(W - MR, y).stroke().restore();
+    y += 14;
+
+    y = renderChangeBlock(doc, changes[i], i, ML, y, CW);
+    y += 16;
+  }
+
+  // ─── REMISES (si présentes) ───────────────────────────────────────────────────
+  if (deliveries.length > 0) {
+    if (y > 680) { addFooter(doc, cert); doc.addPage(); y = 52; }
+
+    doc.save().strokeColor(C.border).lineWidth(0.5)
+       .moveTo(ML, y).lineTo(W - MR, y).stroke().restore();
+    y += 14;
+
+    doc.font('Helvetica-Bold').fontSize(9).fillColor(C.blueHead)
+       .text('Remises aux franchisés :', ML, y);
+    y += 14;
+
+    deliveries.forEach((d) => {
+      if (y > 740) { addFooter(doc, cert); doc.addPage(); y = 52; }
+      doc.font('Helvetica').fontSize(8).fillColor(C.black)
+         .text(`• ${d.franchisee_name || '—'}  —  `, ML, y, { continued: true })
+         .fillColor(C.muted).text(`envoyé ${fmt(d.sent_at)}`, { continued: !!d.read_at });
+      if (d.read_at) {
+        doc.fillColor(C.green).text(`  —  lu ${fmt(d.read_at)}`);
+      }
+      y = doc.y + 4;
     });
-    y += 14 + warnings.length * 14 + 10;
+    y += 8;
+  }
+
+  // ─── PIED DE PAGE ────────────────────────────────────────────────────────────
+  addFooter(doc, cert);
+  doc.end();
+});
+
+// ── Rend un bloc de modification ─────────────────────────────────────────────
+function renderChangeBlock(doc, change, idx, x, startY, width) {
+  let y = startY;
+
+  // "Section du DIP modifié :"
+  doc.font('Helvetica-Bold').fontSize(9).fillColor('#2563EB')
+     .text('Section du DIP modifié :', x, y, { width });
+  y += 14;
+
+  doc.font('Helvetica').fontSize(9).fillColor('#64748B')
+     .text(`Section n°${change.section_number || (idx + 1)} — ${change.section || ''}`, x, y, { width });
+  y += 12;
+
+  if (change.type) {
+    doc.font('Helvetica').fontSize(8).fillColor('#94A3B8')
+       .text(`Type : ${change.type}`, x, y, { width });
+    y += 12;
   }
 
   y += 4;
-  rule(y);
-  y += 12;
 
-  // ─── TEXTE JURIDIQUE ──────────────────────────────────────────────────────
-  y = sectionHeader('2. Attestation juridique', y);
+  // "Modifications apportées :"
+  doc.font('Helvetica-Bold').fontSize(9).fillColor('#2563EB')
+     .text('Modifications apportées :', x, y, { width });
+  y += 14;
 
-  doc.font('Helvetica').fontSize(9).fillColor(COLOR.black)
-     .text(cert.certificate_text || cert.legal_summary || '—', M, y, {
-       width: CW, lineGap: 3, paragraphGap: 6
-     });
-  y = doc.y + 16;
+  doc.font('Helvetica-Bold').fontSize(8).fillColor('#0F172A')
+     .text('Post-modification :', x, y, { continued: true })
+     .font('Helvetica').fillColor('#0F172A')
+     .text('  ' + (change.nouveau || '—'), { width: width - 4 });
+  y = doc.y + 6;
 
-  // ─── MODIFICATIONS (si MISE_A_JOUR) ───────────────────────────────────────
-  if (changes.length > 0) {
-    rule(y); y += 12;
-    y = sectionHeader(`3. Modifications documentées (${changes.length})`, y);
+  doc.font('Helvetica-Bold').fontSize(8).fillColor('#0F172A')
+     .text('Pré-modification :', x, y, { continued: true })
+     .font('Helvetica').fillColor('#64748B')
+     .text('  ' + (change.ancien || '—'), { width: width - 4 });
+  y = doc.y + 10;
 
-    changes.forEach((c, i) => {
-      if (y > 720) { doc.addPage(); y = M; }
+  // Impact légal tag
+  const impColor = IMPACT_COLOR[change.impact_legal] || '#64748B';
+  doc.font('Helvetica-Bold').fontSize(7.5).fillColor(impColor)
+     .text(`Impact légal : ${change.impact_legal || '—'}`, x, y, { width });
+  y = doc.y + 10;
 
-      const impactColor = IMPACT_COLOR[c.impact_legal] || COLOR.muted;
-      rect(M, y, 3, 42, impactColor, 0);
+  // "Les enjeux de la/des modification(s) :"
+  doc.font('Helvetica-Bold').fontSize(9).fillColor('#2563EB')
+     .text('Les enjeux de la/des modification(s) :', x, y, { width });
+  y += 14;
 
-      doc.font('Helvetica-Bold').fontSize(8).fillColor(COLOR.black)
-         .text(`§${c.section_number || i + 1} — ${c.section || ''}`, M + 10, y + 2, { width: CW - 60 });
+  const enjeux = change.recommandation_ia
+    || 'Cette modification impacte les informations précontractuelles transmises aux candidats franchisés. '
+     + 'Toute omission ou inexactitude expose le franchiseur à une demande de nullité du contrat de franchise '
+     + 'en application de l\'article L.330-3 du Code de commerce.';
 
-      const impTag = c.impact_legal || '';
-      doc.font('Helvetica-Bold').fontSize(7).fillColor(impactColor)
-         .text(impTag, M + CW - 50, y + 2, { width: 50, align: 'right' });
+  doc.font('Helvetica-Oblique').fontSize(8.5).fillColor('#334155')
+     .text(enjeux, x, y, { width, lineGap: 2 });
+  y = doc.y + 6;
 
-      doc.font('Helvetica').fontSize(7.5).fillColor(COLOR.muted)
-         .text('Avant : ', M + 10, y + 16, { continued: true })
-         .fillColor(COLOR.black).text(c.ancien || '—', { width: CW - 60 });
+  return y;
+}
 
-      doc.font('Helvetica').fontSize(7.5).fillColor(COLOR.muted)
-         .text('Après : ', M + 10, y + 28, { continued: true })
-         .fillColor(COLOR.black).text(c.nouveau || '—', { width: CW - 60 });
-
-      y += 52;
-      if (i < changes.length - 1) rule(y - 4, COLOR.border, 0.3);
-    });
-    y += 8;
-  }
-
-  // ─── REMISES ─────────────────────────────────────────────────────────────
-  if (deliveries.length > 0) {
-    if (y > 660) { doc.addPage(); y = M; }
-    rule(y); y += 12;
-    const secNum = changes.length > 0 ? '4' : '3';
-    y = sectionHeader(`${secNum}. Remises aux franchisés (${deliveries.length})`, y);
-
-    // En-têtes du tableau
-    const cols = [M, M + 160, M + 330, M + 480];
-    doc.font('Helvetica-Bold').fontSize(7.5).fillColor(COLOR.muted);
-    ['Franchisé', 'Email', 'Envoyé le', 'Lu le'].forEach((h, i) => {
-      doc.text(h, cols[i], y, { width: cols[i + 1] ? cols[i + 1] - cols[i] - 4 : 80 });
-    });
-    y += 14;
-    rule(y - 2, COLOR.border);
-
-    deliveries.forEach((d, i) => {
-      if (y > 720) { doc.addPage(); y = M; }
-      const bg = i % 2 === 0 ? COLOR.bgLight : COLOR.white;
-      rect(M, y - 2, CW, 16, bg, 2);
-      doc.font('Helvetica').fontSize(8).fillColor(COLOR.black);
-      doc.text(d.franchisee_name || '—', cols[0], y, { width: 156 });
-      doc.text(d.email || '—',           cols[1], y, { width: 166 });
-      doc.text(fmt(d.sent_at),           cols[2], y, { width: 146 });
-      doc.fillColor(d.read_at ? COLOR.conforme : COLOR.muted)
-         .text(d.read_at ? fmt(d.read_at) : 'En attente', cols[3], y, { width: 80 });
-      y += 18;
-    });
-    y += 8;
-  }
-
-  // ─── VALEUR PROBATOIRE ────────────────────────────────────────────────────
-  if (y > 660) { doc.addPage(); y = M; }
-  rule(y); y += 12;
-
-  rect(M, y, CW, 54, COLOR.bgGold, 6);
-  doc.font('Helvetica-Bold').fontSize(8.5).fillColor(COLOR.gold)
-     .text('VALEUR PROBATOIRE DE CE DOCUMENT', M + 12, y + 8);
-  doc.font('Helvetica').fontSize(8).fillColor(COLOR.black)
-     .text(
-       'Ce certificat constitue une pièce de traçabilité générée automatiquement par DIPpro. '
-       + 'L\'empreinte SHA-256 permet de vérifier l\'intégrité du fichier DIP au moment de la remise. '
-       + 'Les horodatages sont exprimés en heure de Paris (Europe/Paris). '
-       + 'Ce document peut être produit en justice pour attester de la remise du DIP au sens de l\'article L.330-3 du Code de commerce.',
-       M + 12, y + 22, { width: CW - 24, lineGap: 2 }
-     );
-  y += 66;
-
-  // ─── PIED DE PAGE (toutes les pages) ─────────────────────────────────────
+// ── Pied de page sur toutes les pages ────────────────────────────────────────
+function addFooter(doc, cert) {
   const pageCount = doc.bufferedPageRange().count;
+  const W = doc.page.width;
   for (let i = 0; i < pageCount; i++) {
     doc.switchToPage(i);
-    const footerY = doc.page.height - 28;
-    doc.save().fillColor(COLOR.black).rect(0, footerY - 1, W, 29).fill().restore();
-    doc.font('Helvetica').fontSize(7).fillColor(COLOR.muted)
-       .text('DIPpro — Conformité DIP Loi Doubin (art. L.330-3 Code de commerce)', M, footerY + 6, { width: CW / 2 });
-    doc.text(`Page ${i + 1} / ${pageCount}  —  ${ref}`, M, footerY + 6, { width: CW, align: 'right' });
-  }
+    const fy = doc.page.height - 36;
 
-  doc.end();
-});
+    doc.save().strokeColor('#CBD5E1').lineWidth(0.5)
+       .moveTo(56, fy).lineTo(W - 48, fy).stroke().restore();
+
+    doc.font('Helvetica').fontSize(7.5).fillColor('#94A3B8')
+       .text(
+         'Certificat de modifications réalisé par Iralink-Agency grâce à l\'outil DIPpro - 2026',
+         56, fy + 8, { width: W - 104 }
+       );
+
+    if (cert.public_token) {
+      doc.font('Helvetica').fontSize(7).fillColor('#CBD5E1')
+         .text(
+           `Vérification : dippro.fr/attestation/${cert.public_token}`,
+           56, fy + 20, { width: W - 104 }
+         );
+    }
+  }
+}
 
 module.exports = { generateCertificatePDF };

@@ -1,4 +1,5 @@
 const express = require('express');
+const { v4: uuidv4 } = require('uuid');
 const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware, requireFranchisor } = require('../middleware/auth');
 const { generateChangesCertificate } = require('../config/claude');
@@ -6,12 +7,40 @@ const { generateCertificatePDF } = require('../config/certificatePdf');
 const errMsg = require('../config/errorMessage');
 const router = express.Router();
 
-// POST /api/certificates — génère et persiste un certificat
+// ─── helpers ──────────────────────────────────────────────────────────────────
+
+const fetchFranchiseur = async (userId, fallbackEmail) => {
+  const { data } = await supabaseAdmin
+    .from('users')
+    .select('company_name, rcs, address, phone')
+    .eq('id', userId)
+    .single();
+  return {
+    nom:       data?.company_name || fallbackEmail,
+    rcs:       data?.rcs          || 'Non renseigné',
+    adresse:   data?.address      || 'Non renseigné',
+    telephone: data?.phone        || 'Non renseigné',
+  };
+};
+
+const sendPdf = async (res, cert, franchiseur) => {
+  const pdfBuffer = await generateCertificatePDF(cert, franchiseur);
+  const filename  = `attestation-dip-${cert.certificate_type.toLowerCase()}-${cert.id.split('-')[0]}.pdf`;
+  res.set({
+    'Content-Type':        'application/pdf',
+    'Content-Disposition': `inline; filename="${filename}"`,
+    'Content-Length':      pdfBuffer.length,
+    'Cache-Control':       'no-store',
+  });
+  res.send(pdfBuffer);
+};
+
+// ─── POST /api/certificates — génère et persiste ─────────────────────────────
 router.post('/', authMiddleware, requireFranchisor, async (req, res) => {
   const { dip_id, certificate_type, changes = [], deliveries = [] } = req.body;
 
-  if (!dip_id)            return res.status(400).json({ error: 'dip_id requis' });
-  if (!certificate_type)  return res.status(400).json({ error: 'certificate_type requis (INITIAL|MISE_A_JOUR|REMISE)' });
+  if (!dip_id)           return res.status(400).json({ error: 'dip_id requis' });
+  if (!certificate_type) return res.status(400).json({ error: 'certificate_type requis (INITIAL|MISE_A_JOUR|REMISE)' });
 
   try {
     const { data: dip, error: dipErr } = await supabaseAdmin
@@ -23,17 +52,7 @@ router.post('/', authMiddleware, requireFranchisor, async (req, res) => {
 
     if (dipErr || !dip) return res.status(404).json({ error: 'DIP introuvable' });
 
-    const { data: userRow } = await supabaseAdmin
-      .from('users')
-      .select('company_name, rcs, address')
-      .eq('id', req.user.id)
-      .single();
-
-    const franchiseur = {
-      nom:   userRow?.company_name || req.user.email,
-      rcs:   userRow?.rcs          || 'Non renseigné',
-      siege: userRow?.address      || 'Non renseigné'
-    };
+    const franchiseur = await fetchFranchiseur(req.user.id, req.user.email);
 
     const cert = await generateChangesCertificate({
       dipVersion: {
@@ -41,13 +60,15 @@ router.post('/', authMiddleware, requireFranchisor, async (req, res) => {
         created_at:       dip.created_at,
         sha256:           dip.sha256,
         compliance_level: dip.compliance_level || 'Non évalué',
-        global_score:     dip.conformity_score  || 0
+        global_score:     dip.conformity_score || 0,
       },
       changes,
       franchiseur,
       deliveries,
-      certificateType: certificate_type
+      certificateType: certificate_type,
     });
+
+    const publicToken = uuidv4();
 
     const { data: saved, error: saveErr } = await supabaseAdmin
       .from('dip_certificates')
@@ -58,43 +79,53 @@ router.post('/', authMiddleware, requireFranchisor, async (req, res) => {
         certificate_title: cert.certificate_title,
         certificate_text:  cert.certificate_text,
         legal_summary:     cert.legal_summary,
-        warnings:          cert.warnings          || [],
-        sha256_dip:        dip.sha256             || null,
-        compliance_level:  dip.compliance_level   || null,
-        global_score:      dip.conformity_score   || null,
+        warnings:          cert.warnings         || [],
+        sha256_dip:        dip.sha256            || null,
+        compliance_level:  dip.compliance_level  || null,
+        global_score:      dip.conformity_score  || null,
         changes_count:     changes.length,
         changes_snapshot:  changes,
         deliveries,
-        generated_at:      cert.generated_at      || new Date().toISOString()
+        generated_at:      cert.generated_at     || new Date().toISOString(),
+        public_token:      publicToken,
       })
       .select()
       .single();
 
     if (saveErr) throw new Error(saveErr.message);
 
-    res.status(201).json({ certificate: saved });
+    const baseUrl = process.env.FRONTEND_URL || 'https://dippro.fr';
+    res.status(201).json({
+      certificate:  saved,
+      public_url:   `${baseUrl}/attestation/${publicToken}`,
+    });
   } catch (err) {
     console.error('Certificate generate error:', err.message);
     res.status(500).json({ error: errMsg(err) });
   }
 });
 
-// GET /api/certificates — liste des certificats de l'utilisateur
+// ─── GET /api/certificates — liste ───────────────────────────────────────────
 router.get('/', authMiddleware, async (req, res) => {
   const limit = Math.min(parseInt(req.query.limit) || 20, 100);
-
   const { data, error } = await supabaseAdmin
     .from('dip_certificates')
-    .select('id, dip_id, certificate_type, certificate_title, legal_summary, warnings, compliance_level, global_score, changes_count, generated_at')
+    .select('id, dip_id, certificate_type, certificate_title, legal_summary, warnings, compliance_level, global_score, changes_count, generated_at, public_token')
     .eq('user_id', req.user.id)
     .order('generated_at', { ascending: false })
     .limit(limit);
 
   if (error) return res.status(500).json({ error: errMsg(error) });
-  res.json({ certificates: data || [] });
+
+  const baseUrl = process.env.FRONTEND_URL || 'https://dippro.fr';
+  const certs = (data || []).map(c => ({
+    ...c,
+    public_url: c.public_token ? `${baseUrl}/attestation/${c.public_token}` : null,
+  }));
+  res.json({ certificates: certs });
 });
 
-// GET /api/certificates/:id — détail complet d'un certificat
+// ─── GET /api/certificates/:id — détail (authentifié) ────────────────────────
 router.get('/:id', authMiddleware, async (req, res) => {
   const { data, error } = await supabaseAdmin
     .from('dip_certificates')
@@ -104,10 +135,15 @@ router.get('/:id', authMiddleware, async (req, res) => {
     .single();
 
   if (error || !data) return res.status(404).json({ error: 'Certificat introuvable' });
-  res.json({ certificate: data });
+
+  const baseUrl = process.env.FRONTEND_URL || 'https://dippro.fr';
+  res.json({
+    certificate: data,
+    public_url:  data.public_token ? `${baseUrl}/attestation/${data.public_token}` : null,
+  });
 });
 
-// GET /api/certificates/:id/pdf — télécharge le certificat en PDF
+// ─── GET /api/certificates/:id/pdf — PDF (authentifié, téléchargement) ───────
 router.get('/:id/pdf', authMiddleware, async (req, res) => {
   const { data, error } = await supabaseAdmin
     .from('dip_certificates')
@@ -119,19 +155,49 @@ router.get('/:id/pdf', authMiddleware, async (req, res) => {
   if (error || !data) return res.status(404).json({ error: 'Certificat introuvable' });
 
   try {
-    const pdfBuffer = await generateCertificatePDF(data);
-    const filename  = `certificat-dip-${data.certificate_type.toLowerCase()}-${data.id.split('-')[0]}.pdf`;
-
-    res.set({
-      'Content-Type':        'application/pdf',
-      'Content-Disposition': `attachment; filename="${filename}"`,
-      'Content-Length':      pdfBuffer.length,
-      'Cache-Control':       'no-store'
-    });
-    res.send(pdfBuffer);
+    const franchiseur = await fetchFranchiseur(data.user_id, '');
+    await sendPdf(res, data, franchiseur);
   } catch (err) {
     console.error('PDF generation error:', err.message);
     res.status(500).json({ error: errMsg(err) });
+  }
+});
+
+// ─── GET /api/certificates/public/:token — accès public sans auth ─────────────
+// Ce lien est partageable : franchisés, avocats, juges peuvent consulter/télécharger.
+router.get('/public/:token', async (req, res) => {
+  const token = req.params.token;
+  if (!token || token.length > 64) return res.status(400).json({ error: 'Token invalide' });
+
+  const { data, error } = await supabaseAdmin
+    .from('dip_certificates')
+    .select('*')
+    .eq('public_token', token)
+    .single();
+
+  if (error || !data) return res.status(404).json({ error: 'Attestation introuvable ou lien invalide' });
+
+  // Si ?format=json → retourne les données brutes (pour intégration frontend)
+  if (req.query.format === 'json') {
+    return res.json({ certificate: data });
+  }
+
+  // Par défaut → PDF inline (visible dans le navigateur)
+  try {
+    const franchiseur = await fetchFranchiseur(data.user_id, '');
+    const pdfBuffer   = await generateCertificatePDF(data, franchiseur);
+    const filename    = `attestation-dip-${data.certificate_type.toLowerCase()}-${data.id.split('-')[0]}.pdf`;
+
+    res.set({
+      'Content-Type':        'application/pdf',
+      'Content-Disposition': `inline; filename="${filename}"`,
+      'Content-Length':      pdfBuffer.length,
+      'Cache-Control':       'public, max-age=86400',  // cacheable 24h — doc immuable
+    });
+    res.send(pdfBuffer);
+  } catch (err) {
+    console.error('Public PDF error:', err.message);
+    res.status(500).json({ error: 'Erreur de génération du PDF' });
   }
 });
 
