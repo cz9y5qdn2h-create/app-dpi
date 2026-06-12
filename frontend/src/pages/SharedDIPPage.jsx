@@ -1,7 +1,7 @@
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Shield, CheckCircle, AlertTriangle, Clock, FileText, ChevronDown, ChevronUp, Award } from 'lucide-react';
-import { useState } from 'react';
+import { Shield, CheckCircle, AlertTriangle, FileText, ChevronDown, ChevronUp, Award } from 'lucide-react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import axios from 'axios';
 
 const API_BASE = import.meta.env.VITE_API_URL
@@ -29,12 +29,19 @@ function ScoreArc({ score }) {
   );
 }
 
-function SectionCard({ section }) {
+function SectionCard({ section, onToggle }) {
   const [open, setOpen] = useState(false);
   const cfg = STATUS_CONFIG[section.status] || STATUS_CONFIG.a_verifier;
+
+  const handleClick = () => {
+    const next = !open;
+    setOpen(next);
+    onToggle(section.section_number, next);
+  };
+
   return (
     <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${cfg.border}`, background: 'rgba(255,255,255,0.7)' }}>
-      <button onClick={() => setOpen(v => !v)} className="w-full flex items-center justify-between px-5 py-4 text-left">
+      <button onClick={handleClick} className="w-full flex items-center justify-between px-5 py-4 text-left">
         <div className="flex items-center gap-3 min-w-0">
           <span className="font-dm-mono text-xs w-5 flex-shrink-0" style={{ color: '#C8A96E' }}>{String(section.section_number).padStart(2, '0')}</span>
           <span className="font-dm-sans text-sm font-medium truncate" style={{ color: '#1A1826' }}>{section.section_title}</span>
@@ -57,6 +64,86 @@ function SectionCard({ section }) {
   );
 }
 
+function useReadTracker(dip, token) {
+  const visitIdRef  = useRef(null);
+  const openTimes   = useRef({});
+  const pendingEvts = useRef([]);
+  const maxScroll   = useRef(0);
+
+  // Initialise le visit_id une seule fois par token (sessionStorage = même onglet)
+  useEffect(() => {
+    if (!token) return;
+    const key = `dip_vid_${token}`;
+    let vid = sessionStorage.getItem(key);
+    if (!vid) {
+      vid = typeof crypto !== 'undefined' && crypto.randomUUID
+        ? crypto.randomUUID()
+        : Math.random().toString(36).slice(2) + Date.now().toString(36);
+      sessionStorage.setItem(key, vid);
+    }
+    visitIdRef.current = vid;
+  }, [token]);
+
+  useEffect(() => {
+    if (!dip?.id || !token) return;
+
+    const onScroll = () => {
+      const pct = Math.round(((window.scrollY + window.innerHeight) / document.documentElement.scrollHeight) * 100);
+      if (pct > maxScroll.current) maxScroll.current = Math.min(pct, 100);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+
+    const flush = () => {
+      // Fermer les sections encore ouvertes
+      for (const [num, t] of Object.entries(openTimes.current)) {
+        const s = Math.round((Date.now() - t) / 1000);
+        if (s >= 1) pendingEvts.current.push({ section_number: +num, time_spent_s: s, scroll_depth_pct: maxScroll.current });
+      }
+      openTimes.current = {};
+
+      if (pendingEvts.current.length === 0 || !visitIdRef.current) return;
+
+      const payload = JSON.stringify({
+        dip_id: dip.id,
+        share_token: token,
+        visit_id: visitIdRef.current,
+        events: pendingEvts.current.splice(0),
+      });
+      // sendBeacon garantit l'envoi même si la page se ferme
+      const blob = new Blob([payload], { type: 'application/json' });
+      navigator.sendBeacon(`${API_BASE}/analytics/read`, blob);
+    };
+
+    const onVisibility = () => { if (document.visibilityState === 'hidden') flush(); };
+    document.addEventListener('visibilitychange', onVisibility);
+    window.addEventListener('beforeunload', flush);
+
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('beforeunload', flush);
+      flush();
+    };
+  }, [dip?.id, token]);
+
+  const handleToggle = useCallback((sectionNumber, isOpen) => {
+    if (isOpen) {
+      openTimes.current[sectionNumber] = Date.now();
+    } else {
+      const t = openTimes.current[sectionNumber];
+      if (t) {
+        const s = Math.round((Date.now() - t) / 1000);
+        if (s >= 1) {
+          pendingEvts.current.push({ section_number: sectionNumber, time_spent_s: s, scroll_depth_pct: maxScroll.current });
+        }
+        delete openTimes.current[sectionNumber];
+      }
+    }
+  }, []);
+
+  return { handleToggle };
+}
+
 export default function SharedDIPPage() {
   const { token } = useParams();
 
@@ -67,6 +154,7 @@ export default function SharedDIPPage() {
   });
 
   const dip = data?.dip;
+  const { handleToggle } = useReadTracker(dip, token);
 
   const stats = dip ? {
     total: dip.sections.length,
@@ -130,7 +218,6 @@ export default function SharedDIPPage() {
                 </div>
               </div>
 
-              {/* Stats */}
               <div className="grid grid-cols-3 gap-3">
                 {[
                   { label: 'Conformes', value: stats.conforme, color: '#22C55E', bg: 'rgba(34,197,94,0.06)' },
@@ -163,7 +250,7 @@ export default function SharedDIPPage() {
               </h2>
               <div className="space-y-3">
                 {dip.sections.map(section => (
-                  <SectionCard key={section.id} section={section} />
+                  <SectionCard key={section.id} section={section} onToggle={handleToggle} />
                 ))}
               </div>
             </div>

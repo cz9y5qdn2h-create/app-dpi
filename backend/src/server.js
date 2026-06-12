@@ -17,6 +17,7 @@ const agentRoutes = require('./routes/agent');
 const waitlistRoutes = require('./routes/waitlist');
 const monitorRoutes      = require('./routes/monitor');
 const certificateRoutes  = require('./routes/certificates');
+const analyticsRoutes    = require('./routes/analytics');
 
 const app = express();
 
@@ -99,6 +100,7 @@ app.use('/api/agent', agentLimiter, agentRoutes);
 app.use('/api/waitlist', waitlistLimiter, waitlistRoutes);
 app.use('/api/monitor',       monitorRoutes);
 app.use('/api/certificates',  certificateRoutes);
+app.use('/api/analytics',     analyticsRoutes);
 
 // Health check — ne retourne jamais les clés en clair
 app.get('/api/health', async (req, res) => {

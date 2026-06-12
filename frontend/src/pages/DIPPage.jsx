@@ -9,7 +9,7 @@ import LoadingSpinner from '../components/ui/LoadingSpinner';
 import {
   Upload, ChevronDown, ChevronUp, Edit3, Check, X,
   Sparkles, Download, FileText, Plus, Trash2, AlertCircle,
-  Share2, Copy, Link2Off, Eye
+  Share2, Copy, Link2Off, Eye, BarChart2
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -224,6 +224,9 @@ export default function DIPPage() {
                   <span className="w-2 h-2 rounded-full bg-success flex-shrink-0" title="Lien actif" />
                 )}
               </button>
+              <Link to={`/analytics/dip/${dip.id}`} className="btn-secondary flex items-center gap-2 text-sm">
+                <BarChart2 className="w-4 h-4" /> Analytics
+              </Link>
               <Link to="/dip/upload" className="btn-secondary flex items-center gap-2 text-sm">
                 <Upload className="w-4 h-4" /> Mettre à jour
               </Link>

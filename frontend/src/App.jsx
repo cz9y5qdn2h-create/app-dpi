@@ -22,6 +22,7 @@ import MonitorPage from './pages/MonitorPage';
 import TrialExpiredPage from './pages/TrialExpiredPage';
 import WaitlistPage from './pages/WaitlistPage';
 import SharedDIPPage from './pages/SharedDIPPage';
+import AnalyticsPage from './pages/AnalyticsPage';
 import LoadingSpinner from './components/ui/LoadingSpinner';
 
 function ProtectedRoute({ children }) {
@@ -93,6 +94,7 @@ export default function App() {
           <Route path="admin" element={<ErrorBoundary><AdminPage /></ErrorBoundary>} />
           <Route path="monitor" element={<ErrorBoundary><MonitorPage /></ErrorBoundary>} />
           <Route path="integrations" element={<ErrorBoundary><ApiConfigPage /></ErrorBoundary>} />
+          <Route path="analytics/dip/:dipId" element={<ErrorBoundary><AnalyticsPage /></ErrorBoundary>} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />
