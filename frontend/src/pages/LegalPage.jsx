@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Shield, ArrowLeft, AlertTriangle } from 'lucide-react';
 
-const TODAY = '13 mai 2026';
+const TODAY = '14 juin 2026';
 const IRALINK_EMAIL = 'theo@iralink-agency.com';
 const PRIVACY_EMAIL = 'privacy@iralink-agency.com';
 
@@ -82,12 +82,23 @@ Durant cette période, l'Utilisateur bénéficie d'un accès complet à l'ensemb
 Les données créées durant l'essai sont conservées pendant 30 jours après expiration, sauf demande de suppression.`
       },
       {
-        title: "7. Prix et conditions tarifaires",
+        title: "7. Prix, conditions tarifaires et politique de non-remboursement",
         content: `Les tarifs en vigueur sont communiqués lors de la prise de rendez-vous commerciale et formalisés par devis accepté.
 
 Toute modification tarifaire fait l'objet d'une notification par email avec un préavis de 30 jours.
 
-Les factures sont émises mensuellement ou annuellement selon la formule choisie. Le paiement s'effectue par prélèvement bancaire ou carte. Tout retard de paiement entraîne la suspension du service après mise en demeure restée sans effet sous 15 jours.`
+Les factures sont émises mensuellement ou annuellement selon la formule choisie. Le paiement s'effectue par prélèvement bancaire ou carte. Tout retard de paiement entraîne la suspension du service après mise en demeure restée sans effet sous 15 jours.
+
+POLITIQUE DE NON-REMBOURSEMENT — L'Utilisateur reconnaît expressément, en acceptant les présentes CGU, que DIPpro est un service numérique à consommation immédiate. Conformément à l'article L.221-28 13° du Code de la consommation (applicable en référence) et dans le cadre exclusif d'un contrat entre professionnels (B2B), aucun remboursement ne sera accordé dans les cas suivants, sans que cette liste soit limitative :
+
+• Toute période d'abonnement déjà entamée, même partiellement
+• Insatisfaction concernant les analyses, scores ou recommandations générés par l'intelligence artificielle, celle-ci étant un outil d'aide à la décision fourni à titre indicatif (voir §3)
+• Erreur, imprécision ou omission dans les résultats d'analyse IA
+• Interruption ponctuelle de service d'une durée inférieure à 48 heures consécutives
+• Changement de besoin, de stratégie commerciale ou de situation de l'Utilisateur
+• Non-utilisation du service pendant la période facturée
+
+En cas de contestation tarifaire, l'Utilisateur doit adresser une réclamation écrite à ${IRALINK_EMAIL} dans les 30 jours suivant la facturation contestée. Passé ce délai, la facture est réputée acceptée sans réserve.`
       },
       {
         title: "8. Obligations de l'Utilisateur",
@@ -115,10 +126,20 @@ Iralink ne saurait être tenu responsable de :
 • Toute perte de données résultant d'une suppression de compte ou d'un incident technique
 • Tout acte d'un tiers ayant accédé frauduleusement au compte de l'Utilisateur
 • Toute incompatibilité avec les équipements ou logiciels de l'Utilisateur
+• Tout bug, anomalie logicielle, comportement inattendu ou résultat erroné inhérent à tout logiciel en exploitation
+• Toute décision commerciale, juridique ou stratégique prise par l'Utilisateur sur la base des analyses produites par le service
 
-En tout état de cause, la responsabilité totale d'Iralink, toutes causes confondues, est expressément limitée au montant des sommes effectivement perçues par Iralink au titre de l'abonnement de l'Utilisateur durant les 12 mois précédant l'événement générateur du dommage.
+PROTECTION CONTRE LES RÉCLAMATIONS ABUSIVES — DIPpro est un logiciel SaaS (Software as a Service). Comme tout logiciel en exploitation, il peut présenter des anomalies techniques ponctuelles. La survenance d'un bug, d'une erreur d'affichage, d'une indisponibilité temporaire, d'un résultat d'analyse IA imprécis ou d'un comportement inattendu ne constitue pas un manquement contractuel susceptible de fonder :
+• Une demande d'indemnisation au-delà du plafond fixé ci-dessous
+• Une plainte ou signalement auprès de la Chambre de Commerce et d'Industrie (CCI)
+• Une saisine du Médiateur des entreprises ou de tout autre organisme arbitral ou de médiation
+• Une mise en demeure extra-judiciaire portant sur des montants supérieurs au plafond ci-dessous
 
-Cette limitation de responsabilité s'applique quelle que soit la nature de la responsabilité invoquée (contractuelle, délictuelle, quasi-délictuelle).`
+PLAFOND ABSOLU DE RESPONSABILITÉ — En tout état de cause, la responsabilité totale d'Iralink, toutes causes confondues, est expressément limitée au montant des sommes effectivement perçues par Iralink au titre de l'abonnement de l'Utilisateur durant les 12 mois précédant l'événement générateur du dommage allégué.
+
+Cette limitation de responsabilité s'applique quelle que soit la nature de la responsabilité invoquée (contractuelle, délictuelle, quasi-délictuelle) et quelle que soit l'instance ou la juridiction saisie.
+
+DÉLAI DE RÉCLAMATION — Toute réclamation relative à un manquement d'Iralink doit être formulée par écrit à ${IRALINK_EMAIL} dans un délai de 30 jours calendaires à compter de la survenance du fait générateur. Passé ce délai, l'Utilisateur est réputé avoir renoncé à tout recours lié à cet événement.`
       },
       {
         title: "10. Force majeure",
@@ -165,14 +186,16 @@ En cas de résiliation, les données sont conservées 30 jours avant suppression
 Ces sous-traitants traitent les données selon leurs propres politiques. Les transferts hors UE (Anthropic, Vercel) sont encadrés par des clauses contractuelles types (CCT) conformes au RGPD.`
       },
       {
-        title: "15. Droit applicable et juridiction",
+        title: "15. Droit applicable, médiation préalable obligatoire et juridiction",
         content: `Les présentes CGU sont exclusivement régies par le droit français.
 
-En cas de litige, les parties s'engagent à rechercher une solution amiable avant toute action judiciaire. À défaut d'accord dans un délai de 30 jours, le litige sera soumis à la compétence exclusive des tribunaux de Paris (France).
+MÉDIATION PRÉALABLE OBLIGATOIRE — En cas de litige, désaccord ou réclamation de quelque nature que ce soit — y compris, sans limitation, tout différend relatif à la facturation, à la qualité des analyses IA, à un remboursement, à la résiliation, à un bug logiciel ou à tout manquement allégué d'Iralink — les parties s'engagent expressément et irrévocablement, PRÉALABLEMENT à toute action judiciaire ou à toute saisine d'un tiers (Chambre de Commerce et d'Industrie, Médiateur des entreprises, Médiateur de la consommation, organisme arbitral ou autre), à tenter de résoudre le différend à l'amiable de bonne foi dans un délai de trente (30) jours calendaires à compter de la notification écrite du litige adressée à ${IRALINK_EMAIL}.
 
-Pour les Utilisateurs personnes physiques agissant à titre professionnel (B2B), le recours à la médiation de la consommation n'est pas applicable.
+Le non-respect de cette clause de médiation préalable est opposable à l'Utilisateur et constitue une fin de non-recevoir. Aucune action judiciaire ou procédure arbitrale engagée en violation de cette clause ne pourra prospérer.
 
-Conformément à l'article L.616-1 du Code de la consommation, si l'Utilisateur est un consommateur, il peut recourir gratuitement au service de médiation compétent.`
+JURIDICTION EXCLUSIVE — À défaut d'accord amiable à l'issue du délai de 30 jours susvisé, le litige sera soumis à la compétence exclusive des Tribunaux de Paris (France), toutes matières confondues.
+
+Pour les Utilisateurs agissant à titre professionnel (B2B — personnes morales ou entrepreneurs), le recours à la médiation de la consommation (art. L.616-1 Code de la consommation) n'est pas applicable.`
       }
     ]
   },

@@ -184,7 +184,22 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <p className="font-dm-mono text-xs text-center mt-8" style={{ color: 'rgba(244,242,238,0.22)' }}>
+          <p className="font-dm-sans text-xs text-center mt-6 leading-relaxed" style={{ color: 'rgba(244,242,238,0.30)' }}>
+            En vous connectant, vous confirmez avoir lu et accepter les{' '}
+            <Link to="/cgu" className="underline underline-offset-2 transition-colors" style={{ color: 'rgba(200,169,110,0.60)' }}>
+              CGU
+            </Link>
+            , la{' '}
+            <Link to="/privacy" className="underline underline-offset-2 transition-colors" style={{ color: 'rgba(200,169,110,0.60)' }}>
+              politique de confidentialité
+            </Link>
+            {' '}et les{' '}
+            <Link to="/mentions-legales" className="underline underline-offset-2 transition-colors" style={{ color: 'rgba(200,169,110,0.60)' }}>
+              mentions légales
+            </Link>
+            {' '}de DIPpro.
+          </p>
+          <p className="font-dm-mono text-xs text-center mt-3" style={{ color: 'rgba(244,242,238,0.15)' }}>
             Données sécurisées · Conforme RGPD
           </p>
         </div>
