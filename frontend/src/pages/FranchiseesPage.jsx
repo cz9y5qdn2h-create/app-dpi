@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import api from '../lib/api';
 import PageHeader from '../components/ui/PageHeader';
 import StatusBadge from '../components/ui/StatusBadge';
@@ -29,6 +30,7 @@ function mailtoLink(email, subject, body) {
 
 export default function FranchiseesPage() {
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -201,28 +203,28 @@ export default function FranchiseesPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       <PageHeader
-        title="Franchisés"
+        title={t('franchisees.title')}
         subtitle={`${allFranchisees.length} franchisé(s) — ${actifs.length} actif(s)`}
         action={
           <div className="flex gap-2 flex-wrap">
             {actifs.length > 0 && (
               <button onClick={openNotifyModal} className="btn-secondary flex items-center gap-2">
-                <Send className="w-4 h-4" /> Notifier
+                <Send className="w-4 h-4" /> {t('franchisees.actions.notify')}
               </button>
             )}
             {franchisees.length > 0 && (
-              <button onClick={handleExportCsv} className="btn-secondary flex items-center gap-2 text-sm" title="Exporter la liste filtrée en CSV">
-                <Download className="w-4 h-4" /> Export CSV
+              <button onClick={handleExportCsv} className="btn-secondary flex items-center gap-2 text-sm">
+                <Download className="w-4 h-4" /> {t('franchisees.actions.exportCsv')}
               </button>
             )}
             <button onClick={() => setShowCsvModal(true)} className="btn-secondary flex items-center gap-2 text-sm">
-              <Upload className="w-4 h-4" /> Import CSV
+              <Upload className="w-4 h-4" /> {t('franchisees.actions.importCsv')}
             </button>
             <button
               onClick={() => { setShowForm(true); setEditingId(null); setForm(EMPTY_FORM); setFormError(''); }}
               className="btn-primary flex items-center gap-2"
             >
-              <Plus className="w-4 h-4" /> Ajouter
+              <Plus className="w-4 h-4" /> {t('franchisees.actions.add')}
             </button>
           </div>
         }
@@ -235,17 +237,17 @@ export default function FranchiseesPage() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-text-secondary pointer-events-none" />
             <input
               className="input-field pl-9"
-              placeholder="Rechercher par nom, email ou territoire…"
+              placeholder={t('franchisees.searchPlaceholder')}
               value={search}
               onChange={e => setSearch(e.target.value)}
             />
           </div>
           <div className="flex items-center gap-1 bg-bg-elevated rounded-lg p-1">
             {[
-              { key: 'tous', label: 'Tous' },
-              { key: 'actif', label: 'Actifs' },
-              { key: 'en_cours', label: 'En cours' },
-              { key: 'inactif', label: 'Inactifs' },
+              { key: 'tous', label: t('franchisees.filters.all') },
+              { key: 'actif', label: t('franchisees.filters.active') },
+              { key: 'en_cours', label: t('franchisees.filters.starting') },
+              { key: 'inactif', label: t('franchisees.filters.inactive') },
             ].map(({ key, label }) => (
               <button
                 key={key}
@@ -270,7 +272,7 @@ export default function FranchiseesPage() {
       {(showForm || editingId) && (
         <div className="card border-border-default animate-slide-up">
           <div className="flex items-center justify-between mb-5">
-            <h3 className="font-cormorant text-xl">{editingId ? 'Modifier le franchisé' : 'Ajouter un franchisé'}</h3>
+            <h3 className="font-cormorant text-xl">{editingId ? t('franchisees.modal.editTitle') : t('franchisees.modal.addTitle')}</h3>
             <button onClick={cancelForm} className="text-text-secondary hover:text-text-primary"><X className="w-5 h-5" /></button>
           </div>
 
@@ -282,47 +284,47 @@ export default function FranchiseesPage() {
 
           <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="label">Nom complet *</label>
-              <input className="input-field" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Jean Dupont" required />
+              <label className="label">{t('franchisees.fields.fullName')} *</label>
+              <input className="input-field" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder={t('franchisees.placeholders.fullName')} required />
             </div>
             <div>
-              <label className="label">Email *</label>
-              <input type="email" className="input-field" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="jean@franchise.fr" required />
+              <label className="label">{t('franchisees.fields.email')} *</label>
+              <input type="email" className="input-field" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder={t('franchisees.placeholders.email')} required />
             </div>
             <div>
-              <label className="label">Territoire</label>
-              <input className="input-field" value={form.territory} onChange={e => setForm(f => ({ ...f, territory: e.target.value }))} placeholder="Paris 15e" />
+              <label className="label">{t('franchisees.fields.territory')}</label>
+              <input className="input-field" value={form.territory} onChange={e => setForm(f => ({ ...f, territory: e.target.value }))} placeholder={t('franchisees.placeholders.territory')} />
             </div>
             <div>
-              <label className="label">Statut</label>
+              <label className="label">{t('franchisees.fields.status')}</label>
               <select className="input-field" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}>
-                <option value="actif">Actif</option>
-                <option value="en_cours">En cours de démarrage</option>
-                <option value="inactif">Inactif</option>
+                <option value="actif">{t('franchisees.statuses.active')}</option>
+                <option value="en_cours">{t('franchisees.statuses.starting')}</option>
+                <option value="inactif">{t('franchisees.statuses.inactive')}</option>
               </select>
             </div>
             <div>
-              <label className="label">Début de contrat</label>
+              <label className="label">{t('franchisees.fields.contractStart')}</label>
               <input type="date" className="input-field" value={form.contract_start} onChange={e => setForm(f => ({ ...f, contract_start: e.target.value }))} />
             </div>
             <div>
-              <label className="label">Fin de contrat</label>
+              <label className="label">{t('franchisees.fields.contractEnd')}</label>
               <input type="date" className="input-field" value={form.contract_end} min={form.contract_start || undefined} onChange={e => setForm(f => ({ ...f, contract_end: e.target.value }))} />
             </div>
             <div>
-              <label className="label">WhatsApp <span className="text-text-secondary text-xs">(+33...)</span></label>
+              <label className="label">{t('franchisees.fields.whatsapp')} <span className="text-text-secondary text-xs">(+33...)</span></label>
               <input className="input-field" value={form.whatsapp_number} onChange={e => setForm(f => ({ ...f, whatsapp_number: e.target.value }))} placeholder="+33612345678" />
             </div>
             <div>
-              <label className="label">Email pour notifications</label>
+              <label className="label">{t('franchisees.fields.notifEmail')}</label>
               <input className="input-field" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="+33612345678 (optionnel)" />
             </div>
             <div className="sm:col-span-2 flex gap-3">
               <button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="btn-primary flex items-center gap-2">
                 {(createMutation.isPending || updateMutation.isPending) ? <LoadingSpinner size="sm" /> : <Check className="w-4 h-4" />}
-                {editingId ? 'Enregistrer' : 'Ajouter'}
+                {editingId ? t('common.save') : t('common.add')}
               </button>
-              <button type="button" onClick={cancelForm} className="btn-secondary">Annuler</button>
+              <button type="button" onClick={cancelForm} className="btn-secondary">{t('common.cancel')}</button>
             </div>
           </form>
         </div>
@@ -357,7 +359,7 @@ export default function FranchiseesPage() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border-subtle">
-                  {['Nom', 'Email', 'Territoire', 'Contrat', 'Statut', 'Notifier', ''].map((h, i) => (
+                  {[t('franchisees.table.name'), t('franchisees.table.email'), t('franchisees.table.territory'), t('franchisees.table.contract'), t('franchisees.table.status'), t('franchisees.table.notify'), ''].map((h, i) => (
                     <th key={i} className="text-left px-4 py-3 font-dm-mono text-xs text-text-secondary whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -417,7 +419,7 @@ export default function FranchiseesPage() {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="card w-full max-w-2xl animate-slide-up max-h-[90vh] flex flex-col">
             <div className="flex items-center justify-between mb-5 flex-shrink-0">
-              <h3 className="font-cormorant text-xl">Notifier les franchisés</h3>
+              <h3 className="font-cormorant text-xl">{t('franchisees.notify.title')}</h3>
               <button onClick={() => setShowNotifyModal(false)} className="text-text-secondary hover:text-text-primary"><X className="w-5 h-5" /></button>
             </div>
 
@@ -428,7 +430,7 @@ export default function FranchiseesPage() {
                   <label className="label">Message</label>
                   <button onClick={copyMessage} className={`flex items-center gap-1.5 text-xs px-3 py-1 rounded border transition-all ${copied ? 'border-success/40 text-success bg-success/10' : 'border-border-subtle text-text-secondary hover:border-border-default'}`}>
                     <Copy className="w-3 h-3" />
-                    {copied ? 'Copié !' : 'Copier'}
+                    {copied ? t('common.copied') : t('common.copy')}
                   </button>
                 </div>
                 <textarea
@@ -483,7 +485,7 @@ export default function FranchiseesPage() {
             </div>
 
             <div className="flex justify-end pt-4 flex-shrink-0 border-t border-border-subtle mt-4">
-              <button onClick={() => setShowNotifyModal(false)} className="btn-secondary">Fermer</button>
+              <button onClick={() => setShowNotifyModal(false)} className="btn-secondary">{t('common.close')}</button>
             </div>
           </div>
         </div>

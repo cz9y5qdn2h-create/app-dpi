@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { Shield, Eye, EyeOff, AlertCircle, ArrowRight } from 'lucide-react';
 
 export default function LoginPage() {
   const { login } = useAuth();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
@@ -21,11 +23,11 @@ export default function LoginPage() {
     } catch (err) {
       const msg = err?.message || '';
       if (msg.includes('fetch') || msg.includes('Invalid value') || msg.includes('Failed to')) {
-        setError('Erreur de configuration. Contactez l\'administrateur.');
+        setError(t('auth.login.errors.config'));
       } else if (msg.includes('Invalid login') || msg.includes('Identifiants')) {
-        setError('Email ou mot de passe incorrect.');
+        setError(t('auth.login.errors.invalid'));
       } else {
-        setError(msg || 'Erreur de connexion');
+        setError(msg || t('auth.login.errors.generic'));
       }
     } finally {
       setLoading(false);
@@ -61,18 +63,14 @@ export default function LoginPage() {
         <div className="space-y-8">
           <div>
             <p className="font-cormorant text-4xl leading-snug mb-4" style={{ color: '#F4F2EE', fontWeight: 300 }}>
-              Conformité DIP<br />sans effort.
+              {t('auth.login.tagline')}
             </p>
             <p className="font-dm-sans text-sm leading-relaxed" style={{ color: 'rgba(244,242,238,0.45)' }}>
-              Analysez, corrigez et partagez vos Documents d'Information Précontractuelle en toute conformité avec la Loi Doubin.
+              {t('auth.login.taglineDesc')}
             </p>
           </div>
 
-          {[
-            'Analyse IA des 10 sections réglementaires',
-            'Alertes de conformité en temps réel',
-            'Notifications automatiques aux franchisés',
-          ].map((item, i) => (
+          {t('auth.login.features', { returnObjects: true }).map((item, i) => (
             <div key={i} className="flex items-center gap-3">
               <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: '#C8A96E' }} />
               <span className="font-dm-sans text-sm" style={{ color: 'rgba(244,242,238,0.60)' }}>{item}</span>
@@ -98,11 +96,11 @@ export default function LoginPage() {
           </div>
 
           <div className="mb-8">
-            <h1 className="font-cormorant text-3xl mb-1" style={{ color: '#F4F2EE', fontWeight: 300 }}>Connexion</h1>
+            <h1 className="font-cormorant text-3xl mb-1" style={{ color: '#F4F2EE', fontWeight: 300 }}>{t('auth.login.title')}</h1>
             <p className="font-dm-sans text-sm" style={{ color: 'rgba(244,242,238,0.44)' }}>
-              Pas encore de compte ?{' '}
+              {t('auth.login.subtitle')}{' '}
               <Link to="/register" className="font-medium" style={{ color: '#C8A96E' }}>
-                Commencer l'essai gratuit
+                {t('auth.login.startTrial')}
               </Link>
             </p>
           </div>
@@ -120,12 +118,12 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="lg-label">Adresse email</label>
+              <label className="lg-label">{t('auth.login.email')}</label>
               <input
                 type="email"
                 value={form.email}
                 onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                placeholder="vous@entreprise.fr"
+                placeholder={t('auth.login.emailPlaceholder')}
                 required
                 autoComplete="email"
                 className="lg-input"
@@ -133,7 +131,7 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="lg-label">Mot de passe</label>
+              <label className="lg-label">{t('auth.login.password')}</label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
@@ -173,11 +171,11 @@ export default function LoginPage() {
               {loading ? (
                 <span className="flex items-center gap-2">
                   <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                  Connexion…
+                  {t('auth.login.loading')}
                 </span>
               ) : (
                 <>
-                  Se connecter
+                  {t('auth.login.submit')}
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
@@ -185,22 +183,22 @@ export default function LoginPage() {
           </form>
 
           <p className="font-dm-sans text-xs text-center mt-6 leading-relaxed" style={{ color: 'rgba(244,242,238,0.30)' }}>
-            En vous connectant, vous confirmez avoir lu et accepter les{' '}
+            {t('auth.login.consent')}{' '}
             <Link to="/cgu" className="underline underline-offset-2 transition-colors" style={{ color: 'rgba(200,169,110,0.60)' }}>
-              CGU
+              {t('auth.login.consentCgu')}
             </Link>
-            , la{' '}
+            {', '}
             <Link to="/privacy" className="underline underline-offset-2 transition-colors" style={{ color: 'rgba(200,169,110,0.60)' }}>
-              politique de confidentialité
+              {t('auth.login.consentPrivacy')}
             </Link>
-            {' '}et les{' '}
+            {' '}{t('auth.login.consentLegal') !== 'legal notice' ? 'et les' : 'and the'}{' '}
             <Link to="/mentions-legales" className="underline underline-offset-2 transition-colors" style={{ color: 'rgba(200,169,110,0.60)' }}>
-              mentions légales
+              {t('auth.login.consentLegal')}
             </Link>
-            {' '}de DIPpro.
+            {' '}{t('auth.login.consentOf')}
           </p>
           <p className="font-dm-mono text-xs text-center mt-3" style={{ color: 'rgba(244,242,238,0.15)' }}>
-            Données sécurisées · Conforme RGPD
+            {t('common.security')}
           </p>
         </div>
       </div>

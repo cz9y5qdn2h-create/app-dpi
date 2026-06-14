@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import api from '../lib/api';
 import toast from 'react-hot-toast';
@@ -20,6 +21,7 @@ import { fr } from 'date-fns/locale';
 
 export default function DashboardPage() {
   const { profile } = useAuth();
+  const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [calOpen, setCalOpen] = useState(false);
 
@@ -88,25 +90,25 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       <PageHeader
-        title={`Bonjour, ${profile?.company_name || 'Franchiseur'}`}
-        subtitle="Vue d'ensemble · conformité DIP"
+        title={t('dashboard.greeting', { name: profile?.company_name || 'Franchiseur' })}
+        subtitle={t('dashboard.subtitle')}
         action={
           <>
             <Link to="/dip/upload" className="lg-pill-btn">
               <Upload className="w-3 h-3" style={{ opacity: 0.6 }} />
-              {dip ? 'Nouvelle version' : 'Importer'}
+              {dip ? t('dashboard.actions.newVersion') : t('common.import')}
             </Link>
             <Link to="/dip/generate" className="lg-pill-btn">
               <Sparkles className="w-3 h-3" style={{ opacity: 0.6 }} />
-              Générer
+              {t('dashboard.actions.generate')}
             </Link>
             <Link to="/history" className={`lg-pill-btn ${!dip ? 'opacity-40 pointer-events-none' : ''}`}>
               <History className="w-3 h-3" style={{ opacity: 0.6 }} />
-              Historique
+              {t('dashboard.actions.history')}
             </Link>
             <button onClick={() => setCalOpen(true)} className="lg-pill-btn lg-pill-btn-gold">
               <Phone className="w-3 h-3" />
-              Contacter Iralink
+              {t('dashboard.actions.contact')}
             </button>
           </>
         }
@@ -122,14 +124,14 @@ export default function DashboardPage() {
             <FileText className="w-8 h-8 text-gold" />
           </div>
           <h2 className="font-cormorant text-2xl text-text-primary mb-3">
-            Aucun DIP importé
+            {t('dashboard.noDip.title')}
           </h2>
           <p className="font-dm-sans text-sm text-text-secondary mb-8 max-w-sm mx-auto">
-            Importez votre Document d'Information Précontractuelle pour commencer l'analyse de conformité.
+            {t('dashboard.noDip.desc')}
           </p>
           <Link to="/dip/upload" className="btn-liquid-glass inline-flex">
             <Upload className="w-4 h-4" />
-            Importer mon DIP
+            {t('dashboard.noDip.cta')}
           </Link>
         </div>
       ) : (
@@ -142,10 +144,10 @@ export default function DashboardPage() {
             </div>
 
             <div className="lg:col-span-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <StatCard label="Sections totales" value={stats.total} tag="DIP" tagVariant="gold" />
-              <StatCard label="Conformes" value={stats.conforme} tag="✓ OK" tagVariant="green" />
-              <StatCard label="À vérifier" value={stats.a_verifier} tag="⚠ Attente" tagVariant="gold" />
-              <StatCard label="Non conformes" value={stats.non_conforme} tag="✗ Critique" tagVariant="red" />
+              <StatCard label={t('dashboard.stats.totalSections')} value={stats.total} tag="DIP" tagVariant="gold" />
+              <StatCard label={t('dashboard.stats.compliant')} value={stats.conforme} tag="✓ OK" tagVariant="green" />
+              <StatCard label={t('dashboard.stats.toCheck')} value={stats.a_verifier} tag="⚠ Attente" tagVariant="gold" />
+              <StatCard label={t('dashboard.stats.nonCompliant')} value={stats.non_conforme} tag="✗ Critique" tagVariant="red" />
             </div>
           </div>
 
@@ -158,10 +160,10 @@ export default function DashboardPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-dm-sans text-sm font-medium text-text-primary">
-                    {sectionsToCorrect} section{sectionsToCorrect > 1 ? 's' : ''} à améliorer
+                    {sectionsToCorrect} {t('dashboard.sectionsToImprove')}
                   </p>
                   <p className="font-dm-sans text-xs text-text-secondary mt-0.5">
-                    L'IA peut analyser chaque section non conforme et proposer une version corrigée, prête à appliquer.
+                    {t('dashboard.aiCorrectionHint')}
                   </p>
                 </div>
                 <button
@@ -170,9 +172,9 @@ export default function DashboardPage() {
                   className="btn-liquid-glass flex items-center gap-2 flex-shrink-0"
                 >
                   {aiCorrectionMutation.isPending ? (
-                    <><LoadingSpinner size="sm" /> Analyse en cours…</>
+                    <><LoadingSpinner size="sm" /> {t('dashboard.claudeAnalyzing')}</>
                   ) : (
-                    <><Sparkles className="w-4 h-4" /> Générer les corrections IA</>
+                    <><Sparkles className="w-4 h-4" /> {t('dashboard.generateAiCorrections')}</>
                   )}
                 </button>
               </div>
@@ -188,7 +190,7 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2 card">
               <div className="lg-card-header">
-                Sections du DIP
+                {t('dip.sections')}
                 <Link to="/dip" className="lg-card-header-pill">Voir tout</Link>
               </div>
               <div className="space-y-2">
@@ -199,7 +201,7 @@ export default function DashboardPage() {
                   ))}
                 {sections.length === 0 && (
                   <p className="text-text-secondary font-dm-sans text-sm py-4 text-center">
-                    Aucune section disponible
+                    {t('dashboard.noSections')}
                   </p>
                 )}
               </div>
@@ -208,7 +210,7 @@ export default function DashboardPage() {
             <div className="card">
               <div className="lg-card-header">
                 <span className="flex items-center gap-2">
-                  Alertes
+                  {t('dashboard.alerts')}
                   {pendingAlerts.length > 0 && (
                     <span className="lg-badge lg-badge-danger">{pendingAlerts.length}</span>
                   )}
@@ -221,7 +223,7 @@ export default function DashboardPage() {
               ) : pendingAlerts.length === 0 ? (
                 <div className="text-center py-8">
                   <CheckCircle className="w-10 h-10 text-success/40 mx-auto mb-3" />
-                  <p className="font-dm-sans text-sm text-text-secondary">Aucune alerte en attente</p>
+                  <p className="font-dm-sans text-sm text-text-secondary">{t('dashboard.noAlerts')}</p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -260,7 +262,7 @@ export default function DashboardPage() {
           <div className="flex items-center gap-3 text-text-secondary text-xs font-dm-mono">
             <Clock className="w-3 h-3" />
             <span>
-              Dernier import : {dip.upload_date
+              {t('dashboard.lastImport')} : {dip.upload_date
                 ? formatDistanceToNow(new Date(dip.upload_date), { addSuffix: true, locale: fr })
                 : 'N/A'}
             </span>

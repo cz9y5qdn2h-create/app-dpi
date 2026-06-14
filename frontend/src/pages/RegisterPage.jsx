@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { Shield, Eye, EyeOff, AlertCircle, CheckCircle, ArrowRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-const STEPS = ['Société', 'Contact', 'Sécurité'];
-
 export default function RegisterPage() {
   const { register } = useAuth();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [step, setStep] = useState(0);
   const [form, setForm] = useState({
@@ -38,21 +38,21 @@ export default function RegisterPage() {
   };
   const strength = passwordStrength(form.password);
   const strengthColors = ['#EF4444', '#EF4444', '#FBBF24', '#C8A96E', '#34D399'];
-  const strengthLabels = ['', 'Faible', 'Moyen', 'Bon', 'Excellent'];
+  const strengthLabels = ['', t('auth.register.passwordStrength.weak'), t('auth.register.passwordStrength.medium'), t('auth.register.passwordStrength.good'), t('auth.register.passwordStrength.excellent')];
 
   const nextStep = () => {
-    if (step === 0 && !form.company_name.trim()) return setError('Nom de société requis');
-    if (step === 1 && !form.email.trim()) return setError('Email requis');
+    if (step === 0 && !form.company_name.trim()) return setError(t('auth.register.fields.companyName') + ' requis');
+    if (step === 1 && !form.email.trim()) return setError(t('auth.register.fields.email') + ' requis');
     setError('');
     setStep(s => s + 1);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (form.password !== form.confirmPassword) return setError('Les mots de passe ne correspondent pas');
-    if (strength < 2) return setError('Mot de passe trop faible (min. 8 caractères, 1 majuscule, 1 chiffre)');
-    if (!consents.terms) return setError('Vous devez accepter les CGU et la politique de confidentialité pour continuer');
-    if (!consents.aiDisclaimer) return setError('Vous devez confirmer avoir compris que les analyses IA ne constituent pas un conseil juridique');
+    if (form.password !== form.confirmPassword) return setError(t('auth.register.errors.passwordMismatch'));
+    if (strength < 2) return setError(t('auth.register.errors.passwordTooShort'));
+    if (!consents.terms) return setError(t('auth.register.errors.acceptCgu'));
+    if (!consents.aiDisclaimer) return setError(t('auth.register.errors.acceptAi'));
     setLoading(true);
     try {
       await register(form.email, form.password, form.company_name, form.phone_number, {
@@ -96,17 +96,12 @@ export default function RegisterPage() {
 
         <div className="space-y-6">
           <div>
-            <p className="font-dm-mono text-xs mb-3" style={{ color: '#C8A96E', textTransform: 'uppercase', letterSpacing: '0.10em' }}>Essai gratuit 5 jours</p>
+            <p className="font-dm-mono text-xs mb-3" style={{ color: '#C8A96E', textTransform: 'uppercase', letterSpacing: '0.10em' }}>{t('auth.register.trialBadge')}</p>
             <p className="font-cormorant text-4xl leading-snug mb-4" style={{ color: '#F4F2EE', fontWeight: 300 }}>
-              Votre DIP conforme<br />en quelques minutes.
+              {t('auth.register.tagline')}
             </p>
           </div>
-          {[
-            'Analyse IA immédiate de votre document',
-            'Corrections section par section',
-            'Aucune carte bancaire requise',
-            'Accès complet pendant 5 jours',
-          ].map((item, i) => (
+          {t('auth.register.benefits', { returnObjects: true }).map((item, i) => (
             <div key={i} className="flex items-center gap-3">
               <CheckCircle className="w-4 h-4 flex-shrink-0" style={{ color: '#34D399' }} />
               <span className="font-dm-sans text-sm" style={{ color: 'rgba(244,242,238,0.60)' }}>{item}</span>
@@ -132,16 +127,16 @@ export default function RegisterPage() {
           </div>
 
           <div className="mb-7">
-            <h1 className="font-cormorant text-3xl mb-1" style={{ color: '#F4F2EE', fontWeight: 300 }}>Créer un compte</h1>
+            <h1 className="font-cormorant text-3xl mb-1" style={{ color: '#F4F2EE', fontWeight: 300 }}>{t('auth.register.title')}</h1>
             <p className="font-dm-sans text-sm" style={{ color: 'rgba(244,242,238,0.44)' }}>
-              Déjà un compte ?{' '}
-              <Link to="/login" className="font-medium" style={{ color: '#C8A96E' }}>Se connecter</Link>
+              {t('auth.register.subtitle')}{' '}
+              <Link to="/login" className="font-medium" style={{ color: '#C8A96E' }}>{t('auth.register.login')}</Link>
             </p>
           </div>
 
           {/* Stepper */}
           <div className="flex items-center gap-2 mb-7">
-            {STEPS.map((label, i) => (
+            {[t('auth.register.steps.company'), t('auth.register.steps.contact'), t('auth.register.steps.security')].map((label, i) => (
               <div key={i} className="flex items-center gap-2 flex-1">
                 <div className="flex items-center gap-1.5">
                   <div className="w-6 h-6 rounded-full flex items-center justify-center transition-all" style={{
@@ -182,18 +177,18 @@ export default function RegisterPage() {
             {/* Étape 0 — Société */}
             {step === 0 && (
               <div>
-                <label className="lg-label">Nom de la société / Enseigne</label>
+                <label className="lg-label">{t('auth.register.fields.companyName')}</label>
                 <input
                   type="text"
                   value={form.company_name}
                   onChange={e => set('company_name', e.target.value)}
-                  placeholder="Ma Franchise SAS"
+                  placeholder={t('auth.register.fields.companyNamePlaceholder')}
                   required
                   autoFocus
                   className="lg-input"
                 />
                 <p className="font-dm-sans text-xs mt-1.5" style={{ color: 'rgba(244,242,238,0.30)' }}>
-                  Nom qui apparaîtra sur vos DIPs
+                  {t('auth.register.fields.companyNameHelper')}
                 </p>
               </div>
             )}
@@ -202,12 +197,12 @@ export default function RegisterPage() {
             {step === 1 && (
               <>
                 <div>
-                  <label className="lg-label">Adresse email</label>
+                  <label className="lg-label">{t('auth.register.fields.email')}</label>
                   <input
                     type="email"
                     value={form.email}
                     onChange={e => set('email', e.target.value)}
-                    placeholder="vous@entreprise.fr"
+                    placeholder={t('auth.register.fields.emailPlaceholder')}
                     required
                     autoFocus
                     autoComplete="email"
@@ -216,13 +211,13 @@ export default function RegisterPage() {
                 </div>
                 <div>
                   <label className="lg-label">
-                    Téléphone <span style={{ color: 'rgba(244,242,238,0.28)', textTransform: 'none', fontSize: 10 }}>(optionnel)</span>
+                    {t('auth.register.fields.phone')} <span style={{ color: 'rgba(244,242,238,0.28)', textTransform: 'none', fontSize: 10 }}>(optionnel)</span>
                   </label>
                   <input
                     type="tel"
                     value={form.phone_number}
                     onChange={e => set('phone_number', e.target.value)}
-                    placeholder="+33 6 12 34 56 78"
+                    placeholder={t('auth.register.fields.phonePlaceholder')}
                     autoComplete="tel"
                     className="lg-input"
                   />
@@ -234,7 +229,7 @@ export default function RegisterPage() {
             {step === 2 && (
               <>
                 <div>
-                  <label className="lg-label">Mot de passe</label>
+                  <label className="lg-label">{t('auth.register.fields.password')}</label>
                   <div className="relative">
                     <input
                       type={showPassword ? 'text' : 'password'}
@@ -268,7 +263,7 @@ export default function RegisterPage() {
                   )}
                 </div>
                 <div>
-                  <label className="lg-label">Confirmer le mot de passe</label>
+                  <label className="lg-label">{t('auth.register.fields.confirmPassword')}</label>
                   <div className="relative">
                     <input
                       type="password"
@@ -302,27 +297,19 @@ export default function RegisterPage() {
                   id="consent-terms"
                   checked={consents.terms}
                   onChange={v => setConsents(c => ({ ...c, terms: v }))}
-                  label={
-                    <>
-                      J'ai lu et j'accepte les{' '}
-                      <a href="/cgu" target="_blank" rel="noopener noreferrer" style={{ color: '#C8A96E', textDecoration: 'underline' }}>CGU</a>
-                      {' '}et la{' '}
-                      <a href="/privacy" target="_blank" rel="noopener noreferrer" style={{ color: '#C8A96E', textDecoration: 'underline' }}>politique de confidentialité</a>
-                      {' '}de DIPpro *
-                    </>
-                  }
+                  label={t('auth.register.consent.cgu') + ' *'}
                 />
                 <ConsentCheckbox
                   id="consent-ai"
                   checked={consents.aiDisclaimer}
                   onChange={v => setConsents(c => ({ ...c, aiDisclaimer: v }))}
-                  label="Je comprends que les analyses de DIPpro sont des outils d'aide à la décision et ne constituent pas un conseil juridique. Tout DIP doit être validé par un avocat. *"
+                  label={t('auth.register.consent.ai') + ' *'}
                 />
                 <ConsentCheckbox
                   id="consent-marketing"
                   checked={consents.marketing}
                   onChange={v => setConsents(c => ({ ...c, marketing: v }))}
-                  label="J'accepte de recevoir des informations sur DIPpro par email (facultatif)"
+                  label={t('auth.register.consent.marketing')}
                 />
                 <p className="font-dm-mono" style={{ fontSize: 10, color: 'rgba(244,242,238,0.28)' }}>* Champs obligatoires</p>
               </div>
@@ -345,12 +332,12 @@ export default function RegisterPage() {
               {loading ? (
                 <span className="flex items-center gap-2">
                   <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                  Création…
+                  {t('auth.register.creatingAccount')}
                 </span>
               ) : step < 2 ? (
-                <>Continuer <ArrowRight className="w-4 h-4" /></>
+                <>{t('auth.register.continue')} <ArrowRight className="w-4 h-4" /></>
               ) : (
-                <>Créer mon compte <ArrowRight className="w-4 h-4" /></>
+                <>{t('auth.register.submit')} <ArrowRight className="w-4 h-4" /></>
               )}
             </button>
 
@@ -367,8 +354,7 @@ export default function RegisterPage() {
           </form>
 
           <p className="font-dm-sans text-xs text-center mt-6" style={{ color: 'rgba(244,242,238,0.30)' }}>
-            Pas encore prêt ?{' '}
-            <Link to="/waitlist" style={{ color: '#C8A96E' }}>Rejoindre la liste d'attente</Link>
+            <Link to="/waitlist" style={{ color: '#C8A96E' }}>{t('auth.register.waitlist')}</Link>
           </p>
 
           <p className="font-dm-sans text-xs text-center mt-3" style={{ color: 'rgba(244,242,238,0.22)' }}>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import api from '../lib/api';
 import PageHeader from '../components/ui/PageHeader';
 import StatusBadge from '../components/ui/StatusBadge';
@@ -11,6 +12,7 @@ import { fr } from 'date-fns/locale';
 
 export default function AlertsPage() {
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
   const [filter, setFilter] = useState('pending');
   const [filterSource, setFilterSource] = useState('all');
   const [validatingId, setValidatingId] = useState(null);
@@ -68,10 +70,10 @@ export default function AlertsPage() {
   const iaCount = allAlerts.filter(a => a.source === 'Correction IA' && a.status === 'pending').length;
 
   const filters = [
-    { key: 'pending', label: 'En attente', count: pendingCount },
-    { key: 'validated', label: 'Validées', count: null },
-    { key: 'ignored', label: 'Ignorées', count: null },
-    { key: 'all', label: 'Toutes', count: null },
+    { key: 'pending', label: t('alerts.filters.pending'), count: pendingCount },
+    { key: 'validated', label: t('alerts.filters.validated'), count: null },
+    { key: 'ignored', label: t('alerts.filters.ignored'), count: null },
+    { key: 'all', label: t('alerts.filters.all'), count: null },
   ];
 
   const toggleExpand = (id) => setExpandedCorrections(prev => ({ ...prev, [id]: !prev[id] }));
@@ -91,8 +93,8 @@ export default function AlertsPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       <PageHeader
-        title="Alertes & Corrections"
-        subtitle="Détections automatiques et corrections IA pour mettre à jour votre DIP"
+        title={t('alerts.title')}
+        subtitle={t('alerts.subtitle')}
       />
 
       {/* Résumé corrections IA en attente */}
@@ -104,17 +106,17 @@ export default function AlertsPage() {
             </div>
             <div className="flex-1">
               <p className="font-dm-sans text-sm font-medium text-text-primary">
-                {iaCount} correction{iaCount > 1 ? 's' : ''} IA en attente de validation
+                {iaCount} {t('alerts.pendingCount')}
               </p>
               <p className="font-dm-sans text-xs text-text-secondary mt-0.5">
-                Cliquez sur "Appliquer" pour mettre à jour la section et marquer la conformité.
+                {t('alerts.applyHint')}
               </p>
             </div>
             <button
               onClick={() => { setFilter('pending'); setFilterSource('ia'); }}
               className="btn-secondary text-xs py-1.5 flex-shrink-0"
             >
-              Voir uniquement les corrections IA
+              {t('alerts.showAiOnly')}
             </button>
           </div>
         </div>
@@ -139,9 +141,9 @@ export default function AlertsPage() {
           ))}
           <div className="w-px h-6 bg-border-subtle self-center mx-1" />
           {[
-            { key: 'all', label: 'Toutes sources' },
-            { key: 'ia', label: '✦ Corrections IA', count: iaCount },
-            { key: 'manual', label: 'Manuelles' }
+            { key: 'all', label: t('alerts.filters.all') },
+            { key: 'ia', label: '✦ ' + t('alerts.sources.ai'), count: iaCount },
+            { key: 'manual', label: t('alerts.sources.manual') }
           ].map(s => (
             <button
               key={s.key}
@@ -170,7 +172,7 @@ export default function AlertsPage() {
           }}
           className="btn-secondary flex items-center gap-2 text-sm py-2"
         >
-          <RefreshCw className="w-4 h-4" /> Vérifier renouvellement
+          <RefreshCw className="w-4 h-4" /> {t('alerts.checkRenewal')}
         </button>
       </div>
 
@@ -182,10 +184,10 @@ export default function AlertsPage() {
             <Bell className="w-8 h-8 text-success/60" />
           </div>
           <p className="font-cormorant text-2xl text-text-primary mb-2">
-            {filter === 'pending' ? 'Aucune alerte en attente' : 'Aucune alerte'}
+            {filter === 'pending' ? t('alerts.empty.title') : t('common.none')}
           </p>
           {filter === 'pending' && (
-            <p className="font-dm-sans text-sm text-text-secondary">Votre DIP est a jour.</p>
+            <p className="font-dm-sans text-sm text-text-secondary">{t('alerts.empty.desc')}</p>
           )}
         </div>
       ) : (

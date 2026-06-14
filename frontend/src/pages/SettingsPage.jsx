@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import api from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -38,6 +39,7 @@ const AUTOMATION_LEVELS = [
 
 export default function SettingsPage() {
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
   const { profile, supabase, isTrialExpired, trialDaysLeft } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [profileForm, setProfileForm] = useState({
@@ -156,7 +158,7 @@ export default function SettingsPage() {
 
   return (
     <div className="max-w-2xl space-y-8 animate-fade-in">
-      <PageHeader title="Paramètres" subtitle="Profil, automatisation et préférences de notification" />
+      <PageHeader title={t('settings.title')} subtitle={t('settings.subtitle')} />
 
       {/* Statut d'essai */}
       {profile && !profile.appointment_booked && (
@@ -191,12 +193,12 @@ export default function SettingsPage() {
 
       {/* Apparence */}
       <div className="card">
-        <h2 className="font-cormorant text-xl mb-5">Apparence</h2>
+        <h2 className="font-cormorant text-xl mb-5">{t('settings.sections.appearance')}</h2>
         <div className="flex items-center justify-between">
           <div>
-            <p className="font-dm-sans text-sm text-text-primary">Thème de l'interface</p>
+            <p className="font-dm-sans text-sm text-text-primary">{t('settings.theme.label')}</p>
             <p className="font-dm-sans text-xs text-text-secondary mt-0.5">
-              {theme === 'clair' ? 'Mode clair actif' : 'Mode sombre actif'}
+              {theme === 'clair' ? t('settings.theme.lightMode') : t('settings.theme.darkMode')}
             </p>
           </div>
           <button
@@ -213,12 +215,12 @@ export default function SettingsPage() {
       {/* Sécurité */}
       <div className="card">
         <div className="mb-5">
-          <h2 className="font-cormorant text-xl">Sécurité</h2>
-          <p className="font-dm-sans text-xs text-text-secondary mt-1">Modifiez votre mot de passe de connexion</p>
+          <h2 className="font-cormorant text-xl">{t('settings.sections.security')}</h2>
+          <p className="font-dm-sans text-xs text-text-secondary mt-1">{t('settings.password.label')}</p>
         </div>
         <form onSubmit={handleChangePassword} className="space-y-4">
           <div>
-            <label className="label">Nouveau mot de passe</label>
+            <label className="label">{t('settings.password.new')}</label>
             <div className="relative">
               <input
                 className="input-field pr-10"
@@ -235,7 +237,7 @@ export default function SettingsPage() {
             </div>
           </div>
           <div>
-            <label className="label">Confirmer le nouveau mot de passe</label>
+            <label className="label">{t('settings.password.confirm')}</label>
             <div className="relative">
               <input
                 className="input-field pr-10"
@@ -270,22 +272,22 @@ export default function SettingsPage() {
 
       {/* Profil */}
       <div className="card">
-        <h2 className="font-cormorant text-xl mb-5">Informations du franchiseur</h2>
+        <h2 className="font-cormorant text-xl mb-5">{t('settings.sections.profile')}</h2>
         {isLoading ? <LoadingSpinner /> : (
           <form onSubmit={handleSave} className="space-y-4">
             <div>
-              <label className="label">Société / Enseigne</label>
+              <label className="label">{t('settings.profile.company')}</label>
               <input className="input-field" value={profileForm.company_name}
                 onChange={e => setProfileForm(f => ({ ...f, company_name: e.target.value }))} />
             </div>
             <div>
-              <label className="label">Téléphone</label>
+              <label className="label">{t('settings.profile.phone')}</label>
               <input className="input-field" value={profileForm.phone}
                 onChange={e => setProfileForm(f => ({ ...f, phone: e.target.value }))}
                 placeholder="+33 1 23 45 67 89" />
             </div>
             <div>
-              <label className="label">Adresse du siège</label>
+              <label className="label">{t('settings.profile.address')}</label>
               <textarea className="input-field resize-none min-h-20" value={profileForm.address}
                 onChange={e => setProfileForm(f => ({ ...f, address: e.target.value }))}
                 placeholder="123 rue de la Paix, 75001 Paris" />
@@ -306,7 +308,7 @@ export default function SettingsPage() {
       {/* Niveau d'automatisation */}
       <div className="card">
         <div className="mb-5">
-          <h2 className="font-cormorant text-xl">Niveau d'automatisation</h2>
+          <h2 className="font-cormorant text-xl">{t('settings.sections.automation')}</h2>
           <p className="font-dm-sans text-xs text-text-secondary mt-1">
             Définit comment DIPpro gère les changements détectés dans votre DIP
           </p>
@@ -371,7 +373,7 @@ export default function SettingsPage() {
       {/* Notifications */}
       <div className="card">
         <div className="mb-5">
-          <h2 className="font-cormorant text-xl">Notifications</h2>
+          <h2 className="font-cormorant text-xl">{t('settings.sections.notifications')}</h2>
           <p className="font-dm-sans text-xs text-text-secondary mt-1">
             Choisissez comment et quand être alerté des changements
           </p>
@@ -381,12 +383,12 @@ export default function SettingsPage() {
           <div className="space-y-6">
             {/* Canaux */}
             <div>
-              <p className="font-dm-sans text-sm text-text-primary mb-3">Canaux actifs</p>
+              <p className="font-dm-sans text-sm text-text-primary mb-3">{t('settings.notifications.channels')}</p>
               <div className="space-y-3">
                 {[
-                  { key: 'notifications_email', label: 'Email', desc: 'Reçu à votre adresse de connexion' },
-                  { key: 'notifications_inapp', label: 'In-app', desc: 'Cloche et toasts dans l\'interface' },
-                  { key: 'notifications_sms', label: 'SMS', desc: 'Alertes critiques uniquement (bientôt)' },
+                  { key: 'notifications_email', label: t('settings.notifications.email'), desc: 'Reçu à votre adresse de connexion' },
+                  { key: 'notifications_inapp', label: t('settings.notifications.inApp'), desc: 'Cloche et toasts dans l\'interface' },
+                  { key: 'notifications_sms', label: t('settings.notifications.sms'), desc: 'Alertes critiques uniquement (bientôt)' },
                 ].map(({ key, label, desc }) => (
                   <label key={key} className="flex items-center gap-3 cursor-pointer group">
                     <div className="relative flex-shrink-0">
@@ -414,12 +416,12 @@ export default function SettingsPage() {
 
             {/* Fréquence */}
             <div>
-              <p className="font-dm-sans text-sm text-text-primary mb-3">Fréquence d'envoi</p>
+              <p className="font-dm-sans text-sm text-text-primary mb-3">{t('settings.notifications.frequency')}</p>
               <div className="grid grid-cols-3 gap-2">
                 {[
-                  { value: 'immediate', label: 'Immédiat' },
-                  { value: 'daily', label: 'Digest quotidien' },
-                  { value: 'weekly', label: 'Digest hebdo' },
+                  { value: 'immediate', label: t('settings.notifications.immediate') },
+                  { value: 'daily', label: t('settings.notifications.dailyDigest') },
+                  { value: 'weekly', label: t('settings.notifications.weeklyDigest') },
                 ].map(({ value, label }) => (
                   <button
                     key={value}
@@ -458,7 +460,7 @@ export default function SettingsPage() {
       {/* Configuration email Brevo */}
       <div className="card">
         <div className="mb-5">
-          <h2 className="font-cormorant text-xl">Envoi d'emails (Brevo)</h2>
+          <h2 className="font-cormorant text-xl">{t('settings.sections.emailService')}</h2>
           <p className="font-dm-sans text-xs text-text-secondary mt-1">
             Configurez votre compte Brevo pour envoyer des emails à vos franchisés. Obtenez une clé API gratuite sur{' '}
             <a href="https://www.brevo.com" target="_blank" rel="noreferrer" className="text-gold hover:underline">brevo.com</a>.

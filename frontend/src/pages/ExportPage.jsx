@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import api from '../lib/api';
 import PageHeader from '../components/ui/PageHeader';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
@@ -6,6 +7,7 @@ import { Download, FileText, BarChart2, FileType } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function ExportPage() {
+  const { t } = useTranslation();
   const { data, isLoading } = useQuery({
     queryKey: ['dips'],
     queryFn: () => api.get('/dip').then(r => r.data)
@@ -61,33 +63,33 @@ export default function ExportPage() {
 
   const exports = [
     {
-      title: 'DIP reformulé (Word)',
+      title: t('export.types.docx.title'),
       description: 'Le DIP complet avec toutes les sections reformulées par l\'IA, prêt à être signé. Format DOCX éditable.',
       icon: FileType,
       action: handleExportDOCX,
-      badge: 'DOCX'
+      badge: t('export.types.docx.badge')
     },
     {
-      title: 'Rapport de conformité (PDF)',
+      title: t('export.types.pdf.title'),
       description: 'Rapport complet avec score global, statut de chaque section et synthèse Loi Doubin. Imprimable.',
       icon: BarChart2,
       action: handleExportPDF,
-      badge: 'PDF'
+      badge: t('export.types.pdf.badge')
     },
     {
-      title: 'Export JSON complet',
+      title: t('export.types.json.title'),
       description: 'Export brut de toutes les données DIP, sections et historique au format JSON.',
       icon: FileText,
       action: handleExportJSON,
-      badge: 'JSON'
+      badge: t('export.types.json.badge')
     },
   ];
 
   return (
     <div className="max-w-2xl space-y-6 animate-fade-in">
       <PageHeader
-        title="Export"
-        subtitle="Telechargez votre DIP, le rapport de conformite et l'historique des modifications"
+        title={t('export.title')}
+        subtitle={t('export.subtitle')}
       />
 
       {isLoading ? (
@@ -95,8 +97,8 @@ export default function ExportPage() {
       ) : !dip ? (
         <div className="text-center py-24">
           <Download className="w-10 h-10 text-text-muted mx-auto mb-4" />
-          <p className="font-cormorant text-2xl text-text-primary mb-2">Aucun DIP disponible</p>
-          <p className="font-dm-sans text-sm text-text-secondary">Importez un DIP pour acceder aux exports.</p>
+          <p className="font-cormorant text-2xl text-text-primary mb-2">{t('export.noDip.title')}</p>
+          <p className="font-dm-sans text-sm text-text-secondary">{t('export.noDip.desc')}</p>
         </div>
       ) : (
         <>
@@ -137,7 +139,7 @@ export default function ExportPage() {
                     </div>
                   </div>
                   <button onClick={exp.action} className="btn-secondary flex items-center gap-2 text-sm py-2 flex-shrink-0 ml-4">
-                    <Download className="w-4 h-4" /> Telecharger
+                    <Download className="w-4 h-4" /> {t('common.download')}
                   </button>
                 </div>
               </div>

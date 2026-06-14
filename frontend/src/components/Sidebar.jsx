@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import api from '../lib/api';
@@ -15,8 +16,15 @@ import {
 export default function Sidebar({ open, onClose }) {
   const { profile, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [calOpen, setCalOpen] = useState(false);
+
+  const toggleLang = () => {
+    const next = i18n.language === 'fr' ? 'en' : 'fr';
+    i18n.changeLanguage(next);
+    localStorage.setItem('dippro-lang', next);
+  };
 
   const { data: alertsData } = useQuery({
     queryKey: ['alerts', 'pending'],
@@ -28,18 +36,18 @@ export default function Sidebar({ open, onClose }) {
   const isAdmin = profile?.role === 'admin';
 
   const navItems = [
-    { to: '/dashboard',    icon: LayoutDashboard, label: 'Tableau de bord' },
-    { to: '/dip',          icon: FileText,        label: 'Mon DIP' },
-    { to: '/dip/upload',   icon: Upload,          label: 'Nouvelle version' },
-    { to: '/dip/generate', icon: Sparkles,        label: 'Générer un DIP' },
-    { to: '/alerts',       icon: Bell,            label: 'Alertes', count: pendingCount },
-    { to: '/history',      icon: History,         label: 'Historique' },
-    { to: '/franchisees',  icon: Users,           label: 'Franchisés' },
-    { to: '/export',       icon: Download,        label: 'Export' },
-    { to: '/monitor',      icon: FolderSync,      label: 'Surveillance docs' },
-    { to: '/integrations', icon: Zap,             label: 'Intégrations' },
-    { to: '/settings',     icon: Settings,        label: 'Paramètres' },
-    ...(isAdmin ? [{ to: '/admin', icon: ShieldAlert, label: 'Admin', adminOnly: true }] : []),
+    { to: '/dashboard',    icon: LayoutDashboard, label: t('nav.dashboard') },
+    { to: '/dip',          icon: FileText,        label: t('nav.myDip') },
+    { to: '/dip/upload',   icon: Upload,          label: t('nav.newVersion') },
+    { to: '/dip/generate', icon: Sparkles,        label: t('nav.generateDip') },
+    { to: '/alerts',       icon: Bell,            label: t('nav.alerts'), count: pendingCount },
+    { to: '/history',      icon: History,         label: t('nav.history') },
+    { to: '/franchisees',  icon: Users,           label: t('nav.franchisees') },
+    { to: '/export',       icon: Download,        label: t('nav.export') },
+    { to: '/monitor',      icon: FolderSync,      label: t('nav.docMonitoring') },
+    { to: '/integrations', icon: Zap,             label: t('nav.integrations') },
+    { to: '/settings',     icon: Settings,        label: t('nav.settings') },
+    ...(isAdmin ? [{ to: '/admin', icon: ShieldAlert, label: t('nav.admin'), adminOnly: true }] : []),
   ];
 
   const handleLogout = async () => {
@@ -106,9 +114,21 @@ export default function Sidebar({ open, onClose }) {
           >
             <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'DM Sans, sans-serif', fontSize: 13, color: 'white' }}>
               <Phone style={{ width: 14, height: 14 }} />
-              Contacter Iralink
+              {t('nav.contact')}
             </span>
           </LiquidGlassBtn>
+
+          {/* Language toggle */}
+          <button
+            onClick={toggleLang}
+            className="nav-link w-full text-left"
+          >
+            <span className="font-dm-mono text-xs font-medium" style={{ letterSpacing: '0.05em' }}>
+              <span style={{ color: i18n.language === 'fr' ? 'rgb(var(--gold))' : undefined }}>FR</span>
+              {' / '}
+              <span style={{ color: i18n.language === 'en' ? 'rgb(var(--gold))' : undefined }}>EN</span>
+            </span>
+          </button>
 
           {/* Theme toggle */}
           <button
@@ -116,7 +136,7 @@ export default function Sidebar({ open, onClose }) {
             className="nav-link w-full text-left"
           >
             {theme === 'clair' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
-            <span>{theme === 'clair' ? 'Mode sombre' : 'Mode clair'}</span>
+            <span>{theme === 'clair' ? t('nav.darkMode') : t('nav.lightMode')}</span>
           </button>
 
           {/* User info */}
@@ -135,7 +155,7 @@ export default function Sidebar({ open, onClose }) {
             className="nav-link w-full text-left text-danger hover:text-danger hover:bg-danger/5"
           >
             <LogOut className="w-4 h-4" />
-            <span>Déconnexion</span>
+            <span>{t('nav.logout')}</span>
           </button>
         </div>
       </aside>

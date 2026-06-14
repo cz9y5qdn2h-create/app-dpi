@@ -1,5 +1,6 @@
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { ArrowLeft, Eye, Clock, TrendingUp, Users, BarChart2, Calendar } from 'lucide-react';
 import api from '../lib/api';
 
@@ -61,6 +62,7 @@ function SectionBar({ section, maxTime }) {
 
 export default function AnalyticsPage() {
   const { dipId } = useParams();
+  const { t } = useTranslation();
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['analytics', dipId],
@@ -100,7 +102,7 @@ export default function AnalyticsPage() {
         </Link>
         <div>
           <h1 className="font-cormorant text-2xl" style={{ color: 'var(--color-text-primary)' }}>
-            Analytics de lecture
+            {t('analytics.title')}
           </h1>
           <p className="font-dm-sans text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
             {dip_title}
@@ -110,23 +112,23 @@ export default function AnalyticsPage() {
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard icon={Users}     label="Visites"        value={total_visits}                                  sub="candidats uniques"        color="#C8A96E" />
-        <StatCard icon={Clock}     label="Temps moyen"    value={total_visits > 0 ? fmtTime(avg_time_total_s) : '—'} sub="par visite"         color="#818CF8" />
-        <StatCard icon={Calendar}  label="Dernière visite" value={last_visit_at ? fmtDate(last_visit_at).split(' à')[0] : '—'} sub={last_visit_at ? fmtDate(last_visit_at).split(' à')[1] ?? '' : 'Aucune visite'} color="#34D399" />
-        <StatCard icon={TrendingUp} label="Section phare"  value={total_visits > 0 && mostRead ? `§${mostRead.section_number}` : '—'} sub={total_visits > 0 && mostRead ? mostRead.section_title : 'Aucune donnée'} color="#F59E0B" />
+        <StatCard icon={Users}     label={t('analytics.stats.visits')}        value={total_visits}                                  sub="candidats uniques"        color="#C8A96E" />
+        <StatCard icon={Clock}     label={t('analytics.stats.avgTime')}    value={total_visits > 0 ? fmtTime(avg_time_total_s) : '—'} sub="par visite"         color="#818CF8" />
+        <StatCard icon={Calendar}  label={t('analytics.stats.lastVisit')} value={last_visit_at ? fmtDate(last_visit_at).split(' à')[0] : '—'} sub={last_visit_at ? fmtDate(last_visit_at).split(' à')[1] ?? '' : 'Aucune visite'} color="#34D399" />
+        <StatCard icon={TrendingUp} label={t('analytics.stats.topSection')}  value={total_visits > 0 && mostRead ? `§${mostRead.section_number}` : '—'} sub={total_visits > 0 && mostRead ? mostRead.section_title : 'Aucune donnée'} color="#F59E0B" />
       </div>
 
       {total_visits === 0 ? (
         <div className="card p-12 text-center">
           <BarChart2 className="w-10 h-10 mx-auto mb-4" style={{ color: 'var(--color-border-default)' }} />
           <h2 className="font-cormorant text-xl mb-2" style={{ color: 'var(--color-text-primary)' }}>
-            Aucune donnée de lecture
+            {t('analytics.empty.title')}
           </h2>
           <p className="font-dm-sans text-sm" style={{ color: 'var(--color-text-secondary)' }}>
-            Les analytics s'alimentent dès qu'un candidat consulte le DIP via le lien de partage.
+            {t('analytics.empty.desc')}
           </p>
           <Link to="/dip" className="btn-primary mt-6 inline-block text-sm">
-            Générer le lien de partage
+            {t('analytics.generateLink')}
           </Link>
         </div>
       ) : (
@@ -135,7 +137,7 @@ export default function AnalyticsPage() {
           <div className="card p-5">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-cormorant text-lg" style={{ color: 'var(--color-text-primary)' }}>
-                Engagement par section
+                {t('analytics.engagementTitle')}
               </h2>
               <div className="flex items-center gap-4 font-dm-mono text-xs" style={{ color: 'var(--color-text-muted)' }}>
                 <span>temps moy.</span>
@@ -148,9 +150,9 @@ export default function AnalyticsPage() {
               ))}
             </div>
             <div className="mt-4 flex items-center gap-4 font-dm-sans text-xs" style={{ color: 'var(--color-text-muted)' }}>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full inline-block" style={{ background: '#22C55E' }} /> &gt; 70% taux d'ouverture</span>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full inline-block" style={{ background: '#C8A96E' }} /> 40–70%</span>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full inline-block" style={{ background: '#EF4444' }} /> &lt; 40%</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full inline-block" style={{ background: '#22C55E' }} /> {t('analytics.legend.high')}</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full inline-block" style={{ background: '#C8A96E' }} /> {t('analytics.legend.medium')}</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full inline-block" style={{ background: '#EF4444' }} /> {t('analytics.legend.low')}</span>
             </div>
           </div>
 
@@ -172,7 +174,7 @@ export default function AnalyticsPage() {
           {/* Liste des visites */}
           <div className="card p-5">
             <h2 className="font-cormorant text-lg mb-4" style={{ color: 'var(--color-text-primary)' }}>
-              Historique des visites ({visits.length})
+              {t('analytics.visitsHistory')} ({visits.length})
             </h2>
             <div className="space-y-2">
               {visits.map((v, i) => (

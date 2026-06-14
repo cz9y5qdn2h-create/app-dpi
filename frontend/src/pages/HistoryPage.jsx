@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import api from '../lib/api';
 import PageHeader from '../components/ui/PageHeader';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
@@ -6,24 +7,25 @@ import { History, GitBranch } from 'lucide-react';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
-const ACTION_LABELS = {
-  upload_initial: { label: 'Import initial', color: 'text-gold', bg: 'bg-gold/10 border-gold/20' },
-  upload_nouvelle_version: { label: 'Nouvelle version uploadée', color: 'text-gold', bg: 'bg-gold/10 border-gold/20' },
-  version_approved: { label: 'Nouvelle version activée', color: 'text-success', bg: 'bg-success/10 border-success/20' },
-  generated_by_agent: { label: 'DIP généré par l\'IA', color: 'text-gold', bg: 'bg-gold/10 border-gold/20' },
-  section_update: { label: 'Section modifiée', color: 'text-text-primary', bg: 'bg-bg-elevated border-border-subtle' },
-  alert_validated: { label: 'Alerte validée', color: 'text-success', bg: 'bg-success/10 border-success/20' },
-  alert_ignored: { label: 'Alerte ignorée', color: 'text-text-secondary', bg: 'bg-bg-elevated border-border-subtle' },
-  alert_created: { label: 'Alerte créée', color: 'text-danger', bg: 'bg-danger/10 border-danger/20' },
-  notification_sent: { label: 'Notification envoyée', color: 'text-success', bg: 'bg-success/10 border-success/20' },
-  admin_password_reset: { label: 'Mot de passe réinitialisé', color: 'text-text-secondary', bg: 'bg-bg-elevated border-border-subtle' },
-};
-
 export default function HistoryPage() {
+  const { t } = useTranslation();
   const { data, isLoading } = useQuery({
     queryKey: ['history'],
     queryFn: () => api.get('/history?limit=100').then(r => r.data)
   });
+
+  const ACTION_LABELS = {
+    upload_initial: { label: t('history.events.initialImport'), color: 'text-gold', bg: 'bg-gold/10 border-gold/20' },
+    upload_nouvelle_version: { label: t('history.events.newVersionUploaded'), color: 'text-gold', bg: 'bg-gold/10 border-gold/20' },
+    version_approved: { label: t('history.events.newVersionActivated'), color: 'text-success', bg: 'bg-success/10 border-success/20' },
+    generated_by_agent: { label: t('history.events.aiGenerated'), color: 'text-gold', bg: 'bg-gold/10 border-gold/20' },
+    section_update: { label: t('history.events.sectionModified'), color: 'text-text-primary', bg: 'bg-bg-elevated border-border-subtle' },
+    alert_validated: { label: t('history.events.alertValidated'), color: 'text-success', bg: 'bg-success/10 border-success/20' },
+    alert_ignored: { label: t('history.events.alertIgnored'), color: 'text-text-secondary', bg: 'bg-bg-elevated border-border-subtle' },
+    alert_created: { label: t('history.events.alertCreated'), color: 'text-danger', bg: 'bg-danger/10 border-danger/20' },
+    notification_sent: { label: t('history.events.notificationSent'), color: 'text-success', bg: 'bg-success/10 border-success/20' },
+    admin_password_reset: { label: 'Mot de passe réinitialisé', color: 'text-text-secondary', bg: 'bg-bg-elevated border-border-subtle' },
+  };
 
   const logs = data?.history || [];
 
@@ -37,8 +39,8 @@ export default function HistoryPage() {
   return (
     <div className="space-y-6 animate-fade-in">
       <PageHeader
-        title="Historique des modifications"
-        subtitle="Journal d'audit complet avec horodatage"
+        title={t('history.title')}
+        subtitle={t('history.subtitle')}
       />
 
       {isLoading ? (
@@ -46,9 +48,9 @@ export default function HistoryPage() {
       ) : logs.length === 0 ? (
         <div className="text-center py-24">
           <History className="w-10 h-10 text-text-muted mx-auto mb-4" />
-          <p className="font-cormorant text-2xl text-text-primary">Aucun historique</p>
+          <p className="font-cormorant text-2xl text-text-primary">{t('history.empty.title')}</p>
           <p className="font-dm-sans text-sm text-text-secondary mt-2">
-            Les modifications apparaitront ici apres l'import de votre DIP.
+            {t('history.empty.desc')}
           </p>
         </div>
       ) : (
@@ -90,13 +92,13 @@ export default function HistoryPage() {
                             <div className="grid grid-cols-2 gap-2 mt-3">
                               {log.old_content && (
                                 <div className="bg-danger/5 border border-danger/15 rounded p-2">
-                                  <p className="font-dm-mono text-xs text-danger mb-1">Avant</p>
+                                  <p className="font-dm-mono text-xs text-danger mb-1">{t('history.before')}</p>
                                   <p className="font-dm-sans text-xs text-text-secondary line-clamp-3">{log.old_content.substring(0, 200)}</p>
                                 </div>
                               )}
                               {log.new_content && (
                                 <div className="bg-success/5 border border-success/15 rounded p-2">
-                                  <p className="font-dm-mono text-xs text-success mb-1">Apres</p>
+                                  <p className="font-dm-mono text-xs text-success mb-1">{t('history.after')}</p>
                                   <p className="font-dm-sans text-xs text-text-secondary line-clamp-3">{log.new_content.substring(0, 200)}</p>
                                 </div>
                               )}

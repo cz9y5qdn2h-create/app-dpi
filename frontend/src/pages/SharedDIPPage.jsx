@@ -1,5 +1,6 @@
 import { useParams, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { Shield, CheckCircle, AlertTriangle, FileText, ChevronDown, ChevronUp, Award } from 'lucide-react';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import axios from 'axios';
@@ -8,10 +9,10 @@ const API_BASE = import.meta.env.VITE_API_URL
   ? import.meta.env.VITE_API_URL.replace(/\/$/, '') + '/api'
   : '/api';
 
-const STATUS_CONFIG = {
-  conforme:     { label: 'Conforme',     color: '#22C55E', bg: 'rgba(34,197,94,0.08)',   border: 'rgba(34,197,94,0.2)'  },
-  a_verifier:   { label: 'À vérifier',   color: '#C8A96E', bg: 'rgba(200,169,110,0.08)', border: 'rgba(200,169,110,0.2)' },
-  non_conforme: { label: 'Non conforme', color: '#EF4444', bg: 'rgba(239,68,68,0.08)',   border: 'rgba(239,68,68,0.2)'  },
+const STATUS_CONFIG_BASE = {
+  conforme:     { color: '#22C55E', bg: 'rgba(34,197,94,0.08)',   border: 'rgba(34,197,94,0.2)'  },
+  a_verifier:   { color: '#C8A96E', bg: 'rgba(200,169,110,0.08)', border: 'rgba(200,169,110,0.2)' },
+  non_conforme: { color: '#EF4444', bg: 'rgba(239,68,68,0.08)',   border: 'rgba(239,68,68,0.2)'  },
 };
 
 function ScoreArc({ score }) {
@@ -29,9 +30,9 @@ function ScoreArc({ score }) {
   );
 }
 
-function SectionCard({ section, onToggle }) {
+function SectionCard({ section, onToggle, statusConfig }) {
   const [open, setOpen] = useState(false);
-  const cfg = STATUS_CONFIG[section.status] || STATUS_CONFIG.a_verifier;
+  const cfg = statusConfig[section.status] || statusConfig.a_verifier;
 
   const handleClick = () => {
     const next = !open;
@@ -146,6 +147,13 @@ function useReadTracker(dip, token) {
 
 export default function SharedDIPPage() {
   const { token } = useParams();
+  const { t } = useTranslation();
+
+  const STATUS_CONFIG = {
+    conforme:     { label: t('common.conformity.compliant'), ...STATUS_CONFIG_BASE.conforme },
+    a_verifier:   { label: t('common.conformity.toCheck'), ...STATUS_CONFIG_BASE.a_verifier },
+    non_conforme: { label: t('common.conformity.nonCompliant'), ...STATUS_CONFIG_BASE.non_conforme },
+  };
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['shared-dip', token],
@@ -182,20 +190,20 @@ export default function SharedDIPPage() {
           </div>
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full font-dm-mono text-xs" style={{ background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.2)', color: '#22C55E' }}>
             <Award className="w-3.5 h-3.5" />
-            Document officiel
+            {t('shared.officialDoc')}
           </div>
         </div>
 
         {isLoading ? (
           <div className="rounded-2xl p-12 text-center" style={{ background: 'rgba(255,255,255,0.82)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.6)' }}>
             <div className="w-8 h-8 border-2 border-current border-t-transparent rounded-full animate-spin mx-auto" style={{ color: '#C8A96E' }} />
-            <p className="font-dm-sans text-sm mt-4" style={{ color: '#64748B' }}>Chargement du document…</p>
+            <p className="font-dm-sans text-sm mt-4" style={{ color: '#64748B' }}>{t('shared.loading')}</p>
           </div>
         ) : isError || !dip ? (
           <div className="rounded-2xl p-12 text-center" style={{ background: 'rgba(255,255,255,0.82)', backdropFilter: 'blur(24px)', border: '1px solid rgba(255,255,255,0.6)' }}>
             <AlertTriangle className="w-10 h-10 mx-auto mb-4" style={{ color: '#EF4444' }} />
-            <h2 className="font-cormorant text-2xl mb-2" style={{ color: '#1A1826' }}>Document introuvable</h2>
-            <p className="font-dm-sans text-sm" style={{ color: '#64748B' }}>Ce lien n'est plus valide ou a été révoqué par le franchiseur.</p>
+            <h2 className="font-cormorant text-2xl mb-2" style={{ color: '#1A1826' }}>{t('shared.notFound.title')}</h2>
+            <p className="font-dm-sans text-sm" style={{ color: '#64748B' }}>{t('shared.notFound.desc')}</p>
           </div>
         ) : (
           <>
@@ -205,24 +213,24 @@ export default function SharedDIPPage() {
                 <div>
                   <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full mb-3 font-dm-mono text-xs" style={{ background: 'rgba(200,169,110,0.1)', border: '1px solid rgba(200,169,110,0.2)', color: '#C8A96E' }}>
                     <FileText className="w-3 h-3" />
-                    Document d'Information Précontractuelle
+                    {t('shared.docTitle')}
                   </div>
                   <h1 className="font-cormorant text-2xl" style={{ color: '#1A1826' }}>{dip.title}</h1>
                   <p className="font-dm-mono text-xs mt-1" style={{ color: '#94A3B8' }}>
-                    Mis à jour le {new Date(dip.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+                    {t('shared.updatedOn', { date: new Date(dip.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }) })}
                   </p>
                 </div>
                 <div className="text-center flex-shrink-0">
                   <ScoreArc score={dip.conformity_score || 0} />
-                  <p className="font-dm-sans text-xs" style={{ color: '#64748B' }}>Score de conformité</p>
+                  <p className="font-dm-sans text-xs" style={{ color: '#64748B' }}>{t('shared.conformityScore')}</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-3 gap-3">
                 {[
-                  { label: 'Conformes', value: stats.conforme, color: '#22C55E', bg: 'rgba(34,197,94,0.06)' },
-                  { label: 'À vérifier', value: stats.a_verifier, color: '#C8A96E', bg: 'rgba(200,169,110,0.06)' },
-                  { label: 'Non conformes', value: stats.non_conforme, color: '#EF4444', bg: 'rgba(239,68,68,0.06)' },
+                  { label: t('common.conformity.compliant'), value: stats.conforme, color: '#22C55E', bg: 'rgba(34,197,94,0.06)' },
+                  { label: t('common.conformity.toCheck'), value: stats.a_verifier, color: '#C8A96E', bg: 'rgba(200,169,110,0.06)' },
+                  { label: t('common.conformity.nonCompliant'), value: stats.non_conforme, color: '#EF4444', bg: 'rgba(239,68,68,0.06)' },
                 ].map(({ label, value, color, bg }) => (
                   <div key={label} className="rounded-xl p-3 text-center" style={{ background: bg }}>
                     <p className="font-cormorant text-2xl font-light" style={{ color }}>{value}</p>
@@ -236,7 +244,7 @@ export default function SharedDIPPage() {
             <div className="rounded-xl p-4 flex items-start gap-3" style={{ background: 'rgba(200,169,110,0.08)', border: '1px solid rgba(200,169,110,0.2)' }}>
               <Shield className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#C8A96E' }} />
               <div>
-                <p className="font-dm-sans text-xs font-medium mb-0.5" style={{ color: '#1A1826' }}>Document conforme Loi Doubin — Art. L.330-3 Code de commerce</p>
+                <p className="font-dm-sans text-xs font-medium mb-0.5" style={{ color: '#1A1826' }}>{t('shared.legalNotice')}</p>
                 <p className="font-dm-sans text-xs leading-relaxed" style={{ color: '#64748B' }}>
                   Ce DIP a été analysé par l'IA DIPpro. En consultant ce document, vous accusez réception conformément à l'obligation de remise du DIP 20 jours avant signature.
                 </p>
@@ -246,25 +254,25 @@ export default function SharedDIPPage() {
             {/* Sections */}
             <div>
               <h2 className="font-cormorant text-xl mb-4" style={{ color: '#1A1826' }}>
-                Sections du document ({dip.sections.length})
+                {t('shared.sectionsTitle')} ({dip.sections.length})
               </h2>
               <div className="space-y-3">
                 {dip.sections.map(section => (
-                  <SectionCard key={section.id} section={section} onToggle={handleToggle} />
+                  <SectionCard key={section.id} section={section} onToggle={handleToggle} statusConfig={STATUS_CONFIG} />
                 ))}
               </div>
             </div>
 
             {/* Footer */}
             <div className="rounded-xl p-5 text-center" style={{ background: 'rgba(255,255,255,0.5)', border: '1px solid rgba(200,169,110,0.15)' }}>
-              <p className="font-dm-sans text-xs mb-1" style={{ color: '#94A3B8' }}>Document généré et vérifié par</p>
-              <p className="font-cormorant text-lg" style={{ color: '#1A1826' }}>DIPpro — by Iralink</p>
+              <p className="font-dm-sans text-xs mb-1" style={{ color: '#94A3B8' }}>{t('shared.generatedBy')}</p>
+              <p className="font-cormorant text-lg" style={{ color: '#1A1826' }}>{t('shared.brand')} — {t('shared.byIralink')}</p>
               <p className="font-dm-mono text-xs mt-1" style={{ color: '#94A3B8' }}>Conformité Loi Doubin · RGPD · Données hébergées en France</p>
               <div className="flex items-center justify-center gap-4 mt-3">
                 {[
-                  { icon: CheckCircle, label: 'Loi Doubin 1989' },
-                  { icon: CheckCircle, label: 'RGPD conforme' },
-                  { icon: CheckCircle, label: 'Horodaté' },
+                  { icon: CheckCircle, label: t('shared.badges.law') },
+                  { icon: CheckCircle, label: t('shared.badges.rgpd') },
+                  { icon: CheckCircle, label: t('shared.badges.timestamped') },
                 ].map(({ icon: Icon, label }) => (
                   <div key={label} className="flex items-center gap-1 font-dm-sans text-xs" style={{ color: '#94A3B8' }}>
                     <Icon className="w-3 h-3" style={{ color: '#22C55E' }} />
