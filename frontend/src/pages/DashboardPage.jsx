@@ -11,6 +11,7 @@ import LoadingSpinner from '../components/ui/LoadingSpinner';
 import ConformityGauge from '../components/dashboard/ConformityGauge';
 import AlertCard from '../components/dashboard/AlertCard';
 import CalModal from '../components/CalModal';
+import OnboardingModal from '../components/OnboardingModal';
 import {
   Upload, RefreshCw, FileText,
   AlertTriangle, CheckCircle, History,
@@ -271,6 +272,7 @@ export default function DashboardPage() {
       )}
 
       <CalModal open={calOpen} onClose={() => setCalOpen(false)} />
+      <OnboardingModal />
     </div>
   );
 }

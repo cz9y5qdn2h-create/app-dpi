@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { Shield, Eye, EyeOff, AlertCircle, CheckCircle, ArrowRight } from 'lucide-react';
 import toast from 'react-hot-toast';
+import OnboardingModal from '../components/OnboardingModal';
 
 export default function RegisterPage() {
   const { register } = useAuth();
@@ -25,6 +26,7 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   const set = (k, v) => { setForm(f => ({ ...f, [k]: v })); setError(''); };
 
@@ -60,7 +62,8 @@ export default function RegisterPage() {
         ai_disclaimer_accepted: consents.aiDisclaimer,
       });
       toast.success('Compte créé ! Votre essai gratuit de 5 jours commence maintenant.');
-      navigate('/login');
+      setShowOnboarding(true);
+      setTimeout(() => navigate('/dashboard'), 300);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -364,6 +367,10 @@ export default function RegisterPage() {
           </p>
         </div>
       </div>
+
+      {showOnboarding && (
+        <OnboardingModal forceShow={true} onClose={() => setShowOnboarding(false)} />
+      )}
     </div>
   );
 }

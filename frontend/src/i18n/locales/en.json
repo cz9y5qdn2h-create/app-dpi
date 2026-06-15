@@ -464,6 +464,34 @@
     },
     "legalNotice": "Document compliant with Loi Doubin — Art. L.330-3 French Commercial Code"
   },
+  "onboarding": {
+    "skip": "Skip",
+    "cta": "Get started",
+    "slide1": {
+      "title": "Welcome to DIPpro",
+      "desc": "The platform that automates your Loi Doubin compliance. Analyse, correct, and share your Pre-Contractual Information Documents in just a few clicks."
+    },
+    "slide2": {
+      "title": "Import your DIP in 1 click",
+      "desc": "Upload your DIP in PDF or DOCX format. Artificial intelligence automatically analyses the 10 regulatory sections of the Loi Doubin in under 60 seconds."
+    },
+    "slide3": {
+      "title": "Real-time compliance score",
+      "desc": "Get a full analysis of your 10 regulatory sections with a precise compliance score. Instantly identify what needs correcting."
+    },
+    "slide4": {
+      "title": "Automatic AI corrections",
+      "desc": "Claude detects non-compliance issues and suggests precise corrections, section by section. One click to apply the correction to your DIP."
+    },
+    "slide5": {
+      "title": "Share with your franchisees",
+      "desc": "Generate a unique secure sharing link to let each franchisee candidate view your DIP online, with reading tracking."
+    },
+    "slide6": {
+      "title": "You're all set!",
+      "desc": "Start by importing your first DIP or generate one with AI. Your Loi Doubin compliance is just a few clicks away."
+    }
+  },
   "admin": {
     "title": "Admin Console",
     "subtitle": "Global management of the DIPpro platform",

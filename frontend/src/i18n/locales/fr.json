@@ -464,6 +464,34 @@
     },
     "legalNotice": "Document conforme Loi Doubin — Art. L.330-3 Code de commerce"
   },
+  "onboarding": {
+    "skip": "Passer",
+    "cta": "Commencer",
+    "slide1": {
+      "title": "Bienvenue sur DIPpro",
+      "desc": "La plateforme qui automatise votre conformité Loi Doubin. Analysez, corrigez et partagez vos Documents d'Information Précontractuelle en quelques clics."
+    },
+    "slide2": {
+      "title": "Importez votre DIP en 1 clic",
+      "desc": "Uploadez votre DIP au format PDF ou DOCX. L'intelligence artificielle analyse automatiquement les 10 sections réglementaires de la Loi Doubin en moins de 60 secondes."
+    },
+    "slide3": {
+      "title": "Score de conformité en temps réel",
+      "desc": "Obtenez une analyse complète de vos 10 sections réglementaires avec un score de conformité précis. Identifiez immédiatement les points à corriger."
+    },
+    "slide4": {
+      "title": "Corrections automatiques par IA",
+      "desc": "Claude détecte les non-conformités et vous propose des corrections précises, section par section. Un clic pour appliquer la correction dans votre DIP."
+    },
+    "slide5": {
+      "title": "Partagez avec vos franchisés",
+      "desc": "Générez un lien de partage sécurisé unique pour permettre à chaque candidat-franchisé de consulter votre DIP en ligne, avec suivi de lecture."
+    },
+    "slide6": {
+      "title": "Vous êtes prêt·e !",
+      "desc": "Commencez par importer votre premier DIP ou générez-en un avec l'IA. Votre conformité Loi Doubin est à quelques clics."
+    }
+  },
   "admin": {
     "title": "Console Administrateur",
     "subtitle": "Gestion globale de la plateforme DIPpro",
