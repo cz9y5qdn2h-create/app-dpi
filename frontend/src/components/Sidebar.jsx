@@ -44,7 +44,7 @@ export default function Sidebar({ open, onClose }) {
     { to: '/history',      icon: History,         label: t('nav.history') },
     { to: '/franchisees',  icon: Users,           label: t('nav.franchisees') },
     { to: '/export',       icon: Download,        label: t('nav.export') },
-    { to: '/monitor',      icon: FolderSync,      label: t('nav.docMonitoring') },
+    { to: '/monitoring',   icon: FolderSync,      label: t('nav.docMonitoring') },
     { to: '/integrations', icon: Zap,             label: t('nav.integrations') },
     { to: '/settings',     icon: Settings,        label: t('nav.settings') },
     ...(isAdmin ? [{ to: '/admin', icon: ShieldAlert, label: t('nav.admin'), adminOnly: true }] : []),

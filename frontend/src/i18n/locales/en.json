@@ -492,6 +492,24 @@
       "desc": "Start by importing your first DIP or generate one with AI. Your Loi Doubin compliance is just a few clicks away."
     }
   },
+  "monitoring": {
+    "title": "Doc Monitoring",
+    "subtitle": "Monitor your regulatory sources and detect changes impacting your DIP",
+    "addSource": "Add a source",
+    "empty": {
+      "title": "No sources monitored",
+      "desc": "Add URLs to monitor and be automatically alerted to regulatory changes that could impact your DIP.",
+      "cta": "Add my first source"
+    },
+    "suggestions": {
+      "title": "Suggested sources"
+    },
+    "results": {
+      "title": "Recent results",
+      "subtitle": "Last 10 monitoring checks",
+      "empty": "No checks performed yet. Click \"Check\" to run an analysis."
+    }
+  },
   "admin": {
     "title": "Admin Console",
     "subtitle": "Global management of the DIPpro platform",

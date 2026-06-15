@@ -492,6 +492,24 @@
       "desc": "Commencez par importer votre premier DIP ou générez-en un avec l'IA. Votre conformité Loi Doubin est à quelques clics."
     }
   },
+  "monitoring": {
+    "title": "Surveillance documentaire",
+    "subtitle": "Surveillez vos sources réglementaires et détectez les changements impactant votre DIP",
+    "addSource": "Ajouter une source",
+    "empty": {
+      "title": "Aucune source surveillée",
+      "desc": "Ajoutez des URLs à surveiller pour être alerté automatiquement des changements réglementaires qui pourraient impacter votre DIP.",
+      "cta": "Ajouter ma première source"
+    },
+    "suggestions": {
+      "title": "Sources suggérées"
+    },
+    "results": {
+      "title": "Résultats récents",
+      "subtitle": "10 dernières vérifications de surveillance",
+      "empty": "Aucune vérification effectuée. Cliquez sur \"Vérifier\" pour lancer une analyse."
+    }
+  },
   "admin": {
     "title": "Console Administrateur",
     "subtitle": "Gestion globale de la plateforme DIPpro",

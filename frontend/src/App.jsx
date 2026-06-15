@@ -19,6 +19,7 @@ import ExportPage from './pages/ExportPage';
 import AdminPage from './pages/AdminPage';
 import ApiConfigPage from './pages/ApiConfigPage';
 import MonitorPage from './pages/MonitorPage';
+import DocMonitoringPage from './pages/DocMonitoringPage';
 import TrialExpiredPage from './pages/TrialExpiredPage';
 import WaitlistPage from './pages/WaitlistPage';
 import SharedDIPPage from './pages/SharedDIPPage';
@@ -93,6 +94,7 @@ export default function App() {
           <Route path="export" element={<ErrorBoundary><ExportPage /></ErrorBoundary>} />
           <Route path="admin" element={<ErrorBoundary><AdminPage /></ErrorBoundary>} />
           <Route path="monitor" element={<ErrorBoundary><MonitorPage /></ErrorBoundary>} />
+          <Route path="monitoring" element={<ErrorBoundary><DocMonitoringPage /></ErrorBoundary>} />
           <Route path="integrations" element={<ErrorBoundary><ApiConfigPage /></ErrorBoundary>} />
           <Route path="analytics/dip/:dipId" element={<ErrorBoundary><AnalyticsPage /></ErrorBoundary>} />
         </Route>
