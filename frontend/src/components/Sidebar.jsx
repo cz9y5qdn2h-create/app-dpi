@@ -112,7 +112,7 @@ export default function Sidebar({ open, onClose }) {
             mode="prominent"
             className="w-full"
           >
-            <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'DM Sans, sans-serif', fontSize: 13, color: 'white' }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 8, fontFamily: 'DM Sans, sans-serif', fontSize: 13 }}>
               <Phone style={{ width: 14, height: 14 }} />
               {t('nav.contact')}
             </span>
