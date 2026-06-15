@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
 import BottomNav from './BottomNav';
 import CommandPalette from './CommandPalette';
+import CopilotChat from './CopilotChat';
 import api from '../lib/api';
 import { Bell, Menu, Search } from 'lucide-react';
 
@@ -97,6 +98,7 @@ export default function Layout() {
 
       <BottomNav />
       <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} />
+      <CopilotChat />
     </div>
   );
 }
