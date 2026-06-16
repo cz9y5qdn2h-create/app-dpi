@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import LiquidGlassBtn from '../components/ui/LiquidGlassBtn';
+import SEOHead from '../components/SEOHead';
 import {
   Shield, CheckCircle, Send, ArrowLeft, ArrowRight,
   Sparkles, Bell, Users, Download, TrendingUp, Lock,
@@ -409,6 +410,12 @@ export default function WaitlistPage() {
   const ActiveMockup = MOCKUP_TABS[activeTab].component;
 
   return (
+    <>
+      <SEOHead
+        title="Accès anticipé — Liste d'attente"
+        description="Inscrivez-vous sur la liste d'attente DIPpro. Accès anticipé Early Adopter, tarif préférentiel garanti à vie (-40%), analyse DIP gratuite (valeur 250€). Pour franchiseurs français."
+        canonical="/waitlist"
+      />
     <div className="min-h-screen" style={{ background: BG }}>
 
       {/* ── HEADER ── */}
@@ -636,5 +643,6 @@ export default function WaitlistPage() {
         </div>
       </footer>
     </div>
+    </>
   );
 }

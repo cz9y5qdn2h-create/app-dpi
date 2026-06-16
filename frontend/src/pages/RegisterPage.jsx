@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { Shield, Eye, EyeOff, AlertCircle, CheckCircle, ArrowRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import OnboardingModal from '../components/OnboardingModal';
+import SEOHead from '../components/SEOHead';
 
 export default function RegisterPage() {
   const { register } = useAuth();
@@ -72,6 +73,12 @@ export default function RegisterPage() {
   };
 
   return (
+    <>
+      <SEOHead
+        title="Créer un compte"
+        description="Créez votre compte DIPpro et gérez la conformité de votre DIP franchise. Analyse IA Loi Doubin, attestation PDF certifiée SHA-256. Pour franchiseurs français."
+        canonical="/register"
+      />
     <div className="min-h-screen flex" style={{
       background: `
         radial-gradient(ellipse 55% 50% at 15% 70%, rgba(200,169,110,0.20) 0%, transparent 60%),
@@ -372,6 +379,7 @@ export default function RegisterPage() {
         <OnboardingModal forceShow={true} onClose={() => setShowOnboarding(false)} />
       )}
     </div>
+    </>
   );
 }
 

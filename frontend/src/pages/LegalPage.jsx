@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Shield, ArrowLeft, AlertTriangle } from 'lucide-react';
+import SEOHead from '../components/SEOHead';
 
 const TODAY = '14 juin 2026';
 const IRALINK_EMAIL = 'theo@iralink-agency.com';
@@ -517,7 +518,17 @@ export default function LegalPage() {
   const isCgu = slug === 'cgu';
   const isMentionsLegales = slug === 'mentions-legales';
 
+  const SEO_META = {
+    cgu: { title: "Conditions Générales d'Utilisation", description: "CGU de DIPpro — plateforme SaaS de gestion du Document d'Information Précontractuelle franchise. Conditions d'utilisation, politique de non-remboursement, médiation obligatoire.", canonical: '/cgu' },
+    privacy: { title: 'Politique de confidentialité', description: "Politique de confidentialité DIPpro. Protection des données RGPD, hébergement Europe, droits des utilisateurs.", canonical: '/privacy' },
+    'mentions-legales': { title: 'Mentions légales', description: "Mentions légales de DIPpro par Iralink Agency. Éditeur, hébergeur, responsable de publication.", canonical: '/mentions-legales' },
+    cookies: { title: 'Politique de cookies', description: "Politique de cookies de DIPpro. Cookies techniques, préférences, durée de conservation.", canonical: '/cookies' },
+  };
+  const seo = SEO_META[slug] || {};
+
   return (
+    <>
+      <SEOHead title={seo.title} description={seo.description} canonical={seo.canonical} noindex={true} />
     <div className="min-h-screen" style={{ background: 'linear-gradient(145deg, #dde2f5 0%, #ebe7fa 40%, #dceaf8 70%, #e3e1f6 100%)' }}>
       <header style={{ background: 'rgba(255,255,255,0.72)', backdropFilter: 'blur(24px)', borderBottom: '1px solid rgba(200,169,110,0.18)', position: 'sticky', top: 0, zIndex: 10 }}>
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
@@ -600,5 +611,6 @@ export default function LegalPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

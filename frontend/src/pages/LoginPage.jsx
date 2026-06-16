@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { Shield, Eye, EyeOff, AlertCircle, ArrowRight } from 'lucide-react';
+import SEOHead from '../components/SEOHead';
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -35,6 +36,13 @@ export default function LoginPage() {
   };
 
   return (
+    <>
+      <SEOHead
+        title="Connexion"
+        description="Connectez-vous à DIPpro pour gérer la conformité de votre Document d'Information Précontractuelle (DIP franchise). Analyse IA Loi Doubin pour franchiseurs français."
+        canonical="/login"
+        noindex={true}
+      />
     <div className="min-h-screen flex" style={{
       background: `
         radial-gradient(ellipse 55% 50% at 15% 70%, rgba(200,169,110,0.20) 0%, transparent 60%),
@@ -203,5 +211,6 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

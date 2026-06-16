@@ -5,6 +5,7 @@ import {
   ChevronDown, Sparkles, AlertTriangle, FileText, Send, Lock,
   FileCheck, Clock, TrendingUp, Star, GitBranch
 } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
 import api from '../lib/api';
 
 const GOLD = '#C8A96E';
@@ -412,7 +413,39 @@ export default function LandingPage() {
     cursor: 'pointer', textDecoration: 'none', transition: 'background 0.15s',
   };
 
+  const faqSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: FAQS.map(({ q, a }) => ({
+      '@type': 'Question',
+      name: q,
+      acceptedAnswer: { '@type': 'Answer', text: a },
+    })),
+  };
+
+  const howToSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'HowTo',
+    name: 'Comment utiliser DIPpro pour gérer son DIP franchise',
+    description: 'Gérez la conformité de votre DIP franchise en 3 étapes grâce à DIPpro.',
+    step: HOW_STEPS.map(({ num, title, desc }) => ({
+      '@type': 'HowToStep',
+      position: parseInt(num),
+      name: title,
+      text: desc,
+    })),
+  };
+
   return (
+    <>
+      <Helmet>
+        <title>DIPpro — Gestion légale du DIP pour franchiseurs</title>
+        <meta name="description" content="DIPpro automatise la gestion légale du Document d'Information Précontractuelle. Score de conformité Loi Doubin en 30 secondes, attestation PDF certifiée SHA-256, alertes réglementaires automatiques. Pour franchiseurs français." />
+        <link rel="canonical" href="https://dippro.business/" />
+        <meta property="og:url" content="https://dippro.business/" />
+        <script type="application/ld+json">{JSON.stringify(faqSchema)}</script>
+        <script type="application/ld+json">{JSON.stringify(howToSchema)}</script>
+      </Helmet>
     <div className="min-h-screen" style={DARK_BG}>
 
       {/* ── HEADER ───────────────────────────────────────────── */}
@@ -872,5 +905,6 @@ export default function LandingPage() {
         </div>
       </footer>
     </div>
+    </>
   );
 }

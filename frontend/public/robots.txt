@@ -1,0 +1,36 @@
+User-agent: *
+Allow: /
+Allow: /waitlist
+Allow: /login
+Allow: /register
+Allow: /cgu
+Allow: /privacy
+Allow: /mentions-legales
+Allow: /cookies
+Allow: /dip/partage/
+
+Disallow: /dashboard
+Disallow: /dip/upload
+Disallow: /dip/generate
+Disallow: /alerts
+Disallow: /history
+Disallow: /franchisees
+Disallow: /settings
+Disallow: /export
+Disallow: /admin
+Disallow: /monitoring
+Disallow: /integrations
+Disallow: /analytics
+Disallow: /api/
+
+Sitemap: https://dippro.business/sitemap.xml
+
+User-agent: GPTBot
+Allow: /
+Allow: /waitlist
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /

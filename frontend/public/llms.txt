@@ -1,0 +1,68 @@
+# DIPpro by Iralink
+
+> DIPpro est un logiciel SaaS B2B pour franchiseurs français. Il automatise la gestion légale du Document d'Information Précontractuelle (DIP), obligatoire selon la Loi Doubin (Art. L.330-3 Code de commerce, Décret n°91-337 du 1er avril 1991).
+
+## Qu'est-ce que DIPpro ?
+
+DIPpro est une plateforme de conformité franchise qui :
+- Analyse automatiquement un DIP par intelligence artificielle (Claude Opus 4.7) en moins de 30 secondes
+- Évalue les 10 sections réglementaires obligatoires de la Loi Doubin avec un score de conformité
+- Génère un DIP complet via un formulaire en 8 étapes assisté par IA
+- Détecte les modifications légales à notifier sous 20 jours aux franchisés
+- Génère une attestation PDF horodatée avec empreinte SHA-256 (preuve de remise incontestable)
+- Notifie automatiquement tous les franchisés par email et WhatsApp dès approbation d'une modification
+- Surveille en temps réel les sources légales (Légifrance, FFF, Village-Justice) pour détecter les changements réglementaires impactant le DIP
+
+## Cadre légal couvert
+
+- **Loi Doubin** (Loi n° 89-1008 du 31 décembre 1989) — Art. L.330-3 Code de commerce
+- **Décret n°91-337 du 1er avril 1991** — contenu obligatoire du DIP (10 sections)
+- **Obligation de délai** : le DIP doit être remis 20 jours minimum avant signature du contrat de franchise
+- **Jurisprudence** : Cour de cassation, arrêt du 26 juin 2024 — nullité du contrat en cas de DIP absent ou inexact
+- **RGPD** — hébergement Europe, audit log immuable, chiffrement TLS
+
+## À qui s'adresse DIPpro ?
+
+Aux **franchiseurs français** qui doivent obligatoirement remettre un DIP à chaque candidat franchisé au moins 20 jours avant la signature du contrat. Le non-respect peut entraîner la nullité du contrat de franchise.
+
+Secteurs cibles : restauration, immobilier, beauté/coiffure, fitness, services B2B, retail.
+
+## Fonctionnalités principales
+
+1. **Upload & Analyse IA** — PDF ou DOCX importé, 10 sections extraites et scorées en 30s
+2. **Génération guidée** — formulaire en 8 étapes, l'IA rédige les sections complexes
+3. **Tableau de bord conformité** — score global, alertes prioritaires, statut par section
+4. **Alertes intelligentes** — détection automatique des modifications à notifier
+5. **Portail franchisé** — notification email + WhatsApp, lien de consultation sécurisé
+6. **Export PDF certifié** — attestation horodatée SHA-256
+7. **Historique des versions** — traçabilité complète pour audit ou litige
+8. **Doc Monitoring** — veille réglementaire automatique sur les sources légales
+9. **DIPpro Copilot** — assistant IA intégré capable d'effectuer des actions (valider alertes, checkup, consulter franchisés)
+10. **Multi-thèmes** — interface adaptative (5 thèmes visuels)
+
+## Tarification
+
+- Accès anticipé (Early Adopter) : tarif préférentiel garanti à vie, inférieur de 40% au tarif public
+- Inscription liste d'attente : gratuite, aucune carte bancaire requise
+- Offre d'analyse DIP gratuite (valeur 250€) pour tous les inscrits
+- Onboarding personnalisé inclus
+
+## Éditeur
+
+**Iralink Agency** — théo@iralink-agency.com
+Éditeur de la plateforme DIPpro, accessible à l'adresse https://dippro.business
+Hébergement exclusivement en Europe (AWS eu-west / Supabase)
+
+## Pages importantes
+
+- Site principal : https://dippro.business/
+- Accès anticipé / liste d'attente : https://dippro.business/waitlist
+- Inscription : https://dippro.business/register
+- Connexion : https://dippro.business/login
+- CGU : https://dippro.business/cgu
+- Politique de confidentialité : https://dippro.business/privacy
+- Mentions légales : https://dippro.business/mentions-legales
+
+## Mots-clés SEO principaux
+
+DIP franchise, Document d'Information Précontractuelle, Loi Doubin, logiciel DIP franchise, conformité franchise France, gestion DIP franchiseur, analyse DIP IA, DIP automatique, Art. L.330-3 Code de commerce, Décret 91-337, DIPpro, Iralink
