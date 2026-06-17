@@ -1,7 +1,19 @@
 const express = require('express');
 const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware } = require('../middleware/auth');
+const { isPasswordPwned } = require('../utils/passwordSecurity');
 const router = express.Router();
+
+// POST /api/auth/check-password — vérification de mot de passe compromis (HaveIBeenPwned k-anonymity)
+// Utilisé par le frontend avant un changement de mot de passe (flux Supabase Auth direct côté client)
+router.post('/check-password', async (req, res) => {
+  const { password } = req.body;
+  if (!password || typeof password !== 'string') {
+    return res.status(400).json({ error: 'password requis' });
+  }
+  const result = await isPasswordPwned(password);
+  res.json(result);
+});
 
 // POST /api/auth/register
 router.post('/register', async (req, res) => {
@@ -18,12 +30,23 @@ router.post('/register', async (req, res) => {
     return res.status(400).json({ error: 'Email, mot de passe et nom de société requis' });
   }
 
+  if (password.length < 8) {
+    return res.status(400).json({ error: 'Le mot de passe doit contenir au moins 8 caractères' });
+  }
+
   if (!terms_accepted_at) {
     return res.status(400).json({ error: 'Acceptation des CGU requise' });
   }
 
   if (!ai_disclaimer_accepted) {
     return res.status(400).json({ error: 'Confirmation du disclaimer IA requise' });
+  }
+
+  const pwnedCheck = await isPasswordPwned(password);
+  if (pwnedCheck.pwned) {
+    return res.status(400).json({
+      error: `Ce mot de passe a été trouvé dans ${pwnedCheck.count.toLocaleString('fr-FR')} fuites de données connues. Choisissez un mot de passe différent.`
+    });
   }
 
   try {

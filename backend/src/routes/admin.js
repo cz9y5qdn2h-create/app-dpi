@@ -1,6 +1,7 @@
 const express = require('express');
 const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware } = require('../middleware/auth');
+const { isPasswordPwned } = require('../utils/passwordSecurity');
 const router = express.Router();
 
 // Middleware admin strict
@@ -110,6 +111,13 @@ router.post('/users/:id/reset-password', authMiddleware, requireAdmin, async (re
   const { password } = req.body;
   if (!password || password.length < 8) {
     return res.status(400).json({ error: 'Mot de passe trop court (min 8 caractères)' });
+  }
+
+  const pwnedCheck = await isPasswordPwned(password);
+  if (pwnedCheck.pwned) {
+    return res.status(400).json({
+      error: `Ce mot de passe a été trouvé dans ${pwnedCheck.count.toLocaleString('fr-FR')} fuites de données connues. Choisissez un mot de passe différent.`
+    });
   }
 
   const { error } = await supabaseAdmin.auth.admin.updateUserById(req.params.id, { password });

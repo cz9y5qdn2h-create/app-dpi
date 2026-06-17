@@ -126,6 +126,10 @@ export default function SettingsPage() {
 
   const changePasswordMutation = useMutation({
     mutationFn: async ({ newPassword }) => {
+      const { data: pwnedCheck } = await api.post('/auth/check-password', { password: newPassword });
+      if (pwnedCheck?.pwned) {
+        throw new Error(`Ce mot de passe a été trouvé dans ${pwnedCheck.count.toLocaleString('fr-FR')} fuites de données connues. Choisissez un mot de passe différent.`);
+      }
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) throw error;
     },
