@@ -10,7 +10,7 @@ import LiquidGlassBtn from './ui/LiquidGlassBtn';
 import {
   LayoutDashboard, FileText, Upload, Bell, History,
   Users, Settings, Download, LogOut, Phone, Zap, ShieldAlert, Sparkles,
-  Sun, Moon, FolderSync
+  Sun, Moon, FolderSync, ScrollText
 } from 'lucide-react';
 
 export default function Sidebar({ open, onClose }) {
@@ -40,6 +40,7 @@ export default function Sidebar({ open, onClose }) {
     { to: '/dip',          icon: FileText,        label: t('nav.myDip') },
     { to: '/dip/upload',   icon: Upload,          label: t('nav.newVersion') },
     { to: '/dip/generate', icon: Sparkles,        label: t('nav.generateDip') },
+    { to: '/contrat',      icon: ScrollText,      label: t('nav.myContract') },
     { to: '/alerts',       icon: Bell,            label: t('nav.alerts'), count: pendingCount },
     { to: '/history',      icon: History,         label: t('nav.history') },
     { to: '/franchisees',  icon: Users,           label: t('nav.franchisees') },

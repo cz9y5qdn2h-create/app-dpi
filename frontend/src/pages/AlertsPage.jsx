@@ -224,6 +224,17 @@ export default function AlertsPage() {
                         Section {alert.dip_sections.section_number}
                       </span>
                     )}
+                    {alert.contract_clauses?.clause_number && (
+                      <span className="font-dm-mono text-xs text-gold/60">
+                        Clause {alert.contract_clauses.clause_number}
+                      </span>
+                    )}
+                    {alert.cross_impact_from && (
+                      <span className="inline-flex items-center gap-1.5 font-dm-mono text-xs px-2 py-0.5 rounded border bg-blue-500/10 text-blue-400 border-blue-400/30">
+                        <RefreshCw className="w-3 h-3" />
+                        Impact croisé ({alert.cross_impact_from === 'dip' ? 'DIP → Contrat' : 'Contrat → DIP'})
+                      </span>
+                    )}
                     <StatusBadge status={alert.urgency || 'moyenne'} />
                     <StatusBadge status={alert.status} />
                     {isIaCorrection && alert.ai_confidence && (
@@ -237,7 +248,7 @@ export default function AlertsPage() {
                     )}
                   </div>
                   <h3 className="font-dm-sans text-base text-text-primary">
-                    {alert.dip_sections?.section_title || 'Section inconnue'}
+                    {alert.dip_sections?.section_title || alert.contract_clauses?.clause_title || 'Élément inconnu'}
                   </h3>
                   <p className="font-dm-mono text-xs text-text-secondary mt-1">
                     {alert.source} {alert.created_at && '\u00b7 ' + formatDistanceToNow(new Date(alert.created_at), { addSuffix: true, locale: fr })}

@@ -53,6 +53,8 @@
     "myDip": "My DIP",
     "newVersion": "New version",
     "generateDip": "Generate a DIP",
+    "myContract": "My contract",
+    "newContractVersion": "New contract version",
     "alerts": "Alerts",
     "history": "History",
     "franchisees": "Franchisees",

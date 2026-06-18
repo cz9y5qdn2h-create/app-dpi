@@ -11,6 +11,9 @@ import DashboardPage from './pages/DashboardPage';
 import DIPPage from './pages/DIPPage';
 import UploadDIPPage from './pages/UploadDIPPage';
 import GenerateDIPPage from './pages/GenerateDIPPage';
+import ContractPage from './pages/ContractPage';
+import UploadContractPage from './pages/UploadContractPage';
+import SharedContractPage from './pages/SharedContractPage';
 import AlertsPage from './pages/AlertsPage';
 import HistoryPage from './pages/HistoryPage';
 import FranchiseesPage from './pages/FranchiseesPage';
@@ -77,6 +80,7 @@ export default function App() {
 
         {/* Portail franchisé — page publique sans authentification */}
         <Route path="/dip/partage/:token" element={<SharedDIPPage />} />
+        <Route path="/contrat/partage/:token" element={<SharedContractPage />} />
 
         {/* Essai expiré — accessible aux utilisateurs connectés sans Layout */}
         <Route path="/trial-expired" element={<ProtectedRoute><TrialExpiredPage /></ProtectedRoute>} />
@@ -87,6 +91,8 @@ export default function App() {
           <Route path="dip" element={<ErrorBoundary><DIPPage /></ErrorBoundary>} />
           <Route path="dip/upload" element={<ErrorBoundary><UploadDIPPage /></ErrorBoundary>} />
           <Route path="dip/generate" element={<ErrorBoundary><GenerateDIPPage /></ErrorBoundary>} />
+          <Route path="contrat" element={<ErrorBoundary><ContractPage /></ErrorBoundary>} />
+          <Route path="contrat/upload" element={<ErrorBoundary><UploadContractPage /></ErrorBoundary>} />
           <Route path="alerts" element={<ErrorBoundary><AlertsPage /></ErrorBoundary>} />
           <Route path="history" element={<ErrorBoundary><HistoryPage /></ErrorBoundary>} />
           <Route path="franchisees" element={<ErrorBoundary><FranchiseesPage /></ErrorBoundary>} />

@@ -5,29 +5,35 @@ const { detectChanges, correctSection, correctSectionWithAnswers } = require('..
 const errMsg = require('../config/errorMessage');
 const router = express.Router();
 
-// GET /api/alerts — Alertes de l'utilisateur connecté
+// GET /api/alerts — Alertes de l'utilisateur connecté (DIP + Contrat, y compris impacts croisés)
 router.get('/', authMiddleware, async (req, res) => {
-  const { status, dip_id } = req.query;
+  const { status, dip_id, contract_id } = req.query;
 
-  // Récupérer les DIP IDs de l'utilisateur (filtre sécurisé)
-  const { data: userDips } = await supabaseAdmin
-    .from('dip_documents')
-    .select('id')
-    .eq('user_id', req.user.id);
+  // Récupérer les IDs des documents de l'utilisateur (filtre sécurisé)
+  const [{ data: userDips }, { data: userContracts }] = await Promise.all([
+    supabaseAdmin.from('dip_documents').select('id').eq('user_id', req.user.id),
+    supabaseAdmin.from('franchise_contracts').select('id').eq('user_id', req.user.id)
+  ]);
 
-  if (!userDips || userDips.length === 0) {
+  const dipIds = (userDips || []).map(d => d.id);
+  const contractIds = (userContracts || []).map(c => c.id);
+
+  if (dipIds.length === 0 && contractIds.length === 0) {
     return res.json({ alerts: [], total: 0 });
   }
 
-  const dipIds = userDips.map(d => d.id);
-
   let query = supabaseAdmin
     .from('alerts')
-    .select('*, dip_sections(section_title, section_number)')
-    .in('dip_id', dipIds)
+    .select('*, dip_sections(section_title, section_number), contract_clauses(clause_title, clause_number)')
     .order('created_at', { ascending: false });
 
+  const orFilters = [];
+  if (dipIds.length > 0) orFilters.push(`dip_id.in.(${dipIds.join(',')})`);
+  if (contractIds.length > 0) orFilters.push(`contract_id.in.(${contractIds.join(',')})`);
+  query = query.or(orFilters.join(','));
+
   if (dip_id) query = query.eq('dip_id', dip_id);
+  if (contract_id) query = query.eq('contract_id', contract_id);
   if (status) query = query.eq('status', status);
 
   const { data, error } = await query;
@@ -82,13 +88,13 @@ router.post('/analyze', authMiddleware, requireFranchisor, async (req, res) => {
   }
 });
 
-// PATCH /api/alerts/:id/validate — Valider une alerte (met à jour la section DIP)
+// PATCH /api/alerts/:id/validate — Valider une alerte (met à jour la section DIP ou la clause du contrat)
 router.patch('/:id/validate', authMiddleware, requireFranchisor, async (req, res) => {
   const { modified_content } = req.body;
 
   const { data: alert } = await supabaseAdmin
     .from('alerts')
-    .select('*, dip_sections(*)')
+    .select('*, dip_sections(*), contract_clauses(*)')
     .eq('id', req.params.id)
     .single();
 
@@ -103,6 +109,13 @@ router.patch('/:id/validate', authMiddleware, requireFranchisor, async (req, res
       .eq('id', alert.section_id);
   }
 
+  if (alert.clause_id && newContent) {
+    await supabaseAdmin
+      .from('contract_clauses')
+      .update({ content: newContent, status: 'conforme', last_updated: new Date().toISOString() })
+      .eq('id', alert.clause_id);
+  }
+
   await supabaseAdmin
     .from('alerts')
     .update({ status: 'validated', resolved_at: new Date().toISOString() })
@@ -111,6 +124,8 @@ router.patch('/:id/validate', authMiddleware, requireFranchisor, async (req, res
   await supabaseAdmin.from('audit_log').insert({
     dip_id: alert.dip_id,
     section_id: alert.section_id,
+    contract_id: alert.contract_id,
+    clause_id: alert.clause_id,
     action: 'alert_validated',
     old_content: alert.old_value,
     new_content: newContent,
@@ -118,7 +133,7 @@ router.patch('/:id/validate', authMiddleware, requireFranchisor, async (req, res
     timestamp: new Date().toISOString()
   });
 
-  res.json({ message: 'Alerte validée, section mise à jour' });
+  res.json({ message: 'Alerte validée, document mis à jour' });
 });
 
 // POST /api/alerts/check-renewal — Génère des alertes de renouvellement DIP
@@ -325,6 +340,9 @@ router.post('/:id/answer-questions', authMiddleware, requireFranchisor, async (r
 router.patch('/:id/ignore', authMiddleware, requireFranchisor, async (req, res) => {
   const { reason } = req.body;
 
+  const { data: alert } = await supabaseAdmin
+    .from('alerts').select('dip_id, contract_id').eq('id', req.params.id).single();
+
   await supabaseAdmin
     .from('alerts')
     .update({
@@ -335,7 +353,8 @@ router.patch('/:id/ignore', authMiddleware, requireFranchisor, async (req, res) 
     .eq('id', req.params.id);
 
   await supabaseAdmin.from('audit_log').insert({
-    dip_id: req.body.dip_id,
+    dip_id: alert?.dip_id || req.body.dip_id || null,
+    contract_id: alert?.contract_id || null,
     action: 'alert_ignored',
     user_id: req.user.id,
     new_content: reason || '',

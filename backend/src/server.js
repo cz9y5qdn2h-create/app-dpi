@@ -6,6 +6,7 @@ const rateLimit = require('express-rate-limit');
 
 const authRoutes = require('./routes/auth');
 const dipRoutes = require('./routes/dip');
+const contractRoutes = require('./routes/contracts');
 const alertRoutes = require('./routes/alerts');
 const franchiseeRoutes = require('./routes/franchisees');
 const exportRoutes = require('./routes/export');
@@ -91,6 +92,7 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 // Routes
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/dip', dipRoutes);
+app.use('/api/contracts', contractRoutes);
 app.use('/api/alerts', alertRoutes);
 app.use('/api/franchisees', franchiseeRoutes);
 app.use('/api/export', exportRoutes);

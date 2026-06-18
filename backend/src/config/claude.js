@@ -623,8 +623,285 @@ Retourne ce JSON :
   return result;
 };
 
+const SYSTEM_CONTRACT_EXPERT = `Tu es un expert juridique senior spécialisé en droit de la franchise française.
+Tu maîtrises parfaitement :
+- Le droit commun des contrats (articles 1103, 1104, 1217 du Code civil)
+- Le contrat de franchise et ses clauses essentielles (durée, redevances, territoire, non-concurrence, résiliation, cession)
+- L'articulation entre le DIP (art. L.330-3 Code de commerce) et le contrat de franchise qui lui succède : le DIP doit être remis 20 jours avant la signature du contrat, et toute incohérence entre les deux documents est un motif de nullité ou de mise en jeu de la responsabilité du franchiseur (jurisprudence Cass. com. 26 juin 2024)
+- La jurisprudence sur les clauses abusives ou déséquilibrées en matière de franchise
+
+Règles absolues :
+- Réponds TOUJOURS en JSON valide, sans markdown, sans texte avant ou après
+- Si une information est absente du document, indique "Non renseigné" (ne pas inventer)
+- Sois rigoureux sur la cohérence entre le contrat et le DIP qui le précède`;
+
+const CACHED_SYSTEM_CONTRACT = [{ type: 'text', text: SYSTEM_CONTRACT_EXPERT, cache_control: { type: 'ephemeral' } }];
+
+// Clauses standards d'un contrat de franchise, mappées sur les sections DIP correspondantes
+// pour permettre l'analyse d'impact croisé (le "tunnel" DIP <-> Contrat)
+const CONTRACT_CLAUSES_DEFAULT = [
+  'Objet et durée du contrat',
+  'Droit d\'entrée et redevances',
+  'Territoire et exclusivité',
+  'Obligations du franchiseur',
+  'Obligations du franchisé',
+  'Propriété intellectuelle et savoir-faire',
+  'Clause de non-concurrence',
+  'Conditions de résiliation',
+  'Conditions de cession et transmission',
+  'Règlement des litiges'
+];
+
+// Section DIP correspondant à chaque clause (index 0 = clause 1)
+const CLAUSE_DIP_SECTION_MAP = [8, 6, 7, 1, 8, 5, 8, 8, 8, 9];
+
+/**
+ * Analyser et extraire les clauses d'un contrat de franchise
+ */
+const parseContractClauses = async (rawText) => {
+  if (!rawText || rawText.trim().length < 50) {
+    throw new Error('Le texte extrait du fichier est trop court. Vérifiez que le PDF n\'est pas scanné ou protégé.');
+  }
+
+  const message = await callClaude({
+    model: MODEL_OPUS,
+    max_tokens: 8192,
+    thinking: { type: 'adaptive' },
+    system: CACHED_SYSTEM_CONTRACT,
+    messages: [{
+      role: 'user',
+      content: `Analyse ce contrat de franchise et extrait son contenu selon les 10 clauses standards suivantes.
+
+TEXTE DU CONTRAT :
+${rawText.substring(0, 18000)}
+
+CLAUSES À IDENTIFIER :
+1. Objet et durée du contrat — durée en années, date de prise d'effet, conditions de renouvellement
+2. Droit d'entrée et redevances — montant du droit d'entrée, taux de redevance d'exploitation, taux de redevance publicitaire
+3. Territoire et exclusivité — périmètre territorial, caractère exclusif ou non
+4. Obligations du franchiseur — transmission du savoir-faire, formation, assistance continue
+5. Obligations du franchisé — respect des normes, redevances, approvisionnement, reporting
+6. Propriété intellectuelle et savoir-faire — licence de marque, confidentialité du savoir-faire
+7. Clause de non-concurrence — durée, périmètre géographique post-contractuel
+8. Conditions de résiliation — motifs, préavis, conséquences pour chaque partie
+9. Conditions de cession et transmission — droit de préemption, agrément du cessionnaire
+10. Règlement des litiges — juridiction compétente, clause de médiation/arbitrage
+
+Pour chaque clause, indique si elle est légalement bloquante (legal_blocking: true) lorsque son absence totale expose à un déséquilibre contractuel manifeste ou une nullité (clauses 1, 2, 8 sont structurellement bloquantes si totalement absentes).
+
+RETOURNE CE JSON EXACTEMENT — sans markdown, sans texte avant ou après :
+{
+  "clauses": [
+    {
+      "clause_number": 1,
+      "clause_title": "Objet et durée du contrat",
+      "content": "Texte extrait verbatim du document pour cette clause",
+      "status": "conforme",
+      "legal_blocking": false,
+      "mandatory_elements_found": ["durée 7 ans", "renouvellement tacite"],
+      "mandatory_elements_missing": [],
+      "issues": []
+    }
+  ],
+  "compliance_level": "CONFORME",
+  "blocking_issues": [],
+  "global_score": 85,
+  "summary": "Analyse synthétique : points conformes, lacunes, risques juridiques prioritaires"
+}
+
+Valeurs pour status : "conforme" | "a_verifier" | "non_conforme"
+Valeurs pour compliance_level : "CONFORME" | "RÉVISIONS_MINEURES" | "RÉVISIONS_MAJEURES" | "BLOQUANT_NON_ENVOYABLE"
+global_score : 0-100. Pénalités : -20 par clause non_conforme, -8 par a_verifier.`
+    }]
+  });
+
+  const raw = message.content[0].text.trim();
+  const match = raw.match(/\{[\s\S]*\}/);
+  if (!match) throw new Error('L\'IA n\'a pas retourné de JSON valide. Réessayez.');
+
+  const result = JSON.parse(match[0]);
+
+  if (!result.clauses || result.clauses.length < 10) {
+    const existing = new Set((result.clauses || []).map(c => c.clause_number));
+    for (let i = 1; i <= 10; i++) {
+      if (!existing.has(i)) {
+        const isHardBlocking = [1, 2, 8].includes(i);
+        result.clauses.push({
+          clause_number: i,
+          clause_title: CONTRACT_CLAUSES_DEFAULT[i - 1],
+          content: 'Clause non trouvée dans le document',
+          status: 'non_conforme',
+          legal_blocking: isHardBlocking,
+          mandatory_elements_found: [],
+          mandatory_elements_missing: ['Clause entière absente'],
+          issues: ['Clause structurante absente du contrat']
+        });
+      }
+    }
+    result.clauses.sort((a, b) => a.clause_number - b.clause_number);
+  }
+
+  result.clauses = result.clauses.map((c, idx) => ({
+    legal_blocking: false,
+    mandatory_elements_found: [],
+    mandatory_elements_missing: [],
+    ...c,
+    linked_dip_section_number: CLAUSE_DIP_SECTION_MAP[c.clause_number - 1] || CLAUSE_DIP_SECTION_MAP[idx]
+  }));
+
+  if (!result.compliance_level) {
+    const hasBlocking = result.clauses.some(c => c.legal_blocking);
+    const nonConformes = result.clauses.filter(c => c.status === 'non_conforme').length;
+    const aVerifier    = result.clauses.filter(c => c.status === 'a_verifier').length;
+    if (hasBlocking)        result.compliance_level = 'BLOQUANT_NON_ENVOYABLE';
+    else if (nonConformes)  result.compliance_level = 'RÉVISIONS_MAJEURES';
+    else if (aVerifier)     result.compliance_level = 'RÉVISIONS_MINEURES';
+    else                    result.compliance_level = 'CONFORME';
+  }
+
+  if (!result.blocking_issues) {
+    result.blocking_issues = result.clauses
+      .filter(c => c.legal_blocking)
+      .map(c => `Clause ${c.clause_number} (${c.clause_title}) : ${(c.issues || []).join('; ') || 'éléments obligatoires manquants'}`);
+  }
+
+  result.global_score = result.global_score ?? Math.max(0,
+    100
+    - result.clauses.filter(c => c.status === 'non_conforme').length * 20
+    - result.clauses.filter(c => c.status === 'a_verifier').length * 8
+  );
+
+  return result;
+};
+
+/**
+ * Comparer deux versions d'un contrat de franchise — détecter les changements à impact légal
+ */
+const compareContractVersions = async (previousText, newText) => {
+  if (!previousText || !newText) {
+    return { changements: [], resume: 'Texte manquant pour la comparaison', nb_changements_critiques: 0 };
+  }
+
+  const message = await callClaude({
+    model: MODEL_SONNET,
+    max_tokens: 8192,
+    system: CACHED_SYSTEM_CONTRACT,
+    messages: [{
+      role: 'user',
+      content: `Compare ces deux versions d'un contrat de franchise et identifie tous les changements qui ont un impact légal ou financier.
+
+VERSION PRÉCÉDENTE :
+${previousText.substring(0, 9000)}
+
+NOUVELLE VERSION :
+${newText.substring(0, 9000)}
+
+INSTRUCTIONS :
+- Identifie UNIQUEMENT les changements réels et significatifs (pas les reformulations cosmétiques)
+- Classe les changements par ordre d'importance légale (High en premier)
+
+NIVEAUX D'IMPACT :
+- High : changement substantiel (durée, redevances, droit d'entrée, territoire, résiliation, non-concurrence)
+- Moderate : changement important mais non bloquant
+- Low : changement mineur de forme
+
+TYPES DE CHANGEMENTS :
+- duree_renouvellement, financier, territoire, obligations, propriete_intellectuelle, non_concurrence, resiliation, cession, litiges, autre
+
+Retourne ce JSON exactement :
+{
+  "changements": [
+    {
+      "id": "chgt_1",
+      "type": "financier",
+      "clause": "Droit d'entrée et redevances",
+      "clause_number": 2,
+      "ancien": "Redevance d'exploitation : 5%",
+      "nouveau": "Redevance d'exploitation : 7%",
+      "impact_legal": "High",
+      "recommandation_ia": "Cette augmentation doit être cohérente avec le DIP remis au franchisé 20 jours avant la signature. Vérifier que le DIP en vigueur reflète ce nouveau taux."
+    }
+  ],
+  "resume": "Résumé synthétique des changements",
+  "nb_changements_critiques": 1
+}
+
+Si aucun changement significatif : { "changements": [], "resume": "Aucun changement substantiel détecté entre les deux versions.", "nb_changements_critiques": 0 }`
+    }]
+  });
+
+  const raw = message.content[0].text.trim();
+  const match = raw.match(/\{[\s\S]*\}/);
+  if (!match) return { changements: [], resume: 'Analyse incomplète — réessayez', nb_changements_critiques: 0 };
+
+  const result = JSON.parse(match[0]);
+  if (result.changements) {
+    result.changements = result.changements.map((c, i) => ({ ...c, id: c.id || `chgt_${i + 1}` }));
+  }
+  return result;
+};
+
+/**
+ * Analyser l'impact croisé d'un changement détecté dans un document (DIP ou Contrat)
+ * sur les éléments correspondants de l'autre document — coeur du "tunnel" d'informations.
+ *
+ * @param {object} params
+ *   sourceType   — "dip" | "contract" — document où le changement a été détecté
+ *   changes      — tableau de changements (depuis compareDIPVersions ou compareContractVersions)
+ *   targetItems  — sections ou clauses actuelles du document cible [{ number, title, content }]
+ */
+const analyzeCrossImpact = async ({ sourceType, changes, targetItems }) => {
+  if (!changes || changes.length === 0 || !targetItems || targetItems.length === 0) {
+    return { impacts: [] };
+  }
+
+  const targetLabel = sourceType === 'dip' ? 'contrat de franchise' : 'DIP';
+  const sourceLabel = sourceType === 'dip' ? 'DIP' : 'contrat de franchise';
+
+  const message = await callClaude({
+    model: MODEL_HAIKU,
+    max_tokens: 2048,
+    system: CACHED_SYSTEM_CONTRACT,
+    messages: [{
+      role: 'user',
+      content: `Des changements viennent d'être détectés dans le ${sourceLabel}. Détermine s'ils rendent obsolètes ou incohérents des éléments du ${targetLabel} lié.
+
+CHANGEMENTS DÉTECTÉS DANS LE ${sourceLabel.toUpperCase()} :
+${JSON.stringify(changes.map(c => ({ type: c.type, titre: c.section || c.clause, ancien: c.ancien, nouveau: c.nouveau, impact_legal: c.impact_legal })), null, 2)}
+
+ÉLÉMENTS ACTUELS DU ${targetLabel.toUpperCase()} :
+${targetItems.map(t => `[${t.number}] ${t.title} : ${(t.content || '').substring(0, 300)}`).join('\n\n')}
+
+Pour chaque élément du ${targetLabel} potentiellement rendu incohérent par un changement ci-dessus, retourne un impact. Ignore les éléments non concernés.
+
+Retourne ce JSON exactement :
+{
+  "impacts": [
+    {
+      "target_item_number": 2,
+      "target_item_title": "Droit d'entrée et redevances",
+      "reason": "Le droit d'entrée a été modifié dans le DIP mais ce montant n'a pas été mis à jour ici",
+      "suggestion": "Aligner ce montant sur la nouvelle valeur du DIP",
+      "urgency": "haute"
+    }
+  ]
+}
+
+Valeurs pour urgency : "haute" | "moyenne" | "faible"
+Si aucun impact : { "impacts": [] }`
+    }]
+  });
+
+  const raw = message.content[0].text.trim();
+  const match = raw.match(/\{[\s\S]*\}/);
+  if (!match) return { impacts: [] };
+  return JSON.parse(match[0]);
+};
+
 module.exports = {
   parseDIPSections, compareDIPVersions, detectChanges,
   generateUpdateSummary, correctSection, correctSectionWithAnswers,
-  analyzeDocumentForDIPImpact, generateChangesCertificate
+  analyzeDocumentForDIPImpact, generateChangesCertificate,
+  parseContractClauses, compareContractVersions, analyzeCrossImpact,
+  CONTRACT_CLAUSES_DEFAULT, CLAUSE_DIP_SECTION_MAP
 };

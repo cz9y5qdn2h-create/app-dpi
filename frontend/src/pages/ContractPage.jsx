@@ -1,0 +1,298 @@
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
+import api from '../lib/api';
+import PageHeader from '../components/ui/PageHeader';
+import StatusBadge from '../components/ui/StatusBadge';
+import LoadingSpinner from '../components/ui/LoadingSpinner';
+import {
+  Upload, ChevronDown, ChevronUp, Edit3, Check, X,
+  FileText, ScrollText, Link2, Share2, Copy, Link2Off, Eye
+} from 'lucide-react';
+import toast from 'react-hot-toast';
+
+export default function ContractPage() {
+  const queryClient = useQueryClient();
+  const [expandedClause, setExpandedClause] = useState(null);
+  const [editingClause, setEditingClause] = useState(null);
+  const [editContent, setEditContent] = useState('');
+  const [shareLoading, setShareLoading] = useState(false);
+  const [showSharePanel, setShowSharePanel] = useState(false);
+  const [showLinkPanel, setShowLinkPanel] = useState(false);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['contracts'],
+    queryFn: () => api.get('/contracts').then(r => r.data)
+  });
+
+  const { data: dipData } = useQuery({
+    queryKey: ['dips'],
+    queryFn: () => api.get('/dip').then(r => r.data)
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ contractId, clauseId, content, status }) =>
+      api.put(`/contracts/${contractId}/clauses/${clauseId}`, { content, status }),
+    onSuccess: () => {
+      toast.success('Clause mise à jour');
+      queryClient.invalidateQueries({ queryKey: ['contracts'] });
+      setEditingClause(null);
+    },
+    onError: (err) => toast.error(err.message)
+  });
+
+  const linkMutation = useMutation({
+    mutationFn: ({ contractId, dipId }) => api.post(`/contracts/${contractId}/link-dip`, { dip_id: dipId }),
+    onSuccess: () => {
+      toast.success('Contrat lié au DIP — le tunnel d\'informations est actif');
+      queryClient.invalidateQueries({ queryKey: ['contracts'] });
+      setShowLinkPanel(false);
+    },
+    onError: (err) => toast.error(err.message)
+  });
+
+  const contract = data?.contracts?.find(c => c.status === 'actif') ?? data?.contracts?.[0];
+  const clauses = contract?.contract_clauses?.sort((a, b) => a.clause_number - b.clause_number) || [];
+  const dip = dipData?.dips?.find(d => d.status === 'actif') ?? dipData?.dips?.[0];
+
+  const handleGenerateShareLink = async () => {
+    if (!contract) return;
+    setShareLoading(true);
+    try {
+      await api.post(`/contracts/${contract.id}/share-link`);
+      queryClient.invalidateQueries({ queryKey: ['contracts'] });
+      toast.success('Lien de partage généré');
+    } catch {
+      toast.error('Impossible de générer le lien');
+    } finally {
+      setShareLoading(false);
+    }
+  };
+
+  const handleRevokeShareLink = async () => {
+    if (!contract) return;
+    setShareLoading(true);
+    try {
+      await api.delete(`/contracts/${contract.id}/share-link`);
+      queryClient.invalidateQueries({ queryKey: ['contracts'] });
+      toast.success('Lien révoqué');
+    } catch {
+      toast.error('Impossible de révoquer le lien');
+    } finally {
+      setShareLoading(false);
+    }
+  };
+
+  const handleCopyShareLink = () => {
+    if (!contract?.share_token) return;
+    const url = `${window.location.origin}/contrat/partage/${contract.share_token}`;
+    navigator.clipboard.writeText(url).then(() => toast.success('Lien copié dans le presse-papiers'));
+  };
+
+  if (isLoading) return <div className="flex justify-center py-24"><LoadingSpinner size="lg" /></div>;
+
+  if (!contract) {
+    return (
+      <div className="max-w-xl mx-auto space-y-6 animate-fade-in">
+        <PageHeader title="Mon contrat de franchise" subtitle="Importez votre contrat de franchise pour activer le tunnel d'informations avec le DIP" />
+        <Link to="/contrat/upload" className="card hover:border-gold/40 transition-all cursor-pointer group text-center py-8 block">
+          <Upload className="w-8 h-8 text-gold mx-auto mb-3 group-hover:scale-110 transition-transform" />
+          <p className="font-dm-sans text-sm font-medium text-text-primary">Importer un contrat</p>
+          <p className="font-dm-sans text-xs text-text-secondary mt-1">PDF ou DOCX existant</p>
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <PageHeader
+        title={contract.title}
+        subtitle={`Score de conformité : ${contract.conformity_score}% • ${clauses.length} clauses`}
+        action={
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowLinkPanel(v => !v)}
+              className={`btn-secondary flex items-center gap-2 text-sm ${showLinkPanel ? 'border-gold/40 text-gold' : ''}`}
+            >
+              <Link2 className="w-4 h-4" />
+              {contract.linked_dip_id ? 'DIP lié' : 'Lier au DIP'}
+              {contract.linked_dip_id && <span className="w-2 h-2 rounded-full bg-success flex-shrink-0" />}
+            </button>
+            <button
+              onClick={() => setShowSharePanel(v => !v)}
+              className={`btn-secondary flex items-center gap-2 text-sm ${showSharePanel ? 'border-gold/40 text-gold' : ''}`}
+            >
+              <Share2 className="w-4 h-4" />
+              Partager
+              {contract.share_token && <span className="w-2 h-2 rounded-full bg-success flex-shrink-0" title="Lien actif" />}
+            </button>
+            <Link to="/contrat/upload" className="btn-secondary flex items-center gap-2 text-sm">
+              <Upload className="w-4 h-4" /> Mettre à jour
+            </Link>
+          </div>
+        }
+      />
+
+      {showLinkPanel && (
+        <div className="card border-gold/20 animate-slide-up">
+          <div className="flex items-center gap-3 mb-4">
+            <Link2 className="w-4 h-4 text-gold" />
+            <p className="font-dm-sans text-sm font-medium text-text-primary">Tunnel d'informations DIP ↔ Contrat</p>
+          </div>
+          <p className="font-dm-sans text-xs text-text-secondary mb-4">
+            Le DIP doit être remis au franchisé avant la signature du contrat — les deux documents sont juridiquement liés.
+            En les reliant, toute modification substantielle de l'un déclenche automatiquement une alerte de cohérence sur l'autre.
+          </p>
+          {dip ? (
+            <div className="flex items-center justify-between bg-bg-elevated rounded-lg px-4 py-3">
+              <div className="flex items-center gap-2">
+                <FileText className="w-4 h-4 text-gold/60" />
+                <span className="font-dm-sans text-sm text-text-primary">{dip.title}</span>
+              </div>
+              <button
+                onClick={() => linkMutation.mutate({ contractId: contract.id, dipId: dip.id })}
+                disabled={linkMutation.isPending || contract.linked_dip_id === dip.id}
+                className="btn-primary text-xs py-1.5 px-3"
+              >
+                {contract.linked_dip_id === dip.id ? 'Déjà lié' : 'Lier ce DIP'}
+              </button>
+            </div>
+          ) : (
+            <p className="font-dm-sans text-xs text-text-secondary italic">Aucun DIP actif à lier pour le moment.</p>
+          )}
+        </div>
+      )}
+
+      {showSharePanel && (
+        <div className="card border-gold/20 animate-slide-up">
+          <div className="flex items-center gap-3 mb-4">
+            <Share2 className="w-4 h-4 text-gold" />
+            <p className="font-dm-sans text-sm font-medium text-text-primary">Partage sécurisé</p>
+          </div>
+          {contract.share_token ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 bg-bg-elevated rounded-lg px-3 py-2">
+                <Link2Off className="w-3.5 h-3.5 text-text-secondary flex-shrink-0" />
+                <span className="font-dm-mono text-xs text-text-primary truncate flex-1">
+                  {window.location.origin}/contrat/partage/{contract.share_token}
+                </span>
+                <button onClick={handleCopyShareLink} className="btn-ghost p-1 flex-shrink-0" title="Copier le lien">
+                  <Copy className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 font-dm-sans text-xs text-text-secondary">
+                  <Eye className="w-3.5 h-3.5" />
+                  {contract.share_token_views || 0} consultation{(contract.share_token_views || 0) !== 1 ? 's' : ''}
+                </div>
+                <button
+                  onClick={handleRevokeShareLink}
+                  disabled={shareLoading}
+                  className="btn-ghost flex items-center gap-2 text-xs text-danger hover:text-danger/80"
+                >
+                  {shareLoading ? <LoadingSpinner size="sm" /> : <Link2Off className="w-3.5 h-3.5" />}
+                  Révoquer l'accès
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button onClick={handleGenerateShareLink} disabled={shareLoading} className="btn-liquid-glass-prominent flex items-center gap-2 text-sm">
+              {shareLoading ? <LoadingSpinner size="sm" /> : <Share2 className="w-4 h-4" />}
+              Générer le lien de partage
+            </button>
+          )}
+        </div>
+      )}
+
+      <div className="card">
+        <div className="flex items-center justify-between mb-2">
+          <span className="font-dm-sans text-sm text-text-secondary">Conformité globale</span>
+          <span className="font-dm-mono text-sm text-gold">{contract.conformity_score}%</span>
+        </div>
+        <div className="w-full h-2 bg-bg-elevated rounded-full overflow-hidden">
+          <div className="h-full rounded-full bg-gold transition-all duration-700" style={{ width: `${contract.conformity_score}%` }} />
+        </div>
+        <div className="flex gap-6 mt-4">
+          {[
+            { label: 'Conformes', key: 'conforme', color: 'text-success' },
+            { label: 'À vérifier', key: 'a_verifier', color: 'text-gold' },
+            { label: 'Non conformes', key: 'non_conforme', color: 'text-danger' },
+          ].map(({ label, key, color }) => (
+            <div key={key}>
+              <p className={`font-cormorant text-2xl ${color}`}>{clauses.filter(c => c.status === key).length}</p>
+              <p className="font-dm-sans text-xs text-text-secondary">{label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        {clauses.map(clause => (
+          <ClauseAccordion
+            key={clause.id}
+            clause={clause}
+            contractId={contract.id}
+            isExpanded={expandedClause === clause.id}
+            onToggle={() => setExpandedClause(expandedClause === clause.id ? null : clause.id)}
+            isEditing={editingClause === clause.id}
+            editContent={editContent}
+            onEdit={() => { setEditingClause(clause.id); setEditContent(clause.content || ''); }}
+            onEditChange={setEditContent}
+            onSave={(status) => updateMutation.mutate({ contractId: contract.id, clauseId: clause.id, content: editContent, status })}
+            onCancelEdit={() => setEditingClause(null)}
+            isSaving={updateMutation.isPending}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ClauseAccordion({ clause, isExpanded, onToggle, isEditing, editContent, onEdit, onEditChange, onSave, onCancelEdit, isSaving }) {
+  return (
+    <div className={`card transition-all duration-300 ${isExpanded ? 'border-border-default' : 'hover:border-border-default cursor-pointer'}`}>
+      <div className="flex items-center gap-4" onClick={isEditing ? undefined : onToggle}>
+        <ScrollText className="w-4 h-4 text-gold/60 flex-shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="font-dm-sans text-sm text-text-primary font-medium">{clause.clause_title}</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <StatusBadge status={clause.status} />
+          {isExpanded ? <ChevronUp className="w-4 h-4 text-text-secondary" /> : <ChevronDown className="w-4 h-4 text-text-secondary" />}
+        </div>
+      </div>
+
+      {isExpanded && (
+        <div className="mt-4 pt-4 border-t border-border-subtle animate-slide-up">
+          {isEditing ? (
+            <div className="space-y-3">
+              <textarea className="input-field min-h-48 resize-none font-dm-mono text-sm" value={editContent} onChange={e => onEditChange(e.target.value)} placeholder="Contenu de la clause..." />
+              <div className="flex items-center gap-3">
+                <button onClick={() => onSave('conforme')} disabled={isSaving} className="btn-primary flex items-center gap-2 text-sm py-2">
+                  {isSaving ? <LoadingSpinner size="sm" /> : <Check className="w-4 h-4" />} Valider comme conforme
+                </button>
+                <button onClick={() => onSave('a_verifier')} disabled={isSaving} className="btn-secondary flex items-center gap-2 text-sm py-2">Enregistrer</button>
+                <button onClick={onCancelEdit} className="btn-ghost flex items-center gap-2 text-sm"><X className="w-4 h-4" /> Annuler</button>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <div className="bg-bg-elevated rounded p-4 mb-4">
+                <pre className="font-dm-sans text-sm text-text-primary whitespace-pre-wrap leading-relaxed">
+                  {clause.content || <span className="text-text-secondary italic">Contenu non renseigné</span>}
+                </pre>
+              </div>
+              <div className="flex items-center justify-between">
+                <p className="font-dm-mono text-xs text-text-secondary">
+                  Mis à jour le {clause.last_updated ? new Date(clause.last_updated).toLocaleDateString('fr-FR') : 'N/A'}
+                </p>
+                <button onClick={onEdit} className="btn-ghost flex items-center gap-2 text-sm"><Edit3 className="w-4 h-4" /> Modifier</button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

@@ -5,6 +5,7 @@ const { v4: uuidv4 } = require('uuid');
 const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware, requireFranchisor } = require('../middleware/auth');
 const { parseDIPSections, compareDIPVersions } = require('../config/claude');
+const { triggerCrossImpactAlerts } = require('../utils/crossImpact');
 const errMsg = require('../config/errorMessage');
 const router = express.Router();
 
@@ -158,6 +159,25 @@ router.post('/process', authMiddleware, requireFranchisor, async (req, res) => {
         }),
         timestamp: new Date().toISOString()
       });
+
+      // Tunnel : un changement de DIP substantiel peut impacter le contrat de franchise lié
+      if (comparison.changements?.length > 0) {
+        const { data: linkedContract } = await supabaseAdmin
+          .from('franchise_contracts')
+          .select('id')
+          .eq('linked_dip_id', previousDip.id)
+          .eq('status', 'actif')
+          .limit(1)
+          .single();
+
+        if (linkedContract) {
+          await triggerCrossImpactAlerts({
+            sourceType: 'dip',
+            changes: comparison.changements,
+            contractId: linkedContract.id
+          }).catch(err => console.error('Cross-impact (dip->contract) error:', err.message));
+        }
+      }
 
       return res.json({
         mode:                    'comparison',
