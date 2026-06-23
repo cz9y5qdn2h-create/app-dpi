@@ -55,6 +55,7 @@
     "generateDip": "Generate a DIP",
     "myContract": "My contract",
     "newContractVersion": "New contract version",
+    "generateContract": "Generate a contract",
     "alerts": "Alerts",
     "history": "History",
     "franchisees": "Franchisees",
@@ -155,6 +156,7 @@
     "actions": {
       "newVersion": "New version",
       "generate": "Generate",
+      "generateContract": "Generate a contract",
       "history": "History",
       "contact": "Contact Iralink"
     },

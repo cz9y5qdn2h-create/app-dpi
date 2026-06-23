@@ -43,6 +43,7 @@ export default function Sidebar({ open, onClose }) {
     { to: '/dip/upload',   icon: Upload,          label: t('nav.newVersion') },
     { to: '/dip/generate', icon: Sparkles,        label: t('nav.generateDip') },
     { to: '/contrat',      icon: ScrollText,      label: t('nav.myContract') },
+    { to: '/contrat/generate', icon: Sparkles,    label: t('nav.generateContract') },
     { to: '/alerts',       icon: Bell,            label: t('nav.alerts'), count: pendingCount },
     { to: '/history',      icon: History,         label: t('nav.history') },
     { to: '/franchisees',  icon: Users,           label: t('nav.franchisees') },

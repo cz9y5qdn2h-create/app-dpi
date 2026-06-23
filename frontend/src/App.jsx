@@ -13,6 +13,7 @@ import UploadDIPPage from './pages/UploadDIPPage';
 import GenerateDIPPage from './pages/GenerateDIPPage';
 import ContractPage from './pages/ContractPage';
 import UploadContractPage from './pages/UploadContractPage';
+import GenerateContractPage from './pages/GenerateContractPage';
 import SharedContractPage from './pages/SharedContractPage';
 import AlertsPage from './pages/AlertsPage';
 import HistoryPage from './pages/HistoryPage';
@@ -93,6 +94,7 @@ export default function App() {
           <Route path="dip/generate" element={<ErrorBoundary><GenerateDIPPage /></ErrorBoundary>} />
           <Route path="contrat" element={<ErrorBoundary><ContractPage /></ErrorBoundary>} />
           <Route path="contrat/upload" element={<ErrorBoundary><UploadContractPage /></ErrorBoundary>} />
+          <Route path="contrat/generate" element={<ErrorBoundary><GenerateContractPage /></ErrorBoundary>} />
           <Route path="alerts" element={<ErrorBoundary><AlertsPage /></ErrorBoundary>} />
           <Route path="history" element={<ErrorBoundary><HistoryPage /></ErrorBoundary>} />
           <Route path="franchisees" element={<ErrorBoundary><FranchiseesPage /></ErrorBoundary>} />

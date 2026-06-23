@@ -842,6 +842,116 @@ Si aucun changement significatif : { "changements": [], "resume": "Aucun changem
 };
 
 /**
+ * Générer un contrat de franchise à partir d'un DIP déjà analysé.
+ * Le DIP contient déjà la majorité des données juridiques nécessaires (territoire,
+ * conditions financières, durée, litiges...) — l'IA les reformule en clauses contractuelles.
+ * formData permet un mode "assisté" : réponses complémentaires sur des points propres
+ * au contrat et absents du DIP (préavis de résiliation, juridiction compétente, etc.)
+ */
+const generateContractFromDIP = async (dipSections, formData = {}) => {
+  if (!dipSections || dipSections.length === 0) {
+    throw new Error('Aucune section de DIP fournie pour générer le contrat.');
+  }
+
+  const dipContent = dipSections
+    .sort((a, b) => a.section_number - b.section_number)
+    .map(s => `[Section ${s.section_number}] ${s.section_title}\n${s.content || 'Non renseigné'}`)
+    .join('\n\n');
+
+  const hasFormData = formData && Object.keys(formData).length > 0;
+  const formSection = hasFormData
+    ? `\nRÉPONSES COMPLÉMENTAIRES DU FRANCHISEUR (priorité sur le DIP en cas de conflit) :\n${JSON.stringify(formData, null, 2)}\n`
+    : '';
+
+  const message = await callClaude({
+    model: MODEL_OPUS,
+    thinking: { type: 'adaptive' },
+    max_tokens: 8192,
+    system: CACHED_SYSTEM_CONTRACT,
+    messages: [{
+      role: 'user',
+      content: `Rédige un contrat de franchise complet à partir du Document d'Information Précontractuelle (DIP) ci-dessous, déjà analysé et validé par le franchiseur.
+
+DIP DU FRANCHISEUR :
+${dipContent.substring(0, 18000)}
+${formSection}
+CLAUSES À RÉDIGER :
+1. Objet et durée du contrat — durée en années, date de prise d'effet, conditions de renouvellement
+2. Droit d'entrée et redevances — montant du droit d'entrée, taux de redevance d'exploitation, taux de redevance publicitaire
+3. Territoire et exclusivité — périmètre territorial, caractère exclusif ou non
+4. Obligations du franchiseur — transmission du savoir-faire, formation, assistance continue
+5. Obligations du franchisé — respect des normes, redevances, approvisionnement, reporting
+6. Propriété intellectuelle et savoir-faire — licence de marque, confidentialité du savoir-faire
+7. Clause de non-concurrence — durée, périmètre géographique post-contractuel
+8. Conditions de résiliation — motifs, préavis, conséquences pour chaque partie
+9. Conditions de cession et transmission — droit de préemption, agrément du cessionnaire
+10. Règlement des litiges — juridiction compétente, clause de médiation/arbitrage
+
+INSTRUCTIONS :
+- Reformule en clauses contractuelles juridiquement rigoureuses les informations déjà présentes dans le DIP (territoire = section 7, finances = section 6, contrat = section 8, litiges = section 9, etc.)
+- Utilise les réponses complémentaires en priorité quand elles existent
+- Si une information reste manquante après le DIP et le formulaire, indique "À compléter" et liste-la dans missing_data
+- Le texte de chaque clause doit être directement utilisable dans le contrat final
+- Veille à la cohérence stricte entre le contrat généré et le DIP source (mêmes montants, mêmes durées, même territoire)
+
+Retourne ce JSON exactement :
+{
+  "clauses": [
+    {
+      "clause_number": 1,
+      "clause_title": "Objet et durée du contrat",
+      "content": "texte rédigé pour cette clause, prêt à intégrer au contrat",
+      "status": "conforme",
+      "issues": [],
+      "suggestions": ["améliorations possibles"]
+    }
+  ],
+  "global_score": 80,
+  "summary": "état global du contrat généré et cohérence avec le DIP source",
+  "missing_data": ["liste des informations manquantes à fournir avant signature"]
+}
+
+Valeurs pour status : "conforme" | "a_verifier" | "non_conforme"`
+    }]
+  });
+
+  const raw = message.content[0].text.trim();
+  const match = raw.match(/\{[\s\S]*\}/);
+  if (!match) throw new Error('L\'IA n\'a pas retourné de JSON valide. Réessayez.');
+
+  const result = JSON.parse(match[0]);
+
+  if (!result.clauses || result.clauses.length < 10) {
+    const existing = new Set((result.clauses || []).map(c => c.clause_number));
+    result.clauses = result.clauses || [];
+    for (let i = 1; i <= 10; i++) {
+      if (!existing.has(i)) {
+        result.clauses.push({
+          clause_number: i,
+          clause_title: CONTRACT_CLAUSES_DEFAULT[i - 1],
+          content: 'À compléter',
+          status: 'non_conforme',
+          issues: ['Clause non générée — informations insuffisantes dans le DIP'],
+          suggestions: []
+        });
+      }
+    }
+    result.clauses.sort((a, b) => a.clause_number - b.clause_number);
+  }
+
+  result.clauses = result.clauses.map((c, idx) => ({
+    ...c,
+    linked_dip_section_number: CLAUSE_DIP_SECTION_MAP[c.clause_number - 1] || CLAUSE_DIP_SECTION_MAP[idx]
+  }));
+
+  result.global_score = result.global_score ?? Math.round(
+    (result.clauses.filter(c => c.status === 'conforme').length / result.clauses.length) * 100
+  );
+
+  return result;
+};
+
+/**
  * Analyser l'impact croisé d'un changement détecté dans un document (DIP ou Contrat)
  * sur les éléments correspondants de l'autre document — coeur du "tunnel" d'informations.
  *
@@ -902,6 +1012,6 @@ module.exports = {
   parseDIPSections, compareDIPVersions, detectChanges,
   generateUpdateSummary, correctSection, correctSectionWithAnswers,
   analyzeDocumentForDIPImpact, generateChangesCertificate,
-  parseContractClauses, compareContractVersions, analyzeCrossImpact,
+  parseContractClauses, compareContractVersions, generateContractFromDIP, analyzeCrossImpact,
   CONTRACT_CLAUSES_DEFAULT, CLAUSE_DIP_SECTION_MAP
 };

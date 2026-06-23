@@ -15,7 +15,7 @@ import OnboardingModal from '../components/OnboardingModal';
 import {
   Upload, RefreshCw, FileText,
   AlertTriangle, CheckCircle, History,
-  Phone, Sparkles, Users, Download, ChevronRight, Clock
+  Phone, Sparkles, Users, Download, ChevronRight, Clock, ScrollText
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -102,6 +102,10 @@ export default function DashboardPage() {
             <Link to="/dip/generate" className="lg-pill-btn">
               <Sparkles className="w-3 h-3" style={{ opacity: 0.6 }} />
               {t('dashboard.actions.generate')}
+            </Link>
+            <Link to="/contrat/generate" className={`lg-pill-btn ${!dip ? 'opacity-40 pointer-events-none' : ''}`}>
+              <ScrollText className="w-3 h-3" style={{ opacity: 0.6 }} />
+              {t('dashboard.actions.generateContract')}
             </Link>
             <Link to="/history" className={`lg-pill-btn ${!dip ? 'opacity-40 pointer-events-none' : ''}`}>
               <History className="w-3 h-3" style={{ opacity: 0.6 }} />

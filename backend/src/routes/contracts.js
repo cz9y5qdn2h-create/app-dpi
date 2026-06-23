@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware, requireFranchisor } = require('../middleware/auth');
-const { parseContractClauses, compareContractVersions } = require('../config/claude');
+const { parseContractClauses, compareContractVersions, generateContractFromDIP } = require('../config/claude');
 const { triggerCrossImpactAlerts } = require('../utils/crossImpact');
 const errMsg = require('../config/errorMessage');
 const router = express.Router();
@@ -313,6 +313,103 @@ router.post('/approve-changes', authMiddleware, requireFranchisor, async (req, r
     res.json({ message: 'Nouvelle version du contrat activée', contract: newContract });
   } catch (err) {
     console.error('Approve contract changes error:', err.message);
+    res.status(500).json({ error: errMsg(err) });
+  }
+});
+
+// POST /api/contracts/generate — génère un contrat avec l'IA à partir d'un DIP existant
+router.post('/generate', authMiddleware, requireFranchisor, async (req, res) => {
+  const { dip_id, formData } = req.body;
+  if (!dip_id) return res.status(400).json({ error: 'dip_id requis' });
+
+  try {
+    const { data: dip, error: dipError } = await supabaseAdmin
+      .from('dip_documents')
+      .select('id, title, dip_sections(*)')
+      .eq('id', dip_id)
+      .eq('user_id', req.user.id)
+      .single();
+
+    if (dipError || !dip) return res.status(404).json({ error: 'DIP introuvable' });
+    if (!dip.dip_sections || dip.dip_sections.length === 0) {
+      return res.status(400).json({ error: 'Ce DIP ne contient aucune section analysée' });
+    }
+
+    const result = await generateContractFromDIP(dip.dip_sections, formData || {});
+    res.json({ success: true, ...result });
+  } catch (err) {
+    console.error('Contract generate error:', err.message);
+    res.status(500).json({ error: errMsg(err) });
+  }
+});
+
+// POST /api/contracts/create-from-agent — sauvegarde un contrat généré par l'agent IA
+router.post('/create-from-agent', authMiddleware, requireFranchisor, async (req, res) => {
+  const { clauses, global_score, title, dip_id } = req.body;
+
+  if (!clauses || !Array.isArray(clauses) || clauses.length === 0) {
+    return res.status(400).json({ error: 'clauses requis (tableau non vide)' });
+  }
+
+  try {
+    await supabaseAdmin
+      .from('franchise_contracts')
+      .update({ status: 'archive' })
+      .eq('user_id', req.user.id)
+      .eq('status', 'actif');
+
+    const docTitle = title || `Contrat de franchise — ${new Date().getFullYear()}`;
+
+    const { data: contractDoc, error: contractError } = await supabaseAdmin
+      .from('franchise_contracts')
+      .insert({
+        user_id: req.user.id,
+        linked_dip_id: dip_id || null,
+        title: docTitle,
+        file_url: null,
+        status: 'actif',
+        conformity_score: global_score ?? Math.round(
+          (clauses.filter(c => c.status === 'conforme').length / clauses.length) * 100
+        ),
+        raw_text: clauses.map(c => `=== ${c.clause_title} ===\n${c.content}`).join('\n\n').substring(0, 50000)
+      })
+      .select()
+      .single();
+
+    if (contractError) throw new Error(contractError.message);
+
+    const clausesToInsert = clauses.map(c => ({
+      contract_id: contractDoc.id,
+      linked_dip_section_id: null,
+      clause_number: c.clause_number,
+      clause_title: c.clause_title,
+      content: c.content || '',
+      status: c.status || 'a_verifier',
+      legal_blocking: c.legal_blocking || false,
+      mandatory_elements_found: c.mandatory_elements_found || [],
+      mandatory_elements_missing: c.mandatory_elements_missing || [],
+      last_checked: new Date().toISOString(),
+      last_updated: new Date().toISOString()
+    }));
+
+    const { error: clauseError } = await supabaseAdmin.from('contract_clauses').insert(clausesToInsert);
+    if (clauseError) throw new Error(clauseError.message);
+
+    await supabaseAdmin.from('audit_log').insert({
+      contract_id: contractDoc.id,
+      action: 'generated_by_agent',
+      user_id: req.user.id,
+      new_content: JSON.stringify({ clauses_count: clauses.length, score: contractDoc.conformity_score, dip_id: dip_id || null }),
+      timestamp: new Date().toISOString()
+    });
+
+    res.status(201).json({
+      contract: contractDoc,
+      clauses_count: clausesToInsert.length,
+      conformity_score: contractDoc.conformity_score
+    });
+  } catch (err) {
+    console.error('Contract create-from-agent error:', err.message);
     res.status(500).json({ error: errMsg(err) });
   }
 });
