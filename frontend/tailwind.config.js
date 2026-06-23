@@ -25,9 +25,9 @@ export default {
         'border-dim':     'var(--border-dim)',
       },
       fontFamily: {
-        'cormorant': ['Cormorant Garamond', 'Georgia', 'serif'],
-        'dm-sans':   ['DM Sans', 'sans-serif'],
-        'dm-mono':   ['DM Mono', 'monospace'],
+        'cormorant': ['Geist', 'sans-serif'],
+        'dm-sans':   ['Geist', 'sans-serif'],
+        'dm-mono':   ['Geist Mono', 'monospace'],
       },
       fontSize: {
         'display': ['3.5rem', { lineHeight: '1.1', fontWeight: '300' }],

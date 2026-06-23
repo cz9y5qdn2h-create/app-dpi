@@ -1,9 +1,12 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 
 const THEMES = [
-  { id: 'clair',  label: 'Clair',  icon: 'sun'  },
-  { id: 'sombre', label: 'Sombre', icon: 'moon' },
+  { id: 'sobre',   label: 'Sobre',   icon: 'moon' },
+  { id: 'glass',   label: 'Glass',   icon: 'sparkle' },
+  { id: 'lumiere', label: 'Lumière', icon: 'sun' },
 ];
+
+const VALID_IDS = THEMES.map(t => t.id);
 
 const ThemeContext = createContext(null);
 
@@ -16,8 +19,8 @@ export function useTheme() {
 export default function ThemeProvider({ children }) {
   const [theme, setThemeState] = useState(() => {
     const saved = localStorage.getItem('dippro-theme');
-    if (saved === 'clair' || saved === 'sombre') return saved;
-    return 'sombre';
+    if (VALID_IDS.includes(saved)) return saved;
+    return 'glass';
   });
 
   useEffect(() => {
@@ -25,10 +28,8 @@ export default function ThemeProvider({ children }) {
     localStorage.setItem('dippro-theme', theme);
   }, [theme]);
 
-  const toggleTheme = () => setThemeState(t => t === 'clair' ? 'sombre' : 'clair');
-
   return (
-    <ThemeContext.Provider value={{ theme, setTheme: setThemeState, toggleTheme, themes: THEMES }}>
+    <ThemeContext.Provider value={{ theme, setTheme: setThemeState, themes: THEMES }}>
       {children}
     </ThemeContext.Provider>
   );

@@ -369,8 +369,7 @@
     },
     "theme": {
       "label": "Thème de l'interface",
-      "lightMode": "Mode clair actif",
-      "darkMode": "Mode sombre actif"
+      "description": "Choisissez l'apparence de votre espace DIPpro"
     },
     "password": {
       "label": "Modifiez votre mot de passe de connexion",

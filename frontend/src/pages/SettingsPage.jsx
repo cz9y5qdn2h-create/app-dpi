@@ -6,7 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import PageHeader from '../components/ui/PageHeader';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
-import { Save, Plus, Trash2, Database, Mail, Cloud, Globe, CheckCircle, Eye, EyeOff, Send, Sun, Moon, Lock, Key, Calendar, AlertCircle } from 'lucide-react';
+import { Save, Plus, Trash2, Database, Mail, Cloud, Globe, CheckCircle, Eye, EyeOff, Send, Sun, Moon, Sparkles, Lock, Key, Calendar, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const SOURCE_TYPES = [
@@ -41,7 +41,7 @@ export default function SettingsPage() {
   const queryClient = useQueryClient();
   const { t } = useTranslation();
   const { profile, supabase, isTrialExpired, trialDaysLeft } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, setTheme, themes } = useTheme();
   const [profileForm, setProfileForm] = useState({
     company_name: '', phone: '', address: '',
     automation_level: 1,
@@ -198,21 +198,23 @@ export default function SettingsPage() {
       {/* Apparence */}
       <div className="card">
         <h2 className="font-cormorant text-xl mb-5">{t('settings.sections.appearance')}</h2>
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="font-dm-sans text-sm text-text-primary">{t('settings.theme.label')}</p>
-            <p className="font-dm-sans text-xs text-text-secondary mt-0.5">
-              {theme === 'clair' ? t('settings.theme.lightMode') : t('settings.theme.darkMode')}
-            </p>
-          </div>
-          <button
-            onClick={toggleTheme}
-            className={`relative w-14 h-7 rounded-full transition-all duration-300 ${theme === 'sombre' ? 'bg-gold' : 'bg-border-default'}`}
-          >
-            <div className={`absolute top-1 w-5 h-5 rounded-full bg-bg-primary shadow transition-all duration-300 flex items-center justify-center ${theme === 'sombre' ? 'left-8' : 'left-1'}`}>
-              {theme === 'sombre' ? <Moon className="w-3 h-3 text-gold" /> : <Sun className="w-3 h-3 text-text-secondary" />}
-            </div>
-          </button>
+        <p className="font-dm-sans text-sm text-text-primary">{t('settings.theme.label')}</p>
+        <p className="font-dm-sans text-xs text-text-secondary mt-0.5 mb-4">{t('settings.theme.description')}</p>
+        <div className="grid grid-cols-3 gap-3">
+          {themes.map(({ id, label, icon }) => {
+            const Icon = icon === 'moon' ? Moon : icon === 'sun' ? Sun : Sparkles;
+            const active = theme === id;
+            return (
+              <button
+                key={id}
+                onClick={() => setTheme(id)}
+                className={`flex flex-col items-center gap-2 py-4 rounded-xl border transition-all duration-200 ${active ? 'border-gold bg-gold/10' : 'border-border-default hover:border-border-subtle hover:bg-bg-elevated'}`}
+              >
+                <Icon className={`w-5 h-5 ${active ? 'text-gold' : 'text-text-secondary'}`} />
+                <span className={`font-dm-sans text-xs ${active ? 'text-gold' : 'text-text-secondary'}`}>{label}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 

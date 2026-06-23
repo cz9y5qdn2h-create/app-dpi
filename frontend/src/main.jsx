@@ -6,7 +6,7 @@ import { Toaster } from 'react-hot-toast';
 import { HelmetProvider } from 'react-helmet-async';
 import './i18n';
 import App from './App';
-import ThemeProvider, { useTheme } from './context/ThemeContext';
+import ThemeProvider from './context/ThemeContext';
 import './index.css';
 import './styles/liquid-glass.css';
 
@@ -21,27 +21,23 @@ const queryClient = new QueryClient({
   }
 });
 
-const DARK_THEMES = new Set(['nuit', 'azur', 'emeraude']);
-
 function ThemedToaster() {
-  const { theme } = useTheme();
-  const dark = DARK_THEMES.has(theme);
   return (
     <Toaster
       position="top-right"
       toastOptions={{
         style: {
-          background: dark ? 'var(--glass-bg)' : 'rgba(255,255,255,0.92)',
+          background: 'var(--glass-bg)',
           backdropFilter: 'blur(20px)',
-          color: dark ? 'rgb(var(--text-primary))' : '#1a1825',
+          color: 'rgb(var(--text-primary))',
           border: '1px solid var(--border-default)',
           borderRadius: '10px',
-          fontFamily: 'DM Sans, sans-serif',
+          fontFamily: 'Geist, sans-serif',
           fontSize: '14px',
           boxShadow: 'var(--glass-shadow)',
         },
         success: { iconTheme: { primary: 'rgb(var(--gold))', secondary: 'transparent' } },
-        error:   { iconTheme: { primary: '#ef4444', secondary: 'transparent' } },
+        error:   { iconTheme: { primary: 'rgb(var(--danger))', secondary: 'transparent' } },
       }}
     />
   );

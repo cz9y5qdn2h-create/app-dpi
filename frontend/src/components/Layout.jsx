@@ -32,7 +32,11 @@ export default function Layout() {
   }, []);
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen relative overflow-hidden" style={{ background: 'var(--page-bg)' }}>
+      <div className="dip-orb dip-orb-b" />
+      <div className="dip-orb dip-orb-a" />
+      <div className="dip-orb dip-orb-c" />
+
       {sidebarOpen && (
         <div
           className="fixed inset-0 bg-black/60 z-20 lg:hidden"
@@ -42,7 +46,7 @@ export default function Layout() {
 
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <main className="flex-1 min-h-screen lg:ml-64">
+      <main className="relative flex-1 min-h-screen lg:ml-64">
         {/* Mobile header */}
         <header
           className="lg:hidden sticky top-0 z-10 flex items-center justify-between px-4 py-3 border-b"

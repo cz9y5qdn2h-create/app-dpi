@@ -369,8 +369,7 @@
     },
     "theme": {
       "label": "Interface theme",
-      "lightMode": "Light mode active",
-      "darkMode": "Dark mode active"
+      "description": "Choose the look of your DIPpro workspace"
     },
     "password": {
       "label": "Change your login password",

@@ -13,9 +13,11 @@ import {
   Sun, Moon, FolderSync, ScrollText
 } from 'lucide-react';
 
+const THEME_ICONS = { moon: Moon, sparkle: Sparkles, sun: Sun };
+
 export default function Sidebar({ open, onClose }) {
   const { profile, logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { theme, setTheme, themes } = useTheme();
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [calOpen, setCalOpen] = useState(false);
@@ -131,14 +133,23 @@ export default function Sidebar({ open, onClose }) {
             </span>
           </button>
 
-          {/* Theme toggle */}
-          <button
-            onClick={toggleTheme}
-            className="nav-link w-full text-left"
-          >
-            {theme === 'clair' ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
-            <span>{theme === 'clair' ? t('nav.darkMode') : t('nav.lightMode')}</span>
-          </button>
+          {/* Theme switcher */}
+          <div className="flex items-center gap-1 px-1">
+            {themes.map(({ id, label, icon }) => {
+              const Icon = THEME_ICONS[icon];
+              const active = theme === id;
+              return (
+                <button
+                  key={id}
+                  onClick={() => setTheme(id)}
+                  title={label}
+                  className={`flex-1 flex items-center justify-center py-2 rounded-lg transition-colors ${active ? 'bg-gold/15 text-gold' : 'text-text-secondary hover:text-text-primary hover:bg-bg-elevated'}`}
+                >
+                  <Icon className="w-4 h-4" />
+                </button>
+              );
+            })}
+          </div>
 
           {/* User info */}
           <div className="lg-user-chip">
