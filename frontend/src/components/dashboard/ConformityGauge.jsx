@@ -3,7 +3,7 @@ export default function ConformityGauge({ score }) {
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (score / 100) * circumference;
 
-  const color = score >= 80 ? '#22c55e' : score >= 50 ? '#C8A96E' : '#ef4444';
+  const color = score >= 80 ? 'rgb(var(--success))' : score >= 50 ? 'rgb(var(--gold))' : 'rgb(var(--danger))';
   const label = score >= 80 ? 'Conforme' : score >= 50 ? 'En cours' : 'Attention';
 
   return (
@@ -13,7 +13,7 @@ export default function ConformityGauge({ score }) {
         <circle
           cx="60" cy="60" r={radius}
           fill="none"
-          stroke="rgba(200,169,110,0.1)"
+          stroke="rgb(var(--gold) / 0.1)"
           strokeWidth="8"
         />
         {/* Progress */}

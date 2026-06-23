@@ -223,7 +223,7 @@ function AddSourceModal({ onClose, onAdd, prefill }) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="font-dm-sans text-xs font-medium text-text-secondary block mb-1.5">
-              Nom <span style={{ color: '#ef4444' }}>*</span>
+              Nom <span className="text-danger">*</span>
             </label>
             <input
               className="input-field w-full"
@@ -236,7 +236,7 @@ function AddSourceModal({ onClose, onAdd, prefill }) {
 
           <div>
             <label className="font-dm-sans text-xs font-medium text-text-secondary block mb-1.5">
-              URL <span style={{ color: '#ef4444' }}>*</span>
+              URL <span className="text-danger">*</span>
             </label>
             <input
               className="input-field w-full"

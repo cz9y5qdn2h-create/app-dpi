@@ -1,7 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
-import { useTheme } from '../context/ThemeContext';
 import api from '../lib/api';
 import {
   LayoutDashboard, FileText, Bell, Users, MoreHorizontal,
@@ -28,16 +27,14 @@ export default function BottomNav({ onClose }) {
   const [moreOpen, setMoreOpen] = useState(false);
   const navigate = useNavigate();
   const { logout } = useAuth();
-  const { theme } = useTheme();
-  const dark = theme === 'sombre';
 
-  const navBg      = dark ? 'rgba(8,8,8,0.88)'      : 'rgba(255,255,255,0.82)';
-  const sheetBg    = dark ? 'rgba(12,10,8,0.96)'    : 'rgba(255,255,255,0.88)';
-  const sheetBorder= dark ? 'rgba(200,169,110,0.14)' : 'rgba(255,255,255,0.72)';
-  const dividerColor= dark? 'rgba(200,169,110,0.08)' : 'rgba(0,0,0,0.07)';
-  const iconBgDefault = dark ? 'rgba(200,169,110,0.06)' : 'rgba(0,0,0,0.06)';
-  const labelColor = dark ? 'rgba(244,242,238,0.42)' : 'rgb(71,85,105)';
-  const titleColor = dark ? '#F4F2EE'                : 'rgb(15,23,42)';
+  const navBg        = 'var(--header-bg)';
+  const sheetBg       = 'var(--glass-bg)';
+  const sheetBorder    = 'var(--glass-border)';
+  const dividerColor   = 'var(--border-subtle)';
+  const iconBgDefault  = 'var(--row-bg)';
+  const labelColor     = 'rgb(var(--text-secondary))';
+  const titleColor     = 'rgb(var(--text-primary))';
 
   const { data: alertsData } = useQuery({
     queryKey: ['alerts', 'pending'],
@@ -59,7 +56,7 @@ export default function BottomNav({ onClose }) {
       {/* More sheet overlay */}
       {moreOpen && (
         <div className="fixed inset-0 z-40 lg:hidden" onClick={() => setMoreOpen(false)}>
-          <div className="absolute inset-0" style={{ background: 'rgba(0,0,0,0.35)', backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }} />
+          <div className="absolute inset-0 bg-black/35" style={{ backdropFilter: 'blur(4px)', WebkitBackdropFilter: 'blur(4px)' }} />
 
           <div
             className="absolute bottom-20 left-3 right-3 rounded-2xl overflow-hidden animate-slide-up"
@@ -85,10 +82,10 @@ export default function BottomNav({ onClose }) {
                 >
                   {({ isActive }) => (
                     <>
-                      <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: isActive ? 'rgba(200,169,110,0.18)' : iconBgDefault, border: isActive ? '1px solid rgba(200,169,110,0.35)' : '1px solid transparent' }}>
-                        <Icon className="w-5 h-5" style={{ color: isActive ? 'rgb(184,147,87)' : labelColor }} />
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: isActive ? 'rgb(var(--gold) / 0.18)' : iconBgDefault, border: isActive ? '1px solid rgb(var(--gold) / 0.35)' : '1px solid transparent' }}>
+                        <Icon className="w-5 h-5" style={{ color: isActive ? 'rgb(var(--gold))' : labelColor }} />
                       </div>
-                      <span className="font-dm-sans text-xs text-center" style={{ color: isActive ? 'rgb(184,147,87)' : labelColor }}>
+                      <span className="font-dm-sans text-xs text-center" style={{ color: isActive ? 'rgb(var(--gold))' : labelColor }}>
                         {label}
                       </span>
                     </>
@@ -101,10 +98,10 @@ export default function BottomNav({ onClose }) {
               <button
                 onClick={handleLogout}
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-colors"
-                style={{ background: 'rgba(220,38,38,0.06)', border: '1px solid rgba(220,38,38,0.12)' }}
+                style={{ background: 'rgb(var(--danger) / 0.06)', border: '1px solid rgb(var(--danger) / 0.12)' }}
               >
-                <LogOut className="w-4 h-4" style={{ color: 'rgb(220,38,38)' }} />
-                <span className="font-dm-sans text-sm" style={{ color: 'rgb(220,38,38)' }}>Déconnexion</span>
+                <LogOut className="w-4 h-4 text-danger" />
+                <span className="font-dm-sans text-sm text-danger">Déconnexion</span>
               </button>
             </div>
           </div>
