@@ -295,7 +295,7 @@ function SectionRow({ section }) {
   return (
     <div className="lg-row justify-between gap-3">
       <div className="flex items-center gap-3 min-w-0">
-        <span className="font-dm-mono text-xs w-6 flex-shrink-0" style={{ color: 'rgba(200,169,110,0.50)' }}>{section.section_number}</span>
+        <span className="font-dm-mono text-xs w-6 flex-shrink-0" style={{ color: 'rgb(var(--gold) / 0.50)' }}>{section.section_number}</span>
         <span className="font-dm-sans text-sm text-text-primary truncate">{section.section_title}</span>
       </div>
       <StatusBadge status={section.status} />

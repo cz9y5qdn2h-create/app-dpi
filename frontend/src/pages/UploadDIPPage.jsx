@@ -284,10 +284,10 @@ export default function UploadDIPPage() {
 
         {/* Carte attestation */}
         {attestationUrl && (
-          <div className="card" style={{ borderColor: 'rgba(200,169,110,0.30)', background: 'rgba(200,169,110,0.04)' }}>
+          <div className="card" style={{ borderColor: 'rgb(var(--gold) / 0.30)', background: 'rgb(var(--gold) / 0.04)' }}>
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0"
-                   style={{ background: 'rgba(200,169,110,0.12)', border: '1px solid rgba(200,169,110,0.28)' }}>
+                   style={{ background: 'rgb(var(--gold) / 0.12)', border: '1px solid rgb(var(--gold) / 0.28)' }}>
                 {attestationStatus === 'pending'
                   ? <Loader2 className="w-5 h-5 text-gold animate-spin" />
                   : <FileCheck className="w-5 h-5 text-gold" />}
@@ -305,7 +305,7 @@ export default function UploadDIPPage() {
             </div>
 
             <div className="rounded-lg px-3 py-2.5 mb-4 font-dm-mono text-xs break-all select-all"
-                 style={{ background: 'rgba(200,169,110,0.06)', border: '1px solid rgba(200,169,110,0.18)', color: 'rgba(200,169,110,0.85)' }}>
+                 style={{ background: 'rgb(var(--gold) / 0.06)', border: '1px solid rgb(var(--gold) / 0.18)', color: 'rgb(var(--gold) / 0.85)' }}>
               {attestationUrl}
             </div>
 

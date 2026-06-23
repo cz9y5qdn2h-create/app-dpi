@@ -13,8 +13,8 @@ export default function MonitorPage() {
         <div
           className="w-16 h-16 rounded-2xl flex items-center justify-center"
           style={{
-            background: 'rgba(200,169,110,0.08)',
-            border: '0.5px solid rgba(200,169,110,0.22)',
+            background: 'rgb(var(--gold) / 0.08)',
+            border: '0.5px solid rgb(var(--gold) / 0.22)',
           }}
         >
           <FolderSync className="w-7 h-7 text-gold" />
@@ -32,12 +32,12 @@ export default function MonitorPage() {
         <div
           className="flex items-center gap-2 px-4 py-2 rounded-full"
           style={{
-            background: 'rgba(200,169,110,0.06)',
-            border: '0.5px solid rgba(200,169,110,0.18)',
+            background: 'rgb(var(--gold) / 0.06)',
+            border: '0.5px solid rgb(var(--gold) / 0.18)',
           }}
         >
           <Clock className="w-3 h-3 text-gold" style={{ opacity: 0.6 }} />
-          <span className="font-dm-mono text-xs" style={{ color: 'rgba(200,169,110,0.65)', letterSpacing: '0.04em' }}>
+          <span className="font-dm-mono text-xs" style={{ color: 'rgb(var(--gold) / 0.65)', letterSpacing: '0.04em' }}>
             Bientôt disponible
           </span>
         </div>
