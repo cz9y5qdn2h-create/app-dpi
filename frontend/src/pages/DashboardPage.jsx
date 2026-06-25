@@ -23,8 +23,6 @@ import { fr } from 'date-fns/locale';
 
 export default function DashboardPage() {
   const { profile } = useAuth();
-
-  if (profile?.role === 'avocat') return <AvocatDashboard />;
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [calOpen, setCalOpen] = useState(false);
@@ -71,6 +69,8 @@ export default function DashboardPage() {
     if (!dip) return;
     await api.post(`/dip/check/${dip.id}`);
   };
+
+  if (profile?.role === 'avocat') return <AvocatDashboard />;
 
   if (dipsLoading) {
     return (
