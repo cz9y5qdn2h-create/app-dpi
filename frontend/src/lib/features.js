@@ -10,4 +10,6 @@ export const FEATURES = {
   copilot: import.meta.env.VITE_FEATURE_COPILOT !== 'false',
   // Activé par défaut — désactiver via VITE_FEATURE_ANALYTICS=false
   analytics: import.meta.env.VITE_FEATURE_ANALYTICS !== 'false',
+  // Activé par défaut — page /design-preview pour valider le redesign avant application globale
+  design_preview: import.meta.env.VITE_FEATURE_DESIGN_PREVIEW !== 'false',
 };

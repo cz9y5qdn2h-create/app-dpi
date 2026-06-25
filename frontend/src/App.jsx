@@ -30,6 +30,7 @@ import WaitlistPage from './pages/WaitlistPage';
 import SharedDIPPage from './pages/SharedDIPPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import DIPAvocatPage from './pages/DIPAvocatPage';
+import DesignPreviewPage from './pages/DesignPreviewPage';
 import LoadingSpinner from './components/ui/LoadingSpinner';
 
 function ProtectedRoute({ children }) {
@@ -108,6 +109,7 @@ export default function App() {
           <Route path="integrations" element={<ErrorBoundary><ApiConfigPage /></ErrorBoundary>} />
           <Route path="analytics/dip/:dipId" element={<ErrorBoundary><AnalyticsPage /></ErrorBoundary>} />
           <Route path="dip/avocat/:franchiseurId" element={<ErrorBoundary><DIPAvocatPage /></ErrorBoundary>} />
+          <Route path="design-preview" element={FEATURES.design_preview ? <ErrorBoundary><DesignPreviewPage /></ErrorBoundary> : <Navigate to="/dashboard" replace />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />
