@@ -24,6 +24,7 @@ const copilotRoutes      = require('./routes/copilot');
 const onboardingRoutes   = require('./routes/onboarding');
 const avocatRoutes       = require('./routes/avocat');
 const integrationsRoutes = require('./routes/integrations');
+const cronRoutes          = require('./routes/cron');
 
 const app = express();
 
@@ -113,6 +114,7 @@ app.use('/api/copilot',       copilotRoutes);
 app.use('/api/onboarding',    onboardingRoutes);
 app.use('/api/avocat',        avocatRoutes);
 app.use('/api/integrations',  integrationsRoutes);
+app.use('/api/cron',          cronRoutes);
 
 // Health check — ne retourne jamais les clés en clair
 app.get('/api/health', async (req, res) => {

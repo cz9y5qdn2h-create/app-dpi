@@ -12,8 +12,9 @@
     }
   },
   "crons": [
-    { "path": "/api/monitor/run", "schedule": "0 6 * * *" },
-    { "path": "/api/monitor/run", "schedule": "0 14 * * *" },
-    { "path": "/api/monitor/run", "schedule": "0 22 * * *" }
+    { "path": "/api/monitor/run",  "schedule": "0 6 * * *" },
+    { "path": "/api/monitor/run",  "schedule": "0 14 * * *" },
+    { "path": "/api/monitor/run",  "schedule": "0 22 * * *" },
+    { "path": "/api/cron/daily",   "schedule": "0 0 * * *" }
   ]
 }
