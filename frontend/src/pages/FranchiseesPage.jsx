@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import api from '../lib/api';
+import { FEATURES } from '../lib/features';
 import PageHeader from '../components/ui/PageHeader';
 import StatusBadge from '../components/ui/StatusBadge';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
@@ -311,10 +312,12 @@ export default function FranchiseesPage() {
               <label className="label">{t('franchisees.fields.contractEnd')}</label>
               <input type="date" className="input-field" value={form.contract_end} min={form.contract_start || undefined} onChange={e => setForm(f => ({ ...f, contract_end: e.target.value }))} />
             </div>
-            <div>
-              <label className="label">{t('franchisees.fields.whatsapp')} <span className="text-text-secondary text-xs">(+33...)</span></label>
-              <input className="input-field" value={form.whatsapp_number} onChange={e => setForm(f => ({ ...f, whatsapp_number: e.target.value }))} placeholder="+33612345678" />
-            </div>
+            {FEATURES.whatsapp && (
+              <div>
+                <label className="label">{t('franchisees.fields.whatsapp')} <span className="text-text-secondary text-xs">(+33...)</span></label>
+                <input className="input-field" value={form.whatsapp_number} onChange={e => setForm(f => ({ ...f, whatsapp_number: e.target.value }))} placeholder="+33612345678" />
+              </div>
+            )}
             <div>
               <label className="label">{t('franchisees.fields.notifEmail')}</label>
               <input className="input-field" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="+33612345678 (optionnel)" />
@@ -381,7 +384,7 @@ export default function FranchiseesPage() {
                       <td className="px-4 py-3"><StatusBadge status={f.status} /></td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1.5">
-                          {wa && (
+                          {FEATURES.whatsapp && wa && (
                             <a href={wa} target="_blank" rel="noreferrer"
                               title="Envoyer par WhatsApp"
                               className="p-1.5 rounded hover:bg-bg-elevated text-text-secondary hover:text-[#25D366] transition-colors">
@@ -455,14 +458,14 @@ export default function FranchiseesPage() {
                           <p className="font-dm-mono text-xs text-text-secondary truncate">{f.email}</p>
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
-                          {wa ? (
+                          {FEATURES.whatsapp && (wa ? (
                             <a href={wa} target="_blank" rel="noreferrer"
                               className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-[#25D366]/30 text-[#25D366] hover:bg-[#25D366]/10 text-xs font-dm-sans transition-all">
                               <MessageCircle className="w-3.5 h-3.5" /> WhatsApp
                             </a>
                           ) : (
                             <span className="text-xs text-text-muted font-dm-mono">pas de WA</span>
-                          )}
+                          ))}
                           <a href={mail}
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded border border-gold/30 text-gold hover:bg-gold/10 text-xs font-dm-sans transition-all">
                             <Mail className="w-3.5 h-3.5" /> Email
@@ -477,7 +480,7 @@ export default function FranchiseesPage() {
               <div className="bg-gold/5 border border-gold/20 rounded p-3 flex items-start gap-3">
                 <ExternalLink className="w-4 h-4 text-gold flex-shrink-0 mt-0.5" />
                 <p className="font-dm-sans text-xs text-text-secondary leading-relaxed">
-                  Les liens <strong className="text-text-primary">WhatsApp</strong> ouvrent l'app avec le message pré-rédigé.
+                  {FEATURES.whatsapp && <>Les liens <strong className="text-text-primary">WhatsApp</strong> ouvrent l'app avec le message pré-rédigé. </>}
                   Les liens <strong className="text-text-primary">Email</strong> ouvrent votre client mail avec le message pré-rempli.
                   Aucune clé API requise.
                 </p>

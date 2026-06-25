@@ -115,8 +115,8 @@ router.post('/send', authMiddleware, requireFranchisor, async (req, res) => {
       else results.errors.push({ channel: 'email', franchisee: f.name, error: emailResult.error });
     }
 
-    // WhatsApp
-    if (channels.includes('whatsapp') && f.whatsapp_number) {
+    // WhatsApp (FEATURE_WHATSAPP=true requis)
+    if (process.env.FEATURE_WHATSAPP === 'true' && channels.includes('whatsapp') && f.whatsapp_number) {
       const wpMessage = `*${companyName} — Mise à jour DIP*\n\nBonjour ${f.name},\n\n${message}\n\n_DIPpro by Iralink_`;
       const wpResult = await sendWhatsApp(f.whatsapp_number, wpMessage);
       if (wpResult.ok) results.whatsapp.push(f.whatsapp_number);
@@ -172,18 +172,22 @@ router.post('/test', authMiddleware, requireFranchisor, async (req, res) => {
 
 // GET /api/notifications/status — Statut des canaux configurés
 router.get('/status', authMiddleware, async (req, res) => {
+  const whatsappEnabled = process.env.FEATURE_WHATSAPP === 'true';
   res.json({
     email: {
       configured: !!process.env.BREVO_API_KEY,
-      sender: process.env.BREVO_SENDER_EMAIL || null
+      sender: process.env.BREVO_SENDER_EMAIL || null,
+      enabled: true
     },
     whatsapp: {
-      configured: !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_WHATSAPP_FROM),
-      from: process.env.TWILIO_WHATSAPP_FROM || null
+      enabled: whatsappEnabled,
+      configured: whatsappEnabled && !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_WHATSAPP_FROM),
+      from: whatsappEnabled ? (process.env.TWILIO_WHATSAPP_FROM || null) : null
     },
     sms: {
       configured: !!(process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_SMS_FROM),
-      from: process.env.TWILIO_SMS_FROM || null
+      from: process.env.TWILIO_SMS_FROM || null,
+      enabled: true
     }
   });
 });

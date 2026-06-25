@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import AuthProvider from './context/AuthContext';
+import { FEATURES } from './lib/features';
 import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
 import LoginPage from './pages/LoginPage';
@@ -101,7 +102,7 @@ export default function App() {
           <Route path="settings" element={<ErrorBoundary><SettingsPage /></ErrorBoundary>} />
           <Route path="export" element={<ErrorBoundary><ExportPage /></ErrorBoundary>} />
           <Route path="admin" element={<ErrorBoundary><AdminPage /></ErrorBoundary>} />
-          <Route path="monitor" element={<ErrorBoundary><MonitorPage /></ErrorBoundary>} />
+          <Route path="monitor" element={FEATURES.monitor ? <ErrorBoundary><MonitorPage /></ErrorBoundary> : <Navigate to="/dashboard" replace />} />
           <Route path="monitoring" element={<ErrorBoundary><DocMonitoringPage /></ErrorBoundary>} />
           <Route path="integrations" element={<ErrorBoundary><ApiConfigPage /></ErrorBoundary>} />
           <Route path="analytics/dip/:dipId" element={<ErrorBoundary><AnalyticsPage /></ErrorBoundary>} />

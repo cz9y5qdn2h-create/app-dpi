@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import api from '../lib/api';
+import { FEATURES } from '../lib/features';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import PageHeader from '../components/ui/PageHeader';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
-import { Save, Plus, Trash2, Database, Mail, Cloud, Globe, CheckCircle, Eye, EyeOff, Send, Sun, Moon, Sparkles, Lock, Key, Calendar, AlertCircle } from 'lucide-react';
+import { Save, Plus, Trash2, Database, Mail, Cloud, Globe, CheckCircle, Eye, EyeOff, Send, Sun, Moon, Sparkles, Lock, Key, Calendar, AlertCircle, Bell } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const SOURCE_TYPES = [
@@ -46,7 +47,8 @@ export default function SettingsPage() {
     company_name: '', phone: '', address: '',
     automation_level: 1,
     notifications_email: true, notifications_inapp: true,
-    notifications_sms: false, notification_frequency: 'immediate'
+    notifications_sms: false, notification_frequency: 'immediate',
+    renewal_alert_days: 30
   });
   const [brevoForm, setBrevoForm] = useState({ brevo_api_key: '', brevo_sender_name: 'DIPpro', brevo_sender_email: '' });
   const [showBrevoKey, setShowBrevoKey] = useState(false);
@@ -71,7 +73,8 @@ export default function SettingsPage() {
         notifications_email: data.profile.notifications_email ?? true,
         notifications_inapp: data.profile.notifications_inapp ?? true,
         notifications_sms: data.profile.notifications_sms ?? false,
-        notification_frequency: data.profile.notification_frequency || 'immediate'
+        notification_frequency: data.profile.notification_frequency || 'immediate',
+        renewal_alert_days: data.profile.renewal_alert_days ?? 30
       });
       setBrevoForm({
         brevo_api_key: data.profile.brevo_api_key || '',
@@ -445,13 +448,36 @@ export default function SettingsPage() {
               </div>
             </div>
 
+            {/* Seuil de renouvellement annuel */}
+            <div className="pt-2 border-t border-border-subtle">
+              <div className="flex items-center gap-2 mb-2">
+                <Bell className="w-4 h-4 text-gold" />
+                <p className="font-dm-sans text-sm text-text-primary">Rappel de renouvellement DIP</p>
+              </div>
+              <p className="font-dm-sans text-xs text-text-secondary mb-3">
+                Déclenche un rappel X jours avant la date anniversaire annuelle du DIP (Loi Doubin, mise à jour obligatoire).
+              </p>
+              <div className="flex items-center gap-3">
+                <input
+                  type="number"
+                  min={1}
+                  max={365}
+                  className="input-field w-24 text-center"
+                  value={profileForm.renewal_alert_days}
+                  onChange={e => setProfileForm(f => ({ ...f, renewal_alert_days: parseInt(e.target.value, 10) || 30 }))}
+                />
+                <span className="font-dm-sans text-sm text-text-secondary">jours avant l'anniversaire</span>
+              </div>
+            </div>
+
             <button
               type="button"
               onClick={() => updateProfileMutation.mutate({
                 notifications_email: profileForm.notifications_email,
                 notifications_inapp: profileForm.notifications_inapp,
                 notifications_sms: profileForm.notifications_sms,
-                notification_frequency: profileForm.notification_frequency
+                notification_frequency: profileForm.notification_frequency,
+                renewal_alert_days: profileForm.renewal_alert_days
               })}
               disabled={updateProfileMutation.isPending}
               className="btn-liquid-glass w-full"

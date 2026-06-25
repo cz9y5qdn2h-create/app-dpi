@@ -6,6 +6,7 @@ import BottomNav from './BottomNav';
 import CommandPalette from './CommandPalette';
 import CopilotChat from './CopilotChat';
 import api from '../lib/api';
+import { FEATURES } from '../lib/features';
 import { Bell, Menu, Search } from 'lucide-react';
 
 export default function Layout() {
@@ -102,7 +103,7 @@ export default function Layout() {
 
       <BottomNav />
       <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} />
-      <CopilotChat />
+      {FEATURES.copilot && <CopilotChat />}
     </div>
   );
 }

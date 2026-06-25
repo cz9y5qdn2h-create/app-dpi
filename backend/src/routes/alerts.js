@@ -136,9 +136,18 @@ router.patch('/:id/validate', authMiddleware, requireFranchisor, async (req, res
   res.json({ message: 'Alerte validée, document mis à jour' });
 });
 
-// POST /api/alerts/check-renewal — Génère des alertes de renouvellement DIP
-// (DIP > 11 mois → alerte renouvellement annuel)
+// POST /api/alerts/check-renewal — Génère un rappel de renouvellement DIP
+// Le seuil est configurable via users.renewal_alert_days (défaut 30 j avant l'anniversaire annuel)
 router.post('/check-renewal', authMiddleware, requireFranchisor, async (req, res) => {
+  const { data: userProfile } = await supabaseAdmin
+    .from('users')
+    .select('renewal_alert_days')
+    .eq('id', req.user.id)
+    .single();
+
+  const alertDays = userProfile?.renewal_alert_days ?? 30;
+  const thresholdMs = (365 - alertDays) * 24 * 3600 * 1000;
+
   const { data: dips } = await supabaseAdmin
     .from('dip_documents')
     .select('id, title, created_at')
@@ -148,12 +157,11 @@ router.post('/check-renewal', authMiddleware, requireFranchisor, async (req, res
   if (!dips || dips.length === 0) return res.json({ alerts_created: 0 });
 
   const now = Date.now();
-  const elevenMonths = 11 * 30 * 24 * 3600 * 1000;
   const created = [];
 
   for (const dip of dips) {
     const age = now - new Date(dip.created_at).getTime();
-    if (age >= elevenMonths) {
+    if (age >= thresholdMs) {
       const { data: existing } = await supabaseAdmin
         .from('alerts')
         .select('id')
@@ -163,14 +171,15 @@ router.post('/check-renewal', authMiddleware, requireFranchisor, async (req, res
         .limit(1);
 
       if (!existing || existing.length === 0) {
+        const daysLeft = Math.max(0, Math.round((365 * 24 * 3600 * 1000 - age) / (24 * 3600 * 1000)));
         const { data: alert } = await supabaseAdmin.from('alerts').insert({
           dip_id: dip.id,
-          old_value: 'DIP créé il y a plus de 11 mois',
+          old_value: `DIP approchant de sa date de renouvellement annuel`,
           new_value: 'Mise à jour annuelle requise (Loi Doubin)',
           source: 'Rappel renouvellement annuel',
-          suggestion: 'Importez la nouvelle version du DIP pour rester conforme à la Loi Doubin (mise à jour annuelle obligatoire).',
+          suggestion: `La mise à jour annuelle du DIP est requise dans ${daysLeft} jour(s). Importez la nouvelle version pour rester conforme à la Loi Doubin (art. L.330-3).`,
           status: 'pending',
-          urgency: 'haute',
+          urgency: daysLeft <= 7 ? 'haute' : 'moyenne',
           created_at: new Date().toISOString()
         }).select().single();
         if (alert) created.push(alert);
@@ -178,7 +187,7 @@ router.post('/check-renewal', authMiddleware, requireFranchisor, async (req, res
     }
   }
 
-  res.json({ alerts_created: created.length, alerts: created });
+  res.json({ alerts_created: created.length, alerts: created, threshold_days: alertDays });
 });
 
 // POST /api/alerts/ai-corrections/:dipId — Génère des corrections IA pour les sections non conformes
