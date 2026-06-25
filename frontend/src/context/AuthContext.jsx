@@ -112,6 +112,7 @@ export default function AuthProvider({ children }) {
         ai_disclaimer_accepted: consentData.ai_disclaimer_accepted ?? false,
         terms_accepted_at: new Date().toISOString(),
         terms_version: '2026-05-13',
+        role: consentData.role || 'franchiseur',
       })
     });
     const data = await res.json();
