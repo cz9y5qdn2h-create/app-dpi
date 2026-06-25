@@ -1,6 +1,7 @@
 const express = require('express');
 const PDFDocument = require('pdfkit');
 const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, PageBreak } = require('docx');
+const ExcelJS = require('exceljs');
 const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware } = require('../middleware/auth');
 const router = express.Router();
@@ -197,6 +198,129 @@ router.get('/:dipId/docx', authMiddleware, async (req, res) => {
   res.setHeader('Content-Disposition',
     `attachment; filename="dip-${(user.company_name || 'document').replace(/\s+/g, '_').toLowerCase()}-${dip.id.substring(0, 8)}.docx"`);
   res.send(buffer);
+});
+
+// GET /api/export/:dipId/xlsx — DIP complet en Excel (10 sections, réimportable)
+router.get('/:dipId/xlsx', authMiddleware, async (req, res) => {
+  const dip = await loadDip(req.params.dipId, req.user.id);
+  if (!dip) return res.status(404).json({ error: 'DIP introuvable' });
+
+  const user = await loadUser(req.user.id);
+  const sections = dip.dip_sections || [];
+
+  const wb = new ExcelJS.Workbook();
+  wb.creator = 'DIPpro';
+  wb.created = new Date();
+
+  // Feuille Métadonnées
+  const meta = wb.addWorksheet('Métadonnées', { properties: { tabColor: { argb: 'FFC8A96E' } } });
+  meta.columns = [
+    { header: 'Champ', key: 'champ', width: 30 },
+    { header: 'Valeur', key: 'valeur', width: 60 },
+  ];
+  [
+    ['Entreprise', user.company_name || ''],
+    ['Email', user.email || ''],
+    ['SIRET', user.siret || ''],
+    ['Titre DIP', dip.title || ''],
+    ['Score de conformité', `${dip.conformity_score || 0}%`],
+    ['Statut', dip.status || ''],
+    ['Date d\'import', dip.upload_date ? new Date(dip.upload_date).toLocaleDateString('fr-FR') : ''],
+    ['Exporté le', new Date().toLocaleDateString('fr-FR')],
+    ['DIPpro ID', dip.id],
+  ].forEach(([champ, valeur]) => meta.addRow({ champ, valeur }));
+
+  meta.getRow(1).font = { bold: true, color: { argb: 'FFC8A96E' } };
+
+  // Une feuille par section
+  for (const s of sections) {
+    const sheetName = `S${s.section_number} — ${(s.section_title || '').substring(0, 20)}`;
+    const ws = wb.addWorksheet(sheetName);
+
+    ws.columns = [
+      { header: 'Champ', key: 'champ', width: 28 },
+      { header: 'Valeur', key: 'valeur', width: 80 },
+    ];
+
+    ws.addRow({ champ: 'section_id', valeur: s.id });
+    ws.addRow({ champ: 'section_number', valeur: s.section_number });
+    ws.addRow({ champ: 'section_title', valeur: s.section_title });
+    ws.addRow({ champ: 'status', valeur: s.status });
+    ws.addRow({ champ: '--- CONTENU (modifiable) ---', valeur: '' });
+    ws.addRow({ champ: 'content', valeur: s.content || '' });
+
+    ws.getRow(1).font = { bold: true, color: { argb: 'FFC8A96E' } };
+
+    const contentCell = ws.getCell('B6');
+    contentCell.alignment = { wrapText: true, vertical: 'top' };
+    ws.getRow(6).height = 200;
+
+    const statusCell = ws.getCell('B4');
+    const statusColors = { conforme: 'FF22C55E', a_verifier: 'FFC8A96E', non_conforme: 'FFEF4444' };
+    statusCell.font = { color: { argb: statusColors[s.status] || 'FF666666' }, bold: true };
+  }
+
+  // Feuille synthèse (toutes sections en lignes)
+  const synth = wb.addWorksheet('Synthèse', { properties: { tabColor: { argb: 'FF22C55E' } } });
+  synth.columns = [
+    { header: 'N°', key: 'num', width: 6 },
+    { header: 'Section', key: 'title', width: 35 },
+    { header: 'Statut', key: 'status', width: 18 },
+    { header: 'Contenu', key: 'content', width: 80 },
+    { header: 'ID', key: 'id', width: 38 },
+  ];
+  synth.getRow(1).font = { bold: true, color: { argb: 'FFC8A96E' } };
+  for (const s of sections) {
+    const row = synth.addRow({ num: s.section_number, title: s.section_title, status: STATUS_LABEL[s.status] || s.status, content: s.content || '', id: s.id });
+    row.getCell('content').alignment = { wrapText: true };
+  }
+
+  res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+  res.setHeader('Content-Disposition',
+    `attachment; filename="dip-${(user.company_name || 'document').replace(/\s+/g, '_').toLowerCase()}-${dip.id.substring(0, 8)}.xlsx"`);
+
+  await wb.xlsx.write(res);
+  res.end();
+});
+
+// POST /api/export/:dipId/import-xlsx — ré-import d'un fichier Excel édité
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+
+router.post('/:dipId/import-xlsx', authMiddleware, upload.single('file'), async (req, res) => {
+  const dip = await loadDip(req.params.dipId, req.user.id);
+  if (!dip) return res.status(404).json({ error: 'DIP introuvable' });
+  if (!req.file) return res.status(400).json({ error: 'Fichier Excel requis' });
+
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(req.file.buffer);
+
+  const synth = wb.getWorksheet('Synthèse');
+  if (!synth) return res.status(422).json({ error: 'Feuille "Synthèse" introuvable — fichier invalide' });
+
+  const updates = [];
+  synth.eachRow((row, rowNum) => {
+    if (rowNum === 1) return;
+    const sectionId = String(row.getCell(5).value || '').trim();
+    const content = String(row.getCell(4).value || '').trim();
+    if (sectionId && sectionId.length === 36) {
+      updates.push({ id: sectionId, content, last_edited_by: req.user.id, last_edited_at: new Date().toISOString() });
+    }
+  });
+
+  if (updates.length === 0) return res.status(422).json({ error: 'Aucune section valide trouvée dans la feuille Synthèse' });
+
+  const errors = [];
+  for (const u of updates) {
+    const { error } = await supabaseAdmin.from('dip_sections')
+      .update({ content: u.content, last_edited_by: u.last_edited_by, last_edited_at: u.last_edited_at })
+      .eq('id', u.id).eq('dip_id', req.params.dipId);
+    if (error) errors.push(u.id);
+  }
+
+  if (errors.length > 0) return res.status(500).json({ error: `Erreur sur ${errors.length} section(s)` });
+
+  res.json({ ok: true, updated: updates.length });
 });
 
 // Backward compat HTML

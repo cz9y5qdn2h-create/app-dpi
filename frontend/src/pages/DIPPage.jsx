@@ -59,6 +59,8 @@ export default function DIPPage() {
   const [formData, setFormData] = useState(emptyForm());
   const [generating, setGenerating] = useState(false);
   const [downloadingDocx, setDownloadingDocx] = useState(false);
+  const [downloadingXlsx, setDownloadingXlsx] = useState(false);
+  const [importingXlsx, setImportingXlsx] = useState(false);
   const [shareLoading, setShareLoading] = useState(false);
   const [showSharePanel, setShowSharePanel] = useState(false);
 
@@ -154,6 +156,45 @@ export default function DIPPage() {
     navigator.clipboard.writeText(url).then(() => toast.success('Lien copié dans le presse-papiers'));
   };
 
+  const handleDownloadXlsx = async () => {
+    if (!dip) return;
+    setDownloadingXlsx(true);
+    try {
+      const res = await api.get(`/export/${dip.id}/xlsx`, { responseType: 'blob' });
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `DIP_${(profile?.company_name || 'Franchiseur').replace(/[^a-z0-9]/gi, '_')}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('Excel téléchargé');
+    } catch {
+      toast.error('Impossible de générer le fichier Excel');
+    } finally {
+      setDownloadingXlsx(false);
+    }
+  };
+
+  const handleImportXlsx = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !dip) return;
+    setImportingXlsx(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await api.post(`/export/${dip.id}/import-xlsx`, fd, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      toast.success(`${res.data.updated} section(s) mises à jour depuis l'Excel`);
+      queryClient.invalidateQueries({ queryKey: ['dips'] });
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Erreur lors de l\'import Excel');
+    } finally {
+      setImportingXlsx(false);
+      e.target.value = '';
+    }
+  };
+
   const handleDownloadDocx = async () => {
     if (!dip) return;
     setDownloadingDocx(true);
@@ -206,7 +247,7 @@ export default function DIPPage() {
         subtitle={dip ? `Score de conformité : ${dip.conformity_score}% • ${sections.length} sections` : 'Générer votre DIP'}
         action={
           dip && (
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <button
                 onClick={handleDownloadDocx}
                 disabled={downloadingDocx}
@@ -215,6 +256,25 @@ export default function DIPPage() {
                 {downloadingDocx ? <LoadingSpinner size="sm" /> : <Download className="w-4 h-4" />}
                 DOCX
               </button>
+              <button
+                onClick={handleDownloadXlsx}
+                disabled={downloadingXlsx}
+                className="btn-secondary flex items-center gap-2 text-sm"
+              >
+                {downloadingXlsx ? <LoadingSpinner size="sm" /> : <Download className="w-4 h-4" />}
+                Excel
+              </button>
+              <label className="btn-secondary flex items-center gap-2 text-sm cursor-pointer">
+                {importingXlsx ? <LoadingSpinner size="sm" /> : <Plus className="w-4 h-4" />}
+                Import Excel
+                <input
+                  type="file"
+                  accept=".xlsx"
+                  onChange={handleImportXlsx}
+                  disabled={importingXlsx}
+                  className="sr-only"
+                />
+              </label>
               <button
                 onClick={() => setShowSharePanel(v => !v)}
                 className={`btn-secondary flex items-center gap-2 text-sm ${showSharePanel ? 'border-gold/40 text-gold' : ''}`}
