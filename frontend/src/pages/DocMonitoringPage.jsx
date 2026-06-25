@@ -6,11 +6,117 @@ import PageHeader from '../components/ui/PageHeader';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import {
   Eye, Plus, Trash2, RefreshCw, ExternalLink, AlertTriangle,
-  CheckCircle, Search, Globe, Tag, X, ChevronDown, ChevronUp
+  CheckCircle, Search, Globe, Tag, X, ChevronDown, ChevronUp,
+  Newspaper, Rss
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+
+const CATEGORY_COLOR = {
+  franchise: 'rgba(245,200,66,0.80)',
+  juridique: 'rgba(96,165,250,0.80)',
+  réglementaire: 'rgba(248,113,113,0.80)',
+};
+
+function NewsWidget() {
+  const { data, isLoading, refetch, isFetching } = useQuery({
+    queryKey: ['monitoring-news'],
+    queryFn: () => api.get('/monitoring/news').then(r => r.data),
+    staleTime: 5 * 60 * 1000,
+  });
+  const [expanded, setExpanded] = useState(true);
+
+  return (
+    <div className="card" style={{ padding: '20px 24px' }}>
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(245,200,66,0.08)', border: '0.5px solid rgba(245,200,66,0.18)' }}>
+            <Newspaper size={16} style={{ color: 'var(--v2-gold)' }} />
+          </div>
+          <div>
+            <h3 className="font-cormorant text-lg text-text-primary" style={{ fontWeight: 400 }}>
+              Actualités franchise & juridique
+            </h3>
+            {data && (
+              <p className="font-dm-mono text-xs text-text-secondary" style={{ fontSize: 10 }}>
+                {data.feedsOk}/{data.feedsTotal} sources · {data.items?.length || 0} articles
+              </p>
+            )}
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="btn-ghost flex items-center gap-1.5"
+            style={{ fontSize: '12px', padding: '6px 10px' }}
+          >
+            <RefreshCw size={12} className={isFetching ? 'animate-spin' : ''} />
+          </button>
+          <button
+            onClick={() => setExpanded(e => !e)}
+            className="btn-ghost"
+            style={{ padding: '6px 8px' }}
+          >
+            {expanded ? <ChevronUp size={14} className="text-text-secondary" /> : <ChevronDown size={14} className="text-text-secondary" />}
+          </button>
+        </div>
+      </div>
+
+      {expanded && (
+        isLoading ? (
+          <div className="flex items-center justify-center py-8"><LoadingSpinner size="sm" /></div>
+        ) : !data?.items?.length ? (
+          <p className="font-dm-sans text-sm text-text-secondary text-center py-6">
+            Aucun article récupéré — les flux RSS sont peut-être temporairement indisponibles.
+          </p>
+        ) : (
+          <div className="space-y-1 divide-y" style={{ '--tw-divide-opacity': 0.06 }}>
+            {data.items.map((item) => (
+              <a
+                key={item.id}
+                href={item.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-start gap-3 py-3 group hover:bg-white/5 rounded-lg px-2 -mx-2 transition-colors"
+              >
+                <div
+                  className="w-1.5 h-1.5 rounded-full flex-shrink-0 mt-2"
+                  style={{ background: CATEGORY_COLOR[item.category] || 'rgb(var(--text-muted))' }}
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                    <span
+                      className="font-dm-mono text-xs px-1.5 py-0.5 rounded flex-shrink-0"
+                      style={{ background: 'rgba(200,169,110,0.06)', color: 'rgba(200,169,110,0.65)', border: '0.5px solid rgba(200,169,110,0.12)' }}
+                    >
+                      {item.source}
+                    </span>
+                    {item.date && (
+                      <span className="font-dm-mono text-text-muted" style={{ fontSize: 10 }}>
+                        {formatDistanceToNow(new Date(item.date), { addSuffix: true, locale: fr })}
+                      </span>
+                    )}
+                  </div>
+                  <p className="font-dm-sans text-sm text-text-primary group-hover:text-gold transition-colors leading-snug">
+                    {item.title}
+                  </p>
+                  {item.summary && (
+                    <p className="font-dm-sans text-xs text-text-secondary mt-0.5 line-clamp-2 leading-relaxed">
+                      {item.summary}
+                    </p>
+                  )}
+                </div>
+                <ExternalLink size={12} className="text-text-muted group-hover:text-gold flex-shrink-0 mt-1 transition-colors" />
+              </a>
+            ))}
+          </div>
+        )
+      )}
+    </div>
+  );
+}
 
 const SUGGESTED_SOURCES = [
   {
@@ -443,6 +549,9 @@ export default function DocMonitoringPage() {
           </button>
         }
       />
+
+      {/* Flux d'actualités franchise */}
+      <NewsWidget />
 
       {sourcesLoading ? (
         <div className="card flex items-center justify-center py-16">

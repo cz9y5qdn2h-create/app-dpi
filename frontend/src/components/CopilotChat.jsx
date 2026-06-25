@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sparkles, X, Send, CheckCircle, AlertTriangle, Loader2 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import api from '../lib/api';
 
 const SHORTCUTS = [
@@ -188,7 +190,34 @@ export default function CopilotChat() {
                       : { background: 'rgba(255,255,255,0.60)', border: '0.5px solid rgba(200,169,110,0.12)', color: 'rgb(var(--text-primary))', borderBottomLeftRadius: 6, backdropFilter: 'blur(8px)' }
                     }
                   >
-                    <span style={{ whiteSpace: 'pre-wrap' }}>{m.content}</span>
+                    {m.role === 'assistant' ? (
+                      <ReactMarkdown
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          p: ({ children }) => <p className="mb-1.5 last:mb-0 leading-relaxed">{children}</p>,
+                          ul: ({ children }) => <ul className="list-disc pl-4 space-y-0.5 mb-1.5">{children}</ul>,
+                          ol: ({ children }) => <ol className="list-decimal pl-4 space-y-0.5 mb-1.5">{children}</ol>,
+                          li: ({ children }) => <li className="text-sm">{children}</li>,
+                          strong: ({ children }) => <strong className="font-semibold" style={{ color: 'rgb(var(--text-primary))' }}>{children}</strong>,
+                          em: ({ children }) => <em className="italic text-text-secondary">{children}</em>,
+                          code: ({ inline, children }) => inline
+                            ? <code className="font-dm-mono text-xs px-1 py-0.5 rounded" style={{ background: 'rgba(200,169,110,0.12)', color: 'rgb(var(--gold))' }}>{children}</code>
+                            : <pre className="font-dm-mono text-xs p-2 rounded mt-1 mb-1 overflow-x-auto" style={{ background: 'rgba(0,0,0,0.25)', color: 'rgb(var(--text-primary))' }}><code>{children}</code></pre>,
+                          table: ({ children }) => <div className="overflow-x-auto my-2"><table className="w-full text-xs border-collapse">{children}</table></div>,
+                          th: ({ children }) => <th className="text-left px-2 py-1 font-dm-mono font-semibold" style={{ borderBottom: '1px solid rgba(200,169,110,0.25)', color: 'rgb(var(--gold))' }}>{children}</th>,
+                          td: ({ children }) => <td className="px-2 py-1" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{children}</td>,
+                          h1: ({ children }) => <p className="font-semibold text-base mb-1" style={{ color: 'rgb(var(--text-primary))' }}>{children}</p>,
+                          h2: ({ children }) => <p className="font-semibold text-sm mb-1 mt-2" style={{ color: 'rgb(var(--text-primary))' }}>{children}</p>,
+                          h3: ({ children }) => <p className="font-medium text-sm mb-0.5 mt-1.5" style={{ color: 'rgb(var(--gold))' }}>{children}</p>,
+                          blockquote: ({ children }) => <blockquote className="border-l-2 pl-3 my-1" style={{ borderColor: 'rgba(200,169,110,0.4)', color: 'rgb(var(--text-secondary))' }}>{children}</blockquote>,
+                          hr: () => <hr className="my-2" style={{ borderColor: 'rgba(200,169,110,0.15)' }} />,
+                        }}
+                      >
+                        {m.content}
+                      </ReactMarkdown>
+                    ) : (
+                      <span style={{ whiteSpace: 'pre-wrap' }}>{m.content}</span>
+                    )}
                   </div>
                 </div>
               ))}

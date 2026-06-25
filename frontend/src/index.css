@@ -268,12 +268,18 @@
 
   /* ── Buttons ── */
   .btn-primary {
-    @apply font-dm-sans font-medium px-5 py-2.5 rounded-lg transition-all duration-200
-           active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed;
-    background: rgb(var(--gold));
-    color: rgb(var(--accent-text));
+    @apply font-dm-sans font-semibold px-5 py-2.5 rounded-xl transition-all duration-200
+           active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed
+           inline-flex items-center justify-center gap-2;
+    background: linear-gradient(135deg, var(--v2-gold) 0%, var(--v2-gold-deep) 100%);
+    color: #0a0805;
+    border: none;
+    box-shadow: 0 4px 14px -4px rgba(212,165,50,0.50), inset 0 1px 0 rgba(255,255,255,0.28);
   }
-  .btn-primary:hover { background: rgb(var(--gold-light)); }
+  .btn-primary:hover {
+    filter: brightness(1.07);
+    box-shadow: 0 0 0 3px rgba(245,200,66,0.18), 0 8px 22px -6px rgba(212,165,50,0.60), inset 0 1px 0 rgba(255,255,255,0.28);
+  }
 
   .btn-secondary {
     @apply border text-text-primary font-dm-sans font-normal px-5 py-2.5 rounded-lg
@@ -388,6 +394,8 @@
     -webkit-backdrop-filter: blur(14px) saturate(160%);
     border: 1px solid var(--input-border);
     color: rgb(var(--text-primary));
+    -webkit-text-fill-color: rgb(var(--text-primary));
+    caret-color: rgb(var(--gold));
     font-family: 'Geist', sans-serif;
     font-weight: 400;
     padding: 0.625rem 0.875rem;
@@ -403,6 +411,13 @@
     box-shadow: var(--inset), 0 0 0 3px rgb(var(--gold) / 0.14);
   }
   .input-field::placeholder { color: rgb(var(--text-muted)); }
+  .input-field:-webkit-autofill,
+  .input-field:-webkit-autofill:hover,
+  .input-field:-webkit-autofill:focus {
+    -webkit-text-fill-color: rgb(var(--text-primary));
+    -webkit-box-shadow: 0 0 0px 1000px rgb(var(--bg-card)) inset;
+    transition: background-color 5000s ease-in-out 0s;
+  }
   .label { @apply block text-text-secondary font-dm-sans text-sm mb-1.5; }
 
   /* ── Badges ── */
@@ -452,6 +467,13 @@
   .divider { @apply border-t border-border-subtle my-6; }
   .skeleton { @apply bg-bg-elevated rounded animate-skeleton; }
 
+  /* ── Row utilitaire — flex horizontale alignée ── */
+  .lg-row {
+    @apply flex items-center rounded-lg px-3 py-2.5;
+    background: var(--row-bg);
+    border: 1px solid var(--border-dim);
+  }
+
   /* ── Impact level tags ── */
   .impact-high     { @apply text-xs font-dm-mono px-2 py-0.5 rounded bg-danger/10 text-danger border border-danger/20; }
   .impact-moderate { @apply text-xs font-dm-mono px-2 py-0.5 rounded bg-gold/10 text-gold border border-gold/20; }
@@ -496,7 +518,7 @@
 .btn-primary, .btn-secondary, .btn-ghost, .btn-liquid-glass, .btn-liquid-glass-prominent {
   transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, filter 0.2s ease;
 }
-.btn-primary:hover       { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(200,169,110,0.28); }
+.btn-primary:hover       { transform: translateY(-2px); }
 .btn-primary:active      { transform: scale(0.96) translateY(0); }
 .btn-secondary:hover     { transform: translateY(-1px); }
 .btn-secondary:active    { transform: scale(0.97); }
