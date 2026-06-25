@@ -12,6 +12,7 @@ import {
   Share2, Copy, Link2Off, Eye, BarChart2
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import ProposalsPanel from '../components/ProposalsPanel';
 
 const SECTION_DESCRIPTIONS = [
   '',
@@ -290,6 +291,9 @@ export default function DIPPage() {
           )}
         </div>
       )}
+
+      {/* Panel propositions avocat — visible uniquement pour le franchiseur */}
+      {dip && <ProposalsPanel dipId={dip.id} />}
 
       {/* Onglets */}
       <div className="flex gap-1 bg-bg-elevated rounded-lg p-1 w-fit">

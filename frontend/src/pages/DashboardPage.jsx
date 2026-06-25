@@ -12,6 +12,7 @@ import ConformityGauge from '../components/dashboard/ConformityGauge';
 import AlertCard from '../components/dashboard/AlertCard';
 import CalModal from '../components/CalModal';
 import OnboardingModal from '../components/OnboardingModal';
+import AvocatDashboard from '../components/dashboard/AvocatDashboard';
 import {
   Upload, RefreshCw, FileText,
   AlertTriangle, CheckCircle, History,
@@ -22,6 +23,8 @@ import { fr } from 'date-fns/locale';
 
 export default function DashboardPage() {
   const { profile } = useAuth();
+
+  if (profile?.role === 'avocat') return <AvocatDashboard />;
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const [calOpen, setCalOpen] = useState(false);
