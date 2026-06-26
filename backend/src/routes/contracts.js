@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware, requireFranchisor } = require('../middleware/auth');
-const { parseContractClauses, compareContractVersions, generateContractFromDIP } = require('../config/claude');
+const { parseContractClauses, compareContractVersions, generateContractFromDIP, generateContractFromDIPStream } = require('../config/claude');
 const { triggerCrossImpactAlerts } = require('../utils/crossImpact');
 const errMsg = require('../config/errorMessage');
 const router = express.Router();
@@ -340,6 +340,57 @@ router.post('/generate', authMiddleware, requireFranchisor, async (req, res) => 
   } catch (err) {
     console.error('Contract generate error:', err.message);
     res.status(500).json({ error: errMsg(err) });
+  }
+});
+
+// POST /api/contracts/generate-stream — génère un contrat via SSE (streaming) pour éviter le timeout Vercel
+router.post('/generate-stream', authMiddleware, requireFranchisor, async (req, res) => {
+  const { dip_id, formData } = req.body;
+  if (!dip_id) return res.status(400).json({ error: 'dip_id requis' });
+
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders();
+
+  const send = (obj) => {
+    try { res.write(`data: ${JSON.stringify(obj)}\n\n`); } catch {}
+  };
+
+  try {
+    send({ type: 'progress', step: 'Chargement du DIP…', pct: 5 });
+
+    const { data: dip, error: dipError } = await supabaseAdmin
+      .from('dip_documents')
+      .select('id, title, dip_sections(*)')
+      .eq('id', dip_id)
+      .eq('user_id', req.user.id)
+      .single();
+
+    if (dipError || !dip) {
+      send({ type: 'error', error: 'DIP introuvable' });
+      return res.end();
+    }
+    if (!dip.dip_sections?.length) {
+      send({ type: 'error', error: 'Ce DIP ne contient aucune section analysée' });
+      return res.end();
+    }
+
+    send({ type: 'progress', step: 'Démarrage de la rédaction par Claude…', pct: 10 });
+
+    const result = await generateContractFromDIPStream(
+      dip.dip_sections,
+      formData || {},
+      (pct, step) => send({ type: 'progress', step, pct })
+    );
+
+    send({ type: 'done', result });
+    res.end();
+  } catch (err) {
+    console.error('Contract generate-stream error:', err.message);
+    send({ type: 'error', error: errMsg(err) });
+    res.end();
   }
 });
 

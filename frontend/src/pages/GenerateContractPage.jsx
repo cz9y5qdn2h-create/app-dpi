@@ -30,6 +30,7 @@ export default function GenerateContractPage() {
   const [form, setForm] = useState({});
   const [result, setResult] = useState(null);
   const [savedContractId, setSavedContractId] = useState(null);
+  const [progress, setProgress] = useState(null);
 
   const { data: dipsData, isLoading: dipsLoading } = useQuery({
     queryKey: ['dips'],
@@ -41,15 +42,62 @@ export default function GenerateContractPage() {
   const dipId = selectedDipId ?? activeDip?.id;
 
   const generateMutation = useMutation({
-    mutationFn: () => api.post('/contracts/generate', {
-      dip_id: dipId,
-      formData: mode === 'assisted' ? form : {},
-    }, { timeout: 120000 }),
-    onSuccess: (res) => {
-      setResult(res.data);
+    mutationFn: async () => {
+      const token = localStorage.getItem('access_token');
+      const base = import.meta.env.VITE_API_URL
+        ? import.meta.env.VITE_API_URL.replace(/\/$/, '')
+        : '';
+
+      const response = await fetch(`${base}/api/contracts/generate-stream`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ dip_id: dipId, formData: mode === 'assisted' ? form : {} }),
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({ error: 'Erreur serveur' }));
+        throw new Error(err.error || 'Erreur de génération');
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let finalResult = null;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          try {
+            const ev = JSON.parse(line.slice(6));
+            if (ev.type === 'progress') setProgress({ step: ev.step, pct: ev.pct });
+            else if (ev.type === 'done') finalResult = ev.result;
+            else if (ev.type === 'error') throw new Error(ev.error);
+          } catch (e) {
+            if (e.message && !e.message.startsWith('{')) throw e;
+          }
+        }
+      }
+
+      if (!finalResult) throw new Error('Génération incomplète. Réessayez.');
+      return finalResult;
+    },
+    onSuccess: (result) => {
+      setResult(result);
+      setProgress(null);
       toast.success('Contrat généré avec succès !');
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err) => {
+      setProgress(null);
+      toast.error(err.message);
+    },
   });
 
   const saveMutation = useMutation({
@@ -186,13 +234,34 @@ export default function GenerateContractPage() {
         </div>
       )}
 
+      {progress && (
+        <div className="card border-gold/20 bg-gold/3 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="font-dm-sans text-sm text-text-primary font-medium flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-gold animate-pulse" />
+              {progress.step}
+            </p>
+            <span className="font-dm-mono text-xs text-gold">{progress.pct}%</span>
+          </div>
+          <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(200,169,110,0.15)' }}>
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{ width: `${progress.pct}%`, background: 'linear-gradient(90deg, #F5C842, #D4A532)' }}
+            />
+          </div>
+          <p className="font-dm-mono text-xs text-text-muted">
+            Modèle : Claude Sonnet 4.6 · Durée estimée : 30-60s
+          </p>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <p className="font-dm-sans text-xs text-text-secondary">
           DIP source : <span className="text-text-primary">{activeDip.title}</span> — {activeDip.conformity_score ?? 0}% de conformité
         </p>
         {generateMutation.isPending ? (
           <button disabled className="btn-liquid-glass-prominent flex items-center gap-2 opacity-70 cursor-not-allowed">
-            <LoadingSpinner size="sm" /> Génération en cours (30-60s)…
+            <LoadingSpinner size="sm" /> Rédaction en cours…
           </button>
         ) : (
           <LiquidGlassBtn
