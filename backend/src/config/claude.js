@@ -1071,7 +1071,7 @@ Valeurs pour status : "conforme" | "a_verifier" | "non_conforme"`;
 
   const stream = claude.messages.stream({
     model: MODEL_SONNET,
-    max_tokens: 6000,
+    max_tokens: 12000,
     system: CACHED_SYSTEM_CONTRACT,
     messages: [{ role: 'user', content: userContent }],
   });
@@ -1080,16 +1080,41 @@ Valeurs pour status : "conforme" | "a_verifier" | "non_conforme"`;
     if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
       fullText += event.delta.text;
       charsReceived += event.delta.text.length;
-      const clauseEst = Math.min(10, Math.max(1, Math.floor(charsReceived / 2200) + 1));
-      const pct = Math.min(88, 10 + Math.floor((charsReceived / 22000) * 78));
+      const clauseEst = Math.min(10, Math.max(1, Math.floor(charsReceived / 3600) + 1));
+      const pct = Math.min(88, 10 + Math.floor((charsReceived / 36000) * 78));
       onProgress(pct, `Rédaction clause ${clauseEst}/10…`);
     }
   }
 
-  const match = fullText.match(/\{[\s\S]*\}/);
-  if (!match) throw new Error("L'IA n'a pas retourné de JSON valide. Réessayez.");
+  const jsonStart = fullText.indexOf('{');
+  if (jsonStart === -1) throw new Error("L'IA n'a pas retourné de JSON valide. Réessayez.");
 
-  const result = JSON.parse(match[0]);
+  const rawJson = fullText.slice(jsonStart);
+  let result;
+  try {
+    result = JSON.parse(rawJson);
+  } catch {
+    // JSON tronqué — extraire les clauses complètes déjà reçues
+    const clauseMatches = [...rawJson.matchAll(/"clause_number"\s*:\s*(\d+)[\s\S]*?"content"\s*:\s*"((?:[^"\\]|\\.)*)"/g)];
+    const partialClauses = clauseMatches.map(m => {
+      const num = parseInt(m[1]);
+      return {
+        clause_number: num,
+        clause_title: CONTRACT_CLAUSES_DEFAULT[num - 1] || `Clause ${num}`,
+        content: m[2].replace(/\\n/g, '\n').replace(/\\"/g, '"'),
+        status: 'a_verifier',
+        issues: [],
+        suggestions: []
+      };
+    });
+
+    result = {
+      clauses: partialClauses,
+      global_score: null,
+      summary: 'Génération partielle — certaines clauses ont été tronquées. Relancez pour une version complète.',
+      missing_data: []
+    };
+  }
 
   if (!result.clauses || result.clauses.length < 10) {
     const existing = new Set((result.clauses || []).map(c => c.clause_number));
