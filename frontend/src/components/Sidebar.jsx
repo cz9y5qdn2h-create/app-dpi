@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
@@ -10,10 +10,74 @@ import LiquidGlassBtn from './ui/LiquidGlassBtn';
 import {
   LayoutDashboard, FileText, Upload, Bell, History,
   Users, Settings, Download, LogOut, Phone, Zap, ShieldAlert, Sparkles,
-  Sun, Moon, FolderSync, ScrollText
+  Sun, Moon, FolderSync, ScrollText, ChevronDown,
 } from 'lucide-react';
 
 const THEME_ICONS = { moon: Moon, sparkle: Sparkles, sun: Sun };
+
+function NavItem({ to, icon: Icon, label, count, adminOnly, sub, onClick }) {
+  return (
+    <NavLink
+      to={to}
+      onClick={onClick}
+      className={({ isActive }) => [
+        adminOnly
+          ? (isActive ? 'nav-link-active' : 'nav-link text-gold/80 hover:text-gold')
+          : (isActive ? 'nav-link-active' : 'nav-link'),
+        sub ? 'pl-8 py-1.5' : '',
+      ].filter(Boolean).join(' ')}
+    >
+      <Icon className={sub ? 'w-3.5 h-3.5 flex-shrink-0' : 'w-4 h-4 flex-shrink-0'} />
+      <span className={`flex-1 truncate ${sub ? 'text-xs' : ''}`}>{label}</span>
+      {count > 0 && (
+        <span className="font-dm-mono text-xs bg-danger text-white rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 leading-none">
+          {count > 99 ? '99+' : count}
+        </span>
+      )}
+    </NavLink>
+  );
+}
+
+function NavGroup({ group, onClose }) {
+  const location = useLocation();
+  const isGroupActive = group.items.some(item => location.pathname === item.to || location.pathname.startsWith(item.to + '/'));
+  const [open, setOpen] = useState(isGroupActive);
+
+  if (group.flat) {
+    return (
+      <div className="space-y-0.5">
+        {group.items.map(item => (
+          <NavItem key={item.to} {...item} onClick={onClose} />
+        ))}
+      </div>
+    );
+  }
+
+  const GroupIcon = group.icon;
+
+  return (
+    <div>
+      <button
+        onClick={() => setOpen(o => !o)}
+        className={`nav-link w-full text-left ${isGroupActive ? 'text-gold' : ''}`}
+      >
+        <GroupIcon className="w-4 h-4 flex-shrink-0" />
+        <span className="flex-1 font-medium text-sm">{group.label}</span>
+        <ChevronDown
+          className={`w-3.5 h-3.5 flex-shrink-0 transition-transform duration-200 ${open ? 'rotate-180' : ''}`}
+          style={{ opacity: 0.4 }}
+        />
+      </button>
+      {open && (
+        <div className="mt-0.5 space-y-0.5">
+          {group.items.map(item => (
+            <NavItem key={item.to} {...item} sub onClick={onClose} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Sidebar({ open, onClose }) {
   const { profile, logout } = useAuth();
@@ -37,21 +101,53 @@ export default function Sidebar({ open, onClose }) {
   const pendingCount = alertsData?.alerts?.length || 0;
   const isAdmin = profile?.role === 'admin';
 
-  const navItems = [
-    { to: '/dashboard',    icon: LayoutDashboard, label: t('nav.dashboard') },
-    { to: '/dip',          icon: FileText,        label: t('nav.myDip') },
-    { to: '/dip/upload',   icon: Upload,          label: t('nav.newVersion') },
-    { to: '/dip/generate', icon: Sparkles,        label: t('nav.generateDip') },
-    { to: '/contrat',      icon: ScrollText,      label: t('nav.myContract') },
-    { to: '/contrat/generate', icon: Sparkles,    label: t('nav.generateContract') },
-    { to: '/alerts',       icon: Bell,            label: t('nav.alerts'), count: pendingCount },
-    { to: '/history',      icon: History,         label: t('nav.history') },
-    { to: '/franchisees',  icon: Users,           label: t('nav.franchisees') },
-    { to: '/export',       icon: Download,        label: t('nav.export') },
-    { to: '/monitoring',   icon: FolderSync,      label: t('nav.docMonitoring') },
-    { to: '/integrations', icon: Zap,             label: t('nav.integrations') },
-    { to: '/settings',     icon: Settings,        label: t('nav.settings') },
-    ...(isAdmin ? [{ to: '/admin', icon: ShieldAlert, label: t('nav.admin'), adminOnly: true }] : []),
+  const navGroups = [
+    {
+      key: 'dashboard',
+      flat: true,
+      items: [
+        { to: '/dashboard', icon: LayoutDashboard, label: t('nav.dashboard') },
+      ],
+    },
+    {
+      key: 'dip',
+      label: t('nav.myDip'),
+      icon: FileText,
+      items: [
+        { to: '/dip', icon: FileText, label: 'Mon DIP actif' },
+        { to: '/dip/upload', icon: Upload, label: 'Importer / Analyser' },
+        { to: '/dip/generate', icon: Sparkles, label: 'Générer avec IA' },
+      ],
+    },
+    {
+      key: 'contrat',
+      label: t('nav.myContract'),
+      icon: ScrollText,
+      items: [
+        { to: '/contrat', icon: ScrollText, label: 'Mon contrat' },
+        { to: '/contrat/generate', icon: Sparkles, label: 'Générer avec IA' },
+      ],
+    },
+    {
+      key: 'ops',
+      flat: true,
+      items: [
+        { to: '/alerts', icon: Bell, label: t('nav.alerts'), count: pendingCount },
+        { to: '/history', icon: History, label: t('nav.history') },
+        { to: '/franchisees', icon: Users, label: t('nav.franchisees') },
+        { to: '/export', icon: Download, label: t('nav.export') },
+      ],
+    },
+    {
+      key: 'tools',
+      flat: true,
+      items: [
+        { to: '/monitoring', icon: FolderSync, label: t('nav.docMonitoring') },
+        { to: '/integrations', icon: Zap, label: t('nav.integrations') },
+        { to: '/settings', icon: Settings, label: t('nav.settings') },
+        ...(isAdmin ? [{ to: '/admin', icon: ShieldAlert, label: t('nav.admin'), adminOnly: true }] : []),
+      ],
+    },
   ];
 
   const handleLogout = async () => {
@@ -77,33 +173,24 @@ export default function Sidebar({ open, onClose }) {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-          {navItems.map(({ to, icon: Icon, label, count, adminOnly }) => (
-            <NavLink
-              key={to}
-              to={to}
-              onClick={onClose}
-              className={({ isActive }) =>
-                adminOnly
-                  ? (isActive ? 'nav-link-active' : 'nav-link text-gold/80 hover:text-gold')
-                  : (isActive ? 'nav-link-active' : 'nav-link')
-              }
-            >
-              <Icon className="w-4 h-4 flex-shrink-0" />
-              <span className="flex-1">{label}</span>
-              {count > 0 && (
-                <span className="font-dm-mono text-xs bg-danger text-white rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 leading-none">
-                  {count > 99 ? '99+' : count}
-                </span>
-              )}
-            </NavLink>
-          ))}
+        <nav className="flex-1 px-3 py-3 overflow-y-auto">
+          <div className="space-y-0.5">
+            {navGroups.map((group, gi) => (
+              <div key={group.key}>
+                {gi > 0 && group.flat && gi !== navGroups.findIndex(g => g.key === 'ops') + 1 && (
+                  <div className="my-2 mx-1" style={{ height: '1px', background: 'rgba(200,169,110,0.08)' }} />
+                )}
+                {gi > 0 && (
+                  <div className="my-2 mx-1" style={{ height: '1px', background: 'rgba(200,169,110,0.08)' }} />
+                )}
+                <NavGroup group={group} onClose={onClose} />
+              </div>
+            ))}
+          </div>
         </nav>
 
         {/* Bottom section */}
         <div className="px-3 py-4 border-t border-border-subtle space-y-3">
-
-          {/* Contacter Iralink */}
           <LiquidGlassBtn
             onClick={() => { setCalOpen(true); onClose?.(); }}
             padding="10px 20px"
@@ -122,11 +209,7 @@ export default function Sidebar({ open, onClose }) {
             </span>
           </LiquidGlassBtn>
 
-          {/* Language toggle */}
-          <button
-            onClick={toggleLang}
-            className="nav-link w-full text-left"
-          >
+          <button onClick={toggleLang} className="nav-link w-full text-left">
             <span className="font-dm-mono text-xs font-medium" style={{ letterSpacing: '0.05em' }}>
               <span style={{ color: i18n.language === 'fr' ? 'rgb(var(--gold))' : undefined }}>FR</span>
               {' / '}
@@ -134,7 +217,6 @@ export default function Sidebar({ open, onClose }) {
             </span>
           </button>
 
-          {/* Theme switcher */}
           <div className="flex items-center gap-1 px-1">
             {themes.map(({ id, label, icon }) => {
               const Icon = THEME_ICONS[icon];
@@ -152,7 +234,6 @@ export default function Sidebar({ open, onClose }) {
             })}
           </div>
 
-          {/* User info */}
           <div className="lg-user-chip">
             <p className="font-dm-sans text-sm text-text-primary truncate" style={{ fontWeight: 500 }}>
               {profile?.company_name || 'Franchiseur'}
@@ -162,7 +243,6 @@ export default function Sidebar({ open, onClose }) {
             </p>
           </div>
 
-          {/* Logout */}
           <button
             onClick={handleLogout}
             className="nav-link w-full text-left text-danger hover:text-danger hover:bg-danger/5"

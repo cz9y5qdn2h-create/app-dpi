@@ -212,4 +212,143 @@ router.delete('/microsoft', authMiddleware, async (req, res) => {
   }
 });
 
+// GET /api/integrations/local-files — liste les documents locaux de l'utilisateur
+router.get('/local-files', authMiddleware, async (req, res) => {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('local_user_files')
+      .select('*')
+      .eq('user_id', req.user.id)
+      .order('created_at', { ascending: false });
+    if (error) throw error;
+    res.json({ files: data || [] });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// POST /api/integrations/local-files — enregistre un fichier uploadé + lance l'analyse IA
+router.post('/local-files', authMiddleware, async (req, res) => {
+  const { name, storage_path, file_url, mime_type, size_bytes } = req.body;
+  if (!name || !storage_path) {
+    return res.status(400).json({ error: 'name et storage_path requis' });
+  }
+
+  try {
+    const { data: fileRow, error: insertErr } = await supabaseAdmin
+      .from('local_user_files')
+      .insert({
+        user_id: req.user.id,
+        name,
+        storage_path,
+        file_url: file_url || null,
+        mime_type: mime_type || null,
+        size_bytes: size_bytes || null,
+        status: 'analyzing',
+      })
+      .select()
+      .single();
+
+    if (insertErr) throw new Error(insertErr.message);
+
+    res.status(201).json({ file: fileRow });
+
+    // Analyse asynchrone (ne bloque pas la réponse)
+    setImmediate(async () => {
+      try {
+        const { data: blob, error: dlErr } = await supabaseAdmin.storage
+          .from('user-documents')
+          .download(storage_path);
+
+        if (dlErr || !blob) throw new Error('Téléchargement impossible');
+
+        const arrayBuffer = await blob.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+
+        let text = '';
+        if (mime_type?.includes('pdf') || name.toLowerCase().endsWith('.pdf')) {
+          const pdfParse = require('pdf-parse/lib/pdf-parse.js');
+          const parsed = await pdfParse(buffer);
+          text = parsed.text;
+        } else if (name.toLowerCase().endsWith('.docx')) {
+          const mammoth = require('mammoth');
+          const result = await mammoth.extractRawText({ buffer });
+          text = result.value;
+        }
+
+        text = text.slice(0, 8000);
+
+        let impactLevel = 'none';
+        let impactSummary = null;
+
+        if (text.trim().length > 50) {
+          const Anthropic = require('@anthropic-ai/sdk');
+          const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+          const aiResp = await client.messages.create({
+            model: process.env.ANTHROPIC_MODEL || 'claude-opus-4-7',
+            max_tokens: 512,
+            messages: [{
+              role: 'user',
+              content: `Expert droit franchise française. Document : "${name}". Mots-clés : franchise, DIP, Loi Doubin.
+
+Contenu :
+${text}
+
+Réponds UNIQUEMENT en JSON (sans markdown) :
+{"impact_level":"none|low|medium|high|critical","impact_summary":"1 phrase max"}`,
+            }],
+          });
+          const raw = aiResp.content[0].text.trim().replace(/```json?\n?/g, '').replace(/```\n?/g, '');
+          try {
+            const parsed = JSON.parse(raw);
+            impactLevel = parsed.impact_level || 'none';
+            impactSummary = parsed.impact_summary || null;
+          } catch {}
+        }
+
+        await supabaseAdmin.from('local_user_files').update({
+          status: 'done',
+          impact_level: impactLevel,
+          impact_summary: impactSummary,
+          analyzed_at: new Date().toISOString(),
+        }).eq('id', fileRow.id);
+
+      } catch (analyzeErr) {
+        await supabaseAdmin.from('local_user_files').update({
+          status: 'error',
+          impact_summary: analyzeErr.message?.slice(0, 200),
+        }).eq('id', fileRow.id);
+      }
+    });
+
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// DELETE /api/integrations/local-files/:id
+router.delete('/local-files/:id', authMiddleware, async (req, res) => {
+  try {
+    const { data: row } = await supabaseAdmin
+      .from('local_user_files')
+      .select('storage_path')
+      .eq('id', req.params.id)
+      .eq('user_id', req.user.id)
+      .single();
+
+    if (row?.storage_path) {
+      await supabaseAdmin.storage.from('user-documents').remove([row.storage_path]);
+    }
+
+    await supabaseAdmin.from('local_user_files')
+      .delete()
+      .eq('id', req.params.id)
+      .eq('user_id', req.user.id);
+
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 module.exports = router;

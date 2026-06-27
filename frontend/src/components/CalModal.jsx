@@ -33,7 +33,7 @@ export default function CalModal({ open, onClose }) {
 
       {/* Modal */}
       <div className="relative w-full max-w-2xl rounded-xl shadow-2xl overflow-hidden animate-slide-up"
-        style={{ background: 'rgba(255,255,255,0.75)', backdropFilter: 'blur(32px) saturate(200%)', WebkitBackdropFilter: 'blur(32px) saturate(200%)', border: '1px solid rgba(255,255,255,0.72)' }}>
+        style={{ background: 'rgb(var(--bg-card))', backdropFilter: 'blur(24px) saturate(160%)', WebkitBackdropFilter: 'blur(24px) saturate(160%)', border: '1px solid rgb(var(--border-subtle))' }}>
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
           <div className="flex items-center gap-3">
