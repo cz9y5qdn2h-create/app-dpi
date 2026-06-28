@@ -54,6 +54,10 @@ const FAQS = [
     a: "Le Document d'Information Précontractuelle est obligatoire pour tout franchiseur (Art. L.330-3 Code de commerce). Il doit être remis au candidat franchisé 20 jours avant la signature. Son absence ou son inexactitude suffit à entraîner la nullité du contrat — confirmé par la Cour de cassation, 26 juin 2024.",
   },
   {
+    q: "Combien coûte DIPpro ?",
+    a: "1 300 € de mise en place (onboarding personnalisé 1h, import et analyse de votre DIP existant, configuration complète) + 850 €/mois. Soit 11 500 € la première année — pour couvrir un risque moyen de 200 000 € par litige DIP. Première analyse offerte, aucune carte bancaire requise.",
+  },
+  {
     q: "DIPpro remplace-t-il un avocat ?",
     a: "Non — DIPpro prépare et structure le travail. Votre avocat valide. Notre rapport de conformité divise généralement par 3 le temps de révision juridique et évite les oublis de sections critiques.",
   },
@@ -63,11 +67,7 @@ const FAQS = [
   },
   {
     q: "Qu'est-ce que l'accès anticipé ?",
-    a: "Le MVP est fonctionnel et déployé. Les premiers franchiseurs accèdent à toutes les fonctionnalités dès aujourd'hui. En échange de votre retour structuré, vous bénéficiez du tarif Early Adopter garanti à vie.",
-  },
-  {
-    q: "Combien coûte DIPpro ?",
-    a: "Les inscrits sur la liste d'attente bénéficient d'un tarif Early Adopter exclusif, inférieur de 40 % au tarif public à l'ouverture. Le tarif exact vous est communiqué par email à l'activation. Aucune carte bancaire requise pour s'inscrire.",
+    a: "Le MVP est fonctionnel et déployé. Les premiers franchiseurs accèdent à toutes les fonctionnalités dès aujourd'hui. En échange de votre retour, vous bénéficiez d'un onboarding personnalisé 1h avec l'équipe et d'un support prioritaire à vie.",
   },
 ];
 
@@ -691,6 +691,77 @@ export default function LandingPage() {
         </FadeIn>
       </section>
 
+      {/* ── PRICING ──────────────────────────────────────────── */}
+      <section style={{ maxWidth: 860, margin: '0 auto', padding: '0 24px 64px' }}>
+        <FadeIn>
+          <div style={{ textAlign: 'center', marginBottom: 40 }}>
+            <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontWeight: 300, fontSize: 'clamp(2rem, 4vw, 2.6rem)', color: '#F4F2EE', marginBottom: 12 }}>
+              Tarification claire
+            </h2>
+            <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 14, color: 'rgba(244,242,238,0.40)' }}>
+              Un prix réel, affiché — sans surprise.
+            </p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16, alignItems: 'start' }}>
+            {/* Carte prix */}
+            <div style={{ borderRadius: 22, padding: '36px 32px', background: 'rgba(200,169,110,0.06)', border: '0.5px solid rgba(200,169,110,0.28)', boxSizing: 'border-box' }}>
+              <div style={{ marginBottom: 24 }}>
+                <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: 'rgba(200,169,110,0.6)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Mise en place</div>
+                <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 42, fontWeight: 300, color: GOLD, lineHeight: 1 }}>1 300 €</div>
+                <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: 'rgba(244,242,238,0.38)', marginTop: 4 }}>une seule fois</div>
+              </div>
+              <div style={{ height: '0.5px', background: 'rgba(200,169,110,0.15)', marginBottom: 24 }} />
+              <div style={{ marginBottom: 24 }}>
+                <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: 'rgba(200,169,110,0.6)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Abonnement mensuel</div>
+                <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 42, fontWeight: 300, color: GOLD, lineHeight: 1 }}>850 €<span style={{ fontSize: 18, opacity: 0.6 }}>/mois</span></div>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+                {['Onboarding personnalisé 1h avec l\'équipe', 'Import et analyse de votre DIP existant', 'Configuration complète de votre espace', 'Support prioritaire à vie'].map(f => (
+                  <div key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                    <CheckCircle style={{ width: 14, height: 14, color: GOLD, flexShrink: 0, marginTop: 1 }} />
+                    <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12.5, color: 'rgba(244,242,238,0.55)', lineHeight: 1.5 }}>{f}</span>
+                  </div>
+                ))}
+              </div>
+              <button onClick={scrollToForm} style={{ ...btnGold, width: '100%', justifyContent: 'center', padding: '13px 24px', marginTop: 28 }}>
+                Première analyse offerte →
+              </button>
+              <p style={{ fontFamily: 'DM Mono, monospace', fontSize: 10.5, color: 'rgba(244,242,238,0.25)', textAlign: 'center', marginTop: 10 }}>Aucune carte bancaire requise</p>
+            </div>
+
+            {/* ROI */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ borderRadius: 16, padding: '24px 28px', background: 'rgba(244,242,238,0.025)', border: '0.5px solid rgba(244,242,238,0.07)' }}>
+                <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 10, color: 'rgba(244,242,238,0.30)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>Le calcul</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {[
+                    ['Coût an 1 (mise en place + 12 mois)', '11 500 €'],
+                    ['Risque moyen d\'un litige DIP', '200 000 €'],
+                  ].map(([label, val]) => (
+                    <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
+                      <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12.5, color: 'rgba(244,242,238,0.45)', lineHeight: 1.4 }}>{label}</span>
+                      <span style={{ fontFamily: 'DM Mono, monospace', fontSize: 13, color: 'rgba(244,242,238,0.70)', flexShrink: 0 }}>{val}</span>
+                    </div>
+                  ))}
+                  <div style={{ height: '0.5px', background: 'rgba(200,169,110,0.15)', margin: '4px 0' }} />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
+                    <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 13, color: GOLD, fontWeight: 500 }}>Soit moins de 6 % du risque couvert</span>
+                    <span style={{ fontFamily: 'DM Mono, monospace', fontSize: 14, color: GOLD, flexShrink: 0 }}>×17 ROI</span>
+                  </div>
+                </div>
+              </div>
+              <div style={{ borderRadius: 16, padding: '24px 28px', background: 'rgba(244,242,238,0.025)', border: '0.5px solid rgba(244,242,238,0.07)' }}>
+                <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 10, color: 'rgba(244,242,238,0.30)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Garantie</div>
+                <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 13, color: 'rgba(244,242,238,0.50)', lineHeight: 1.65, margin: 0 }}>
+                  Première analyse de votre DIP actuel offerte — vous recevez le rapport complet avant de prendre toute décision. Aucun engagement, aucune carte bancaire.
+                </p>
+              </div>
+            </div>
+          </div>
+        </FadeIn>
+      </section>
+
       {/* ── WAITLIST FORM ────────────────────────────────────── */}
       <section ref={formRef} style={{ maxWidth: 680, margin: '0 auto', padding: '0 24px 88px' }}>
         <FadeIn>
@@ -700,7 +771,7 @@ export default function LandingPage() {
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '5px 14px', borderRadius: 20, background: 'rgba(200,169,110,0.10)', border: '0.5px solid rgba(200,169,110,0.22)', marginBottom: 20 }}>
                 <Star style={{ width: 12, height: 12, color: GOLD }} />
                 <span style={{ fontFamily: 'DM Mono, monospace', fontSize: 10, color: GOLD }}>
-                  Accès anticipé · places limitées
+                  Accès anticipé
                   {waitlistCount != null && waitlistCount > 0 && (
                     <> · {waitlistCount} inscrits</>
                   )}
@@ -710,9 +781,7 @@ export default function LandingPage() {
                 Rejoignez la liste d&apos;attente
               </h2>
               <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 13.5, color: 'rgba(244,242,238,0.45)', lineHeight: 1.7 }}>
-                DIPpro ouvrira ses accès dès la constitution d&apos;Iralink Agency.
-                Inscrivez-vous pour être contacté en priorité,
-                bénéficier du tarif préférentiel Early Adopter et d&apos;un onboarding personnalisé.
+                Inscrivez-vous pour être contacté en priorité et recevoir votre première analyse DIP gratuitement.
               </p>
             </div>
 
