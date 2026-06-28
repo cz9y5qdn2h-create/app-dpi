@@ -6,8 +6,8 @@ if (!process.env.ANTHROPIC_API_KEY) {
 
 const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-const MODEL_OPUS   = 'claude-haiku-4-5';
-const MODEL_SONNET = 'claude-haiku-4-5';
+const MODEL_OPUS   = 'claude-opus-4-7';
+const MODEL_SONNET = 'claude-sonnet-4-6';
 const MODEL_HAIKU  = 'claude-haiku-4-5';
 
 // Wrapper pour donner des messages d'erreur explicites

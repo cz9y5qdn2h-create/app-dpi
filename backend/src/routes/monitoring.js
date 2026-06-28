@@ -97,7 +97,7 @@ router.post('/check/:sourceId', authMiddleware, requireFranchisor, async (req, r
     if (content && (!source.last_content_hash || changeDetected)) {
       const keywords = source.keywords?.length > 0 ? source.keywords.join(', ') : 'franchise, DIP, Loi Doubin';
       const aiResponse = await anthropic.messages.create({
-        model: 'claude-haiku-4-5',
+        model: 'claude-opus-4-7',
         max_tokens: 1024,
         messages: [{
           role: 'user',

@@ -138,7 +138,7 @@ router.post('/chat', authMiddleware, requireFranchisor, async (req, res) => {
 
     for (let i = 0; i < 6; i++) {
       const response = await anthropic.messages.create({
-        model: 'claude-haiku-4-5',
+        model: 'claude-opus-4-7',
         max_tokens: 1024,
         system: SYSTEM,
         tools: TOOLS,
