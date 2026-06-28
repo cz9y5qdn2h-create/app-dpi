@@ -7,9 +7,9 @@ const {
 
 const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-const MODEL_OPUS   = 'claude-opus-4-7';   // Analyse juridique critique
-const MODEL_SONNET = 'claude-sonnet-4-6'; // Génération et comparaison structurée
-const MODEL_HAIKU  = 'claude-haiku-4-5';  // Vérifications simples
+const MODEL_OPUS   = 'claude-haiku-4-5';
+const MODEL_SONNET = 'claude-haiku-4-5';
+const MODEL_HAIKU  = 'claude-haiku-4-5';
 
 const callClaude = async (params) => {
   try {

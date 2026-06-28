@@ -92,7 +92,7 @@ async function checkOneSource(source) {
         : 'franchise, DIP, Loi Doubin';
     try {
       const aiResp = await anthropic.messages.create({
-        model: process.env.ANTHROPIC_MODEL || 'claude-opus-4-7',
+        model: 'claude-haiku-4-5',
         max_tokens: 512,
         messages: [{
           role: 'user',

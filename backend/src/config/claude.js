@@ -6,9 +6,9 @@ if (!process.env.ANTHROPIC_API_KEY) {
 
 const claude = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-const MODEL_OPUS   = process.env.ANTHROPIC_MODEL || 'claude-opus-4-7';   // Analyse et corrections critiques
-const MODEL_SONNET = 'claude-sonnet-4-6';                                 // Comparaison et corrections guidées
-const MODEL_HAIKU  = 'claude-haiku-4-5';                                  // Détections simples et résumés
+const MODEL_OPUS   = 'claude-haiku-4-5';
+const MODEL_SONNET = 'claude-haiku-4-5';
+const MODEL_HAIKU  = 'claude-haiku-4-5';
 
 // Wrapper pour donner des messages d'erreur explicites
 const callClaude = async (params) => {
