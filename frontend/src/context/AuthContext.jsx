@@ -39,6 +39,7 @@ export default function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [needsPasswordReset, setNeedsPasswordReset] = useState(false);
   const mfaPendingRef = useRef(false);
 
   useEffect(() => {
@@ -78,6 +79,11 @@ export default function AuthProvider({ children }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!mounted) return;
+
+        if (event === 'PASSWORD_RECOVERY') {
+          if (mounted) { setNeedsPasswordReset(true); setLoading(false); }
+          return;
+        }
 
         if (event === 'SIGNED_IN' && !mfaPendingRef.current) {
           const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
@@ -194,7 +200,9 @@ export default function AuthProvider({ children }) {
       login, register, logout, refreshProfile, verifyMFA,
       supabase,
       isTrialExpired,
-      trialDaysLeft
+      trialDaysLeft,
+      needsPasswordReset,
+      clearPasswordReset: () => setNeedsPasswordReset(false)
     }}>
       {children}
     </AuthContext.Provider>

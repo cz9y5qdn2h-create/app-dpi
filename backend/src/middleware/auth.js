@@ -1,7 +1,29 @@
 require('dotenv').config();
 const { supabaseAdmin } = require('../config/supabase');
 
-// Vérifie le JWT via Supabase (signature + expiration + révocation)
+// Cache rôle en mémoire — évite 1 requête DB par requête protégée
+const roleCache = new Map();
+const ROLE_TTL = 5 * 60 * 1000; // 5 minutes
+
+function getCachedRole(userId) {
+  const entry = roleCache.get(userId);
+  if (entry && Date.now() < entry.exp) return entry.role;
+  roleCache.delete(userId);
+  return null;
+}
+
+function setCachedRole(userId, role) {
+  roleCache.set(userId, { role, exp: Date.now() + ROLE_TTL });
+  if (roleCache.size > 2000) {
+    const now = Date.now();
+    for (const [k, v] of roleCache) if (now > v.exp) roleCache.delete(k);
+  }
+}
+
+function invalidateRoleCache(userId) {
+  roleCache.delete(userId);
+}
+
 const authMiddleware = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -9,32 +31,35 @@ const authMiddleware = async (req, res, next) => {
   }
 
   const token = authHeader.split(' ')[1];
-
   if (!token || token.length > 4096) {
     return res.status(401).json({ error: 'Token invalide' });
   }
 
   try {
     const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
-
     if (error || !user) {
       return res.status(401).json({ error: 'Session expirée. Reconnectez-vous.' });
     }
 
-    req.user = {
-      id: user.id,
-      email: user.email || '',
-      user_metadata: user.user_metadata || {}
-    };
+    req.user = { id: user.id, email: user.email || '', user_metadata: user.user_metadata || {} };
     req.token = token;
     next();
-  } catch (err) {
+  } catch {
     return res.status(401).json({ error: 'Token invalide ou expiré. Reconnectez-vous.' });
   }
 };
 
 const requireFranchisor = async (req, res, next) => {
   if (!req.user) return res.status(401).json({ error: 'Non authentifié' });
+
+  // 1. Vérifier le cache
+  const cached = getCachedRole(req.user.id);
+  if (cached) {
+    if (cached !== 'franchiseur' && cached !== 'admin') {
+      return res.status(403).json({ error: 'Accès réservé aux franchiseurs.' });
+    }
+    return next();
+  }
 
   try {
     let { data: profile, error: profileError } = await supabaseAdmin
@@ -68,6 +93,8 @@ const requireFranchisor = async (req, res, next) => {
       profile = newProfile;
     }
 
+    setCachedRole(req.user.id, profile.role);
+
     if (profile.role !== 'franchiseur' && profile.role !== 'admin') {
       return res.status(403).json({ error: 'Accès réservé aux franchiseurs.' });
     }
@@ -79,4 +106,4 @@ const requireFranchisor = async (req, res, next) => {
   }
 };
 
-module.exports = { authMiddleware, requireFranchisor };
+module.exports = { authMiddleware, requireFranchisor, invalidateRoleCache };

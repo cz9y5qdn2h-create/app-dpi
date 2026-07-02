@@ -54,12 +54,18 @@ router.get('/stats', authMiddleware, requireAdmin, async (req, res) => {
 
 // GET /api/admin/users — Liste tous les franchiseurs
 router.get('/users', authMiddleware, requireAdmin, async (req, res) => {
-  const { data, error } = await supabaseAdmin
+  const page  = Math.max(1, parseInt(req.query.page)  || 1);
+  const limit = Math.min(200, Math.max(1, parseInt(req.query.limit) || 50));
+  const from  = (page - 1) * limit;
+
+  const { data, error, count } = await supabaseAdmin
     .from('users')
-    .select('id, email, role, company_name, created_at, siret, automation_level')
-    .order('created_at', { ascending: false });
+    .select('id, email, role, company_name, created_at, siret, automation_level', { count: 'exact' })
+    .order('created_at', { ascending: false })
+    .range(from, from + limit - 1);
+
   if (error) return res.status(500).json({ error: error.message });
-  res.json({ users: data });
+  res.json({ users: data, total: count, page, limit });
 });
 
 // GET /api/admin/users/:id — Détail d'un franchiseur

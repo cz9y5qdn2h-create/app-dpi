@@ -46,13 +46,20 @@ router.post('/import-csv', authMiddleware, requireFranchisor, async (req, res) =
 
 // GET /api/franchisees
 router.get('/', authMiddleware, requireFranchisor, async (req, res) => {
-  const { data, error } = await supabaseAdmin
+  const page  = Math.max(1, parseInt(req.query.page)  || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
+  const from  = (page - 1) * limit;
+
+  const { data, error, count } = await supabaseAdmin
     .from('franchisees')
-    .select('*')
+    .select('id,franchiseur_id,name,email,phone,whatsapp_number,territory,contract_start,contract_end,status,created_at', { count: 'exact' })
     .eq('franchiseur_id', req.user.id)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .range(from, from + limit - 1);
+
   if (error) return res.status(500).json({ error: error.message });
-  res.json({ franchisees: data });
+  res.set('Cache-Control', 'private, max-age=15');
+  res.json({ franchisees: data, total: count, page, limit });
 });
 
 // POST /api/franchisees
