@@ -15,11 +15,12 @@ import {
 
 const THEME_ICONS = { moon: Moon, sparkle: Sparkles, sun: Sun };
 
-function NavItem({ to, icon: Icon, label, count, adminOnly, sub, onClick }) {
+function NavItem({ to, icon: Icon, label, count, adminOnly, sub, onClick, tourId }) {
   return (
     <NavLink
       to={to}
       onClick={onClick}
+      data-tour={tourId || undefined}
       className={({ isActive }) => [
         adminOnly
           ? (isActive ? 'nav-link-active' : 'nav-link text-gold/80 hover:text-gold')
@@ -59,6 +60,7 @@ function NavGroup({ group, onClose }) {
     <div>
       <button
         onClick={() => setOpen(o => !o)}
+        data-tour={group.tourId || undefined}
         className={`nav-link w-full text-left ${isGroupActive ? 'text-gold' : ''}`}
       >
         <GroupIcon className="w-4 h-4 flex-shrink-0" />
@@ -111,6 +113,7 @@ export default function Sidebar({ open, onClose }) {
     },
     {
       key: 'dip',
+      tourId: 'nav-dip',
       label: t('nav.myDip'),
       icon: FileText,
       items: [
@@ -121,6 +124,7 @@ export default function Sidebar({ open, onClose }) {
     },
     {
       key: 'contrat',
+      tourId: 'nav-contrat',
       label: t('nav.myContract'),
       icon: ScrollText,
       items: [
@@ -132,9 +136,9 @@ export default function Sidebar({ open, onClose }) {
       key: 'ops',
       flat: true,
       items: [
-        { to: '/alerts', icon: Bell, label: t('nav.alerts'), count: pendingCount },
-        { to: '/history', icon: History, label: t('nav.history') },
-        { to: '/franchisees', icon: Users, label: t('nav.franchisees') },
+        { to: '/alerts', icon: Bell, label: t('nav.alerts'), count: pendingCount, tourId: 'nav-alerts' },
+        { to: '/history', icon: History, label: t('nav.history'), tourId: 'nav-history' },
+        { to: '/franchisees', icon: Users, label: t('nav.franchisees'), tourId: 'nav-franchisees' },
         { to: '/export', icon: Download, label: t('nav.export') },
       ],
     },
