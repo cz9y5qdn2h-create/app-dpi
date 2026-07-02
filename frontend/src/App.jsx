@@ -52,7 +52,7 @@ function PublicOnlyRoute({ children }) {
 function RootRedirect() {
   const { user, loading } = useAuth();
   const hash = typeof window !== 'undefined' ? window.location.hash : '';
-  if (hash.includes('type=recovery')) {
+  if (hash.includes('type=recovery') || (hash.includes('error=') && hash.includes('otp'))) {
     return <Navigate to={`/reset-password${hash}`} replace />;
   }
   if (loading) return <div className="min-h-screen flex items-center justify-center bg-bg-primary"><LoadingSpinner size="lg" /></div>;

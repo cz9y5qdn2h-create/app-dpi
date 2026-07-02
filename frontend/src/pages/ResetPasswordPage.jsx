@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { Shield, Eye, EyeOff, CheckCircle, AlertCircle, Lock } from 'lucide-react';
+import { Shield, Eye, EyeOff, CheckCircle, AlertCircle, Lock, ArrowLeft } from 'lucide-react';
 
 const BG = `
   radial-gradient(ellipse 55% 50% at 15% 70%, rgba(200,169,110,0.20) 0%, transparent 60%),
@@ -18,13 +18,26 @@ export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
+  const [hashError, setHashError] = useState('');
 
   useEffect(() => {
+    const hash = window.location.hash;
+
+    if (hash.includes('error=')) {
+      const params = new URLSearchParams(hash.slice(1));
+      const code = params.get('error_code') || params.get('error');
+      if (code === 'otp_expired') {
+        setHashError('Ce lien a expiré ou a déjà été utilisé. Faites une nouvelle demande.');
+      } else {
+        const desc = params.get('error_description')?.replace(/\+/g, ' ') || 'Lien invalide.';
+        setHashError(desc);
+      }
+      return;
+    }
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') setReady(true);
     });
-    // Si le token est déjà dans l'URL hash au chargement
-    const hash = window.location.hash;
     if (hash.includes('type=recovery') || hash.includes('access_token')) setReady(true);
     return () => subscription.unsubscribe();
   }, []);
@@ -68,7 +81,40 @@ export default function ResetPasswordPage() {
           </p>
         </div>
 
-        {success ? (
+        {hashError ? (
+          <div className="space-y-5">
+            <div className="rounded-xl px-5 py-5 text-center space-y-2" style={{
+              background: 'rgba(248,113,113,0.06)',
+              border: '0.5px solid rgba(248,113,113,0.20)',
+            }}>
+              <AlertCircle className="w-7 h-7 mx-auto" style={{ color: '#F87171' }} />
+              <p className="font-dm-sans text-sm" style={{ color: '#F87171' }}>
+                {hashError}
+              </p>
+            </div>
+            <Link
+              to="/forgot-password"
+              className="flex items-center justify-center gap-1.5 font-dm-sans text-sm py-3 rounded-xl transition-all"
+              style={{
+                background: 'rgba(200,169,110,0.10)',
+                border: '0.5px solid rgba(200,169,110,0.30)',
+                color: '#C8A96E',
+              }}
+            >
+              Faire une nouvelle demande
+            </Link>
+            <div className="text-center">
+              <Link
+                to="/login"
+                className="flex items-center justify-center gap-1.5 font-dm-sans text-sm transition-colors"
+                style={{ color: 'rgba(200,169,110,0.55)' }}
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                Retour à la connexion
+              </Link>
+            </div>
+          </div>
+        ) : success ? (
           <div className="rounded-xl px-5 py-6 text-center space-y-3" style={{
             background: 'rgba(52,211,153,0.06)',
             border: '0.5px solid rgba(52,211,153,0.25)',
