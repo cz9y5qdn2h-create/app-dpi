@@ -31,6 +31,8 @@ import SharedDIPPage from './pages/SharedDIPPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import DIPAvocatPage from './pages/DIPAvocatPage';
 import DesignPreviewPage from './pages/DesignPreviewPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import LoadingSpinner from './components/ui/LoadingSpinner';
 
 function ProtectedRoute({ children }) {
@@ -78,6 +80,8 @@ export default function App() {
         {/* Auth (redirige si déjà connecté) */}
         <Route path="/login" element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
         <Route path="/register" element={<PublicOnlyRoute><RegisterPage /></PublicOnlyRoute>} />
+        <Route path="/forgot-password" element={<PublicOnlyRoute><ForgotPasswordPage /></PublicOnlyRoute>} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
 
         {/* Liste d'attente — page publique */}
         <Route path="/waitlist" element={<WaitlistPage />} />

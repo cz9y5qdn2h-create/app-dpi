@@ -2,25 +2,31 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
-import { Shield, Eye, EyeOff, AlertCircle, ArrowRight } from 'lucide-react';
+import { Shield, Eye, EyeOff, AlertCircle, ArrowRight, ShieldCheck } from 'lucide-react';
 import SEOHead from '../components/SEOHead';
 
 export default function LoginPage() {
-  const { login } = useAuth();
+  const { login, verifyMFA } = useAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [mfaStep, setMfaStep] = useState(null); // { factorId }
+  const [mfaCode, setMfaCode] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      await login(form.email, form.password);
-      navigate('/dashboard');
+      const result = await login(form.email, form.password);
+      if (result?.mfaRequired) {
+        setMfaStep({ factorId: result.factorId });
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err) {
       const msg = err?.message || '';
       if (msg.includes('fetch') || msg.includes('Invalid value') || msg.includes('Failed to')) {
@@ -30,6 +36,21 @@ export default function LoginPage() {
       } else {
         setError(msg || t('auth.login.errors.generic'));
       }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMFAVerify = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      await verifyMFA(mfaStep.factorId, mfaCode.replace(/\s/g, ''));
+      navigate('/dashboard');
+    } catch (err) {
+      setError(err.message || 'Code incorrect.');
+      setMfaCode('');
     } finally {
       setLoading(false);
     }
@@ -124,71 +145,152 @@ export default function LoginPage() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="lg-label">{t('auth.login.email')}</label>
-              <input
-                type="email"
-                value={form.email}
-                onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-                placeholder={t('auth.login.emailPlaceholder')}
-                required
-                autoComplete="email"
-                className="lg-input"
-              />
-            </div>
-
-            <div>
-              <label className="lg-label">{t('auth.login.password')}</label>
-              <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={form.password}
-                  onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-                  placeholder="••••••••"
-                  required
-                  autoComplete="current-password"
-                  className="lg-input"
-                  style={{ paddingRight: '44px' }}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(v => !v)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
-                  style={{ color: 'rgba(244,242,238,0.35)' }}
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
+          {mfaStep ? (
+            /* ── Étape A2F ── */
+            <form onSubmit={handleMFAVerify} className="space-y-4">
+              <div className="rounded-xl px-4 py-4 mb-2" style={{
+                background: 'rgba(200,169,110,0.06)',
+                border: '0.5px solid rgba(200,169,110,0.20)',
+              }}>
+                <div className="flex items-center gap-2 mb-1">
+                  <ShieldCheck className="w-4 h-4" style={{ color: '#C8A96E' }} />
+                  <span className="font-dm-sans text-sm font-medium" style={{ color: '#C8A96E' }}>
+                    Vérification en deux étapes
+                  </span>
+                </div>
+                <p className="font-dm-sans text-xs" style={{ color: 'rgba(244,242,238,0.45)' }}>
+                  Ouvrez votre application d'authentification et entrez le code à 6 chiffres.
+                </p>
               </div>
-            </div>
 
-            <button
-              type="submit"
-              disabled={loading || !form.email || !form.password}
-              className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-dm-sans text-sm transition-all mt-2"
-              style={{
-                background: loading || !form.email || !form.password
-                  ? 'rgba(200,169,110,0.25)'
-                  : 'rgba(200,169,110,0.16)',
-                border: `0.5px solid ${loading || !form.email || !form.password ? 'rgba(200,169,110,0.20)' : 'rgba(200,169,110,0.42)'}`,
-                color: loading || !form.email || !form.password ? 'rgba(200,169,110,0.50)' : '#C8A96E',
-                cursor: loading || !form.email || !form.password ? 'not-allowed' : 'pointer',
-                fontWeight: 500
-              }}
-            >
-              {loading ? (
-                <span className="flex items-center gap-2">
-                  <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                  {t('auth.login.loading')}
-                </span>
-              ) : (
-                <>
-                  {t('auth.login.submit')}
-                  <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </button>
-          </form>
+              <div>
+                <label className="lg-label">Code A2F</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9 ]*"
+                  maxLength={7}
+                  value={mfaCode}
+                  onChange={e => setMfaCode(e.target.value)}
+                  placeholder="123 456"
+                  required
+                  autoFocus
+                  className="lg-input text-center tracking-widest"
+                  style={{ fontSize: 22, letterSpacing: '0.3em' }}
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading || mfaCode.replace(/\s/g, '').length < 6}
+                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-dm-sans text-sm transition-all"
+                style={{
+                  background: 'rgba(200,169,110,0.16)',
+                  border: '0.5px solid rgba(200,169,110,0.42)',
+                  color: '#C8A96E', fontWeight: 500,
+                  cursor: loading || mfaCode.replace(/\s/g, '').length < 6 ? 'not-allowed' : 'pointer',
+                  opacity: mfaCode.replace(/\s/g, '').length < 6 ? 0.5 : 1,
+                }}
+              >
+                {loading ? (
+                  <span className="flex items-center gap-2">
+                    <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    Vérification…
+                  </span>
+                ) : (
+                  <>
+                    <ShieldCheck className="w-4 h-4" />
+                    Confirmer
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { setMfaStep(null); setMfaCode(''); setError(''); }}
+                className="w-full font-dm-sans text-xs text-center py-2 transition-colors"
+                style={{ color: 'rgba(244,242,238,0.30)', background: 'none', border: 'none', cursor: 'pointer' }}
+              >
+                ← Retour
+              </button>
+            </form>
+          ) : (
+            /* ── Formulaire principal ── */
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="lg-label">{t('auth.login.email')}</label>
+                <input
+                  type="email"
+                  value={form.email}
+                  onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                  placeholder={t('auth.login.emailPlaceholder')}
+                  required
+                  autoComplete="email"
+                  className="lg-input"
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="lg-label" style={{ marginBottom: 0 }}>{t('auth.login.password')}</label>
+                  <Link
+                    to="/forgot-password"
+                    className="font-dm-sans text-xs transition-colors"
+                    style={{ color: 'rgba(200,169,110,0.55)' }}
+                  >
+                    Mot de passe oublié ?
+                  </Link>
+                </div>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={form.password}
+                    onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+                    placeholder="••••••••"
+                    required
+                    autoComplete="current-password"
+                    className="lg-input"
+                    style={{ paddingRight: '44px' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(v => !v)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 transition-colors"
+                    style={{ color: 'rgba(244,242,238,0.35)' }}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading || !form.email || !form.password}
+                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-dm-sans text-sm transition-all mt-2"
+                style={{
+                  background: loading || !form.email || !form.password
+                    ? 'rgba(200,169,110,0.25)'
+                    : 'rgba(200,169,110,0.16)',
+                  border: `0.5px solid ${loading || !form.email || !form.password ? 'rgba(200,169,110,0.20)' : 'rgba(200,169,110,0.42)'}`,
+                  color: loading || !form.email || !form.password ? 'rgba(200,169,110,0.50)' : '#C8A96E',
+                  cursor: loading || !form.email || !form.password ? 'not-allowed' : 'pointer',
+                  fontWeight: 500
+                }}
+              >
+                {loading ? (
+                  <span className="flex items-center gap-2">
+                    <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    {t('auth.login.loading')}
+                  </span>
+                ) : (
+                  <>
+                    {t('auth.login.submit')}
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+            </form>
+          )}
 
           <p className="font-dm-sans text-xs text-center mt-6 leading-relaxed" style={{ color: 'rgba(244,242,238,0.30)' }}>
             {t('auth.login.consent')}{' '}

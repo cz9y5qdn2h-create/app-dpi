@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
 
 const AuthContext = createContext(null);
@@ -39,6 +39,7 @@ export default function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const mfaPendingRef = useRef(false);
 
   useEffect(() => {
     let mounted = true;
@@ -55,6 +56,12 @@ export default function AuthProvider({ children }) {
         if (!mounted) return;
 
         if (session?.user) {
+          const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+          if (aalData?.nextLevel === 'aal2' && aalData?.currentLevel !== 'aal2') {
+            await supabase.auth.signOut();
+            if (mounted) setLoading(false);
+            return;
+          }
           setUser(session.user);
           localStorage.setItem('access_token', session.access_token);
           const p = await fetchProfile(session.user.id);
@@ -72,6 +79,20 @@ export default function AuthProvider({ children }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!mounted) return;
+
+        if (event === 'SIGNED_IN' && !mfaPendingRef.current) {
+          const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+          if (aalData?.nextLevel === 'aal2' && aalData?.currentLevel !== 'aal2') {
+            if (mounted) setLoading(false);
+            return;
+          }
+        }
+
+        if (mfaPendingRef.current && event === 'SIGNED_IN') {
+          if (mounted) setLoading(false);
+          return;
+        }
+
         if (session?.user) {
           setUser(session.user);
           localStorage.setItem('access_token', session.access_token);
@@ -93,8 +114,34 @@ export default function AuthProvider({ children }) {
   }, []);
 
   const login = async (email, password) => {
+    mfaPendingRef.current = true;
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw new Error('Identifiants invalides');
+    if (error) {
+      mfaPendingRef.current = false;
+      throw new Error('Identifiants invalides');
+    }
+
+    const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (aalData?.nextLevel === 'aal2' && aalData?.currentLevel !== 'aal2') {
+      const { data: factors } = await supabase.auth.mfa.listFactors();
+      const totpFactor = factors?.totp?.find(f => f.status === 'verified');
+      if (totpFactor) {
+        return { mfaRequired: true, factorId: totpFactor.id };
+      }
+    }
+
+    mfaPendingRef.current = false;
+    localStorage.setItem('access_token', data.session.access_token);
+    const p = await fetchProfile(data.user.id);
+    setProfile(p);
+    setUser(data.user);
+    return data.user;
+  };
+
+  const verifyMFA = async (factorId, code) => {
+    const { data, error } = await supabase.auth.mfa.challengeAndVerify({ factorId, code });
+    if (error) throw new Error('Code incorrect');
+    mfaPendingRef.current = false;
     localStorage.setItem('access_token', data.session.access_token);
     const p = await fetchProfile(data.user.id);
     setProfile(p);
@@ -145,7 +192,7 @@ export default function AuthProvider({ children }) {
   return (
     <AuthContext.Provider value={{
       user, profile, loading,
-      login, register, logout, refreshProfile,
+      login, register, logout, refreshProfile, verifyMFA,
       supabase,
       isTrialExpired,
       trialDaysLeft

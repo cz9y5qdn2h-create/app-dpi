@@ -57,6 +57,81 @@ export default function SettingsPage() {
   const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassword: '' });
   const [showNewPwd, setShowNewPwd] = useState(false);
   const [showConfirmPwd, setShowConfirmPwd] = useState(false);
+  const [mfaStatus, setMfaStatus] = useState('loading');
+  const [mfaEnrollData, setMfaEnrollData] = useState(null);
+  const [mfaVerifyCode, setMfaVerifyCode] = useState('');
+  const [mfaError, setMfaError] = useState('');
+  const [mfaLoading, setMfaLoading] = useState(false);
+
+  useEffect(() => {
+    const loadMfa = async () => {
+      try {
+        const { data: factors } = await supabase.auth.mfa.listFactors();
+        const verified = factors?.totp?.filter(f => f.status === 'verified') || [];
+        if (verified.length > 0) {
+          setMfaStatus('enabled');
+          setMfaEnrollData({ factorId: verified[0].id });
+        } else {
+          setMfaStatus('disabled');
+        }
+      } catch {
+        setMfaStatus('disabled');
+      }
+    };
+    loadMfa();
+  }, [supabase]);
+
+  const startMfaEnrollment = async () => {
+    setMfaError('');
+    setMfaLoading(true);
+    try {
+      const { data: enrollData, error } = await supabase.auth.mfa.enroll({ factorType: 'totp' });
+      if (error) throw error;
+      setMfaEnrollData({ factorId: enrollData.id, qrCode: enrollData.totp.qr_code, secret: enrollData.totp.secret });
+      setMfaStatus('enrolling');
+    } catch (err) {
+      setMfaError(err.message);
+    } finally {
+      setMfaLoading(false);
+    }
+  };
+
+  const verifyMfaEnrollment = async (e) => {
+    e.preventDefault();
+    setMfaError('');
+    setMfaLoading(true);
+    try {
+      const { error } = await supabase.auth.mfa.challengeAndVerify({
+        factorId: mfaEnrollData.factorId,
+        code: mfaVerifyCode.replace(/\s/g, ''),
+      });
+      if (error) throw error;
+      setMfaStatus('enabled');
+      setMfaVerifyCode('');
+      toast.success('Authentification à deux facteurs activée');
+    } catch {
+      setMfaError('Code incorrect — réessayez');
+      setMfaVerifyCode('');
+    } finally {
+      setMfaLoading(false);
+    }
+  };
+
+  const disableMfa = async () => {
+    if (!mfaEnrollData?.factorId) return;
+    setMfaLoading(true);
+    try {
+      const { error } = await supabase.auth.mfa.unenroll({ factorId: mfaEnrollData.factorId });
+      if (error) throw error;
+      setMfaStatus('disabled');
+      setMfaEnrollData(null);
+      toast.success('Authentification à deux facteurs désactivée');
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setMfaLoading(false);
+    }
+  };
 
   const { data, isLoading } = useQuery({
     queryKey: ['settings'],
@@ -277,6 +352,120 @@ export default function SettingsPage() {
             Modifier le mot de passe
           </button>
         </form>
+      </div>
+
+      {/* A2F */}
+      <div className="card">
+        <div className="mb-5">
+          <h2 className="font-cormorant text-xl">Authentification à deux facteurs</h2>
+          <p className="font-dm-sans text-xs text-text-secondary mt-1">
+            Protégez votre compte avec une application d'authentification (Google Authenticator, Authy…)
+          </p>
+        </div>
+
+        {mfaStatus === 'loading' && <LoadingSpinner />}
+
+        {mfaStatus === 'enabled' && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 rounded-lg p-3 border border-success/25 bg-success/5">
+              <CheckCircle className="w-5 h-5 text-success flex-shrink-0" />
+              <div>
+                <p className="font-dm-sans text-sm font-medium text-text-primary">A2F activée</p>
+                <p className="font-dm-sans text-xs text-text-secondary">Votre compte est protégé par un code TOTP</p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={disableMfa}
+              disabled={mfaLoading}
+              className="btn-secondary flex items-center gap-2"
+              style={{ color: 'var(--color-danger)', borderColor: 'rgba(var(--color-danger-rgb),0.30)' }}
+            >
+              {mfaLoading ? <LoadingSpinner size="sm" /> : <Key className="w-4 h-4" />}
+              Désactiver l'A2F
+            </button>
+          </div>
+        )}
+
+        {mfaStatus === 'disabled' && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 rounded-lg p-3 border border-border-subtle bg-bg-elevated">
+              <Key className="w-5 h-5 text-text-muted flex-shrink-0" />
+              <div>
+                <p className="font-dm-sans text-sm text-text-primary">A2F non activée</p>
+                <p className="font-dm-sans text-xs text-text-secondary">Activez pour renforcer la sécurité de votre compte</p>
+              </div>
+            </div>
+            {mfaError && (
+              <p className="font-dm-sans text-xs text-danger">{mfaError}</p>
+            )}
+            <button
+              type="button"
+              onClick={startMfaEnrollment}
+              disabled={mfaLoading}
+              className="btn-liquid-glass flex items-center gap-2"
+            >
+              {mfaLoading ? <LoadingSpinner size="sm" /> : <Key className="w-4 h-4" />}
+              Activer l'authentification à deux facteurs
+            </button>
+          </div>
+        )}
+
+        {mfaStatus === 'enrolling' && mfaEnrollData?.qrCode && (
+          <div className="space-y-5">
+            <div className="text-center">
+              <p className="font-dm-sans text-sm text-text-primary mb-3">
+                Scannez ce QR code avec votre application d'authentification
+              </p>
+              <div className="inline-block p-3 bg-white rounded-xl">
+                <img src={mfaEnrollData.qrCode} alt="QR Code A2F" className="w-40 h-40" />
+              </div>
+            </div>
+
+            {mfaError && (
+              <div className="flex items-center gap-2.5 rounded-lg px-3 py-2 font-dm-sans text-sm"
+                style={{ background: 'rgba(248,113,113,0.08)', border: '0.5px solid rgba(248,113,113,0.25)', color: '#F87171' }}>
+                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                {mfaError}
+              </div>
+            )}
+
+            <form onSubmit={verifyMfaEnrollment} className="space-y-3">
+              <div>
+                <label className="label">Code de vérification</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9 ]*"
+                  maxLength={7}
+                  value={mfaVerifyCode}
+                  onChange={e => setMfaVerifyCode(e.target.value)}
+                  placeholder="123 456"
+                  required
+                  autoFocus
+                  className="input-field text-center tracking-widest"
+                  style={{ fontSize: 20, letterSpacing: '0.25em' }}
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={mfaLoading || mfaVerifyCode.replace(/\s/g, '').length < 6}
+                className="btn-primary flex items-center gap-2"
+              >
+                {mfaLoading ? <LoadingSpinner size="sm" /> : <CheckCircle className="w-4 h-4" />}
+                Confirmer et activer
+              </button>
+              <button
+                type="button"
+                onClick={() => { setMfaStatus('disabled'); setMfaEnrollData(null); setMfaVerifyCode(''); setMfaError(''); }}
+                className="w-full font-dm-sans text-xs text-center text-text-muted hover:text-text-secondary transition-colors py-1"
+                style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+              >
+                Annuler
+              </button>
+            </form>
+          </div>
+        )}
       </div>
 
       {/* Profil */}
