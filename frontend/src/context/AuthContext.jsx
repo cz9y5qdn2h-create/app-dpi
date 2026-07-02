@@ -58,7 +58,6 @@ export default function AuthProvider({ children }) {
         if (session?.user) {
           const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
           if (aalData?.nextLevel === 'aal2' && aalData?.currentLevel !== 'aal2') {
-            await supabase.auth.signOut();
             if (mounted) setLoading(false);
             return;
           }
