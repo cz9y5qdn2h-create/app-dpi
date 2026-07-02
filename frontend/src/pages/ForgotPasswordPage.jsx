@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
 import { Shield, ArrowLeft, Mail, CheckCircle, AlertCircle } from 'lucide-react';
 
 const BG = `
@@ -20,13 +19,16 @@ export default function ForgotPasswordPage() {
     setError('');
     setLoading(true);
     try {
-      const { error: err } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-        redirectTo: `${window.location.origin}/reset-password`,
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim() }),
       });
-      if (err) throw err;
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Une erreur est survenue.');
       setSuccess(true);
     } catch (err) {
-      setError(err.message || 'Une erreur est survenue.');
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -36,7 +38,6 @@ export default function ForgotPasswordPage() {
     <div className="min-h-screen flex items-center justify-center p-6" style={{ background: BG }}>
       <div className="w-full max-w-sm">
 
-        {/* Logo */}
         <div className="flex items-center gap-3 mb-10">
           <div className="lg-avatar">
             <Shield className="w-4 h-4" style={{ color: '#C8A96E' }} />

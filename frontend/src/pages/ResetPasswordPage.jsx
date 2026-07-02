@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Shield, Eye, EyeOff, CheckCircle, AlertCircle, Lock, ArrowLeft } from 'lucide-react';
 
 const BG = `
@@ -11,36 +10,19 @@ const BG = `
 
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
-  const [ready, setReady] = useState(false);
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get('token') || '';
+
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
-  const [hashError, setHashError] = useState('');
 
   useEffect(() => {
-    const hash = window.location.hash;
-
-    if (hash.includes('error=')) {
-      const params = new URLSearchParams(hash.slice(1));
-      const code = params.get('error_code') || params.get('error');
-      if (code === 'otp_expired') {
-        setHashError('Ce lien a expiré ou a déjà été utilisé. Faites une nouvelle demande.');
-      } else {
-        const desc = params.get('error_description')?.replace(/\+/g, ' ') || 'Lien invalide.';
-        setHashError(desc);
-      }
-      return;
-    }
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') setReady(true);
-    });
-    if (hash.includes('type=recovery') || hash.includes('access_token')) setReady(true);
-    return () => subscription.unsubscribe();
-  }, []);
+    if (!token) setError('Lien invalide. Faites une nouvelle demande.');
+  }, [token]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -50,12 +32,17 @@ export default function ResetPasswordPage() {
 
     setLoading(true);
     try {
-      const { error: err } = await supabase.auth.updateUser({ password });
-      if (err) throw err;
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Une erreur est survenue.');
       setSuccess(true);
       setTimeout(() => navigate('/login'), 2500);
     } catch (err) {
-      setError(err.message || 'Une erreur est survenue.');
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -81,7 +68,17 @@ export default function ResetPasswordPage() {
           </p>
         </div>
 
-        {hashError ? (
+        {success ? (
+          <div className="rounded-xl px-5 py-6 text-center space-y-3" style={{
+            background: 'rgba(52,211,153,0.06)',
+            border: '0.5px solid rgba(52,211,153,0.25)',
+          }}>
+            <CheckCircle className="w-8 h-8 mx-auto" style={{ color: 'rgb(52,211,153)' }} />
+            <p className="font-dm-sans text-sm" style={{ color: 'rgba(244,242,238,0.80)' }}>
+              Mot de passe mis à jour — redirection…
+            </p>
+          </div>
+        ) : !token ? (
           <div className="space-y-5">
             <div className="rounded-xl px-5 py-5 text-center space-y-2" style={{
               background: 'rgba(248,113,113,0.06)',
@@ -89,7 +86,7 @@ export default function ResetPasswordPage() {
             }}>
               <AlertCircle className="w-7 h-7 mx-auto" style={{ color: '#F87171' }} />
               <p className="font-dm-sans text-sm" style={{ color: '#F87171' }}>
-                {hashError}
+                Lien invalide. Faites une nouvelle demande.
               </p>
             </div>
             <Link
@@ -103,46 +100,31 @@ export default function ResetPasswordPage() {
             >
               Faire une nouvelle demande
             </Link>
-            <div className="text-center">
-              <Link
-                to="/login"
-                className="flex items-center justify-center gap-1.5 font-dm-sans text-sm transition-colors"
-                style={{ color: 'rgba(200,169,110,0.55)' }}
-              >
-                <ArrowLeft className="w-3.5 h-3.5" />
-                Retour à la connexion
-              </Link>
-            </div>
-          </div>
-        ) : success ? (
-          <div className="rounded-xl px-5 py-6 text-center space-y-3" style={{
-            background: 'rgba(52,211,153,0.06)',
-            border: '0.5px solid rgba(52,211,153,0.25)',
-          }}>
-            <CheckCircle className="w-8 h-8 mx-auto" style={{ color: 'rgb(52,211,153)' }} />
-            <p className="font-dm-sans text-sm" style={{ color: 'rgba(244,242,238,0.80)' }}>
-              Mot de passe mis à jour — redirection…
-            </p>
-          </div>
-        ) : !ready ? (
-          <div className="rounded-xl px-5 py-5 text-center" style={{
-            background: 'rgba(248,113,113,0.06)',
-            border: '0.5px solid rgba(248,113,113,0.20)',
-          }}>
-            <p className="font-dm-sans text-sm" style={{ color: '#F87171' }}>
-              Lien invalide ou expiré. Recommencez depuis la page de connexion.
-            </p>
           </div>
         ) : (
           <>
             {error && (
-              <div className="flex items-center gap-2.5 rounded-xl px-4 py-3 mb-5 font-dm-sans text-sm" style={{
+              <div className="rounded-xl px-4 py-3 mb-5 space-y-3" style={{
                 background: 'rgba(248,113,113,0.08)',
                 border: '0.5px solid rgba(248,113,113,0.25)',
-                color: '#F87171',
               }}>
-                <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                {error}
+                <div className="flex items-center gap-2.5 font-dm-sans text-sm" style={{ color: '#F87171' }}>
+                  <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                  {error}
+                </div>
+                {(error.includes('expiré') || error.includes('invalide') || error.includes('utilisé')) && (
+                  <Link
+                    to="/forgot-password"
+                    className="block text-center font-dm-sans text-xs py-2 rounded-lg transition-all"
+                    style={{
+                      background: 'rgba(200,169,110,0.08)',
+                      border: '0.5px solid rgba(200,169,110,0.25)',
+                      color: '#C8A96E',
+                    }}
+                  >
+                    Faire une nouvelle demande →
+                  </Link>
+                )}
               </div>
             )}
 
@@ -209,6 +191,17 @@ export default function ResetPasswordPage() {
             </form>
           </>
         )}
+
+        <div className="mt-8 text-center">
+          <Link
+            to="/login"
+            className="flex items-center justify-center gap-1.5 font-dm-sans text-sm transition-colors"
+            style={{ color: 'rgba(200,169,110,0.55)' }}
+          >
+            <ArrowLeft className="w-3.5 h-3.5" />
+            Retour à la connexion
+          </Link>
+        </div>
       </div>
     </div>
   );

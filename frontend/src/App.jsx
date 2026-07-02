@@ -3,7 +3,6 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import AuthProvider from './context/AuthContext';
 import { FEATURES } from './lib/features';
-import { INITIAL_HASH } from './lib/supabase';
 import LoadingSpinner from './components/ui/LoadingSpinner';
 
 // Chargement immédiat — requis pour le shell applicatif
@@ -62,16 +61,7 @@ function PublicOnlyRoute({ children }) {
 }
 
 function RootRedirect() {
-  const { user, loading, needsPasswordReset } = useAuth();
-
-  // Hash capturé avant que createClient() le vide — inclut le token pour ResetPasswordPage
-  if (INITIAL_HASH.includes('type=recovery') || (INITIAL_HASH.includes('error=') && INITIAL_HASH.includes('otp'))) {
-    return <Navigate to={`/reset-password${INITIAL_HASH}`} replace />;
-  }
-
-  // Fallback : événement PASSWORD_RECOVERY reçu via onAuthStateChange
-  if (needsPasswordReset) return <Navigate to="/reset-password" replace />;
-
+  const { user, loading } = useAuth();
   if (loading) return <PageLoader />;
   if (user) return <Navigate to="/dashboard" replace />;
   return (

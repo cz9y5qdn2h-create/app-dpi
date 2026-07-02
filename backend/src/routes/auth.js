@@ -1,8 +1,117 @@
 const express = require('express');
+const crypto = require('crypto');
 const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware } = require('../middleware/auth');
 const { isPasswordPwned } = require('../utils/passwordSecurity');
 const router = express.Router();
+
+const RESET_TTL_MS = 60 * 60 * 1000; // 1 heure
+
+async function sendResetEmail(toEmail, toName, resetUrl) {
+  const key = process.env.BREVO_API_KEY;
+  if (!key) return false;
+  try {
+    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: { 'api-key': key, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        sender: {
+          name: process.env.BREVO_SENDER_NAME || 'DIPpro',
+          email: process.env.BREVO_SENDER_EMAIL || 'noreply@dippro.fr',
+        },
+        to: [{ email: toEmail, name: toName || '' }],
+        subject: 'Réinitialisation de votre mot de passe DIPpro',
+        htmlContent: `
+<div style="font-family:system-ui,sans-serif;max-width:520px;margin:auto;background:#0a0805;color:#F4F2EE;padding:36px;border-radius:12px;border:1px solid #2a2218">
+  <h2 style="color:#C8A96E;margin:0 0 8px;font-size:22px;font-weight:600">Réinitialisation du mot de passe</h2>
+  <p style="color:#a09070;font-size:14px;margin:0 0 28px">Ce lien est valable <strong style="color:#F4F2EE">1 heure</strong>.</p>
+  <a href="${resetUrl}" style="display:inline-block;background:rgba(200,169,110,0.16);border:1px solid rgba(200,169,110,0.42);color:#C8A96E;padding:13px 28px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:500">
+    Définir un nouveau mot de passe →
+  </a>
+  <p style="color:#504838;font-size:12px;margin:28px 0 0;line-height:1.6">
+    Si vous n'avez pas demandé cette réinitialisation, ignorez cet email.<br>
+    Votre mot de passe actuel reste inchangé.
+  </p>
+</div>`.trim(),
+      }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+// POST /api/auth/forgot-password
+router.post('/forgot-password', async (req, res) => {
+  const email = (req.body.email || '').trim().toLowerCase();
+  if (!email) return res.status(400).json({ error: 'Email requis' });
+
+  // Toujours 200 pour ne pas révéler si l'email existe
+  const { data: users } = await supabaseAdmin.auth.admin.listUsers();
+  const authUser = users?.users?.find(u => u.email === email);
+
+  if (authUser) {
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + RESET_TTL_MS).toISOString();
+
+    await supabaseAdmin.from('password_reset_tokens')
+      .delete()
+      .eq('email', email)
+      .is('used_at', null);
+
+    await supabaseAdmin.from('password_reset_tokens').insert({
+      user_id: authUser.id,
+      email,
+      token,
+      expires_at: expiresAt,
+    });
+
+    const { data: profile } = await supabaseAdmin
+      .from('users').select('company_name').eq('id', authUser.id).single();
+
+    const frontendUrl = process.env.FRONTEND_URL || process.env.APP_URL || 'https://app-dpi.vercel.app';
+    const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
+
+    await sendResetEmail(email, profile?.company_name || '', resetUrl);
+  }
+
+  res.json({ message: 'Si cet email existe, un lien de réinitialisation a été envoyé.' });
+});
+
+// POST /api/auth/reset-password
+router.post('/reset-password', async (req, res) => {
+  const { token, password } = req.body;
+  if (!token || !password) return res.status(400).json({ error: 'token et password requis' });
+  if (password.length < 8) return res.status(400).json({ error: 'Mot de passe trop court (min 8 caractères)' });
+
+  const pwnedCheck = await isPasswordPwned(password);
+  if (pwnedCheck.pwned) {
+    return res.status(400).json({
+      error: `Ce mot de passe a été trouvé dans ${pwnedCheck.count.toLocaleString('fr-FR')} fuites de données connues. Choisissez-en un autre.`
+    });
+  }
+
+  const { data: row } = await supabaseAdmin
+    .from('password_reset_tokens')
+    .select('*')
+    .eq('token', token)
+    .is('used_at', null)
+    .single();
+
+  if (!row) return res.status(400).json({ error: 'Lien invalide ou déjà utilisé.' });
+  if (new Date(row.expires_at) < new Date()) {
+    return res.status(400).json({ error: 'Ce lien a expiré. Faites une nouvelle demande.' });
+  }
+
+  const { error: authErr } = await supabaseAdmin.auth.admin.updateUserById(row.user_id, { password });
+  if (authErr) return res.status(500).json({ error: authErr.message });
+
+  await supabaseAdmin.from('password_reset_tokens')
+    .update({ used_at: new Date().toISOString() })
+    .eq('id', row.id);
+
+  res.json({ message: 'Mot de passe mis à jour avec succès.' });
+});
 
 // POST /api/auth/check-password — vérification de mot de passe compromis (HaveIBeenPwned k-anonymity)
 // Utilisé par le frontend avant un changement de mot de passe (flux Supabase Auth direct côté client)
