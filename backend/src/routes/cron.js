@@ -263,23 +263,43 @@ router.get('/daily', async (req, res) => {
     }
 
     // ── 3. Créer alertes in-app pour impacts critiques/élevés ───────────────
-    const criticalEntries = Object.entries(userChanges)
-      .flatMap(([userId, changes]) =>
-        changes
-          .filter(c => c.impactLevel === 'critical' || c.impactLevel === 'high')
-          .map(c => ({
-            user_id: userId,
-            type: 'monitoring_change',
-            title: `Changement détecté : ${c.name}`,
-            description: c.impactSummary,
-            status: 'pending',
-          }))
-      );
+    const criticalUserIds = Object.entries(userChanges)
+      .filter(([, changes]) => changes.some(c => c.impactLevel === 'critical' || c.impactLevel === 'high'))
+      .map(([userId]) => userId);
 
-    if (criticalEntries.length > 0) {
-      await supabaseAdmin.from('alerts').insert(criticalEntries);
-      report.alertsCreated = criticalEntries.length;
+    let alertsCreated = 0;
+    if (criticalUserIds.length > 0) {
+      const { data: activeDips } = await supabaseAdmin
+        .from('dip_documents')
+        .select('id, user_id')
+        .in('user_id', criticalUserIds)
+        .eq('status', 'actif');
+
+      const dipByUser = Object.fromEntries((activeDips || []).map(d => [d.user_id, d.id]));
+
+      const criticalEntries = Object.entries(userChanges)
+        .flatMap(([userId, changes]) =>
+          changes
+            .filter(c => c.impactLevel === 'critical' || c.impactLevel === 'high')
+            .map(c => ({
+              user_id: userId,
+              dip_id: dipByUser[userId] || null,
+              type: 'monitoring_change',
+              title: `Changement détecté : ${c.name}`,
+              source: c.name,
+              new_value: c.impactSummary,
+              suggestion: c.impactSummary,
+              urgency: c.impactLevel === 'critical' ? 'haute' : 'moyenne',
+              status: 'pending',
+            }))
+        );
+
+      if (criticalEntries.length > 0) {
+        await supabaseAdmin.from('alerts').insert(criticalEntries);
+        alertsCreated = criticalEntries.length;
+      }
     }
+    report.alertsCreated = alertsCreated;
 
     // ── 4. Envoyer email digests ─────────────────────────────────────────────
     const userIdsWithChanges = Object.keys(userChanges);

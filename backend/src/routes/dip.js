@@ -13,6 +13,9 @@ const sha256hex = (buffer) => crypto.createHash('sha256').update(buffer).digest(
 
 const BUCKET = 'dip-files';
 
+// Cache mémoire — évite une requête Supabase à chaque upload
+let bucketReady = false;
+
 const extractText = async (buffer, filename) => {
   const ext = path.extname(filename).toLowerCase();
   if (ext === '.pdf') {
@@ -28,8 +31,8 @@ const extractText = async (buffer, filename) => {
   throw new Error('Format non supporté (PDF ou DOCX requis)');
 };
 
-// S'assurer que le bucket existe (créé automatiquement si absent)
 const ensureBucket = async () => {
+  if (bucketReady) return;
   const { data: buckets } = await supabaseAdmin.storage.listBuckets();
   const exists = buckets?.some(b => b.id === BUCKET);
   if (!exists) {
@@ -43,6 +46,7 @@ const ensureBucket = async () => {
       ]
     });
   }
+  bucketReady = true;
 };
 
 // GET /api/dip/upload-url — génère une URL signée pour upload direct vers Supabase Storage
@@ -334,9 +338,12 @@ router.post('/approve-changes', authMiddleware, requireFranchisor, async (req, r
 
 // GET /api/dip — retourne le DIP actif (+ optionnellement tous avec ?all=true)
 router.get('/', authMiddleware, async (req, res) => {
+  // raw_text exclu de la liste (peut peser 50KB par DIP)
+  const COLS = 'id,user_id,title,file_url,status,conformity_score,compliance_level,blocking_issues,sha256,share_token,share_token_views,upload_date,created_at,updated_at,dip_sections(id,section_number,section_title,status,last_checked,last_updated)';
+
   let query = supabaseAdmin
     .from('dip_documents')
-    .select('*, dip_sections(*)')
+    .select(COLS)
     .eq('user_id', req.user.id)
     .order('created_at', { ascending: false });
 
@@ -346,6 +353,8 @@ router.get('/', authMiddleware, async (req, res) => {
 
   const { data, error } = await query;
   if (error) return res.status(500).json({ error: errMsg(error) });
+
+  res.set('Cache-Control', 'private, max-age=30');
   res.json({ dips: data || [] });
 });
 

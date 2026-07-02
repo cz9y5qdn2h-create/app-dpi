@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 
 const authRoutes = require('./routes/auth');
@@ -31,6 +32,9 @@ const app = express();
 
 // Nécessaire sur Vercel (proxy) sinon express-rate-limit bloque tout
 app.set('trust proxy', 1);
+
+// Compression gzip/br — réduit les réponses JSON de ~70%
+app.use(compression({ threshold: 512 }));
 
 // En-têtes de sécurité
 app.use(helmet({

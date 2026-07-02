@@ -1,50 +1,61 @@
+import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import AuthProvider from './context/AuthContext';
 import { FEATURES } from './lib/features';
+import LoadingSpinner from './components/ui/LoadingSpinner';
+
+// Chargement immédiat — requis pour le shell applicatif
 import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import LandingPage from './pages/LandingPage';
-import LegalPage from './pages/LegalPage';
-import DashboardPage from './pages/DashboardPage';
-import DIPPage from './pages/DIPPage';
-import UploadDIPPage from './pages/UploadDIPPage';
-import GenerateDIPPage from './pages/GenerateDIPPage';
-import ContractPage from './pages/ContractPage';
-import UploadContractPage from './pages/UploadContractPage';
-import GenerateContractPage from './pages/GenerateContractPage';
-import SharedContractPage from './pages/SharedContractPage';
-import AlertsPage from './pages/AlertsPage';
-import HistoryPage from './pages/HistoryPage';
-import FranchiseesPage from './pages/FranchiseesPage';
-import SettingsPage from './pages/SettingsPage';
-import ExportPage from './pages/ExportPage';
-import AdminPage from './pages/AdminPage';
-import ApiConfigPage from './pages/ApiConfigPage';
-import MonitorPage from './pages/MonitorPage';
-import DocMonitoringPage from './pages/DocMonitoringPage';
-import TrialExpiredPage from './pages/TrialExpiredPage';
-import WaitlistPage from './pages/WaitlistPage';
-import SharedDIPPage from './pages/SharedDIPPage';
-import AnalyticsPage from './pages/AnalyticsPage';
-import DIPAvocatPage from './pages/DIPAvocatPage';
-import DesignPreviewPage from './pages/DesignPreviewPage';
-import ForgotPasswordPage from './pages/ForgotPasswordPage';
-import ResetPasswordPage from './pages/ResetPasswordPage';
-import LoadingSpinner from './components/ui/LoadingSpinner';
+
+// Lazy loading — chaque page n'est téléchargée que si elle est visitée
+const LoginPage          = lazy(() => import('./pages/LoginPage'));
+const RegisterPage       = lazy(() => import('./pages/RegisterPage'));
+const LandingPage        = lazy(() => import('./pages/LandingPage'));
+const LegalPage          = lazy(() => import('./pages/LegalPage'));
+const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
+const ResetPasswordPage  = lazy(() => import('./pages/ResetPasswordPage'));
+const WaitlistPage       = lazy(() => import('./pages/WaitlistPage'));
+const SharedDIPPage      = lazy(() => import('./pages/SharedDIPPage'));
+const SharedContractPage = lazy(() => import('./pages/SharedContractPage'));
+const TrialExpiredPage   = lazy(() => import('./pages/TrialExpiredPage'));
+const DashboardPage      = lazy(() => import('./pages/DashboardPage'));
+const DIPPage            = lazy(() => import('./pages/DIPPage'));
+const UploadDIPPage      = lazy(() => import('./pages/UploadDIPPage'));
+const GenerateDIPPage    = lazy(() => import('./pages/GenerateDIPPage'));
+const ContractPage       = lazy(() => import('./pages/ContractPage'));
+const UploadContractPage = lazy(() => import('./pages/UploadContractPage'));
+const GenerateContractPage = lazy(() => import('./pages/GenerateContractPage'));
+const AlertsPage         = lazy(() => import('./pages/AlertsPage'));
+const HistoryPage        = lazy(() => import('./pages/HistoryPage'));
+const FranchiseesPage    = lazy(() => import('./pages/FranchiseesPage'));
+const SettingsPage       = lazy(() => import('./pages/SettingsPage'));
+const ExportPage         = lazy(() => import('./pages/ExportPage'));
+const AdminPage          = lazy(() => import('./pages/AdminPage'));
+const ApiConfigPage      = lazy(() => import('./pages/ApiConfigPage'));
+const MonitorPage        = lazy(() => import('./pages/MonitorPage'));
+const DocMonitoringPage  = lazy(() => import('./pages/DocMonitoringPage'));
+const AnalyticsPage      = lazy(() => import('./pages/AnalyticsPage'));
+const DIPAvocatPage      = lazy(() => import('./pages/DIPAvocatPage'));
+const DesignPreviewPage  = lazy(() => import('./pages/DesignPreviewPage'));
+
+const PageLoader = () => (
+  <div className="min-h-screen flex items-center justify-center bg-bg-primary">
+    <LoadingSpinner size="lg" />
+  </div>
+);
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-bg-primary"><LoadingSpinner size="lg" /></div>;
+  if (loading) return <PageLoader />;
   if (!user) return <Navigate to="/" replace />;
   return children;
 }
 
 function PublicOnlyRoute({ children }) {
   const { user, loading } = useAuth();
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-bg-primary"><LoadingSpinner size="lg" /></div>;
+  if (loading) return <PageLoader />;
   if (user) return <Navigate to="/dashboard" replace />;
   return children;
 }
@@ -55,69 +66,67 @@ function RootRedirect() {
   if (hash.includes('type=recovery') || (hash.includes('error=') && hash.includes('otp'))) {
     return <Navigate to={`/reset-password${hash}`} replace />;
   }
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-bg-primary"><LoadingSpinner size="lg" /></div>;
+  if (loading) return <PageLoader />;
   if (user) return <Navigate to="/dashboard" replace />;
-  return <LandingPage />;
+  return (
+    <Suspense fallback={<PageLoader />}>
+      <LandingPage />
+    </Suspense>
+  );
 }
 
 function TrialGuard({ children }) {
   const { user, loading, isTrialExpired } = useAuth();
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-bg-primary"><LoadingSpinner size="lg" /></div>;
+  if (loading) return <PageLoader />;
   if (!user) return <Navigate to="/" replace />;
   if (isTrialExpired) return <Navigate to="/trial-expired" replace />;
   return children;
 }
 
+const S = ({ children }) => <Suspense fallback={<PageLoader />}>{children}</Suspense>;
+
 export default function App() {
   return (
     <AuthProvider>
       <Routes>
-        {/* Landing page publique */}
         <Route path="/" element={<RootRedirect />} />
 
-        {/* Pages légales (publiques) */}
-        <Route path="/cgu" element={<LegalPage />} />
-        <Route path="/privacy" element={<LegalPage />} />
-        <Route path="/mentions-legales" element={<LegalPage />} />
-        <Route path="/cookies" element={<LegalPage />} />
+        <Route path="/cgu"             element={<S><LegalPage /></S>} />
+        <Route path="/privacy"         element={<S><LegalPage /></S>} />
+        <Route path="/mentions-legales" element={<S><LegalPage /></S>} />
+        <Route path="/cookies"         element={<S><LegalPage /></S>} />
 
-        {/* Auth (redirige si déjà connecté) */}
-        <Route path="/login" element={<PublicOnlyRoute><LoginPage /></PublicOnlyRoute>} />
-        <Route path="/register" element={<PublicOnlyRoute><RegisterPage /></PublicOnlyRoute>} />
-        <Route path="/forgot-password" element={<PublicOnlyRoute><ForgotPasswordPage /></PublicOnlyRoute>} />
-        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/login"            element={<PublicOnlyRoute><S><LoginPage /></S></PublicOnlyRoute>} />
+        <Route path="/register"         element={<PublicOnlyRoute><S><RegisterPage /></S></PublicOnlyRoute>} />
+        <Route path="/forgot-password"  element={<PublicOnlyRoute><S><ForgotPasswordPage /></S></PublicOnlyRoute>} />
+        <Route path="/reset-password"   element={<S><ResetPasswordPage /></S>} />
 
-        {/* Liste d'attente — page publique */}
-        <Route path="/waitlist" element={<WaitlistPage />} />
+        <Route path="/waitlist"               element={<S><WaitlistPage /></S>} />
+        <Route path="/dip/partage/:token"     element={<S><SharedDIPPage /></S>} />
+        <Route path="/contrat/partage/:token" element={<S><SharedContractPage /></S>} />
 
-        {/* Portail franchisé — page publique sans authentification */}
-        <Route path="/dip/partage/:token" element={<SharedDIPPage />} />
-        <Route path="/contrat/partage/:token" element={<SharedContractPage />} />
+        <Route path="/trial-expired" element={<ProtectedRoute><S><TrialExpiredPage /></S></ProtectedRoute>} />
 
-        {/* Essai expiré — accessible aux utilisateurs connectés sans Layout */}
-        <Route path="/trial-expired" element={<ProtectedRoute><TrialExpiredPage /></ProtectedRoute>} />
-
-        {/* Pages protégées (bloquées si essai expiré) */}
         <Route path="/" element={<TrialGuard><Layout /></TrialGuard>}>
-          <Route path="dashboard" element={<ErrorBoundary><DashboardPage /></ErrorBoundary>} />
-          <Route path="dip" element={<ErrorBoundary><DIPPage /></ErrorBoundary>} />
-          <Route path="dip/upload" element={<ErrorBoundary><UploadDIPPage /></ErrorBoundary>} />
-          <Route path="dip/generate" element={<ErrorBoundary><GenerateDIPPage /></ErrorBoundary>} />
-          <Route path="contrat" element={<ErrorBoundary><ContractPage /></ErrorBoundary>} />
-          <Route path="contrat/upload" element={<ErrorBoundary><UploadContractPage /></ErrorBoundary>} />
-          <Route path="contrat/generate" element={<ErrorBoundary><GenerateContractPage /></ErrorBoundary>} />
-          <Route path="alerts" element={<ErrorBoundary><AlertsPage /></ErrorBoundary>} />
-          <Route path="history" element={<ErrorBoundary><HistoryPage /></ErrorBoundary>} />
-          <Route path="franchisees" element={<ErrorBoundary><FranchiseesPage /></ErrorBoundary>} />
-          <Route path="settings" element={<ErrorBoundary><SettingsPage /></ErrorBoundary>} />
-          <Route path="export" element={<ErrorBoundary><ExportPage /></ErrorBoundary>} />
-          <Route path="admin" element={<ErrorBoundary><AdminPage /></ErrorBoundary>} />
-          <Route path="monitor" element={FEATURES.monitor ? <ErrorBoundary><MonitorPage /></ErrorBoundary> : <Navigate to="/dashboard" replace />} />
-          <Route path="monitoring" element={<ErrorBoundary><DocMonitoringPage /></ErrorBoundary>} />
-          <Route path="integrations" element={<ErrorBoundary><ApiConfigPage /></ErrorBoundary>} />
-          <Route path="analytics/dip/:dipId" element={<ErrorBoundary><AnalyticsPage /></ErrorBoundary>} />
-          <Route path="dip/avocat/:franchiseurId" element={<ErrorBoundary><DIPAvocatPage /></ErrorBoundary>} />
-          <Route path="design-preview" element={FEATURES.design_preview ? <ErrorBoundary><DesignPreviewPage /></ErrorBoundary> : <Navigate to="/dashboard" replace />} />
+          <Route path="dashboard"   element={<ErrorBoundary><S><DashboardPage /></S></ErrorBoundary>} />
+          <Route path="dip"         element={<ErrorBoundary><S><DIPPage /></S></ErrorBoundary>} />
+          <Route path="dip/upload"  element={<ErrorBoundary><S><UploadDIPPage /></S></ErrorBoundary>} />
+          <Route path="dip/generate" element={<ErrorBoundary><S><GenerateDIPPage /></S></ErrorBoundary>} />
+          <Route path="contrat"             element={<ErrorBoundary><S><ContractPage /></S></ErrorBoundary>} />
+          <Route path="contrat/upload"      element={<ErrorBoundary><S><UploadContractPage /></S></ErrorBoundary>} />
+          <Route path="contrat/generate"    element={<ErrorBoundary><S><GenerateContractPage /></S></ErrorBoundary>} />
+          <Route path="alerts"      element={<ErrorBoundary><S><AlertsPage /></S></ErrorBoundary>} />
+          <Route path="history"     element={<ErrorBoundary><S><HistoryPage /></S></ErrorBoundary>} />
+          <Route path="franchisees" element={<ErrorBoundary><S><FranchiseesPage /></S></ErrorBoundary>} />
+          <Route path="settings"    element={<ErrorBoundary><S><SettingsPage /></S></ErrorBoundary>} />
+          <Route path="export"      element={<ErrorBoundary><S><ExportPage /></S></ErrorBoundary>} />
+          <Route path="admin"       element={<ErrorBoundary><S><AdminPage /></S></ErrorBoundary>} />
+          <Route path="monitor"     element={FEATURES.monitor ? <ErrorBoundary><S><MonitorPage /></S></ErrorBoundary> : <Navigate to="/dashboard" replace />} />
+          <Route path="monitoring"  element={<ErrorBoundary><S><DocMonitoringPage /></S></ErrorBoundary>} />
+          <Route path="integrations" element={<ErrorBoundary><S><ApiConfigPage /></S></ErrorBoundary>} />
+          <Route path="analytics/dip/:dipId"          element={<ErrorBoundary><S><AnalyticsPage /></S></ErrorBoundary>} />
+          <Route path="dip/avocat/:franchiseurId"      element={<ErrorBoundary><S><DIPAvocatPage /></S></ErrorBoundary>} />
+          <Route path="design-preview" element={FEATURES.design_preview ? <ErrorBoundary><S><DesignPreviewPage /></S></ErrorBoundary> : <Navigate to="/dashboard" replace />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

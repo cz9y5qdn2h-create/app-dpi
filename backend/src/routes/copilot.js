@@ -74,47 +74,91 @@ async function executeTool(name, input, userId) {
       case 'get_dip_status': {
         const { data: dip } = await supabaseAdmin
           .from('dip_documents')
-          .select('id, name, score, status, created_at')
+          .select('id, title, conformity_score, status, created_at')
           .eq('user_id', userId)
-          .eq('is_active', true)
+          .eq('status', 'actif')
+          .order('created_at', { ascending: false })
           .maybeSingle();
         if (!dip) return { error: 'Aucun DIP actif. Importez votre premier DIP.' };
         const { data: sections } = await supabaseAdmin
           .from('dip_sections').select('status').eq('dip_id', dip.id);
         const stats = (sections || []).reduce((a, s) => { a[s.status] = (a[s.status] || 0) + 1; return a; }, {});
-        return { name: dip.name, score: dip.score, status: dip.status, last_import: dip.created_at, sections: { total: sections?.length || 0, conforme: stats.conforme || 0, a_verifier: stats.a_verifier || 0, non_conforme: stats.non_conforme || 0 } };
+        return { title: dip.title, score: dip.conformity_score, status: dip.status, last_import: dip.created_at, sections: { total: sections?.length || 0, conforme: stats.conforme || 0, a_verifier: stats.a_verifier || 0, non_conforme: stats.non_conforme || 0 } };
       }
       case 'get_pending_alerts': {
-        const { data } = await supabaseAdmin.from('alerts').select('id, title, section_number, impact_level, type, status').eq('user_id', userId).eq('status', 'pending').order('created_at', { ascending: false }).limit(10);
+        const { data: userDips } = await supabaseAdmin
+          .from('dip_documents').select('id').eq('user_id', userId);
+        const dipIds = (userDips || []).map(d => d.id);
+        if (dipIds.length === 0) return { alerts: [], count: 0 };
+        const { data } = await supabaseAdmin
+          .from('alerts')
+          .select('id, urgency, source, suggestion, status, created_at, dip_sections(section_title, section_number)')
+          .in('dip_id', dipIds)
+          .eq('status', 'pending')
+          .order('created_at', { ascending: false })
+          .limit(10);
         return { alerts: data || [], count: data?.length || 0 };
       }
       case 'validate_alert': {
-        const { error } = await supabaseAdmin.from('alerts').update({ status: 'validated', validated_at: new Date().toISOString() }).eq('id', input.alert_id).eq('user_id', userId);
+        const { error } = await supabaseAdmin
+          .from('alerts')
+          .update({ status: 'validated' })
+          .eq('id', input.alert_id);
         if (error) return { error: error.message };
         return { success: true, validated_id: input.alert_id };
       }
       case 'ignore_alert': {
-        const { error } = await supabaseAdmin.from('alerts').update({ status: 'ignored' }).eq('id', input.alert_id).eq('user_id', userId);
+        const { error } = await supabaseAdmin
+          .from('alerts')
+          .update({ status: 'ignored' })
+          .eq('id', input.alert_id);
         if (error) return { error: error.message };
         return { success: true, ignored_id: input.alert_id };
       }
       case 'get_franchisees': {
-        const { data } = await supabaseAdmin.from('franchisees').select('id, name, email, territory, status').eq('franchiseur_id', userId).order('name');
+        const { data } = await supabaseAdmin
+          .from('franchisees')
+          .select('id, name, email, territory, status')
+          .eq('franchiseur_id', userId)
+          .order('name')
+          .limit(50);
         return { franchisees: data || [], count: data?.length || 0 };
       }
       case 'get_history': {
-        const { data } = await supabaseAdmin.from('history_events').select('event_type, description, created_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(10);
+        const { data } = await supabaseAdmin
+          .from('audit_log')
+          .select('action, new_content, timestamp')
+          .eq('user_id', userId)
+          .order('timestamp', { ascending: false })
+          .limit(10);
         return { events: data || [] };
       }
       case 'full_checkup': {
-        const [dipRes, alertsRes, historyRes] = await Promise.all([
-          supabaseAdmin.from('dip_documents').select('id, name, score, status, created_at').eq('user_id', userId).eq('is_active', true).maybeSingle(),
-          supabaseAdmin.from('alerts').select('id, title, impact_level, status').eq('user_id', userId).eq('status', 'pending').limit(20),
-          supabaseAdmin.from('history_events').select('event_type, description, created_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(5)
+        const { data: dip } = await supabaseAdmin
+          .from('dip_documents')
+          .select('id, title, conformity_score, status, created_at')
+          .eq('user_id', userId)
+          .eq('status', 'actif')
+          .order('created_at', { ascending: false })
+          .maybeSingle();
+
+        const dipId = dip?.id;
+        const [alertsRes, historyRes, sectionsRes] = await Promise.all([
+          dipId
+            ? supabaseAdmin.from('alerts').select('id, urgency, source, status').eq('dip_id', dipId).eq('status', 'pending').limit(20)
+            : Promise.resolve({ data: [] }),
+          supabaseAdmin.from('audit_log').select('action, timestamp').eq('user_id', userId).order('timestamp', { ascending: false }).limit(5),
+          dipId
+            ? supabaseAdmin.from('dip_sections').select('status').eq('dip_id', dipId)
+            : Promise.resolve({ data: [] })
         ]);
+
+        const sections = sectionsRes.data || [];
+        const stats = sections.reduce((a, s) => { a[s.status] = (a[s.status] || 0) + 1; return a; }, {});
+
         return {
-          dip: dipRes.data || null,
-          pending_alerts: { count: alertsRes.data?.length || 0, critical: (alertsRes.data || []).filter(a => a.impact_level === 'critical').length, items: alertsRes.data || [] },
+          dip: dip ? { title: dip.title, score: dip.conformity_score, status: dip.status, last_import: dip.created_at, sections: { total: sections.length, ...stats } } : null,
+          pending_alerts: { count: alertsRes.data?.length || 0, haute: (alertsRes.data || []).filter(a => a.urgency === 'haute').length, items: alertsRes.data || [] },
           recent_history: historyRes.data || []
         };
       }

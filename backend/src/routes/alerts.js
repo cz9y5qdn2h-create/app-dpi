@@ -228,16 +228,24 @@ router.post('/ai-corrections/:dipId', authMiddleware, requireFranchisor, async (
   const createdAlerts = [];
   const errors = [];
 
-  for (const section of sections) {
-    try {
-      const correction = await correctSection({
+  // Traitement par batches de 3 — 3× plus rapide que séquentiel
+  const BATCH = 3;
+  for (let i = 0; i < sections.length; i += BATCH) {
+    const batch = sections.slice(i, i + BATCH);
+    const results = await Promise.allSettled(batch.map(section =>
+      correctSection({
         section_number: section.section_number,
         section_title: section.section_title,
         content: section.content,
         issues: section.issues || [],
         status: section.status
-      });
+      }).then(correction => ({ section, correction }))
+    ));
 
+    for (const result of results) {
+    try {
+      if (result.status === 'rejected') throw result.reason;
+      const { section, correction } = result.value;
       const urgency = section.status === 'non_conforme' ? 'haute' : 'moyenne';
 
       const alertData = correction.needs_info
@@ -274,12 +282,13 @@ router.post('/ai-corrections/:dipId', authMiddleware, requireFranchisor, async (
         .select()
         .single();
 
-      if (alertErr) errors.push({ section: section.section_title, error: alertErr.message });
+      if (alertErr) errors.push({ error: alertErr.message });
       else createdAlerts.push(alert);
     } catch (err) {
-      errors.push({ section: section.section_title, error: err.message });
+      errors.push({ error: err.message });
     }
-  }
+    } // fin for results
+  } // fin for batches
 
   res.json({
     alerts_created: createdAlerts.length,
