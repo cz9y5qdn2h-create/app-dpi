@@ -47,10 +47,10 @@ router.post('/forgot-password', async (req, res) => {
   if (!email) return res.status(400).json({ error: 'Email requis' });
 
   // Toujours 200 pour ne pas révéler si l'email existe
-  const { data: users } = await supabaseAdmin.auth.admin.listUsers();
-  const authUser = users?.users?.find(u => u.email === email);
+  const { data: profile } = await supabaseAdmin
+    .from('users').select('id, company_name').eq('email', email).single();
 
-  if (authUser) {
+  if (profile) {
     const token = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + RESET_TTL_MS).toISOString();
 
@@ -60,19 +60,16 @@ router.post('/forgot-password', async (req, res) => {
       .is('used_at', null);
 
     await supabaseAdmin.from('password_reset_tokens').insert({
-      user_id: authUser.id,
+      user_id: profile.id,
       email,
       token,
       expires_at: expiresAt,
     });
 
-    const { data: profile } = await supabaseAdmin
-      .from('users').select('company_name').eq('id', authUser.id).single();
-
     const frontendUrl = process.env.FRONTEND_URL || process.env.APP_URL || 'https://app-dpi.vercel.app';
     const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
 
-    await sendResetEmail(email, profile?.company_name || '', resetUrl);
+    await sendResetEmail(email, profile.company_name || '', resetUrl);
   }
 
   res.json({ message: 'Si cet email existe, un lien de réinitialisation a été envoyé.' });
