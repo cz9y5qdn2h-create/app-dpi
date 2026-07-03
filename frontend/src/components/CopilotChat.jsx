@@ -1,9 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, X, Send, CheckCircle, AlertTriangle, Loader2 } from 'lucide-react';
+import { Sparkles, X, Send, CheckCircle, AlertTriangle, Loader2, Calendar } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import api from '../lib/api';
+
+const CAL_URL = 'https://cal.com/theo-coutard-mhdsix/presentation-dippro';
 
 const SHORTCUTS = [
   { label: '🔍 Checkup complet', msg: 'Fais un checkup complet de mon DIP et dis-moi ce que je dois faire en priorité.' },
@@ -11,7 +13,10 @@ const SHORTCUTS = [
   { label: '📊 Mon score', msg: "Quel est mon score de conformité actuel et comment l'améliorer ?" },
   { label: '👥 Mes franchisés', msg: 'Combien ai-je de franchisés et quel est leur statut ?' },
   { label: '📋 Historique', msg: 'Montre-moi les 10 dernières modifications de mon DIP.' },
+  { label: '⚖️ Loi Doubin', msg: "Explique-moi les obligations de la Loi Doubin pour mon DIP : délais, contenu obligatoire, sanctions." },
+  { label: '📧 Notifier franchisés', msg: "Comment notifier mes franchisés d'une mise à jour de mon DIP ?" },
   { label: '❓ Aide DIPpro', msg: 'Comment fonctionne DIPpro ? Quelles sont les principales fonctionnalités ?' },
+  { label: '📅 Voir la démo', booking: true },
 ];
 
 const ACTION_LABELS = {
@@ -42,7 +47,7 @@ function ActionBadge({ action }) {
 export default function CopilotChat() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState([
-    { role: 'assistant', content: "Bonjour ! Je suis DIPpro Copilot. Je peux consulter votre DIP, vérifier vos alertes et effectuer des actions directement dans l'app. Comment puis-je vous aider ?" }
+    { role: 'assistant', content: "Bonjour ! Je suis **DIPpro Copilot**, votre assistant IA franchise.\n\nJe peux :\n- 🔍 Analyser votre DIP et son score de conformité\n- ⚠️ Gérer vos alertes et corrections en attente\n- 👥 Consulter vos franchisés\n- ⚖️ Répondre à vos questions sur la Loi Doubin\n- ✅ Valider ou ignorer des corrections directement\n\nUtilisez les raccourcis ci-dessus ou posez-moi une question." }
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -59,6 +64,14 @@ export default function CopilotChat() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
+
+  const showBookingCard = () => {
+    setMessages(prev => [
+      ...prev,
+      { role: 'user', content: '📅 Je voudrais voir / revoir la présentation DIPpro.' },
+      { role: 'assistant', content: '', card: 'booking' }
+    ]);
+  };
 
   const sendMessage = async (text) => {
     const userText = text || input.trim();
@@ -165,12 +178,12 @@ export default function CopilotChat() {
               {SHORTCUTS.map(sc => (
                 <button
                   key={sc.label}
-                  onClick={() => sendMessage(sc.msg)}
-                  disabled={loading}
+                  onClick={() => sc.booking ? showBookingCard() : sendMessage(sc.msg)}
+                  disabled={loading && !sc.booking}
                   className="whitespace-nowrap font-dm-sans text-xs px-3 py-1.5 rounded-full transition-all flex-shrink-0"
                   style={{
-                    background: 'rgba(200,169,110,0.08)',
-                    border: '0.5px solid rgba(200,169,110,0.22)',
+                    background: sc.booking ? 'rgba(200,169,110,0.16)' : 'rgba(200,169,110,0.08)',
+                    border: `0.5px solid ${sc.booking ? 'rgba(200,169,110,0.40)' : 'rgba(200,169,110,0.22)'}`,
                     color: 'rgb(var(--gold))',
                   }}
                 >
@@ -190,7 +203,27 @@ export default function CopilotChat() {
                       : { background: 'rgba(255,255,255,0.60)', border: '0.5px solid rgba(200,169,110,0.12)', color: 'rgb(var(--text-primary))', borderBottomLeftRadius: 6, backdropFilter: 'blur(8px)' }
                     }
                   >
-                    {m.role === 'assistant' ? (
+                    {m.card === 'booking' ? (
+                      <div className="space-y-3">
+                        <p className="font-dm-sans text-sm leading-relaxed" style={{ color: 'rgb(var(--text-primary))' }}>
+                          Réservez une présentation DIPpro de <strong>30 min</strong> avec Théo de l'équipe Iralink — démo complète, configuration en direct, réponses à toutes vos questions.
+                        </p>
+                        <a
+                          href={CAL_URL}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center justify-center gap-2 py-2.5 rounded-xl font-dm-sans text-sm font-medium transition-all"
+                          style={{
+                            background: 'rgba(200,169,110,0.18)',
+                            border: '0.5px solid rgba(200,169,110,0.45)',
+                            color: 'rgb(var(--gold))',
+                          }}
+                        >
+                          <Calendar className="w-4 h-4" />
+                          Choisir un créneau →
+                        </a>
+                      </div>
+                    ) : m.role === 'assistant' ? (
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm]}
                         components={{

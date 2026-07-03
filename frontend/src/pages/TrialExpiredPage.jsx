@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { Shield, Calendar, CheckCircle, LogOut, Mail, Clock, Send, ChevronDown, Users } from 'lucide-react';
 import api from '../lib/api';
 
-const CAL_URL = import.meta.env.VITE_CAL_COM_URL || 'https://cal.com/theo-coutard-mhdsix/call-clients';
+const CAL_URL = import.meta.env.VITE_CAL_COM_URL || 'https://cal.com/theo-coutard-mhdsix/presentation-dippro';
 const CONTACT_EMAIL = import.meta.env.VITE_CONTACT_EMAIL || 'theo@iralink-agency.com';
 
 export default function TrialExpiredPage() {
@@ -156,7 +156,7 @@ export default function TrialExpiredPage() {
                 style={{ background: '#C8A96E', color: '#1A1826', boxShadow: '0 4px 16px rgba(200,169,110,0.3)' }}
               >
                 <Calendar className="w-5 h-5" />
-                Prendre rendez-vous — 30 min gratuit
+                Voir la présentation DIPpro — 30 min
               </button>
 
               {/* Secondaire */}

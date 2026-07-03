@@ -10,7 +10,7 @@ import LiquidGlassBtn from './ui/LiquidGlassBtn';
 import {
   LayoutDashboard, FileText, Upload, Bell, History,
   Users, Settings, Download, LogOut, Phone, Zap, ShieldAlert, Sparkles,
-  Sun, Moon, FolderSync, ScrollText, ChevronDown,
+  Sun, Moon, FolderSync, ScrollText, ChevronDown, Play,
 } from 'lucide-react';
 
 const THEME_ICONS = { moon: Moon, sparkle: Sparkles, sun: Sun };
@@ -195,6 +195,15 @@ export default function Sidebar({ open, onClose }) {
 
         {/* Bottom section */}
         <div className="px-3 py-4 border-t border-border-subtle space-y-3">
+          <button
+            onClick={() => { setCalOpen(true); onClose?.(); }}
+            className="nav-link w-full text-left"
+            style={{ opacity: 0.6, fontSize: 12 }}
+          >
+            <Play className="w-3 h-3 flex-shrink-0" style={{ color: 'rgb(var(--gold))' }} />
+            <span className="text-xs" style={{ color: 'rgb(var(--gold))' }}>Revoir la présentation</span>
+          </button>
+
           <LiquidGlassBtn
             onClick={() => { setCalOpen(true); onClose?.(); }}
             padding="10px 20px"

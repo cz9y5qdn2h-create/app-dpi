@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { X, Calendar, Mail, Phone } from 'lucide-react';
 
-const CAL_URL    = import.meta.env.VITE_CAL_COM_URL  || 'https://cal.com/theo-coutard-mhdsix/call-clients';
+const CAL_URL    = import.meta.env.VITE_CAL_COM_URL  || 'https://cal.com/theo-coutard-mhdsix/presentation-dippro';
 const CONTACT_EMAIL = import.meta.env.VITE_CONTACT_EMAIL || 'theo@iralink-agency.com';
 const CONTACT_PHONE = import.meta.env.VITE_CONTACT_PHONE || '';
 
@@ -72,9 +72,9 @@ export default function CalModal({ open, onClose }) {
                 <Calendar className="w-5 h-5 text-gold" />
               </div>
               <div>
-                <p className="font-dm-sans text-sm font-medium text-text-primary">Réserver un appel</p>
+                <p className="font-dm-sans text-sm font-medium text-text-primary">Voir / revoir la présentation DIPpro</p>
                 <p className="font-dm-sans text-xs text-text-secondary mt-0.5">
-                  Choisissez un créneau directement dans notre agenda — 30 min
+                  Démo complète en 30 min avec Théo — réservez un créneau
                 </p>
               </div>
             </button>
