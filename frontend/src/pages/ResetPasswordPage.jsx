@@ -1,6 +1,74 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Shield, Eye, EyeOff, CheckCircle, AlertCircle, Lock, ArrowLeft } from 'lucide-react';
+import { Shield, Eye, EyeOff, CheckCircle, AlertCircle, Lock, ArrowLeft, MessageCircle } from 'lucide-react';
+
+const WA_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || '33651234567';
+
+function buildWaLink(newPassword) {
+  const msg = [
+    'Bonjour Théo,',
+    '',
+    "Mon lien de réinitialisation de mot de passe sur DIPpro est invalide ou expiré.",
+    '',
+    `Nouveau mot de passe souhaité : ${newPassword || '(à préciser)'}`,
+    '',
+    'Merci de m\'aider.',
+  ].join('\n');
+  return `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`;
+}
+
+function WhatsAppBlock() {
+  const [newPassword, setNewPassword] = useState('');
+  const [showPw, setShowPw] = useState(false);
+
+  return (
+    <div className="mt-5 rounded-xl px-4 py-4 space-y-3" style={{
+      background: 'rgba(37,211,102,0.04)',
+      border: '0.5px solid rgba(37,211,102,0.18)',
+    }}>
+      <p className="font-dm-sans text-xs" style={{ color: 'rgba(244,242,238,0.50)' }}>
+        Contactez-nous sur WhatsApp — le message est prérempli.
+      </p>
+      <div>
+        <label className="lg-label" style={{ color: 'rgba(244,242,238,0.40)', fontSize: 11 }}>
+          Votre nouveau mot de passe souhaité
+        </label>
+        <div className="relative">
+          <input
+            type={showPw ? 'text' : 'password'}
+            value={newPassword}
+            onChange={e => setNewPassword(e.target.value)}
+            placeholder="Nouveau mot de passe…"
+            className="lg-input"
+            style={{ paddingRight: '44px', fontSize: 13 }}
+          />
+          <button
+            type="button"
+            onClick={() => setShowPw(v => !v)}
+            className="absolute right-3 top-1/2 -translate-y-1/2"
+            style={{ color: 'rgba(244,242,238,0.30)' }}
+          >
+            {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+          </button>
+        </div>
+      </div>
+      <a
+        href={buildWaLink(newPassword)}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center justify-center gap-2 py-3 rounded-xl font-dm-sans text-sm font-medium transition-all"
+        style={{
+          background: 'rgba(37,211,102,0.12)',
+          border: '0.5px solid rgba(37,211,102,0.35)',
+          color: 'rgb(37,211,102)',
+        }}
+      >
+        <MessageCircle className="w-4 h-4" />
+        Nous contacter sur WhatsApp
+      </a>
+    </div>
+  );
+}
 
 const BG = `
   radial-gradient(ellipse 55% 50% at 15% 70%, rgba(200,169,110,0.20) 0%, transparent 60%),
@@ -100,6 +168,7 @@ export default function ResetPasswordPage() {
             >
               Faire une nouvelle demande
             </Link>
+            <WhatsAppBlock />
           </div>
         ) : (
           <>
@@ -113,17 +182,20 @@ export default function ResetPasswordPage() {
                   {error}
                 </div>
                 {(error.includes('expiré') || error.includes('invalide') || error.includes('utilisé')) && (
-                  <Link
-                    to="/forgot-password"
-                    className="block text-center font-dm-sans text-xs py-2 rounded-lg transition-all"
-                    style={{
-                      background: 'rgba(200,169,110,0.08)',
-                      border: '0.5px solid rgba(200,169,110,0.25)',
-                      color: '#C8A96E',
-                    }}
-                  >
-                    Faire une nouvelle demande →
-                  </Link>
+                  <>
+                    <Link
+                      to="/forgot-password"
+                      className="block text-center font-dm-sans text-xs py-2 rounded-lg transition-all"
+                      style={{
+                        background: 'rgba(200,169,110,0.08)',
+                        border: '0.5px solid rgba(200,169,110,0.25)',
+                        color: '#C8A96E',
+                      }}
+                    >
+                      Faire une nouvelle demande →
+                    </Link>
+                    <WhatsAppBlock />
+                  </>
                 )}
               </div>
             )}

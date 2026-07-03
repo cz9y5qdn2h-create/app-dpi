@@ -1,12 +1,91 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Shield, ArrowLeft, Mail, CheckCircle, AlertCircle } from 'lucide-react';
+import { Shield, ArrowLeft, Mail, CheckCircle, AlertCircle, Eye, EyeOff, MessageCircle } from 'lucide-react';
 
 const BG = `
   radial-gradient(ellipse 55% 50% at 15% 70%, rgba(200,169,110,0.20) 0%, transparent 60%),
   radial-gradient(ellipse 40% 60% at 80% 20%, rgba(180,140,70,0.14) 0%, transparent 55%),
   linear-gradient(160deg, #0a0805 0%, #0f0d08 25%, #080808 55%, #060606 100%)
 `;
+
+const WA_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || '33651234567';
+
+function buildWaLink(email, newPassword) {
+  const msg = [
+    'Bonjour Théo,',
+    '',
+    "Je n'arrive pas à réinitialiser mon mot de passe sur DIPpro.",
+    '',
+    `Mon email : ${email || '(à préciser)'}`,
+    `Nouveau mot de passe souhaité : ${newPassword || '(à préciser)'}`,
+    '',
+    'Merci de m\'aider.',
+  ].join('\n');
+  return `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(msg)}`;
+}
+
+function WhatsAppBlock({ email }) {
+  const [newPassword, setNewPassword] = useState('');
+  const [showPw, setShowPw] = useState(false);
+
+  return (
+    <div className="mt-8 space-y-4">
+      <div className="flex items-center gap-3">
+        <div className="flex-1 h-px" style={{ background: 'rgba(200,169,110,0.12)' }} />
+        <span className="font-dm-mono text-xs" style={{ color: 'rgba(244,242,238,0.25)' }}>ou</span>
+        <div className="flex-1 h-px" style={{ background: 'rgba(200,169,110,0.12)' }} />
+      </div>
+
+      <div className="rounded-xl px-4 py-4 space-y-3" style={{
+        background: 'rgba(37,211,102,0.04)',
+        border: '0.5px solid rgba(37,211,102,0.18)',
+      }}>
+        <p className="font-dm-sans text-xs" style={{ color: 'rgba(244,242,238,0.50)' }}>
+          Email non reçu ? Contactez-nous directement sur WhatsApp — le message est déjà prérempli.
+        </p>
+
+        <div>
+          <label className="lg-label" style={{ color: 'rgba(244,242,238,0.40)', fontSize: 11 }}>
+            Votre nouveau mot de passe souhaité
+          </label>
+          <div className="relative">
+            <input
+              type={showPw ? 'text' : 'password'}
+              value={newPassword}
+              onChange={e => setNewPassword(e.target.value)}
+              placeholder="Nouveau mot de passe…"
+              className="lg-input"
+              style={{ paddingRight: '44px', fontSize: 13 }}
+            />
+            <button
+              type="button"
+              onClick={() => setShowPw(v => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2"
+              style={{ color: 'rgba(244,242,238,0.30)' }}
+            >
+              {showPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
+        </div>
+
+        <a
+          href={buildWaLink(email, newPassword)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-center gap-2 py-3 rounded-xl font-dm-sans text-sm font-medium transition-all"
+          style={{
+            background: 'rgba(37,211,102,0.12)',
+            border: '0.5px solid rgba(37,211,102,0.35)',
+            color: 'rgb(37,211,102)',
+          }}
+        >
+          <MessageCircle className="w-4 h-4" />
+          Nous contacter sur WhatsApp
+        </a>
+      </div>
+    </div>
+  );
+}
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -55,18 +134,21 @@ export default function ForgotPasswordPage() {
         </div>
 
         {success ? (
-          <div className="rounded-xl px-5 py-6 text-center space-y-3" style={{
-            background: 'rgba(52,211,153,0.06)',
-            border: '0.5px solid rgba(52,211,153,0.25)',
-          }}>
-            <CheckCircle className="w-8 h-8 mx-auto" style={{ color: 'rgb(52,211,153)' }} />
-            <p className="font-dm-sans text-sm" style={{ color: 'rgba(244,242,238,0.80)' }}>
-              Email envoyé à <strong>{email}</strong>
-            </p>
-            <p className="font-dm-mono text-xs" style={{ color: 'rgba(244,242,238,0.38)' }}>
-              Vérifiez vos spams si vous ne le recevez pas dans 2 minutes.
-            </p>
-          </div>
+          <>
+            <div className="rounded-xl px-5 py-6 text-center space-y-3" style={{
+              background: 'rgba(52,211,153,0.06)',
+              border: '0.5px solid rgba(52,211,153,0.25)',
+            }}>
+              <CheckCircle className="w-8 h-8 mx-auto" style={{ color: 'rgb(52,211,153)' }} />
+              <p className="font-dm-sans text-sm" style={{ color: 'rgba(244,242,238,0.80)' }}>
+                Email envoyé à <strong>{email}</strong>
+              </p>
+              <p className="font-dm-mono text-xs" style={{ color: 'rgba(244,242,238,0.38)' }}>
+                Vérifiez vos spams si vous ne le recevez pas dans 2 minutes.
+              </p>
+            </div>
+            <WhatsAppBlock email={email} />
+          </>
         ) : (
           <>
             {error && (
@@ -119,6 +201,8 @@ export default function ForgotPasswordPage() {
                 )}
               </button>
             </form>
+
+            <WhatsAppBlock email={email} />
           </>
         )}
 
