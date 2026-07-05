@@ -100,6 +100,17 @@ router.patch('/:id/validate', authMiddleware, requireFranchisor, async (req, res
 
   if (!alert) return res.status(404).json({ error: 'Alerte introuvable' });
 
+  // Vérifier la propriété via le DIP ou le contrat
+  if (alert.dip_id) {
+    const { data: ownerDip } = await supabaseAdmin
+      .from('dip_documents').select('id').eq('id', alert.dip_id).eq('user_id', req.user.id).single();
+    if (!ownerDip) return res.status(403).json({ error: 'Accès refusé' });
+  } else if (alert.contract_id) {
+    const { data: ownerContract } = await supabaseAdmin
+      .from('franchise_contracts').select('id').eq('id', alert.contract_id).eq('user_id', req.user.id).single();
+    if (!ownerContract) return res.status(403).json({ error: 'Accès refusé' });
+  }
+
   const newContent = modified_content || alert.suggestion || alert.new_value;
 
   if (alert.section_id && newContent) {
@@ -360,6 +371,18 @@ router.patch('/:id/ignore', authMiddleware, requireFranchisor, async (req, res) 
 
   const { data: alert } = await supabaseAdmin
     .from('alerts').select('dip_id, contract_id').eq('id', req.params.id).single();
+
+  if (!alert) return res.status(404).json({ error: 'Alerte introuvable' });
+
+  if (alert.dip_id) {
+    const { data: ownerDip } = await supabaseAdmin
+      .from('dip_documents').select('id').eq('id', alert.dip_id).eq('user_id', req.user.id).single();
+    if (!ownerDip) return res.status(403).json({ error: 'Accès refusé' });
+  } else if (alert.contract_id) {
+    const { data: ownerContract } = await supabaseAdmin
+      .from('franchise_contracts').select('id').eq('id', alert.contract_id).eq('user_id', req.user.id).single();
+    if (!ownerContract) return res.status(403).json({ error: 'Accès refusé' });
+  }
 
   await supabaseAdmin
     .from('alerts')

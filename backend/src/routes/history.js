@@ -21,17 +21,17 @@ router.get('/', authMiddleware, async (req, res) => {
 
   let query = supabaseAdmin
     .from('audit_log')
-    .select('*, dip_documents(title), dip_sections(section_title)')
+    .select('*, dip_documents(title), dip_sections(section_title)', { count: 'exact' })
     .in('dip_id', dipIds)
     .order('timestamp', { ascending: false })
     .range(Number(offset), Number(offset) + Number(limit) - 1);
 
   if (dip_id) query = query.eq('dip_id', dip_id);
 
-  const { data, error } = await query;
+  const { data, error, count } = await query;
   if (error) return res.status(500).json({ error: error.message });
 
-  res.json({ history: data || [], total: data?.length || 0 });
+  res.json({ history: data || [], total: count || 0 });
 });
 
 module.exports = router;

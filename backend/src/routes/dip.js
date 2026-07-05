@@ -299,6 +299,10 @@ router.post('/approve-changes', authMiddleware, requireFranchisor, async (req, r
         section_title: s.section_title,
         content: s.content,
         status: s.status,
+        legal_blocking: s.legal_blocking || false,
+        mandatory_elements_found: s.mandatory_elements_found || [],
+        mandatory_elements_missing: s.mandatory_elements_missing || [],
+        legal_reference: s.legal_reference || null,
         last_checked: new Date().toISOString(),
         last_updated: new Date().toISOString()
       }));
@@ -373,8 +377,13 @@ router.get('/:id', authMiddleware, async (req, res) => {
 // PUT /api/dip/:id/sections/:sectionId
 router.put('/:id/sections/:sectionId', authMiddleware, requireFranchisor, async (req, res) => {
   const { content, status } = req.body;
+
+  const { data: ownerDip } = await supabaseAdmin
+    .from('dip_documents').select('id').eq('id', req.params.id).eq('user_id', req.user.id).single();
+  if (!ownerDip) return res.status(404).json({ error: 'DIP introuvable' });
+
   const { data: existing } = await supabaseAdmin
-    .from('dip_sections').select('*').eq('id', req.params.sectionId).single();
+    .from('dip_sections').select('*').eq('id', req.params.sectionId).eq('dip_id', req.params.id).single();
   if (!existing) return res.status(404).json({ error: 'Section introuvable' });
 
   await supabaseAdmin.from('audit_log').insert({
@@ -522,7 +531,7 @@ router.get('/shared/:token', async (req, res) => {
 
   const { data: dip, error } = await supabaseAdmin
     .from('dip_documents')
-    .select('id, title, conformity_score, status, created_at, dip_sections(*)')
+    .select('id, title, conformity_score, status, created_at, share_token_views, dip_sections(*)')
     .eq('share_token', token)
     .single();
 

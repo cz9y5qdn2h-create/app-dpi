@@ -196,7 +196,7 @@ router.post('/provision-oauth', authMiddleware, async (req, res) => {
 
   try {
     const { data: existing } = await supabaseAdmin
-      .from('users').select('id, trial_expires_at').eq('id', req.user.id).single();
+      .from('users').select('id, company_name, trial_expires_at').eq('id', req.user.id).single();
 
     if (existing) {
       const updates = {};
