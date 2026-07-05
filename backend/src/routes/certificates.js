@@ -17,12 +17,12 @@ const escapeHtml = (str) =>
 const fetchFranchiseur = async (userId, fallbackEmail) => {
   const { data } = await supabaseAdmin
     .from('users')
-    .select('company_name, rcs, address, phone')
+    .select('company_name, siret, siren, address, phone')
     .eq('id', userId)
     .single();
   return {
     nom:       data?.company_name || fallbackEmail,
-    rcs:       data?.rcs          || 'Non renseigné',
+    rcs:       data?.siret || data?.siren || 'Non renseigné',
     adresse:   data?.address      || 'Non renseigné',
     telephone: data?.phone        || 'Non renseigné',
   };

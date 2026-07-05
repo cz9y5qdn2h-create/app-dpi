@@ -105,17 +105,69 @@ async function executeTool(name, input, userId) {
         return { alerts: data || [], count: data?.length || 0 };
       }
       case 'validate_alert': {
-        const { error } = await supabaseAdmin
+        const { data: alert, error: fetchErr } = await supabaseAdmin
           .from('alerts')
-          .update({ status: 'validated' })
+          .select('*, dip_sections(*), contract_clauses(*)')
+          .eq('id', input.alert_id)
+          .single();
+        if (fetchErr || !alert) return { error: 'Alerte introuvable' };
+
+        // Vérification propriété
+        if (alert.dip_id) {
+          const { data: ownerDip } = await supabaseAdmin
+            .from('dip_documents').select('id').eq('id', alert.dip_id).eq('user_id', userId).single();
+          if (!ownerDip) return { error: 'Accès refusé' };
+        } else if (alert.contract_id) {
+          const { data: ownerContract } = await supabaseAdmin
+            .from('franchise_contracts').select('id').eq('id', alert.contract_id).eq('user_id', userId).single();
+          if (!ownerContract) return { error: 'Accès refusé' };
+        }
+
+        const newContent = alert.suggestion || alert.new_value;
+        if (alert.section_id && newContent) {
+          await supabaseAdmin.from('dip_sections')
+            .update({ content: newContent, status: 'conforme', last_updated: new Date().toISOString() })
+            .eq('id', alert.section_id);
+        }
+        if (alert.clause_id && newContent) {
+          await supabaseAdmin.from('contract_clauses')
+            .update({ content: newContent, status: 'conforme', last_updated: new Date().toISOString() })
+            .eq('id', alert.clause_id);
+        }
+
+        await supabaseAdmin.from('alerts')
+          .update({ status: 'validated', resolved_at: new Date().toISOString() })
           .eq('id', input.alert_id);
-        if (error) return { error: error.message };
-        return { success: true, validated_id: input.alert_id };
+
+        await supabaseAdmin.from('audit_log').insert({
+          dip_id: alert.dip_id || null,
+          section_id: alert.section_id || null,
+          action: 'alert_validated',
+          old_content: alert.old_value,
+          new_content: newContent,
+          user_id: userId,
+          timestamp: new Date().toISOString()
+        });
+
+        return { success: true, validated_id: input.alert_id, section_updated: !!(alert.section_id && newContent) };
       }
       case 'ignore_alert': {
-        const { error } = await supabaseAdmin
-          .from('alerts')
-          .update({ status: 'ignored' })
+        const { data: alert } = await supabaseAdmin
+          .from('alerts').select('dip_id, contract_id').eq('id', input.alert_id).single();
+        if (!alert) return { error: 'Alerte introuvable' };
+
+        if (alert.dip_id) {
+          const { data: ownerDip } = await supabaseAdmin
+            .from('dip_documents').select('id').eq('id', alert.dip_id).eq('user_id', userId).single();
+          if (!ownerDip) return { error: 'Accès refusé' };
+        } else if (alert.contract_id) {
+          const { data: ownerContract } = await supabaseAdmin
+            .from('franchise_contracts').select('id').eq('id', alert.contract_id).eq('user_id', userId).single();
+          if (!ownerContract) return { error: 'Accès refusé' };
+        }
+
+        const { error } = await supabaseAdmin.from('alerts')
+          .update({ status: 'ignored', resolved_at: new Date().toISOString() })
           .eq('id', input.alert_id);
         if (error) return { error: error.message };
         return { success: true, ignored_id: input.alert_id };
