@@ -1,7 +1,20 @@
 const express = require('express');
+const crypto = require('crypto');
 const router = express.Router();
 const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware } = require('../middleware/auth');
+
+function signState(payload) {
+  const sig = crypto.createHmac('sha256', process.env.JWT_SECRET || 'fallback').update(payload).digest('hex');
+  return Buffer.from(JSON.stringify({ payload, sig })).toString('base64url');
+}
+
+function verifyState(raw) {
+  const { payload, sig } = JSON.parse(Buffer.from(raw, 'base64url').toString());
+  const expected = crypto.createHmac('sha256', process.env.JWT_SECRET || 'fallback').update(payload).digest('hex');
+  if (sig !== expected) throw new Error('invalid_state');
+  return JSON.parse(payload);
+}
 
 const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
@@ -56,7 +69,7 @@ router.get('/google/connect', authMiddleware, async (req, res) => {
     : 'https://www.googleapis.com/auth/drive.readonly https://www.googleapis.com/auth/userinfo.email';
 
   const provider = req.query.scope === 'gmail' ? 'google_gmail' : 'google_drive';
-  const state = Buffer.from(JSON.stringify({ userId: req.user.id, provider })).toString('base64url');
+  const state = signState(JSON.stringify({ userId: req.user.id, provider }));
 
   const params = new URLSearchParams({
     client_id: process.env.GOOGLE_CLIENT_ID,
@@ -77,7 +90,7 @@ router.get('/google/callback', async (req, res) => {
   if (!code || !state) return res.redirect(`${getAppUrl()}/integrations?error=invalid_callback`);
 
   try {
-    const { userId, provider } = JSON.parse(Buffer.from(state, 'base64url').toString());
+    const { userId, provider } = verifyState(state);
 
     const tokenRes = await fetch(GOOGLE_TOKEN_URL, {
       method: 'POST',
@@ -139,7 +152,7 @@ router.get('/microsoft/connect', authMiddleware, async (req, res) => {
     return res.status(503).json({ error: 'Microsoft OAuth non configuré (MICROSOFT_CLIENT_ID manquant)' });
   }
 
-  const state = Buffer.from(JSON.stringify({ userId: req.user.id, provider: 'microsoft_onedrive' })).toString('base64url');
+  const state = signState(JSON.stringify({ userId: req.user.id, provider: 'microsoft_onedrive' }));
   const params = new URLSearchParams({
     client_id: process.env.MICROSOFT_CLIENT_ID,
     redirect_uri: `${getAppUrl()}/api/integrations/microsoft/callback`,
@@ -157,7 +170,7 @@ router.get('/microsoft/callback', async (req, res) => {
   if (!code || !state) return res.redirect(`${getAppUrl()}/integrations?error=invalid_callback`);
 
   try {
-    const { userId, provider } = JSON.parse(Buffer.from(state, 'base64url').toString());
+    const { userId, provider } = verifyState(state);
 
     const tokenRes = await fetch(MICROSOFT_TOKEN_URL, {
       method: 'POST',

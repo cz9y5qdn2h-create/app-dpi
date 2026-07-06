@@ -250,6 +250,10 @@ router.post('/approve-changes', authMiddleware, requireFranchisor, async (req, r
   }
 
   try {
+    const { data: prevContract } = await supabaseAdmin
+      .from('franchise_contracts').select('id').eq('id', previous_contract_id).eq('user_id', req.user.id).single();
+    if (!prevContract) return res.status(403).json({ error: 'Contrat précédent introuvable' });
+
     await supabaseAdmin
       .from('franchise_contracts')
       .update({ status: 'archive' })
@@ -518,8 +522,13 @@ router.post('/:id/link-dip', authMiddleware, requireFranchisor, async (req, res)
 // PUT /api/contracts/:id/clauses/:clauseId
 router.put('/:id/clauses/:clauseId', authMiddleware, requireFranchisor, async (req, res) => {
   const { content, status } = req.body;
+
+  const { data: ownerContract } = await supabaseAdmin
+    .from('franchise_contracts').select('id').eq('id', req.params.id).eq('user_id', req.user.id).single();
+  if (!ownerContract) return res.status(404).json({ error: 'Contrat introuvable' });
+
   const { data: existing } = await supabaseAdmin
-    .from('contract_clauses').select('*').eq('id', req.params.clauseId).single();
+    .from('contract_clauses').select('*').eq('id', req.params.clauseId).eq('contract_id', req.params.id).single();
   if (!existing) return res.status(404).json({ error: 'Clause introuvable' });
 
   await supabaseAdmin.from('audit_log').insert({
@@ -542,8 +551,8 @@ router.put('/:id/clauses/:clauseId', authMiddleware, requireFranchisor, async (r
 
   const { data: allClauses } = await supabaseAdmin
     .from('contract_clauses').select('status').eq('contract_id', req.params.id);
-  const conformeCount = allClauses.filter(c => c.status === 'conforme').length;
-  const score = Math.round((conformeCount / allClauses.length) * 100);
+  const conformeCount = (allClauses || []).filter(c => c.status === 'conforme').length;
+  const score = allClauses?.length ? Math.round((conformeCount / allClauses.length) * 100) : 0;
   await supabaseAdmin.from('franchise_contracts').update({ conformity_score: score }).eq('id', req.params.id);
 
   res.json({ clause: data, conformity_score: score });
@@ -588,7 +597,7 @@ router.get('/shared/:token', async (req, res) => {
 
   const { data: contract, error } = await supabaseAdmin
     .from('franchise_contracts')
-    .select('id, title, conformity_score, status, created_at, contract_clauses(*)')
+    .select('id, title, conformity_score, status, created_at, share_token_views, contract_clauses(*)')
     .eq('share_token', token)
     .single();
 

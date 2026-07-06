@@ -94,7 +94,7 @@ router.post('/sections/:sectionId/propose', authMiddleware, requireAvocat, async
   if (relation?.status !== 'active') return res.status(403).json({ error: 'Relation inactive' });
 
   const { data: section } = await supabaseAdmin
-    .from('dip_sections').select('content').eq('id', req.params.sectionId).maybeSingle();
+    .from('dip_sections').select('content').eq('id', req.params.sectionId).eq('dip_id', dip_id).maybeSingle();
 
   const { data: proposal, error } = await supabaseAdmin
     .from('dip_section_proposals')
@@ -172,8 +172,9 @@ router.put('/proposals/:id/reject', authMiddleware, async (req, res) => {
   const { reviewer_comment } = req.body;
 
   const { data: proposal } = await supabaseAdmin
-    .from('dip_section_proposals').select('dip_id').eq('id', req.params.id).maybeSingle();
+    .from('dip_section_proposals').select('dip_id, status').eq('id', req.params.id).maybeSingle();
   if (!proposal) return res.status(404).json({ error: 'Proposition introuvable' });
+  if (proposal.status !== 'pending') return res.status(400).json({ error: 'Proposition déjà traitée' });
 
   const { data: dip } = await supabaseAdmin
     .from('dip_documents').select('user_id').eq('id', proposal.dip_id).single();
