@@ -7,13 +7,15 @@ import CommandPalette from './CommandPalette';
 import CopilotChat from './CopilotChat';
 import OnboardingTour from './OnboardingTour';
 import FeedbackWidget from './FeedbackWidget';
+import BugReportModal from './BugReportModal';
 import api from '../lib/api';
 import { FEATURES } from '../lib/features';
-import { Bell, Menu, Search } from 'lucide-react';
+import { Bell, Menu, Search, Bug } from 'lucide-react';
 
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
+  const [bugModalOpen, setBugModalOpen] = useState(false);
 
   const { data: alertsData } = useQuery({
     queryKey: ['alerts', 'pending'],
@@ -108,6 +110,29 @@ export default function Layout() {
       {FEATURES.copilot && <CopilotChat />}
       <OnboardingTour />
       <FeedbackWidget />
+
+      {/* Bouton signalement de bug — positionné juste au-dessus du FeedbackWidget */}
+      <button
+        onClick={() => setBugModalOpen(true)}
+        title="Signaler un problème à DIPpro"
+        style={{
+          position: 'fixed', bottom: 148, right: 20, zIndex: 390,
+          display: 'flex', alignItems: 'center', gap: 6,
+          padding: '7px 13px', borderRadius: 99,
+          background: 'rgb(var(--bg-elevated))',
+          border: '0.5px solid rgba(229,62,62,0.18)',
+          color: 'rgba(229,62,62,0.50)',
+          fontFamily: 'DM Sans, sans-serif', fontSize: 11.5,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.22)',
+          cursor: 'pointer', transition: 'all 0.2s',
+        }}
+        onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(229,62,62,0.40)'; e.currentTarget.style.color = '#e53e3e'; }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(229,62,62,0.18)'; e.currentTarget.style.color = 'rgba(229,62,62,0.50)'; }}
+      >
+        <Bug size={12} />
+        <span>Bug</span>
+      </button>
+      <BugReportModal open={bugModalOpen} onClose={() => setBugModalOpen(false)} />
     </div>
   );
 }

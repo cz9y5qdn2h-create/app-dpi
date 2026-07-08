@@ -7,7 +7,7 @@ import StatusBadge from '../components/ui/StatusBadge';
 import {
   Users, FileText, AlertTriangle, TrendingUp, Shield,
   Edit3, Trash2, Plus, Key, X, Check, Eye, ChevronDown, ChevronUp, Activity, Unlock,
-  Clock, MessageSquare, Mail, PhoneCall
+  Clock, MessageSquare, Mail, PhoneCall, Bug, CheckCircle, Circle
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
@@ -57,6 +57,30 @@ export default function AdminPage() {
   const { data: waitlistCountData } = useQuery({
     queryKey: ['admin-waitlist-count'],
     queryFn: () => api.get('/waitlist?status=pending').then(r => r.data)
+  });
+
+  const [bugStatusFilter, setBugStatusFilter] = useState('ouvert');
+  const [bugNote, setBugNote] = useState({});
+
+  const { data: bugsData, isLoading: bugsLoading } = useQuery({
+    queryKey: ['admin-bugs', bugStatusFilter],
+    queryFn: () => api.get('/bugs?status=' + bugStatusFilter).then(r => r.data),
+    enabled: activeTab === 'bugs'
+  });
+
+  const { data: openBugsCount } = useQuery({
+    queryKey: ['admin-bugs-count'],
+    queryFn: () => api.get('/bugs?status=ouvert&limit=1').then(r => r.data)
+  });
+
+  const updateBugMutation = useMutation({
+    mutationFn: ({ id, ...d }) => api.patch('/bugs/' + id, d),
+    onSuccess: () => {
+      toast.success('Bug mis à jour');
+      queryClient.invalidateQueries({ queryKey: ['admin-bugs'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-bugs-count'] });
+    },
+    onError: (err) => toast.error(err.message)
   });
 
   const { data: userDetail } = useQuery({
@@ -138,13 +162,15 @@ export default function AdminPage() {
   });
 
   const pendingWaitlist = waitlistCountData?.pending || 0;
+  const openBugs = openBugsCount?.total || 0;
 
   const tabs = [
     { key: 'dashboard', label: 'Dashboard', icon: TrendingUp },
     { key: 'users', label: 'Franchiseurs', icon: Users },
     { key: 'dips', label: 'Tous les DIPs', icon: FileText },
     { key: 'activity', label: 'Activité', icon: Activity },
-    { key: 'waitlist', label: 'Liste d\'attente', icon: Clock, badge: pendingWaitlist }
+    { key: 'waitlist', label: 'Liste d\'attente', icon: Clock, badge: pendingWaitlist },
+    { key: 'bugs', label: 'Bugs', icon: Bug, badge: openBugs, badgeColor: 'bg-danger' }
   ];
 
   return (
@@ -549,6 +575,122 @@ export default function AdminPage() {
                             updateWaitlistMutation.mutate({ id: w.id, notes: val });
                           }
                         }}
+                      />
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Onglet Bugs ───────────────────────────────────────────────── */}
+      {activeTab === 'bugs' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center gap-2">
+              <h2 className="font-cormorant text-xl text-text-primary">Signalements de bugs</h2>
+              {openBugs > 0 && (
+                <span className="font-dm-mono text-xs px-2 py-0.5 rounded-full bg-danger/10 border border-danger/20 text-danger">
+                  {openBugs} ouvert{openBugs > 1 ? 's' : ''}
+                </span>
+              )}
+            </div>
+            <span className="font-dm-sans text-sm text-text-secondary">{bugsData?.total || 0} total</span>
+          </div>
+
+          {/* Filtres statut */}
+          <div className="flex flex-wrap gap-2">
+            {[
+              { key: 'ouvert', label: 'Ouverts' },
+              { key: 'en_cours', label: 'En cours' },
+              { key: 'résolu', label: 'Résolus' },
+              { key: 'ignoré', label: 'Ignorés' }
+            ].map(f => (
+              <button
+                key={f.key}
+                onClick={() => setBugStatusFilter(f.key)}
+                className={`px-3 py-1.5 rounded font-dm-sans text-xs transition-all ${
+                  bugStatusFilter === f.key ? 'bg-gold text-bg-primary font-medium' : 'bg-bg-elevated text-text-secondary hover:text-text-primary'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+
+          {bugsLoading ? <LoadingSpinner size="lg" /> : (
+            <div className="space-y-3">
+              {(bugsData?.bugs || []).length === 0 ? (
+                <div className="card text-center py-12">
+                  <Bug className="w-8 h-8 text-text-muted mx-auto mb-3" />
+                  <p className="font-dm-sans text-sm text-text-secondary">Aucun bug dans cette catégorie</p>
+                </div>
+              ) : (
+                (bugsData?.bugs || []).map(bug => (
+                  <div key={bug.id} className="card space-y-3">
+                    <div className="flex items-start gap-3">
+                      {/* Gravité */}
+                      <div className={`mt-0.5 w-2.5 h-2.5 rounded-full flex-shrink-0 ${
+                        bug.severity === 'bloquant' ? 'bg-danger' :
+                        bug.severity === 'normal' ? 'bg-gold' : 'bg-success'
+                      }`} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <span className={`font-dm-mono text-xs px-2 py-0.5 rounded border ${
+                            bug.severity === 'bloquant' ? 'text-danger border-danger/30 bg-danger/5' :
+                            bug.severity === 'normal' ? 'text-gold border-gold/30 bg-gold/5' :
+                            'text-success border-success/30 bg-success/5'
+                          }`}>
+                            {bug.severity}
+                          </span>
+                          <span className="font-dm-sans text-xs text-text-muted">
+                            {bug.user_company || bug.user_email || 'Visiteur'}
+                          </span>
+                          <span className="font-dm-mono text-xs text-text-muted">
+                            {formatDistanceToNow(new Date(bug.created_at), { addSuffix: true, locale: fr })}
+                          </span>
+                        </div>
+                        <p className="font-dm-sans text-sm text-text-primary whitespace-pre-wrap">{bug.description}</p>
+                        {bug.page_url && (
+                          <p className="font-dm-mono text-xs text-text-muted mt-1 truncate">{bug.page_url}</p>
+                        )}
+                        {bug.error_stack && (
+                          <pre className="mt-2 p-2 rounded bg-bg-elevated font-dm-mono text-xs text-text-muted overflow-x-auto max-h-28">
+                            {bug.error_stack.slice(0, 400)}
+                          </pre>
+                        )}
+                      </div>
+                      {/* Actions */}
+                      <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                        <select
+                          value={bug.status}
+                          onChange={e => updateBugMutation.mutate({ id: bug.id, status: e.target.value })}
+                          className="font-dm-sans text-xs bg-bg-elevated border border-border-default rounded px-2 py-1 text-text-primary cursor-pointer"
+                        >
+                          <option value="ouvert">Ouvert</option>
+                          <option value="en_cours">En cours</option>
+                          <option value="résolu">Résolu</option>
+                          <option value="ignoré">Ignoré</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Note admin */}
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Note interne…"
+                        value={bugNote[bug.id] ?? (bug.admin_note || '')}
+                        onChange={e => setBugNote(n => ({ ...n, [bug.id]: e.target.value }))}
+                        onBlur={e => {
+                          const val = e.target.value.trim();
+                          if (val !== (bug.admin_note || '')) {
+                            updateBugMutation.mutate({ id: bug.id, admin_note: val });
+                          }
+                        }}
+                        className="input-field flex-1 text-xs py-1.5"
                       />
                     </div>
                   </div>
