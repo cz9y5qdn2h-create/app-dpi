@@ -240,13 +240,16 @@ export default function SharedDIPPage() {
               </div>
             </div>
 
-            {/* Notice légale */}
+            {/* Notice légale & accusé de réception */}
             <div className="rounded-xl p-4 flex items-start gap-3" style={{ background: 'rgba(200,169,110,0.08)', border: '1px solid rgba(200,169,110,0.2)' }}>
               <Shield className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#C8A96E' }} />
               <div>
                 <p className="font-dm-sans text-xs font-medium mb-0.5" style={{ color: '#1A1826' }}>{t('shared.legalNotice')}</p>
                 <p className="font-dm-sans text-xs leading-relaxed" style={{ color: '#64748B' }}>
-                  Ce DIP a été analysé par l'IA DIPpro. En consultant ce document, vous accusez réception conformément à l'obligation de remise du DIP 20 jours avant signature.
+                  En consultant ce document, vous accusez réception du DIP conformément à l'obligation légale de remise 20 jours avant signature (Loi Doubin art. L.330-3 du Code de commerce). La date et l'heure de consultation sont horodatées.
+                </p>
+                <p className="font-dm-mono text-xs mt-2" style={{ color: '#94A3B8' }}>
+                  Ce document a été analysé par intelligence artificielle (DIPpro by Iralink). L'analyse IA est un outil d'aide à la conformité et ne se substitue pas à l'avis d'un avocat spécialisé en droit de la franchise.
                 </p>
               </div>
             </div>

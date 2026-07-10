@@ -16,8 +16,9 @@ import AvocatDashboard from '../components/dashboard/AvocatDashboard';
 import {
   Upload, RefreshCw, FileText,
   AlertTriangle, CheckCircle, History,
-  Phone, Sparkles, Users, Download, ChevronRight, Clock, ScrollText
+  Phone, Sparkles, Users, Download, ChevronRight, Clock, ScrollText, ShieldCheck, ShieldAlert, ShieldX
 } from 'lucide-react';
+import AIDisclaimer from '../components/ui/AIDisclaimer';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
@@ -146,9 +147,10 @@ export default function DashboardPage() {
         <>
           {/* Ligne 1: Score + Statistiques */}
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            <div className="lg:col-span-1 card flex flex-col items-center justify-center py-8">
+            <div className="lg:col-span-1 card flex flex-col items-center justify-center py-8 gap-1">
               <ConformityGauge score={dip.conformity_score || 0} />
-              <p className="font-dm-sans text-xs text-text-secondary mt-3">Score de conformité</p>
+              <p className="font-dm-sans text-xs text-text-secondary mt-2">Score de conformité Loi Doubin</p>
+              <AIDisclaimer className="mt-1" />
             </div>
 
             <div className="lg:col-span-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -158,6 +160,9 @@ export default function DashboardPage() {
               <StatCard label={t('dashboard.stats.nonCompliant')} value={stats.non_conforme} tag="✗ Critique" tagVariant="red" />
             </div>
           </div>
+
+          {/* Bandeau statut légal — visible en permanence */}
+          <LegalStatusBanner score={dip.conformity_score || 0} nonConforme={stats.non_conforme} uploadDate={dip.upload_date} />
 
           {/* Bandeau Corrections IA — visible si sections non conformes */}
           {sectionsToCorrect > 0 && (
@@ -292,6 +297,76 @@ function StatCard({ label, value, tag, tagVariant = 'gold' }) {
       {tag && <span className={`lg-metric-tag lg-metric-tag-${tagVariant}`}>{tag}</span>}
     </div>
   );
+}
+
+function LegalStatusBanner({ score, nonConforme, uploadDate }) {
+  const daysSinceImport = uploadDate
+    ? Math.floor((Date.now() - new Date(uploadDate).getTime()) / 86400000)
+    : null;
+
+  const outdated = daysSinceImport !== null && daysSinceImport > 365;
+
+  if (nonConforme > 0) {
+    return (
+      <div className="card border-danger/20 bg-danger/3 flex items-start gap-4 p-5">
+        <div className="w-10 h-10 rounded-lg bg-danger/10 border border-danger/20 flex items-center justify-center flex-shrink-0">
+          <ShieldX className="w-5 h-5 text-danger" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-dm-sans text-sm font-medium text-danger">
+            Risque légal — {nonConforme} section{nonConforme > 1 ? 's' : ''} non conforme{nonConforme > 1 ? 's' : ''} détectée{nonConforme > 1 ? 's' : ''}
+          </p>
+          <p className="font-dm-sans text-xs text-text-secondary mt-1">
+            Un DIP non conforme peut entraîner la <strong>nullité du contrat de franchise</strong> (Loi Doubin art. L.330-3). Validez les corrections IA ci-dessous ou consultez votre avocat.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (outdated) {
+    return (
+      <div className="card border-gold/20 flex items-start gap-4 p-5">
+        <div className="w-10 h-10 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center flex-shrink-0">
+          <ShieldAlert className="w-5 h-5 text-gold" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-dm-sans text-sm font-medium text-text-primary">
+            DIP importé il y a {daysSinceImport} jours — mise à jour recommandée
+          </p>
+          <p className="font-dm-sans text-xs text-text-secondary mt-1">
+            La Loi Doubin exige que le DIP reflète la situation <em>réelle et actuelle</em> du réseau. Importez une version à jour.
+          </p>
+        </div>
+        <Link to="/dip/upload" className="btn-ghost text-xs py-1.5 flex-shrink-0">Mettre à jour</Link>
+      </div>
+    );
+  }
+
+  if (score >= 80) {
+    return (
+      <div className="card border-success/15 flex items-start gap-4 p-5">
+        <div className="w-10 h-10 rounded-lg bg-success/10 border border-success/15 flex items-center justify-center flex-shrink-0">
+          <ShieldCheck className="w-5 h-5 text-success" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-dm-sans text-sm font-medium text-text-primary">
+            Votre DIP est conforme — vos contrats de franchise sont protégés
+          </p>
+          <p className="font-dm-sans text-xs text-text-secondary mt-1">
+            Score {score}% · DIPpro surveille votre conformité en continu. Mettez à jour après chaque changement majeur du réseau.
+          </p>
+        </div>
+        {daysSinceImport !== null && (
+          <span className="font-dm-mono text-xs text-text-muted flex-shrink-0">
+            Mis à jour il y a {daysSinceImport}j
+          </span>
+        )}
+      </div>
+    );
+  }
+
+  return null;
 }
 
 function SectionRow({ section }) {

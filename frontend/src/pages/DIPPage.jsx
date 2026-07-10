@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import PageHeader from '../components/ui/PageHeader';
 import StatusBadge from '../components/ui/StatusBadge';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+import AIDisclaimer from '../components/ui/AIDisclaimer';
 import {
   Upload, ChevronDown, ChevronUp, Edit3, Check, X,
   Sparkles, Download, FileText, Plus, Trash2, AlertCircle,
@@ -354,6 +355,8 @@ export default function DIPPage() {
 
       {/* Panel propositions avocat — visible uniquement pour le franchiseur */}
       {dip && <ProposalsPanel dipId={dip.id} />}
+
+      {dip && <AIDisclaimer />}
 
       {/* Onglets */}
       <div className="flex gap-1 bg-bg-elevated rounded-lg p-1 w-fit">
