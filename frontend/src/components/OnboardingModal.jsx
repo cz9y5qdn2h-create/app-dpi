@@ -55,9 +55,13 @@ export default function OnboardingModal({ forceShow = false, onClose }) {
   const totalSlides = slides.length;
 
   const handleClose = () => {
+    const isFirstTime = !localStorage.getItem(STORAGE_KEY);
     localStorage.setItem(STORAGE_KEY, '1');
     setVisible(false);
     onClose?.();
+    if (isFirstTime && !forceShow) {
+      window.dispatchEvent(new CustomEvent('dippro-modal-done'));
+    }
   };
 
   const goTo = (index) => {
@@ -98,11 +102,14 @@ export default function OnboardingModal({ forceShow = false, onClose }) {
           borderRadius: '24px',
           border: '1px solid rgba(200,169,110,0.30)',
           overflow: 'hidden',
-          background: 'var(--modal-bg, rgba(255,255,255,0.94))',
+          background: 'rgba(255,255,255,0.96)',
           boxShadow: '0 32px 80px rgba(0,0,0,0.28)',
           position: 'relative',
           display: 'flex',
           flexDirection: 'column',
+          '--text-primary': '26 24 38',
+          '--text-secondary': '71 85 105',
+          '--text-muted': '148 163 184',
         }}
       >
         {/* Header — bouton passer */}
@@ -114,14 +121,18 @@ export default function OnboardingModal({ forceShow = false, onClose }) {
         }}>
           <button
             onClick={handleClose}
-            className="btn-ghost"
             style={{
               fontSize: '12px',
               padding: '6px 12px',
-              opacity: 0.7,
               display: 'flex',
               alignItems: 'center',
               gap: '4px',
+              background: 'rgba(0,0,0,0.06)',
+              border: '1px solid rgba(0,0,0,0.10)',
+              borderRadius: 8,
+              cursor: 'pointer',
+              color: '#475569',
+              fontFamily: 'DM Sans, sans-serif',
             }}
           >
             <X style={{ width: 12, height: 12 }} />
@@ -268,8 +279,19 @@ export default function OnboardingModal({ forceShow = false, onClose }) {
           ) : (
             <button
               onClick={handleClose}
-              className="btn-primary"
-              style={{ padding: '8px 20px', fontSize: '13px', fontWeight: 600 }}
+              style={{
+                padding: '8px 20px',
+                fontSize: '13px',
+                fontWeight: 700,
+                background: 'linear-gradient(135deg, #C8A96E 0%, #A8893E 100%)',
+                color: '#1A1826',
+                border: 'none',
+                borderRadius: 12,
+                cursor: 'pointer',
+                boxShadow: '0 4px 14px -4px rgba(168,137,62,0.55)',
+                fontFamily: 'DM Sans, sans-serif',
+                letterSpacing: '0.01em',
+              }}
             >
               {t('onboarding.cta')} →
             </button>

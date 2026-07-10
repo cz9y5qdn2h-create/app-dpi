@@ -190,4 +190,87 @@ router.put('/proposals/:id/reject', authMiddleware, async (req, res) => {
   res.json({ ok: true });
 });
 
+// POST /api/avocat/invite — franchiseur invite son avocat
+router.post('/invite', authMiddleware, async (req, res) => {
+  const { lawyer_email } = req.body;
+  if (!lawyer_email?.trim()) return res.status(400).json({ error: 'Email requis' });
+
+  const email = lawyer_email.trim().toLowerCase();
+
+  const { data: franchiseur } = await supabaseAdmin
+    .from('users').select('id, company_name').eq('id', req.user.id).single();
+
+  // Sauvegarder l'email avocat dans le profil franchiseur
+  await supabaseAdmin.from('users').update({ lawyer_email: email }).eq('id', req.user.id);
+
+  // Si l'avocat est déjà inscrit, créer la relation automatiquement
+  const { data: existingAvocat } = await supabaseAdmin
+    .from('users').select('id, role').eq('email', email).maybeSingle();
+
+  if (existingAvocat?.role === 'avocat') {
+    const { data: existing } = await supabaseAdmin
+      .from('avocat_franchiseurs').select('id')
+      .eq('avocat_id', existingAvocat.id).eq('franchiseur_id', req.user.id).maybeSingle();
+
+    if (!existing) {
+      await supabaseAdmin.from('avocat_franchiseurs').insert({
+        avocat_id: existingAvocat.id,
+        franchiseur_id: req.user.id,
+        status: 'active',
+        invited_at: new Date().toISOString(),
+        accepted_at: new Date().toISOString(),
+      });
+    }
+  }
+
+  // Envoyer l'email d'invitation via la clé Brevo système
+  const brevoKey = process.env.BREVO_API_KEY;
+  const appUrl = process.env.APP_URL || 'https://app-dpi.vercel.app';
+  const companyName = franchiseur?.company_name || 'Un franchiseur';
+
+  if (brevoKey) {
+    try {
+      await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'accept': 'application/json',
+          'api-key': brevoKey,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          sender: { name: 'DIPpro', email: 'noreply@dippro.business' },
+          to: [{ email }],
+          subject: `${companyName} vous invite à accéder à son DIP sur DIPpro`,
+          htmlContent: `
+<div style="font-family:'DM Sans',Arial,sans-serif;max-width:540px;margin:auto;color:#1A1826">
+  <div style="background:linear-gradient(135deg,#C8A96E,#A8893E);border-radius:12px 12px 0 0;padding:24px 32px">
+    <p style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:26px;color:#fff;font-weight:600">DIPpro</p>
+    <p style="margin:6px 0 0;font-size:12px;color:rgba(255,255,255,0.75);font-family:monospace">by Iralink Agency</p>
+  </div>
+  <div style="background:#fff;border-radius:0 0 12px 12px;padding:32px;border:1px solid #f0ece4;border-top:none">
+    <p style="margin:0 0 16px;font-size:15px">Bonjour,</p>
+    <p style="margin:0 0 16px;font-size:15px"><strong>${companyName}</strong> vous invite à consulter et annoter son Document d'Information Précontractuelle (DIP) directement sur <strong>DIPpro</strong>.</p>
+    <p style="margin:0 0 16px;font-size:14px;color:#475569">En créant un compte avocat, vous pourrez :</p>
+    <ul style="margin:0 0 24px;padding-left:20px;color:#475569;font-size:14px;line-height:2">
+      <li>Consulter toutes les sections du DIP de votre client</li>
+      <li>Proposer des modifications directement dans l'interface</li>
+      <li>Suivre l'historique des versions et validations</li>
+      <li>Accompagner plusieurs réseaux de franchise depuis un seul espace</li>
+    </ul>
+    <a href="${appUrl}/register?role=avocat" style="display:inline-block;background:linear-gradient(135deg,#C8A96E,#A8893E);color:#1A1826;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px">Créer mon compte avocat →</a>
+    <p style="margin:24px 0 0;font-size:12px;color:#94A3B8">Après inscription, recherchez <strong>${companyName}</strong> dans votre tableau de bord pour accéder à son DIP.</p>
+    <hr style="border:none;border-top:1px solid #f0ece4;margin:24px 0">
+    <p style="margin:0;font-size:11px;color:#94A3B8">DIPpro — Gestion des DIP franchise · Loi Doubin · <a href="${appUrl}/cgu" style="color:#C8A96E">CGU</a></p>
+  </div>
+</div>`,
+        }),
+      });
+    } catch {
+      // Non-bloquant : l'invite est sauvegardée même si l'email échoue
+    }
+  }
+
+  res.json({ success: true, message: 'Invitation envoyée' });
+});
+
 module.exports = router;

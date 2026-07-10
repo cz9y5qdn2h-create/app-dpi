@@ -10,7 +10,7 @@ import AIDisclaimer from '../components/ui/AIDisclaimer';
 import {
   Upload, ChevronDown, ChevronUp, Edit3, Check, X,
   Sparkles, Download, FileText, Plus, Trash2, AlertCircle,
-  Share2, Copy, Link2Off, Eye, BarChart2
+  Share2, Copy, Link2Off, Eye, BarChart2, Briefcase, Send
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ProposalsPanel from '../components/ProposalsPanel';
@@ -64,10 +64,16 @@ export default function DIPPage() {
   const [importingXlsx, setImportingXlsx] = useState(false);
   const [shareLoading, setShareLoading] = useState(false);
   const [showSharePanel, setShowSharePanel] = useState(false);
+  const [lawyerEmail, setLawyerEmail] = useState('');
+  const [inviteLoading, setInviteLoading] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ['dips'],
-    queryFn: () => api.get('/dip').then(r => r.data)
+    queryFn: () => api.get('/dip').then(r => r.data),
+    onSuccess: (d) => {
+      const activeDip = d?.dips?.find(x => x.status === 'actif') ?? d?.dips?.[0];
+      if (activeDip && !lawyerEmail) setLawyerEmail(profile?.lawyer_email || '');
+    }
   });
 
   const updateMutation = useMutation({
@@ -134,6 +140,19 @@ export default function DIPPage() {
       toast.error('Impossible de générer le lien');
     } finally {
       setShareLoading(false);
+    }
+  };
+
+  const handleInviteAvocat = async () => {
+    if (!lawyerEmail.trim()) return;
+    setInviteLoading(true);
+    try {
+      await api.post('/avocat/invite', { lawyer_email: lawyerEmail.trim() });
+      toast.success(`Invitation envoyée à ${lawyerEmail.trim()}`);
+    } catch {
+      toast.error('Impossible d\'envoyer l\'invitation');
+    } finally {
+      setInviteLoading(false);
     }
   };
 
@@ -308,6 +327,35 @@ export default function DIPPage() {
             Générez un lien unique pour permettre à vos franchisés de consulter ce DIP en lecture seule, sans créer de compte.
             Vous pouvez révoquer l'accès à tout moment.
           </p>
+
+          {/* Partage avocat */}
+          <div className="mt-5 pt-5 border-t border-border-subtle">
+            <div className="flex items-center gap-2 mb-2">
+              <Briefcase className="w-4 h-4 text-gold" />
+              <p className="font-dm-sans text-sm font-medium text-text-primary">Partager avec votre avocat</p>
+            </div>
+            <p className="font-dm-sans text-xs text-text-secondary mb-3">
+              Invitez votre avocat à consulter et annoter ce DIP directement dans DIPpro — il pourra proposer des modifications section par section.
+            </p>
+            <div className="flex gap-2">
+              <input
+                className="input-field text-sm flex-1 py-2"
+                type="email"
+                placeholder="avocat@cabinet.fr"
+                value={lawyerEmail}
+                onChange={e => setLawyerEmail(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleInviteAvocat()}
+              />
+              <button
+                onClick={handleInviteAvocat}
+                disabled={inviteLoading || !lawyerEmail.trim()}
+                className="btn-primary flex items-center gap-2 text-sm py-2 px-3 whitespace-nowrap"
+              >
+                {inviteLoading ? <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                Inviter
+              </button>
+            </div>
+          </div>
 
           {dip.share_token ? (
             <div className="space-y-3">

@@ -7,7 +7,8 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import PageHeader from '../components/ui/PageHeader';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
-import { Save, Plus, Trash2, Database, Mail, Cloud, Globe, CheckCircle, Eye, EyeOff, Send, Sun, Moon, Sparkles, Lock, Key, Calendar, AlertCircle, Bell } from 'lucide-react';
+import { Save, Plus, Trash2, Database, Mail, Cloud, Globe, CheckCircle, Eye, EyeOff, Send, Sun, Moon, Sparkles, Lock, Key, Calendar, AlertCircle, Bell, Briefcase, RotateCcw } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 const SOURCE_TYPES = [
@@ -40,11 +41,12 @@ const AUTOMATION_LEVELS = [
 
 export default function SettingsPage() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const { t } = useTranslation();
   const { profile, supabase, isTrialExpired, trialDaysLeft } = useAuth();
   const { theme, setTheme, themes } = useTheme();
   const [profileForm, setProfileForm] = useState({
-    company_name: '', phone: '', address: '',
+    company_name: '', phone: '', address: '', lawyer_email: '',
     automation_level: 1,
     notifications_email: true, notifications_inapp: true,
     notifications_sms: false, notification_frequency: 'immediate',
@@ -144,6 +146,7 @@ export default function SettingsPage() {
         company_name: data.profile.company_name || '',
         phone: data.profile.phone || '',
         address: data.profile.address || '',
+        lawyer_email: data.profile.lawyer_email || '',
         automation_level: data.profile.automation_level || 1,
         notifications_email: data.profile.notifications_email ?? true,
         notifications_inapp: data.profile.notifications_inapp ?? true,
@@ -494,6 +497,22 @@ export default function SettingsPage() {
               <label className="label">Email</label>
               <input className="input-field opacity-60" value={data?.profile?.email || ''} readOnly />
             </div>
+            <div>
+              <label className="label flex items-center gap-1.5">
+                <Briefcase className="w-3.5 h-3.5 text-gold" />
+                Email de votre avocat (optionnel)
+              </label>
+              <input
+                className="input-field"
+                type="email"
+                value={profileForm.lawyer_email}
+                onChange={e => setProfileForm(f => ({ ...f, lawyer_email: e.target.value }))}
+                placeholder="avocat@cabinet.fr"
+              />
+              <p className="font-dm-sans text-xs text-text-muted mt-1">
+                Permet de pré-remplir le champ d'invitation dans Mon DIP.
+              </p>
+            </div>
             <button type="submit" disabled={updateProfileMutation.isPending}
               className="btn-primary flex items-center gap-2">
               {updateProfileMutation.isPending ? <LoadingSpinner size="sm" /> : <Save className="w-4 h-4" />}
@@ -750,6 +769,28 @@ export default function SettingsPage() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Aide & présentation */}
+      <div className="card">
+        <h2 className="font-cormorant text-xl mb-4">Aide</h2>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="font-dm-sans text-sm text-text-primary">Revoir la présentation de DIPpro</p>
+            <p className="font-dm-sans text-xs text-text-muted mt-0.5">Relance le tutoriel de démarrage complet.</p>
+          </div>
+          <button
+            onClick={() => {
+              localStorage.removeItem('dippro-onboarding-seen');
+              localStorage.removeItem('dippro-tour-v1');
+              navigate('/');
+            }}
+            className="btn-ghost flex items-center gap-2 text-sm text-text-secondary hover:text-gold"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            Rejouer
+          </button>
+        </div>
       </div>
 
     </div>

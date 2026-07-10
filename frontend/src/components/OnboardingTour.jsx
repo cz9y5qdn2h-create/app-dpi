@@ -77,9 +77,16 @@ export default function OnboardingTour() {
   const [calOpen, setCalOpen] = useState(false);
 
   useEffect(() => {
-    if (!localStorage.getItem(TOUR_KEY)) {
+    // Returning users: tour fires si modal déjà vue dans une session précédente
+    if (!localStorage.getItem(TOUR_KEY) && localStorage.getItem('dippro-onboarding-seen')) {
       setTimeout(() => setShow(true), 800);
     }
+    // Nouveaux utilisateurs: attend que la modal se ferme avant de démarrer
+    const onModalDone = () => {
+      if (!localStorage.getItem(TOUR_KEY)) setTimeout(() => setShow(true), 600);
+    };
+    window.addEventListener('dippro-modal-done', onModalDone);
+    return () => window.removeEventListener('dippro-modal-done', onModalDone);
   }, []);
 
   const current = STEPS[step];

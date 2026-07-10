@@ -8,6 +8,7 @@ import CopilotChat from './CopilotChat';
 import OnboardingTour from './OnboardingTour';
 import FeedbackWidget from './FeedbackWidget';
 import BugReportModal from './BugReportModal';
+import CompletionReminderWidget from './CompletionReminderWidget';
 import api from '../lib/api';
 import { FEATURES } from '../lib/features';
 import { Bell, Menu, Search, Bug } from 'lucide-react';
@@ -109,6 +110,7 @@ export default function Layout() {
       <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} />
       {FEATURES.copilot && <CopilotChat />}
       <OnboardingTour />
+      <CompletionReminderWidget />
       <FeedbackWidget />
 
       {/* Bouton signalement de bug — positionné juste au-dessus du FeedbackWidget */}
