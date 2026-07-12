@@ -28,6 +28,24 @@ const callClaude = async (params) => {
   }
 };
 
+const extractText = (msg) => {
+  const block = msg.content.find(b => b.type === 'text');
+  return block?.text?.trim() ?? '';
+};
+
+const callClaudeJSON = async (params, retries = 1) => {
+  for (let i = 0; i <= retries; i++) {
+    const msg = await callClaude(params);
+    const raw = extractText(msg);
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (match) {
+      try { return JSON.parse(match[0]); } catch {}
+    }
+    if (i < retries) await new Promise(r => setTimeout(r, 900 * (i + 1)));
+  }
+  return null;
+};
+
 const SYSTEM_DIP_EXPERT = `Tu es un expert juridique senior spécialisé en droit de la franchise française.
 Tu maîtrises parfaitement :
 - La Loi Doubin (Loi n°89-1008 du 31 décembre 1989) et l'article L.330-3 du Code de commerce
@@ -51,7 +69,7 @@ const parseDIPSections = async (rawText) => {
     throw new Error('Le texte extrait du fichier est trop court. Vérifiez que le PDF n\'est pas scanné ou protégé.');
   }
 
-  const message = await callClaude({
+  const result = await callClaudeJSON({
     model: MODEL_OPUS,
     max_tokens: 8192,
     thinking: { type: 'adaptive' },
@@ -144,13 +162,8 @@ Valeurs pour compliance_level :
   "BLOQUANT_NON_ENVOYABLE"  → Au moins une section legal_blocking:true — NE PAS ENVOYER CE DIP
 global_score : 0-100. Pénalités : -20 par section non_conforme, -8 par a_verifier, -0 si conforme.`
     }]
-  });
-
-  const raw = message.content[0].text.trim();
-  const match = raw.match(/\{[\s\S]*\}/);
-  if (!match) throw new Error('L\'IA n\'a pas retourné de JSON valide. Réessayez.');
-
-  const result = JSON.parse(match[0]);
+  }, 2);
+  if (!result) throw new Error('L\'IA n\'a pas retourné de JSON valide. Réessayez.');
 
   const SECTIONS_DEFAULT = [
     'Identité du franchiseur',
@@ -297,7 +310,7 @@ Si aucun changement significatif : { "changements": [], "resume": "Aucun changem
     }]
   });
 
-  const raw = message.content[0].text.trim();
+  const raw = extractText(message);
   const match = raw.match(/\{[\s\S]*\}/);
   if (!match) return { changements: [], resume: 'Analyse incomplète — réessayez', nb_changements_critiques: 0 };
 
@@ -348,7 +361,7 @@ Retourne ce JSON :
     }]
   });
 
-  const raw = message.content[0].text.trim();
+  const raw = extractText(message);
   const match = raw.match(/\{[\s\S]*\}/);
   if (!match) return { has_changes: false, changes: [] };
   return JSON.parse(match[0]);
@@ -380,7 +393,7 @@ Réponds uniquement avec le texte du message.`
     }]
   });
 
-  return message.content[0].text.trim();
+  return extractText(message);
 };
 
 /**
@@ -390,7 +403,7 @@ Réponds uniquement avec le texte du message.`
 const correctSection = async (section) => {
   const { section_number, section_title, content, issues = [], status } = section;
 
-  const message = await callClaude({
+  const result = await callClaudeJSON({
     model: MODEL_OPUS,
     max_tokens: 2048,
     thinking: { type: 'adaptive' },
@@ -437,11 +450,8 @@ RÈGLES pour les questions (CAS 2) :
 
 Retourne uniquement le JSON, sans markdown.`
     }]
-  });
-
-  const raw = message.content[0].text.trim();
-  const match = raw.match(/\{[\s\S]*\}/);
-  if (!match) {
+  }, 1);
+  if (!result) {
     return {
       needs_info: false,
       questions: [],
@@ -451,7 +461,7 @@ Retourne uniquement le JSON, sans markdown.`
       confidence: 'faible'
     };
   }
-  return JSON.parse(match[0]);
+  return result;
 };
 
 /**
@@ -497,7 +507,7 @@ Retourne ce JSON :
     }]
   });
 
-  const raw = message.content[0].text.trim();
+  const raw = extractText(message);
   const match = raw.match(/\{[\s\S]*\}/);
   if (!match) {
     return {
@@ -534,7 +544,7 @@ En 3 phrases max, réponds :
 Sois direct et factuel.`
     }]
   });
-  return message.content[0].text.trim();
+  return extractText(message);
 };
 
 /**
@@ -604,7 +614,7 @@ Retourne ce JSON :
     }]
   });
 
-  const raw = message.content[0].text.trim();
+  const raw = extractText(message);
   const match = raw.match(/\{[\s\S]*\}/);
   if (!match) {
     return {
@@ -663,7 +673,7 @@ const parseContractClauses = async (rawText) => {
     throw new Error('Le texte extrait du fichier est trop court. Vérifiez que le PDF n\'est pas scanné ou protégé.');
   }
 
-  const message = await callClaude({
+  const result = await callClaudeJSON({
     model: MODEL_OPUS,
     max_tokens: 8192,
     thinking: { type: 'adaptive' },
@@ -713,13 +723,8 @@ Valeurs pour status : "conforme" | "a_verifier" | "non_conforme"
 Valeurs pour compliance_level : "CONFORME" | "RÉVISIONS_MINEURES" | "RÉVISIONS_MAJEURES" | "BLOQUANT_NON_ENVOYABLE"
 global_score : 0-100. Pénalités : -20 par clause non_conforme, -8 par a_verifier.`
     }]
-  });
-
-  const raw = message.content[0].text.trim();
-  const match = raw.match(/\{[\s\S]*\}/);
-  if (!match) throw new Error('L\'IA n\'a pas retourné de JSON valide. Réessayez.');
-
-  const result = JSON.parse(match[0]);
+  }, 2);
+  if (!result) throw new Error('L\'IA n\'a pas retourné de JSON valide. Réessayez.');
 
   if (!result.clauses || result.clauses.length < 10) {
     const existing = new Set((result.clauses || []).map(c => c.clause_number));
@@ -830,7 +835,7 @@ Si aucun changement significatif : { "changements": [], "resume": "Aucun changem
     }]
   });
 
-  const raw = message.content[0].text.trim();
+  const raw = extractText(message);
   const match = raw.match(/\{[\s\S]*\}/);
   if (!match) return { changements: [], resume: 'Analyse incomplète — réessayez', nb_changements_critiques: 0 };
 
@@ -863,7 +868,7 @@ const generateContractFromDIP = async (dipSections, formData = {}) => {
     ? `\nRÉPONSES COMPLÉMENTAIRES DU FRANCHISEUR (priorité sur le DIP en cas de conflit) :\n${JSON.stringify(formData, null, 2)}\n`
     : '';
 
-  const message = await callClaude({
+  const result = await callClaudeJSON({
     model: MODEL_OPUS,
     thinking: { type: 'adaptive' },
     max_tokens: 8192,
@@ -913,13 +918,8 @@ Retourne ce JSON exactement :
 
 Valeurs pour status : "conforme" | "a_verifier" | "non_conforme"`
     }]
-  });
-
-  const raw = message.content[0].text.trim();
-  const match = raw.match(/\{[\s\S]*\}/);
-  if (!match) throw new Error('L\'IA n\'a pas retourné de JSON valide. Réessayez.');
-
-  const result = JSON.parse(match[0]);
+  }, 2);
+  if (!result) throw new Error('L\'IA n\'a pas retourné de JSON valide. Réessayez.');
 
   if (!result.clauses || result.clauses.length < 10) {
     const existing = new Set((result.clauses || []).map(c => c.clause_number));
@@ -1002,7 +1002,7 @@ Si aucun impact : { "impacts": [] }`
     }]
   });
 
-  const raw = message.content[0].text.trim();
+  const raw = extractText(message);
   const match = raw.match(/\{[\s\S]*\}/);
   if (!match) return { impacts: [] };
   return JSON.parse(match[0]);
