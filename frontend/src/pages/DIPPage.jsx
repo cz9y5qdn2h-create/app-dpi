@@ -10,7 +10,8 @@ import AIDisclaimer from '../components/ui/AIDisclaimer';
 import {
   Upload, ChevronDown, ChevronUp, Edit3, Check, X,
   Sparkles, Download, FileText, Plus, Trash2, AlertCircle,
-  Share2, Copy, Link2Off, Eye, BarChart2, Briefcase, Send
+  Share2, Copy, Link2Off, Eye, BarChart2, Briefcase, Send,
+  Scale, ShieldAlert, ShieldCheck, Info, RotateCcw
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ProposalsPanel from '../components/ProposalsPanel';
@@ -66,6 +67,13 @@ export default function DIPPage() {
   const [showSharePanel, setShowSharePanel] = useState(false);
   const [lawyerEmail, setLawyerEmail] = useState('');
   const [inviteLoading, setInviteLoading] = useState(false);
+  const [litigationData, setLitigationData] = useState(null);
+
+  const litigationMutation = useMutation({
+    mutationFn: (dipId) => api.post(`/dip/${dipId}/litigation-risks`).then(r => r.data),
+    onSuccess: (data) => setLitigationData(data.litigation_risks),
+    onError: (err) => toast.error(err.response?.data?.error || 'Analyse impossible — réessayez'),
+  });
 
   const { data, isLoading } = useQuery({
     queryKey: ['dips'],
@@ -417,6 +425,14 @@ export default function DIPPage() {
           <span className="flex items-center justify-center gap-2"><FileText className="w-3.5 h-3.5" /> Vue DIP</span>
         </button>
         <button
+          onClick={() => setTab('risks')}
+          className={`flex-1 sm:flex-none px-4 py-2.5 sm:py-2 rounded text-sm font-dm-sans transition-all ${
+            tab === 'risks' ? 'bg-danger/15 text-danger font-medium' : 'text-text-secondary hover:text-text-primary'
+          }`}
+        >
+          <span className="flex items-center justify-center gap-2"><Scale className="w-3.5 h-3.5" /> Risques juridiques</span>
+        </button>
+        <button
           onClick={() => setTab('generate')}
           className={`flex-1 sm:flex-none px-4 py-2.5 sm:py-2 rounded text-sm font-dm-sans transition-all ${
             tab === 'generate' ? 'bg-gold/20 text-gold font-medium' : 'text-text-secondary hover:text-text-primary'
@@ -472,6 +488,207 @@ export default function DIPPage() {
           </div>
         </>
       )}
+
+      {/* ── Onglet Risques juridiques ──────────────────────────────── */}
+      {tab === 'risks' && dip && (() => {
+        const RISK_TYPE_LABELS = {
+          nullite_consentement:        'Nullité du contrat (vice du consentement)',
+          responsabilite_precontractuelle: 'Responsabilité précontractuelle',
+          dol_previsionnel:            'Dol sur prévisionnels',
+          desequilibre_significatif:   'Déséquilibre significatif',
+          rupture_brutale:             'Rupture brutale de relations établies',
+          ordre_public_l330_3:         'Nullité d\'ordre public (L330-3)',
+        };
+        const SEV = {
+          critique: { ring: 'border-danger/30 bg-danger/5',  badge: 'bg-danger/15 text-danger',       label: 'Critique', icon: <ShieldAlert className="w-4 h-4 text-danger flex-shrink-0" /> },
+          eleve:    { ring: 'border-orange-500/30 bg-orange-500/5', badge: 'bg-orange-500/15 text-orange-400', label: 'Élevé',    icon: <ShieldAlert className="w-4 h-4 text-orange-400 flex-shrink-0" /> },
+          modere:   { ring: 'border-gold/30 bg-gold/5',      badge: 'bg-gold/15 text-gold',           label: 'Modéré',   icon: <Info className="w-4 h-4 text-gold flex-shrink-0" /> },
+        };
+        const OVERALL = {
+          CRITIQUE: { label: 'Risque critique', color: 'text-danger',       bg: 'bg-danger/10',       border: 'border-danger/30' },
+          ELEVE:    { label: 'Risque élevé',    color: 'text-orange-400',   bg: 'bg-orange-500/10',   border: 'border-orange-500/30' },
+          MODERE:   { label: 'Risque modéré',   color: 'text-gold',         bg: 'bg-gold/10',         border: 'border-gold/30' },
+          FAIBLE:   { label: 'Risque faible',   color: 'text-success',      bg: 'bg-success/10',      border: 'border-success/30' },
+        };
+        const ld = litigationData;
+        const isLoading = litigationMutation.isPending;
+        const overall = ld ? (OVERALL[ld.overall_risk] || OVERALL.MODERE) : null;
+
+        return (
+          <div className="space-y-5">
+            {!ld && !isLoading && (
+              <div className="card text-center py-14 space-y-4">
+                <Scale className="w-12 h-12 text-text-muted mx-auto" />
+                <div>
+                  <p className="font-cormorant text-2xl text-text-primary">Analyse des risques de litiges</p>
+                  <p className="font-dm-sans text-sm text-text-secondary mt-2 max-w-md mx-auto">
+                    Identifie, pour chaque lacune du DIP, la forme de litige que le franchisé pourrait engager
+                    (nullité, dol, responsabilité…) avec les articles et jurisprudences applicables.
+                  </p>
+                </div>
+                <div className="flex flex-wrap justify-center gap-3 text-xs text-text-muted font-dm-sans">
+                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-danger inline-block" />Nullité du contrat</span>
+                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-orange-400 inline-block" />Responsabilité précontractuelle</span>
+                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-gold inline-block" />Déséquilibre significatif</span>
+                </div>
+                <button
+                  onClick={() => litigationMutation.mutate(dip.id)}
+                  className="btn-liquid-glass-prominent flex items-center gap-2 mx-auto"
+                >
+                  <Scale className="w-4 h-4" /> Lancer l'analyse juridique
+                </button>
+              </div>
+            )}
+
+            {isLoading && (
+              <div className="card text-center py-14 space-y-3">
+                <Scale className="w-12 h-12 text-danger/60 animate-pulse mx-auto" />
+                <p className="font-cormorant text-2xl text-text-primary">Analyse des risques en cours…</p>
+                <p className="font-dm-sans text-sm text-text-secondary">Claude Opus examine chaque section selon la jurisprudence Loi Doubin</p>
+                <div className="w-48 h-1 bg-bg-elevated rounded-full mx-auto overflow-hidden mt-2">
+                  <div className="h-full bg-danger/60 rounded-full animate-pulse" style={{ width: '65%' }} />
+                </div>
+              </div>
+            )}
+
+            {ld && !isLoading && (
+              <>
+                {/* Bannière risque global */}
+                <div className={`card ${overall.bg} ${overall.border} border`}>
+                  <div className="flex items-center justify-between flex-wrap gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className={`w-14 h-14 rounded-xl flex items-center justify-center ${overall.bg} border ${overall.border} flex-shrink-0`}>
+                        <span className={`font-dm-mono text-xl font-bold ${overall.color}`}>{ld.risk_score}</span>
+                      </div>
+                      <div>
+                        <p className={`font-cormorant text-xl font-medium ${overall.color}`}>{overall.label}</p>
+                        <p className="font-dm-sans text-xs text-text-secondary mt-0.5">
+                          {ld.risks.length} risque{ld.risks.length > 1 ? 's' : ''} identifié{ld.risks.length > 1 ? 's' : ''}
+                          {ld.coherence_issues.length > 0 && ` · ${ld.coherence_issues.length} incohérence${ld.coherence_issues.length > 1 ? 's' : ''}`}
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => { setLitigationData(null); litigationMutation.mutate(dip.id); }}
+                      className="btn-ghost flex items-center gap-2 text-xs text-text-muted"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" /> Relancer
+                    </button>
+                  </div>
+                  {ld.risk_score === 0 && (
+                    <div className="flex items-center gap-2 mt-4 pt-4 border-t border-success/20">
+                      <ShieldCheck className="w-4 h-4 text-success flex-shrink-0" />
+                      <p className="font-dm-sans text-sm text-success">Aucun risque de litige significatif détecté sur ce DIP.</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Risques par section */}
+                {ld.risks.length > 0 && (
+                  <div className="space-y-3">
+                    <p className="font-dm-sans text-xs text-text-muted uppercase tracking-wider">Risques par section</p>
+                    {ld.risks.map((r, i) => {
+                      const sev = SEV[r.severity] || SEV.modere;
+                      return (
+                        <div key={i} className={`card border ${sev.ring} space-y-3`}>
+                          <div className="flex items-start gap-3">
+                            {sev.icon}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-dm-sans font-medium ${sev.badge}`}>{sev.label}</span>
+                                <span className="font-dm-sans text-xs text-text-muted">Section {r.section_number} — {r.section_title}</span>
+                              </div>
+                              <p className="font-dm-sans text-sm font-medium text-text-primary mt-1">{r.risk_label || RISK_TYPE_LABELS[r.risk_type] || r.risk_type}</p>
+                              <p className="font-dm-sans text-sm text-text-secondary mt-1">{r.description}</p>
+                            </div>
+                          </div>
+                          <div className="grid sm:grid-cols-2 gap-3 pt-3 border-t border-border-subtle">
+                            <div>
+                              <p className="font-dm-sans text-xs text-text-muted mb-1">Base légale</p>
+                              <p className="font-dm-mono text-xs text-text-primary">{r.legal_basis}</p>
+                              {r.jurisprudence && <p className="font-dm-sans text-xs text-text-secondary mt-0.5 italic">{r.jurisprudence}</p>}
+                            </div>
+                            <div>
+                              <p className="font-dm-sans text-xs text-text-muted mb-1">Action recommandée</p>
+                              <p className="font-dm-sans text-xs text-text-primary">{r.recommended_action}</p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Incohérences inter-sections */}
+                {ld.coherence_issues.length > 0 && (
+                  <div className="space-y-3">
+                    <p className="font-dm-sans text-xs text-text-muted uppercase tracking-wider">Incohérences entre sections</p>
+                    {ld.coherence_issues.map((issue, i) => {
+                      const sev = SEV[issue.severity] || SEV.modere;
+                      return (
+                        <div key={i} className={`card border ${sev.ring} flex items-start gap-3`}>
+                          {sev.icon}
+                          <div>
+                            <p className="font-dm-sans text-sm text-text-primary">{issue.description}</p>
+                            <p className="font-dm-sans text-xs text-text-muted mt-1">
+                              Sections concernées : {issue.sections_involved.join(', ')}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Analyse prévisionnelle */}
+                {(() => {
+                  const pa = ld.previsionnel_analysis;
+                  const paColor = { critique: 'text-danger border-danger/25 bg-danger/5', eleve: 'text-orange-400 border-orange-500/25 bg-orange-500/5', modere: 'text-gold border-gold/25 bg-gold/5', faible: 'text-success border-success/25 bg-success/5' };
+                  return (
+                    <div className={`card border ${paColor[pa.risk_level] || paColor.faible}`}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Scale className="w-4 h-4 flex-shrink-0" />
+                        <p className="font-dm-sans text-sm font-medium">Section 10 — Analyse prévisionnels (Cass. com. 1er juin 2022)</p>
+                      </div>
+                      <div className="flex flex-wrap gap-3 mb-2">
+                        <span className={`text-xs font-dm-sans px-2 py-0.5 rounded ${pa.has_projections ? 'bg-gold/15 text-gold' : 'bg-bg-elevated text-text-muted'}`}>
+                          {pa.has_projections ? 'Prévisionnels présents' : 'Aucun prévisionnel'}
+                        </span>
+                        {pa.has_projections && (
+                          <span className={`text-xs font-dm-sans px-2 py-0.5 rounded ${pa.disclaimer_present ? 'bg-success/15 text-success' : 'bg-danger/15 text-danger'}`}>
+                            {pa.disclaimer_present ? 'Disclaimer présent ✓' : 'Disclaimer absent — risque de dol'}
+                          </span>
+                        )}
+                      </div>
+                      <p className="font-dm-sans text-sm text-text-secondary">{pa.observations}</p>
+                    </div>
+                  );
+                })()}
+
+                {/* Actions recommandées */}
+                {ld.recommended_actions.length > 0 && (
+                  <div className="card">
+                    <p className="font-dm-sans text-xs text-text-muted uppercase tracking-wider mb-3">Actions prioritaires</p>
+                    <ul className="space-y-2">
+                      {ld.recommended_actions.map((action, i) => (
+                        <li key={i} className="flex items-start gap-2">
+                          <span className="font-dm-mono text-xs text-gold mt-0.5 flex-shrink-0">{String(i + 1).padStart(2, '0')}</span>
+                          <p className="font-dm-sans text-sm text-text-secondary">{action}</p>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <p className="font-dm-sans text-xs text-text-muted text-center">
+                  Analyse basée sur la Loi Doubin (art. L330-3 C. com.), le Décret n°91-337 et la jurisprudence de la Cour de cassation.
+                  Cette analyse ne constitue pas un avis juridique — consultez un avocat spécialisé franchise.
+                </p>
+              </>
+            )}
+          </div>
+        );
+      })()}
 
       {/* ── Onglet Générer avec l'IA ───────────────────────────────── */}
       {tab === 'generate' && (

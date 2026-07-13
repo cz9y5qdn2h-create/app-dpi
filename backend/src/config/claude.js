@@ -275,6 +275,63 @@ const CROSS_IMPACT_SCHEMA = {
   required: ['impacts'],
 };
 
+const LITIGATION_ASSESSMENT_SCHEMA = {
+  type: 'object',
+  properties: {
+    overall_risk: { type: 'string', enum: ['CRITIQUE', 'ELEVE', 'MODERE', 'FAIBLE'] },
+    risk_score: { type: 'integer', minimum: 0, maximum: 100 },
+    risks: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          section_number: { type: 'integer' },
+          section_title: { type: 'string' },
+          risk_type: { type: 'string', enum: [
+            'nullite_consentement',
+            'responsabilite_precontractuelle',
+            'dol_previsionnel',
+            'desequilibre_significatif',
+            'rupture_brutale',
+            'ordre_public_l330_3'
+          ]},
+          risk_label: { type: 'string' },
+          legal_basis: { type: 'string' },
+          jurisprudence: { type: 'string' },
+          description: { type: 'string' },
+          severity: { type: 'string', enum: ['critique', 'eleve', 'modere'] },
+          recommended_action: { type: 'string' },
+        },
+        required: ['section_number', 'section_title', 'risk_type', 'risk_label', 'legal_basis', 'description', 'severity', 'recommended_action'],
+      },
+    },
+    coherence_issues: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          description: { type: 'string' },
+          sections_involved: { type: 'array', items: { type: 'integer' } },
+          severity: { type: 'string', enum: ['critique', 'eleve', 'modere'] },
+        },
+        required: ['description', 'sections_involved', 'severity'],
+      },
+    },
+    previsionnel_analysis: {
+      type: 'object',
+      properties: {
+        has_projections: { type: 'boolean' },
+        disclaimer_present: { type: 'boolean' },
+        risk_level: { type: 'string', enum: ['critique', 'eleve', 'modere', 'faible'] },
+        observations: { type: 'string' },
+      },
+      required: ['has_projections', 'disclaimer_present', 'risk_level', 'observations'],
+    },
+    recommended_actions: { type: 'array', items: { type: 'string' } },
+  },
+  required: ['overall_risk', 'risk_score', 'risks', 'coherence_issues', 'previsionnel_analysis', 'recommended_actions'],
+};
+
 const SYSTEM_DIP_EXPERT = `Tu es un expert juridique senior spécialisé en droit de la franchise française.
 Tu maîtrises parfaitement :
 - La Loi Doubin (Loi n°89-1008 du 31 décembre 1989) et l'article L.330-3 du Code de commerce
@@ -1271,11 +1328,101 @@ Valeurs pour status : "conforme" | "a_verifier" | "non_conforme"`;
   return result;
 };
 
+/**
+ * Analyser les risques de litiges d'un DIP selon la jurisprudence française actuelle.
+ * Pour chaque section non conforme, identifie le type d'action judiciaire possible,
+ * l'article de loi et la jurisprudence de référence.
+ */
+const assessLitigationRisks = async (sections) => {
+  if (!sections || sections.length === 0) {
+    return {
+      overall_risk: 'FAIBLE', risk_score: 0, risks: [], coherence_issues: [],
+      previsionnel_analysis: { has_projections: false, disclaimer_present: false, risk_level: 'faible', observations: 'Aucune section analysée.' },
+      recommended_actions: []
+    };
+  }
+
+  const sectionsBlock = sections
+    .sort((a, b) => (a.section_number || 0) - (b.section_number || 0))
+    .map(s => `SECTION ${s.section_number} — ${s.section_title}
+Statut : ${s.status || 'inconnu'} | Légalement bloquant : ${s.legal_blocking ? 'OUI' : 'non'}
+Éléments manquants : ${(s.mandatory_elements_missing || []).join(', ') || 'aucun'}
+Problèmes : ${(s.issues || []).join('; ') || 'aucun'}
+Contenu : ${(s.content || 'Non renseigné').substring(0, 500)}`)
+    .join('\n\n---\n\n');
+
+  const result = await callClaudeToolUse({
+    model: MODEL_OPUS,
+    max_tokens: 8192,
+    thinking: { type: 'adaptive' },
+    system: CACHED_SYSTEM,
+    messages: [{
+      role: 'user',
+      content: `Tu es un avocat spécialisé en droit de la franchise. Analyse ce DIP et identifie précisément les risques de litiges selon la jurisprudence française 2017-2024.
+
+SECTIONS DU DIP :
+${sectionsBlock}
+
+RÉFÉRENTIEL DE LITIGES (applique uniquement les types pertinents) :
+
+TYPE nullite_consentement [Art. 1130-1144 Code civil]
+→ L'absence ou l'inexactitude d'une information essentielle constitue un dol ou une erreur déterminant le consentement du franchisé.
+→ Résultat : nullité rétroactive du contrat + restitution intégrale des sommes versées.
+→ Jurisprudence : Cass. 1re civ., 25 janv. 2017 — L330-3 est d'ordre public.
+→ Sections à risque : toute section absente ou inexacte (1, 2, 3, 4, 5, 6, 7, 8, 9).
+
+TYPE responsabilite_precontractuelle [Art. 1112-1 Code civil]
+→ Manquement à l'obligation d'information précontractuelle, même sans nullité du contrat.
+→ Résultat : dommages-intérêts. Plus accessible que la nullité, souvent cumulé.
+→ Sections à risque : toute section incomplète.
+
+TYPE dol_previsionnel [Cass. com., 1er juin 2022]
+→ Les prévisionnels remis "grossièrement erronés" touchent "la substance même du contrat de franchise".
+→ RISQUE SPÉCIFIQUE : Section 10 avec projections financières sans avertissement explicite "à titre indicatif, sans garantie de résultat".
+→ Jurisprudence : Cass. com., 1er juin 2022.
+
+TYPE desequilibre_significatif [Art. L442-1, I, 2° Code commerce]
+→ Clauses créant un déséquilibre manifeste entre les droits et obligations des parties.
+→ Sections à risque :
+  - Section 7 : exclusivité territoriale avec réserves cachées (e-commerce franchiseur, ventes directes, exceptions non mentionnées)
+  - Section 8 : résiliation unilatérale sans contrepartie ou préavis asymétrique
+  - Section 6 : redevances indexées sans plafond
+
+TYPE rupture_brutale [Art. L442-1, II Code commerce — Cass. com., 22 juin 2022]
+→ Applicable après plusieurs années de relation. Préavis insuffisant = indemnisation obligatoire.
+→ Section à risque : Section 8 (conditions de résiliation, durée du préavis).
+
+TYPE ordre_public_l330_3 [Art. L330-3 Code commerce — Cass. 1re civ., 25 janv. 2017]
+→ Toute section légalement bloquante (legal_blocking: true) expose à la nullité d'ordre public.
+→ Aucun préjudice à prouver : l'absence suffit.
+
+INSTRUCTIONS :
+1. Ne retourne des risques QUE pour les sections qui présentent des problèmes réels (status ≠ conforme OU legal_blocking = true)
+2. Pour chaque section problématique, identifie le type de litige le plus probable
+3. Détecte les incohérences ENTRE sections (ex : CA Section 4 vs Section 6 incohérent)
+4. Analyse Section 10 spécifiquement pour dol_previsionnel (présence de projections ? disclaimer ?)
+5. Analyse Section 7 pour déséquilibre (réserves e-commerce mentionnées ?)
+6. Analyse Section 8 pour rupture_brutale (durée du préavis, conditions de résiliation)
+7. risk_score 0-100 : 100 = plusieurs risques critiques cumulés exposant à la nullité + dommages`
+    }]
+  }, 'submit_litigation_assessment', LITIGATION_ASSESSMENT_SCHEMA, 2);
+
+  if (!result) {
+    return {
+      overall_risk: 'MODERE', risk_score: 40, risks: [], coherence_issues: [],
+      previsionnel_analysis: { has_projections: false, disclaimer_present: false, risk_level: 'faible', observations: 'Analyse indisponible — réessayez.' },
+      recommended_actions: ['Relancez l\'analyse dans quelques instants.']
+    };
+  }
+
+  return result;
+};
+
 module.exports = {
   parseDIPSections, compareDIPVersions, detectChanges,
   generateUpdateSummary, correctSection, correctSectionWithAnswers,
   analyzeDocumentForDIPImpact, generateChangesCertificate,
   parseContractClauses, compareContractVersions, generateContractFromDIP,
-  generateContractFromDIPStream, analyzeCrossImpact,
+  generateContractFromDIPStream, analyzeCrossImpact, assessLitigationRisks,
   CONTRACT_CLAUSES_DEFAULT, CLAUSE_DIP_SECTION_MAP
 };

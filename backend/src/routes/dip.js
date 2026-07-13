@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware, requireFranchisor } = require('../middleware/auth');
-const { parseDIPSections, compareDIPVersions } = require('../config/claude');
+const { parseDIPSections, compareDIPVersions, assessLitigationRisks } = require('../config/claude');
 const { triggerCrossImpactAlerts } = require('../utils/crossImpact');
 const errMsg = require('../config/errorMessage');
 const router = express.Router();
@@ -508,6 +508,31 @@ router.post('/:id/share-link', authMiddleware, requireFranchisor, async (req, re
 
   const baseUrl = process.env.FRONTEND_URL || 'https://dippro.fr';
   res.json({ token, share_url: `${baseUrl}/dip/partage/${token}` });
+});
+
+// POST /api/dip/:id/litigation-risks — analyse les risques de litiges du DIP (Claude Opus)
+router.post('/:id/litigation-risks', authMiddleware, requireFranchisor, async (req, res) => {
+  try {
+    const { data: dip, error } = await supabaseAdmin
+      .from('dip_documents')
+      .select('id, title, dip_sections(*)')
+      .eq('id', req.params.id)
+      .eq('user_id', req.user.id)
+      .single();
+
+    if (error || !dip) return res.status(404).json({ error: 'DIP introuvable' });
+
+    const sections = (dip.dip_sections || []).sort((a, b) => a.section_number - b.section_number);
+    if (sections.length === 0) {
+      return res.status(400).json({ error: 'Ce DIP ne contient pas encore de sections analysées. Uploadez d\'abord votre document.' });
+    }
+
+    const result = await assessLitigationRisks(sections);
+    res.json({ litigation_risks: result });
+  } catch (err) {
+    console.error('Litigation risks error:', err.message);
+    res.status(500).json({ error: errMsg(err) });
+  }
 });
 
 // DELETE /api/dip/:id/share-link — révoque le lien de partage
