@@ -46,6 +46,117 @@ const callClaudeJSON = async (params, retries = 1) => {
   return null;
 };
 
+const callClaudeToolUse = async (params, toolName, schema, retries = 1) => {
+  for (let i = 0; i <= retries; i++) {
+    const msg = await callClaude({
+      ...params,
+      tools: [{ name: toolName, description: 'Submit the structured analysis result', input_schema: schema }],
+      tool_choice: { type: 'tool', name: toolName },
+    });
+    const block = msg.content.find(b => b.type === 'tool_use' && b.name === toolName);
+    if (block?.input) return block.input;
+    if (i < retries) await new Promise(r => setTimeout(r, 900 * (i + 1)));
+  }
+  return null;
+};
+
+const _COMPLIANCE_ENUM = ['CONFORME', 'RÉVISIONS_MINEURES', 'RÉVISIONS_MAJEURES', 'BLOQUANT_NON_ENVOYABLE'];
+
+const DIP_ANALYSIS_SCHEMA = {
+  type: 'object',
+  properties: {
+    sections: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          section_number: { type: 'integer' },
+          section_title: { type: 'string' },
+          content: { type: 'string' },
+          status: { type: 'string', enum: ['conforme', 'a_verifier', 'non_conforme'] },
+          legal_blocking: { type: 'boolean' },
+          mandatory_elements_found: { type: 'array', items: { type: 'string' } },
+          mandatory_elements_missing: { type: 'array', items: { type: 'string' } },
+          issues: { type: 'array', items: { type: 'string' } },
+          legal_reference: { type: 'string' },
+        },
+        required: ['section_number', 'section_title', 'content', 'status', 'legal_blocking'],
+      },
+    },
+    compliance_level: { type: 'string', enum: _COMPLIANCE_ENUM },
+    blocking_issues: { type: 'array', items: { type: 'string' } },
+    global_score: { type: 'integer', minimum: 0, maximum: 100 },
+    summary: { type: 'string' },
+  },
+  required: ['sections', 'compliance_level', 'blocking_issues', 'global_score', 'summary'],
+};
+
+const SECTION_CORRECTION_SCHEMA = {
+  type: 'object',
+  properties: {
+    needs_info: { type: 'boolean' },
+    questions: { type: 'array', items: { type: 'string' } },
+    corrected_content: { type: ['string', 'null'] },
+    corrections_made: { type: 'array', items: { type: 'string' } },
+    remaining_issues: { type: 'array', items: { type: 'string' } },
+    confidence: { type: ['string', 'null'] },
+  },
+  required: ['needs_info', 'questions', 'corrections_made', 'remaining_issues'],
+};
+
+const CONTRACT_ANALYSIS_SCHEMA = {
+  type: 'object',
+  properties: {
+    clauses: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          clause_number: { type: 'integer' },
+          clause_title: { type: 'string' },
+          content: { type: 'string' },
+          status: { type: 'string', enum: ['conforme', 'a_verifier', 'non_conforme'] },
+          legal_blocking: { type: 'boolean' },
+          mandatory_elements_found: { type: 'array', items: { type: 'string' } },
+          mandatory_elements_missing: { type: 'array', items: { type: 'string' } },
+          issues: { type: 'array', items: { type: 'string' } },
+        },
+        required: ['clause_number', 'clause_title', 'content', 'status'],
+      },
+    },
+    compliance_level: { type: 'string', enum: _COMPLIANCE_ENUM },
+    blocking_issues: { type: 'array', items: { type: 'string' } },
+    global_score: { type: 'integer', minimum: 0, maximum: 100 },
+    summary: { type: 'string' },
+  },
+  required: ['clauses', 'compliance_level', 'blocking_issues', 'global_score', 'summary'],
+};
+
+const CONTRACT_GENERATION_SCHEMA = {
+  type: 'object',
+  properties: {
+    clauses: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          clause_number: { type: 'integer' },
+          clause_title: { type: 'string' },
+          content: { type: 'string' },
+          status: { type: 'string', enum: ['conforme', 'a_verifier', 'non_conforme'] },
+          issues: { type: 'array', items: { type: 'string' } },
+          suggestions: { type: 'array', items: { type: 'string' } },
+        },
+        required: ['clause_number', 'clause_title', 'content', 'status'],
+      },
+    },
+    global_score: { type: 'integer', minimum: 0, maximum: 100 },
+    summary: { type: 'string' },
+    missing_data: { type: 'array', items: { type: 'string' } },
+  },
+  required: ['clauses', 'global_score', 'summary', 'missing_data'],
+};
+
 const SYSTEM_DIP_EXPERT = `Tu es un expert juridique senior spécialisé en droit de la franchise française.
 Tu maîtrises parfaitement :
 - La Loi Doubin (Loi n°89-1008 du 31 décembre 1989) et l'article L.330-3 du Code de commerce
@@ -69,9 +180,9 @@ const parseDIPSections = async (rawText) => {
     throw new Error('Le texte extrait du fichier est trop court. Vérifiez que le PDF n\'est pas scanné ou protégé.');
   }
 
-  const result = await callClaudeJSON({
+  const result = await callClaudeToolUse({
     model: MODEL_OPUS,
-    max_tokens: 8192,
+    max_tokens: 16000,
     thinking: { type: 'adaptive' },
     system: CACHED_SYSTEM,
     messages: [{
@@ -162,7 +273,7 @@ Valeurs pour compliance_level :
   "BLOQUANT_NON_ENVOYABLE"  → Au moins une section legal_blocking:true — NE PAS ENVOYER CE DIP
 global_score : 0-100. Pénalités : -20 par section non_conforme, -8 par a_verifier, -0 si conforme.`
     }]
-  }, 2);
+  }, 'analyze_dip', DIP_ANALYSIS_SCHEMA, 2);
   if (!result) throw new Error('L\'IA n\'a pas retourné de JSON valide. Réessayez.');
 
   const SECTIONS_DEFAULT = [
@@ -403,9 +514,9 @@ Réponds uniquement avec le texte du message.`
 const correctSection = async (section) => {
   const { section_number, section_title, content, issues = [], status } = section;
 
-  const result = await callClaudeJSON({
+  const result = await callClaudeToolUse({
     model: MODEL_OPUS,
-    max_tokens: 2048,
+    max_tokens: 4096,
     thinking: { type: 'adaptive' },
     system: CACHED_SYSTEM,
     messages: [{
@@ -450,7 +561,7 @@ RÈGLES pour les questions (CAS 2) :
 
 Retourne uniquement le JSON, sans markdown.`
     }]
-  }, 1);
+  }, 'submit_correction', SECTION_CORRECTION_SCHEMA, 1);
   if (!result) {
     return {
       needs_info: false,
@@ -673,9 +784,9 @@ const parseContractClauses = async (rawText) => {
     throw new Error('Le texte extrait du fichier est trop court. Vérifiez que le PDF n\'est pas scanné ou protégé.');
   }
 
-  const result = await callClaudeJSON({
+  const result = await callClaudeToolUse({
     model: MODEL_OPUS,
-    max_tokens: 8192,
+    max_tokens: 16000,
     thinking: { type: 'adaptive' },
     system: CACHED_SYSTEM_CONTRACT,
     messages: [{
@@ -723,7 +834,7 @@ Valeurs pour status : "conforme" | "a_verifier" | "non_conforme"
 Valeurs pour compliance_level : "CONFORME" | "RÉVISIONS_MINEURES" | "RÉVISIONS_MAJEURES" | "BLOQUANT_NON_ENVOYABLE"
 global_score : 0-100. Pénalités : -20 par clause non_conforme, -8 par a_verifier.`
     }]
-  }, 2);
+  }, 'analyze_contract', CONTRACT_ANALYSIS_SCHEMA, 2);
   if (!result) throw new Error('L\'IA n\'a pas retourné de JSON valide. Réessayez.');
 
   if (!result.clauses || result.clauses.length < 10) {
@@ -868,10 +979,10 @@ const generateContractFromDIP = async (dipSections, formData = {}) => {
     ? `\nRÉPONSES COMPLÉMENTAIRES DU FRANCHISEUR (priorité sur le DIP en cas de conflit) :\n${JSON.stringify(formData, null, 2)}\n`
     : '';
 
-  const result = await callClaudeJSON({
+  const result = await callClaudeToolUse({
     model: MODEL_OPUS,
     thinking: { type: 'adaptive' },
-    max_tokens: 8192,
+    max_tokens: 16000,
     system: CACHED_SYSTEM_CONTRACT,
     messages: [{
       role: 'user',
@@ -918,7 +1029,7 @@ Retourne ce JSON exactement :
 
 Valeurs pour status : "conforme" | "a_verifier" | "non_conforme"`
     }]
-  }, 2);
+  }, 'generate_contract', CONTRACT_GENERATION_SCHEMA, 2);
   if (!result) throw new Error('L\'IA n\'a pas retourné de JSON valide. Réessayez.');
 
   if (!result.clauses || result.clauses.length < 10) {
