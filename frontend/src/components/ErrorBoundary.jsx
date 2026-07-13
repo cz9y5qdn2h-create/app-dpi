@@ -14,6 +14,15 @@ export default class ErrorBoundary extends Component {
 
   componentDidCatch(error, info) {
     console.error('[ErrorBoundary]', error, info.componentStack);
+    // ChunkLoadError après un déploiement Vercel : rechargement automatique une seule fois
+    const isChunkError = error?.name === 'ChunkLoadError'
+      || error?.message?.includes('Failed to fetch dynamically imported module')
+      || error?.message?.includes('Loading chunk')
+      || error?.message?.includes('Importing a module script failed');
+    if (isChunkError && !sessionStorage.getItem('chunk-reload')) {
+      sessionStorage.setItem('chunk-reload', '1');
+      window.location.reload();
+    }
   }
 
   render() {
