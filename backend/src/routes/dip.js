@@ -340,26 +340,89 @@ router.post('/approve-changes', authMiddleware, requireFranchisor, async (req, r
   }
 });
 
-// GET /api/dip — retourne le DIP actif (+ optionnellement tous avec ?all=true)
+// GET /api/dip — retourne les DIPs actifs et brouillons, avec fallback archive
 router.get('/', authMiddleware, async (req, res) => {
   // raw_text exclu de la liste (peut peser 50KB par DIP)
   const COLS = 'id,user_id,title,file_url,status,conformity_score,compliance_level,blocking_issues,sha256,share_token,share_token_views,upload_date,created_at,updated_at,dip_sections(id,section_number,section_title,status,last_checked,last_updated)';
 
-  let query = supabaseAdmin
+  // ?all=true retourne toutes les versions (historique)
+  if (req.query.all === 'true') {
+    const { data, error } = await supabaseAdmin
+      .from('dip_documents')
+      .select(COLS)
+      .eq('user_id', req.user.id)
+      .order('created_at', { ascending: false });
+    if (error) return res.status(500).json({ error: errMsg(error) });
+    res.set('Cache-Control', 'private, max-age=30');
+    return res.json({ dips: data || [] });
+  }
+
+  // Retourne actif + brouillon (brouillon = nouvelle version en attente d'approbation)
+  const { data, error } = await supabaseAdmin
     .from('dip_documents')
     .select(COLS)
     .eq('user_id', req.user.id)
+    .in('status', ['actif', 'brouillon'])
     .order('created_at', { ascending: false });
 
-  if (req.query.all !== 'true') {
-    query = query.eq('status', 'actif');
-  }
-
-  const { data, error } = await query;
   if (error) return res.status(500).json({ error: errMsg(error) });
 
+  if (data && data.length > 0) {
+    res.set('Cache-Control', 'private, max-age=30');
+    return res.json({ dips: data });
+  }
+
+  // Fallback : retourne le DIP archivé le plus récent si aucun actif/brouillon
+  const { data: archived } = await supabaseAdmin
+    .from('dip_documents')
+    .select(COLS)
+    .eq('user_id', req.user.id)
+    .eq('status', 'archive')
+    .order('created_at', { ascending: false })
+    .limit(1);
+
   res.set('Cache-Control', 'private, max-age=30');
-  res.json({ dips: data || [] });
+  res.json({ dips: archived || [] });
+});
+
+// GET /api/dip/shared/:token — public, retourne le DIP pour les franchisés
+// IMPORTANT : doit être AVANT GET /:id pour éviter que "shared" soit traité comme un ID
+router.get('/shared/:token', async (req, res) => {
+  const token = req.params.token;
+  if (!token || token.length > 100) return res.status(400).json({ error: 'Token invalide' });
+
+  const { data: dip, error } = await supabaseAdmin
+    .from('dip_documents')
+    .select('id, title, conformity_score, status, created_at, share_token_views, dip_sections(*)')
+    .eq('share_token', token)
+    .single();
+
+  if (error || !dip) return res.status(404).json({ error: 'DIP introuvable ou lien expiré' });
+
+  await supabaseAdmin.from('dip_documents')
+    .update({ share_token_views: (dip.share_token_views || 0) + 1 })
+    .eq('id', dip.id);
+
+  const sections = (dip.dip_sections || [])
+    .sort((a, b) => a.section_number - b.section_number)
+    .map(s => ({
+      id: s.id,
+      section_number: s.section_number,
+      section_title: s.section_title,
+      content: s.content,
+      status: s.status,
+      last_updated: s.last_updated
+    }));
+
+  res.json({
+    dip: {
+      id: dip.id,
+      title: dip.title,
+      conformity_score: dip.conformity_score,
+      created_at: dip.created_at,
+      sections
+    }
+  });
 });
 
 // GET /api/dip/:id — détail
@@ -547,47 +610,6 @@ router.delete('/:id/share-link', authMiddleware, requireFranchisor, async (req, 
 
   if (error) return res.status(500).json({ error: error.message });
   res.json({ message: 'Lien révoqué' });
-});
-
-// GET /api/dip/shared/:token — public, retourne le DIP pour les franchisés
-router.get('/shared/:token', async (req, res) => {
-  const token = req.params.token;
-  if (!token || token.length > 100) return res.status(400).json({ error: 'Token invalide' });
-
-  const { data: dip, error } = await supabaseAdmin
-    .from('dip_documents')
-    .select('id, title, conformity_score, status, created_at, share_token_views, dip_sections(*)')
-    .eq('share_token', token)
-    .single();
-
-  if (error || !dip) return res.status(404).json({ error: 'DIP introuvable ou lien expiré' });
-
-  // Incrémenter le compteur de vues
-  await supabaseAdmin.from('dip_documents')
-    .update({ share_token_views: (dip.share_token_views || 0) + 1 })
-    .eq('id', dip.id);
-
-  // Retourner uniquement les données non sensibles
-  const sections = (dip.dip_sections || [])
-    .sort((a, b) => a.section_number - b.section_number)
-    .map(s => ({
-      id: s.id,
-      section_number: s.section_number,
-      section_title: s.section_title,
-      content: s.content,
-      status: s.status,
-      last_updated: s.last_updated
-    }));
-
-  res.json({
-    dip: {
-      id: dip.id,
-      title: dip.title,
-      conformity_score: dip.conformity_score,
-      created_at: dip.created_at,
-      sections
-    }
-  });
 });
 
 module.exports = router;

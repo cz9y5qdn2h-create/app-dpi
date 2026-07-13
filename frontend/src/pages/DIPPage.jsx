@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import api from '../lib/api';
@@ -11,7 +11,7 @@ import {
   Upload, ChevronDown, ChevronUp, Edit3, Check, X,
   Sparkles, Download, FileText, Plus, Trash2, AlertCircle,
   Share2, Copy, Link2Off, Eye, BarChart2, Briefcase, Send,
-  Scale, ShieldAlert, ShieldCheck, Info, RotateCcw
+  Scale, ShieldAlert, ShieldCheck, Info, RotateCcw, Clock, Archive
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ProposalsPanel from '../components/ProposalsPanel';
@@ -78,11 +78,17 @@ export default function DIPPage() {
   const { data, isLoading } = useQuery({
     queryKey: ['dips'],
     queryFn: () => api.get('/dip').then(r => r.data),
-    onSuccess: (d) => {
-      const activeDip = d?.dips?.find(x => x.status === 'actif') ?? d?.dips?.[0];
-      if (activeDip && !lawyerEmail) setLawyerEmail(profile?.lawyer_email || '');
-    }
   });
+
+  const { data: allDipsData } = useQuery({
+    queryKey: ['dips-all'],
+    queryFn: () => api.get('/dip?all=true').then(r => r.data),
+  });
+
+  useEffect(() => {
+    const activeDip = data?.dips?.find(x => x.status === 'actif') ?? data?.dips?.[0];
+    if (activeDip && !lawyerEmail) setLawyerEmail(profile?.lawyer_email || '');
+  }, [data]);
 
   const updateMutation = useMutation({
     mutationFn: ({ dipId, sectionId, content, status }) =>
@@ -97,6 +103,7 @@ export default function DIPPage() {
 
   const dip = data?.dips?.find(d => d.status === 'actif') ?? data?.dips?.[0];
   const sections = dip?.dip_sections?.sort((a, b) => a.section_number - b.section_number) || [];
+  const archivedDips = (allDipsData?.dips || []).filter(d => d.status === 'archive');
 
   const set = (path, value) => {
     const keys = path.split('.');
@@ -486,6 +493,36 @@ export default function DIPPage() {
               />
             ))}
           </div>
+
+          {/* Versions précédentes */}
+          {archivedDips.length > 0 && (
+            <div className="mt-6">
+              <p className="font-dm-sans text-xs text-text-muted uppercase tracking-wider mb-3 flex items-center gap-2">
+                <Archive className="w-3.5 h-3.5" />
+                Versions précédentes ({archivedDips.length})
+              </p>
+              <div className="space-y-2">
+                {archivedDips.map(d => (
+                  <div key={d.id} className="lg-row justify-between gap-3 opacity-70">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Archive className="w-3.5 h-3.5 text-text-muted flex-shrink-0" />
+                      <span className="font-dm-sans text-sm text-text-secondary truncate">{d.title}</span>
+                    </div>
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      <span className="font-dm-mono text-xs text-text-muted">{d.conformity_score}%</span>
+                      {d.upload_date && (
+                        <span className="font-dm-sans text-xs text-text-muted flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {new Date(d.upload_date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </span>
+                      )}
+                      <span className="px-2 py-0.5 rounded text-xs font-dm-sans bg-bg-elevated text-text-muted border border-border-subtle">Archivé</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </>
       )}
 
