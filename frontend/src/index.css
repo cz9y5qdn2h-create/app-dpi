@@ -774,3 +774,75 @@ button:active svg, a:active svg { transform: scale(0.9); }
   letter-spacing: 0.08em;
   color: var(--v2-gold);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   MOBILE EXPERIENCE — Touch & responsive optimizations
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Suppression du highlight bleu natif au tap */
+* { -webkit-tap-highlight-color: transparent; }
+
+/* Empêche le zoom au double-tap sur les éléments interactifs */
+button, a, [role="button"] { touch-action: manipulation; }
+
+/* Désactiver les transforms hover sur les appareils touch-only
+   (le :hover reste bloqué après un tap sur iOS/Android) */
+@media (hover: none) and (pointer: coarse) {
+  .card:hover {
+    transform: none !important;
+    box-shadow: var(--shadow), var(--inset) !important;
+    border-color: var(--glass-brd) !important;
+  }
+  .card-hover:hover {
+    transform: none !important;
+    box-shadow: var(--shadow), var(--inset) !important;
+    border-color: var(--glass-brd) !important;
+  }
+  .card-v2:hover {
+    transform: none !important;
+    box-shadow: none !important;
+    border-color: var(--v2-border) !important;
+  }
+  .section-card-v2:hover {
+    transform: none !important;
+    background: var(--v2-surface) !important;
+  }
+  .nav-link:hover { transform: none !important; }
+  .btn-primary:hover, .btn-secondary:hover,
+  .btn-liquid-glass:hover, .btn-liquid-glass-prominent:hover,
+  .btn-cta-glow:hover { transform: none !important; }
+  button svg, a svg { transform: none !important; }
+}
+
+/* Barre de filtres — défilement horizontal fluide */
+.filter-scroll {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  scroll-behavior: smooth;
+  padding-bottom: 2px;
+}
+.filter-scroll::-webkit-scrollbar { display: none; }
+.filter-scroll > * { flex-shrink: 0; }
+
+/* Taille minimale de cible tactile — 44px (guideline Apple/Google) */
+@media (max-width: 639px) {
+  .btn-primary, .btn-secondary,
+  .btn-liquid-glass, .btn-liquid-glass-prominent {
+    min-height: 44px;
+  }
+}
+
+/* CompletionReminderWidget — sous le header mobile (lg:hidden) */
+@media (max-width: 1023px) {
+  .completion-reminder-widget { top: 64px !important; }
+}
+
+/* Scroll momentum iOS sur tous les conteneurs scrollables */
+.overflow-y-auto, .overflow-x-auto, [class*="overflow-y-"], [class*="overflow-x-"] {
+  -webkit-overflow-scrolling: touch;
+}

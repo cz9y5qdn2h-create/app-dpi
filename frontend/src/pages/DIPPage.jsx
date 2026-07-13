@@ -407,22 +407,22 @@ export default function DIPPage() {
       {dip && <AIDisclaimer />}
 
       {/* Onglets */}
-      <div className="flex gap-1 bg-bg-elevated rounded-lg p-1 w-fit">
+      <div className="flex gap-1 bg-bg-elevated rounded-lg p-1 w-full sm:w-fit">
         <button
           onClick={() => setTab('view')}
-          className={`px-4 py-2 rounded text-sm font-dm-sans transition-all ${
+          className={`flex-1 sm:flex-none px-4 py-2.5 sm:py-2 rounded text-sm font-dm-sans transition-all ${
             tab === 'view' ? 'bg-gold/20 text-gold font-medium' : 'text-text-secondary hover:text-text-primary'
           }`}
         >
-          <span className="flex items-center gap-2"><FileText className="w-3.5 h-3.5" /> Vue DIP</span>
+          <span className="flex items-center justify-center gap-2"><FileText className="w-3.5 h-3.5" /> Vue DIP</span>
         </button>
         <button
           onClick={() => setTab('generate')}
-          className={`px-4 py-2 rounded text-sm font-dm-sans transition-all ${
+          className={`flex-1 sm:flex-none px-4 py-2.5 sm:py-2 rounded text-sm font-dm-sans transition-all ${
             tab === 'generate' ? 'bg-gold/20 text-gold font-medium' : 'text-text-secondary hover:text-text-primary'
           }`}
         >
-          <span className="flex items-center gap-2"><Sparkles className="w-3.5 h-3.5" /> Générer avec l'IA</span>
+          <span className="flex items-center justify-center gap-2"><Sparkles className="w-3.5 h-3.5" /> Générer avec l'IA</span>
         </button>
       </div>
 

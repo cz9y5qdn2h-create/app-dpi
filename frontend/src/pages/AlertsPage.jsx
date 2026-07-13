@@ -122,13 +122,13 @@ export default function AlertsPage() {
         </div>
       )}
 
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div className="flex gap-2 flex-wrap">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
+        <div className="filter-scroll">
           {filters.map(f => (
             <button
               key={f.key}
               onClick={() => setFilter(f.key)}
-              className={'flex items-center gap-2 px-4 py-2 rounded font-dm-sans text-sm transition-all duration-300 ' +
+              className={'flex items-center gap-2 px-4 py-2 rounded font-dm-sans text-sm transition-all duration-300 flex-shrink-0 ' +
                 (filter === f.key
                   ? 'bg-gold/10 text-gold border border-gold/30'
                   : 'text-text-secondary border border-border-subtle hover:border-border-default hover:text-text-primary')}
@@ -139,7 +139,7 @@ export default function AlertsPage() {
               )}
             </button>
           ))}
-          <div className="w-px h-6 bg-border-subtle self-center mx-1" />
+          <div className="w-px h-6 bg-border-subtle self-center mx-1 flex-shrink-0" />
           {[
             { key: 'all', label: t('alerts.filters.all') },
             { key: 'ia', label: '✦ ' + t('alerts.sources.ai'), count: iaCount },
@@ -148,7 +148,7 @@ export default function AlertsPage() {
             <button
               key={s.key}
               onClick={() => setFilterSource(s.key)}
-              className={'flex items-center gap-2 px-3 py-2 rounded font-dm-sans text-xs transition-all duration-300 ' +
+              className={'flex items-center gap-2 px-3 py-2 rounded font-dm-sans text-xs transition-all duration-300 flex-shrink-0 ' +
                 (filterSource === s.key
                   ? 'bg-gold/10 text-gold border border-gold/30'
                   : 'text-text-muted border border-border-subtle hover:text-text-secondary')}
@@ -170,7 +170,7 @@ export default function AlertsPage() {
               toast.error(err.message, { id: t });
             }
           }}
-          className="btn-secondary flex items-center gap-2 text-sm py-2"
+          className="btn-secondary flex items-center gap-2 text-sm py-2 flex-shrink-0 self-end sm:self-auto"
         >
           <RefreshCw className="w-4 h-4" /> {t('alerts.checkRenewal')}
         </button>
@@ -404,19 +404,19 @@ export default function AlertsPage() {
               )}
 
               {alert.status === 'pending' && (
-                <div className="flex items-center gap-3 pt-4 border-t border-border-subtle flex-wrap">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 pt-4 border-t border-border-subtle">
                   {validatingId === alert.id ? (
                     <>
                       <button
                         onClick={() => validateMutation.mutate({ id: alert.id, modified_content: editContent || null })}
                         disabled={validateMutation.isPending}
-                        className="btn-liquid-glass-prominent flex items-center gap-2 text-sm py-2"
+                        className="btn-liquid-glass-prominent flex items-center justify-center gap-2 text-sm py-2 w-full sm:w-auto"
                       >
                         {validateMutation.isPending && <LoadingSpinner size="sm" />}
                         <CheckCircle className="w-4 h-4" />
                         {isIaCorrection ? 'Appliquer la correction' : 'Confirmer'}
                       </button>
-                      <button onClick={() => setValidatingId(null)} className="btn-ghost text-sm">
+                      <button onClick={() => setValidatingId(null)} className="btn-ghost text-sm w-full sm:w-auto justify-center">
                         <X className="w-4 h-4" />
                       </button>
                     </>
@@ -425,12 +425,12 @@ export default function AlertsPage() {
                       <button
                         onClick={() => ignoreMutation.mutate({ id: alert.id, reason: ignoreReason })}
                         disabled={ignoreMutation.isPending}
-                        className="btn-secondary flex items-center gap-2 text-sm py-2"
+                        className="btn-secondary flex items-center justify-center gap-2 text-sm py-2 w-full sm:w-auto"
                       >
                         {ignoreMutation.isPending && <LoadingSpinner size="sm" />}
                         <XCircle className="w-4 h-4" /> Confirmer
                       </button>
-                      <button onClick={() => setIgnoreId(null)} className="btn-ghost text-sm">
+                      <button onClick={() => setIgnoreId(null)} className="btn-ghost text-sm w-full sm:w-auto justify-center">
                         <X className="w-4 h-4" />
                       </button>
                     </>
@@ -439,14 +439,14 @@ export default function AlertsPage() {
                       {!needsInfo && (isIaCorrection ? (
                         <button
                           onClick={() => { setValidatingId(alert.id); setEditContent(alert.suggestion || ''); }}
-                          className="btn-liquid-glass-prominent flex items-center gap-2 text-sm py-2"
+                          className="btn-liquid-glass-prominent flex items-center justify-center gap-2 text-sm py-2 w-full sm:w-auto"
                         >
                           <Sparkles className="w-4 h-4" /> Appliquer la correction IA
                         </button>
                       ) : (
                         <button
                           onClick={() => { setValidatingId(alert.id); setEditContent(alert.suggestion || alert.new_value || ''); }}
-                          className="btn-primary flex items-center gap-2 text-sm py-2"
+                          className="btn-primary flex items-center justify-center gap-2 text-sm py-2 w-full sm:w-auto"
                         >
                           <CheckCircle className="w-4 h-4" /> Valider
                         </button>
@@ -454,14 +454,14 @@ export default function AlertsPage() {
                       {!needsInfo && (
                         <button
                           onClick={() => { setValidatingId(alert.id); setEditContent(alert.suggestion || alert.new_value || ''); }}
-                          className="btn-secondary flex items-center gap-2 text-sm py-2"
+                          className="btn-secondary flex items-center justify-center gap-2 text-sm py-2 w-full sm:w-auto"
                         >
                           <Edit3 className="w-4 h-4" /> Modifier avant d'appliquer
                         </button>
                       )}
                       <button
                         onClick={() => { setIgnoreId(alert.id); setIgnoreReason(''); }}
-                        className="btn-ghost flex items-center gap-2 text-sm text-danger hover:text-danger"
+                        className="btn-ghost flex items-center justify-center gap-2 text-sm text-danger hover:text-danger w-full sm:w-auto"
                       >
                         <XCircle className="w-4 h-4" /> Ignorer
                       </button>
