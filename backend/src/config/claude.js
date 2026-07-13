@@ -157,6 +157,124 @@ const CONTRACT_GENERATION_SCHEMA = {
   required: ['clauses', 'global_score', 'summary', 'missing_data'],
 };
 
+const DIP_COMPARISON_SCHEMA = {
+  type: 'object',
+  properties: {
+    changements: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          type: { type: 'string' },
+          section: { type: 'string' },
+          section_number: { type: 'integer' },
+          ancien: { type: 'string' },
+          nouveau: { type: 'string' },
+          impact_legal: { type: 'string', enum: ['High', 'Moderate', 'Low'] },
+          recommandation_ia: { type: 'string' },
+          proposition_texte: { type: 'string' },
+        },
+        required: ['type', 'section', 'ancien', 'nouveau', 'impact_legal', 'recommandation_ia'],
+      },
+    },
+    resume: { type: 'string' },
+    nb_changements_critiques: { type: 'integer' },
+  },
+  required: ['changements', 'resume', 'nb_changements_critiques'],
+};
+
+const CONTRACT_COMPARISON_SCHEMA = {
+  type: 'object',
+  properties: {
+    changements: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          type: { type: 'string' },
+          clause: { type: 'string' },
+          clause_number: { type: 'integer' },
+          ancien: { type: 'string' },
+          nouveau: { type: 'string' },
+          impact_legal: { type: 'string', enum: ['High', 'Moderate', 'Low'] },
+          recommandation_ia: { type: 'string' },
+        },
+        required: ['type', 'clause', 'ancien', 'nouveau', 'impact_legal', 'recommandation_ia'],
+      },
+    },
+    resume: { type: 'string' },
+    nb_changements_critiques: { type: 'integer' },
+  },
+  required: ['changements', 'resume', 'nb_changements_critiques'],
+};
+
+const DETECT_CHANGES_SCHEMA = {
+  type: 'object',
+  properties: {
+    has_changes: { type: 'boolean' },
+    changes: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          field: { type: 'string' },
+          old_value: { type: 'string' },
+          new_value: { type: 'string' },
+          suggestion: { type: 'string' },
+        },
+        required: ['field', 'old_value', 'new_value'],
+      },
+    },
+    urgency: { type: 'string', enum: ['haute', 'moyenne', 'faible'] },
+  },
+  required: ['has_changes', 'changes'],
+};
+
+const CERTIFICATE_SCHEMA = {
+  type: 'object',
+  properties: {
+    certificate_text: { type: 'string' },
+    certificate_title: { type: 'string' },
+    legal_summary: { type: 'string' },
+    warnings: { type: 'array', items: { type: 'string' } },
+  },
+  required: ['certificate_text', 'certificate_title', 'legal_summary', 'warnings'],
+};
+
+const SECTION_WITH_ANSWERS_SCHEMA = {
+  type: 'object',
+  properties: {
+    corrected_content: { type: 'string' },
+    corrections_made: { type: 'array', items: { type: 'string' } },
+    remaining_issues: { type: 'array', items: { type: 'string' } },
+    confidence: { type: 'string', enum: ['haute', 'moyenne', 'faible'] },
+  },
+  required: ['corrected_content', 'corrections_made', 'remaining_issues', 'confidence'],
+};
+
+const CROSS_IMPACT_SCHEMA = {
+  type: 'object',
+  properties: {
+    impacts: {
+      type: 'array',
+      items: {
+        type: 'object',
+        properties: {
+          target_item_number: { type: 'integer' },
+          target_item_title: { type: 'string' },
+          reason: { type: 'string' },
+          suggestion: { type: 'string' },
+          urgency: { type: 'string', enum: ['haute', 'moyenne', 'faible'] },
+        },
+        required: ['target_item_number', 'target_item_title', 'reason', 'urgency'],
+      },
+    },
+  },
+  required: ['impacts'],
+};
+
 const SYSTEM_DIP_EXPERT = `Tu es un expert juridique senior spécialisé en droit de la franchise française.
 Tu maîtrises parfaitement :
 - La Loi Doubin (Loi n°89-1008 du 31 décembre 1989) et l'article L.330-3 du Code de commerce
@@ -361,8 +479,8 @@ const compareDIPVersions = async (previousText, newText) => {
     return { changements: [], resume: 'Texte manquant pour la comparaison', nb_changements_critiques: 0 };
   }
 
-  const message = await callClaude({
-    model: MODEL_SONNET,
+  const result = await callClaudeToolUse({
+    model: MODEL_OPUS,
     max_tokens: 8192,
     system: CACHED_SYSTEM,
     messages: [{
@@ -398,36 +516,12 @@ TYPES DE CHANGEMENTS :
 - marque : dépôts, validité, licences
 - autre : tout autre changement significatif
 
-Retourne ce JSON exactement :
-{
-  "changements": [
-    {
-      "id": "chgt_1",
-      "type": "prix_franchise",
-      "section": "Informations financières",
-      "section_number": 6,
-      "ancien": "Droit d'entrée : 15 000 €",
-      "nouveau": "Droit d'entrée : 18 000 €",
-      "impact_legal": "High",
-      "recommandation_ia": "La modification du droit d'entrée est une information substantielle au sens de l'article L.330-3. Ce changement doit être communiqué à tous les candidats franchisés au moins 20 jours avant la signature du contrat. Un nouveau DIP doit être remis.",
-      "proposition_texte": "Droit d'entrée : 18 000 € HT, payable à la signature du contrat de franchise. Ce montant couvre l'accès au savoir-faire, la formation initiale de X jours et l'assistance au démarrage."
-    }
-  ],
-  "resume": "Résumé synthétique des changements : nombre, nature, urgence et impact global sur la conformité du DIP",
-  "nb_changements_critiques": 1
-}
-
-Si aucun changement significatif : { "changements": [], "resume": "Aucun changement substantiel détecté entre les deux versions.", "nb_changements_critiques": 0 }`
+Exemples d'impact High : modification du droit d'entrée, nouvelle redevance, fermetures réseau, nouveaux litiges.`
     }]
-  });
+  }, 'compare_dip_versions', DIP_COMPARISON_SCHEMA, 2);
 
-  const raw = extractText(message);
-  const match = raw.match(/\{[\s\S]*\}/);
-  if (!match) return { changements: [], resume: 'Analyse incomplète — réessayez', nb_changements_critiques: 0 };
+  if (!result) return { changements: [], resume: 'Analyse indisponible — réessayez ultérieurement', nb_changements_critiques: 0 };
 
-  const result = JSON.parse(match[0]);
-
-  // Garantir des IDs uniques
   if (result.changements) {
     result.changements = result.changements.map((c, i) => ({
       ...c,
@@ -442,7 +536,7 @@ Si aucun changement significatif : { "changements": [], "resume": "Aucun changem
  * Détecter les changements entre un document source et une section DIP
  */
 const detectChanges = async (sectionContent, newDocumentText, sectionTitle) => {
-  const message = await callClaude({
+  const result = await callClaudeToolUse({
     model: MODEL_HAIKU,
     max_tokens: 2048,
     system: CACHED_SYSTEM,
@@ -454,28 +548,11 @@ SECTION DIP ACTUELLE — ${sectionTitle} :
 ${sectionContent}
 
 NOUVEAU DOCUMENT SOURCE :
-${newDocumentText.substring(0, 5000)}
-
-Retourne ce JSON :
-{
-  "has_changes": true,
-  "changes": [
-    {
-      "field": "Nom du champ modifié",
-      "old_value": "Ancienne valeur",
-      "new_value": "Nouvelle valeur",
-      "suggestion": "Texte de remplacement conforme Loi Doubin"
-    }
-  ],
-  "urgency": "haute"
-}`
+${newDocumentText.substring(0, 5000)}`
     }]
-  });
+  }, 'detect_changes', DETECT_CHANGES_SCHEMA, 1);
 
-  const raw = extractText(message);
-  const match = raw.match(/\{[\s\S]*\}/);
-  if (!match) return { has_changes: false, changes: [] };
-  return JSON.parse(match[0]);
+  return result ?? { has_changes: false, changes: [] };
 };
 
 /**
@@ -585,9 +662,10 @@ const correctSectionWithAnswers = async (section, questionsAndAnswers) => {
     .map((qa, i) => `Q${i + 1} : ${qa.question}\nRéponse : ${qa.answer}`)
     .join('\n\n');
 
-  const message = await callClaude({
-    model: MODEL_SONNET,
-    max_tokens: 2048,
+  const result = await callClaudeToolUse({
+    model: MODEL_OPUS,
+    max_tokens: 4096,
+    thinking: { type: 'adaptive' },
     system: CACHED_SYSTEM,
     messages: [{
       role: 'user',
@@ -606,21 +684,11 @@ INSTRUCTIONS :
 - Rédige un texte complet, professionnel et conforme à la Loi Doubin
 - Intègre toutes les informations fournies ci-dessus
 - Si une donnée est encore manquante, indique "[À COMPLÉTER : description]"
-- Le texte doit être directement utilisable dans le DIP officiel
-
-Retourne ce JSON :
-{
-  "corrected_content": "Texte complet de la section corrigée",
-  "corrections_made": ["liste des éléments rédigés ou améliorés"],
-  "remaining_issues": ["données encore manquantes si applicable"],
-  "confidence": "haute|moyenne|faible"
-}`
+- Le texte doit être directement utilisable dans le DIP officiel`
     }]
-  });
+  }, 'submit_correction_with_answers', SECTION_WITH_ANSWERS_SCHEMA, 2);
 
-  const raw = extractText(message);
-  const match = raw.match(/\{[\s\S]*\}/);
-  if (!match) {
+  if (!result) {
     return {
       corrected_content: content || '',
       corrections_made: [],
@@ -628,7 +696,7 @@ Retourne ce JSON :
       confidence: 'faible'
     };
   }
-  return JSON.parse(match[0]);
+  return result;
 };
 
 const analyzeDocumentForDIPImpact = async (documentText, currentDipContext, fileName) => {
@@ -684,9 +752,9 @@ const generateChangesCertificate = async ({ dipVersion, changes = [], franchiseu
       ).join('\n')
     : 'Aucune remise enregistrée à ce stade.';
 
-  const message = await callClaude({
+  const result = await callClaudeToolUse({
     model: MODEL_SONNET,
-    max_tokens: 2048,
+    max_tokens: 4096,
     system: CACHED_SYSTEM,
     messages: [{
       role: 'user',
@@ -709,34 +777,22 @@ ${deliveryBlock}
 INSTRUCTIONS DE RÉDACTION :
 - Rédige un document formel en français juridique
 - Commence par "CERTIFICAT DE ${certificateType === 'INITIAL' ? 'CONFORMITÉ ET DE REMISE' : 'MISE À JOUR ET DE NOTIFICATION'}"
-- Atteste de : l'intégrité du document (hash), la conformité légale au moment de la remise, les modifications apportées et leur nature, la liste des destinataires et les dates de remise
+- Atteste de : l'intégrité du document (hash), la conformité légale au moment de la remise, les modifications et leur nature, la liste des destinataires et les dates de remise
 - Inclus une clause sur le délai réglementaire des 20 jours (art. L.330-3)
 - Termine par une section "Valeur probatoire" expliquant en quoi ce certificat constitue une preuve opposable
-- Ton : professionnel, précis, sobre — pas de formulations commerciales
-- Maximum 400 mots
-
-Retourne ce JSON :
-{
-  "certificate_text": "Texte complet du certificat",
-  "certificate_title": "Titre court du certificat",
-  "legal_summary": "Résumé en 2 phrases de ce que ce certificat atteste",
-  "warnings": ["Avertissements éventuels si délai 20 jours non respecté, sections non conformes, etc."]
-}`
+- Ton : professionnel, précis, sobre — maximum 400 mots`
     }]
-  });
+  }, 'submit_certificate', CERTIFICATE_SCHEMA, 2);
 
-  const raw = extractText(message);
-  const match = raw.match(/\{[\s\S]*\}/);
-  if (!match) {
+  if (!result) {
     return {
       certificate_text: `CERTIFICAT DE REMISE DIP\n\nVersion : ${dipVersion.version}\nDate : ${now}\nFranchiseur : ${franchiseur.nom}\nConformité : ${dipVersion.compliance_level}\n\nCe certificat atteste de la remise du DIP ci-dessus référencé.`,
       certificate_title: `Certificat DIP v${dipVersion.version}`,
       legal_summary: 'Certificat de remise du DIP.',
-      warnings: []
+      warnings: ['Certificat généré en mode dégradé — régénérez pour un document complet']
     };
   }
 
-  const result = JSON.parse(match[0]);
   result.generated_at = now;
   result.certificate_type = certificateType;
   result.dip_version = dipVersion.version;
@@ -898,7 +954,7 @@ const compareContractVersions = async (previousText, newText) => {
     return { changements: [], resume: 'Texte manquant pour la comparaison', nb_changements_critiques: 0 };
   }
 
-  const message = await callClaude({
+  const result = await callClaudeToolUse({
     model: MODEL_SONNET,
     max_tokens: 8192,
     system: CACHED_SYSTEM_CONTRACT,
@@ -922,35 +978,12 @@ NIVEAUX D'IMPACT :
 - Low : changement mineur de forme
 
 TYPES DE CHANGEMENTS :
-- duree_renouvellement, financier, territoire, obligations, propriete_intellectuelle, non_concurrence, resiliation, cession, litiges, autre
-
-Retourne ce JSON exactement :
-{
-  "changements": [
-    {
-      "id": "chgt_1",
-      "type": "financier",
-      "clause": "Droit d'entrée et redevances",
-      "clause_number": 2,
-      "ancien": "Redevance d'exploitation : 5%",
-      "nouveau": "Redevance d'exploitation : 7%",
-      "impact_legal": "High",
-      "recommandation_ia": "Cette augmentation doit être cohérente avec le DIP remis au franchisé 20 jours avant la signature. Vérifier que le DIP en vigueur reflète ce nouveau taux."
-    }
-  ],
-  "resume": "Résumé synthétique des changements",
-  "nb_changements_critiques": 1
-}
-
-Si aucun changement significatif : { "changements": [], "resume": "Aucun changement substantiel détecté entre les deux versions.", "nb_changements_critiques": 0 }`
+- duree_renouvellement, financier, territoire, obligations, propriete_intellectuelle, non_concurrence, resiliation, cession, litiges, autre`
     }]
-  });
+  }, 'compare_contract_versions', CONTRACT_COMPARISON_SCHEMA, 2);
 
-  const raw = extractText(message);
-  const match = raw.match(/\{[\s\S]*\}/);
-  if (!match) return { changements: [], resume: 'Analyse incomplète — réessayez', nb_changements_critiques: 0 };
+  if (!result) return { changements: [], resume: 'Analyse indisponible — réessayez ultérieurement', nb_changements_critiques: 0 };
 
-  const result = JSON.parse(match[0]);
   if (result.changements) {
     result.changements = result.changements.map((c, i) => ({ ...c, id: c.id || `chgt_${i + 1}` }));
   }
@@ -1079,7 +1112,7 @@ const analyzeCrossImpact = async ({ sourceType, changes, targetItems }) => {
   const targetLabel = sourceType === 'dip' ? 'contrat de franchise' : 'DIP';
   const sourceLabel = sourceType === 'dip' ? 'DIP' : 'contrat de franchise';
 
-  const message = await callClaude({
+  const result = await callClaudeToolUse({
     model: MODEL_HAIKU,
     max_tokens: 2048,
     system: CACHED_SYSTEM_CONTRACT,
@@ -1093,30 +1126,11 @@ ${JSON.stringify(changes.map(c => ({ type: c.type, titre: c.section || c.clause,
 ÉLÉMENTS ACTUELS DU ${targetLabel.toUpperCase()} :
 ${targetItems.map(t => `[${t.number}] ${t.title} : ${(t.content || '').substring(0, 300)}`).join('\n\n')}
 
-Pour chaque élément du ${targetLabel} potentiellement rendu incohérent par un changement ci-dessus, retourne un impact. Ignore les éléments non concernés.
-
-Retourne ce JSON exactement :
-{
-  "impacts": [
-    {
-      "target_item_number": 2,
-      "target_item_title": "Droit d'entrée et redevances",
-      "reason": "Le droit d'entrée a été modifié dans le DIP mais ce montant n'a pas été mis à jour ici",
-      "suggestion": "Aligner ce montant sur la nouvelle valeur du DIP",
-      "urgency": "haute"
-    }
-  ]
-}
-
-Valeurs pour urgency : "haute" | "moyenne" | "faible"
-Si aucun impact : { "impacts": [] }`
+Pour chaque élément du ${targetLabel} potentiellement rendu incohérent par un changement, retourne un impact. Ignore les éléments non concernés. Si aucun impact : retourne un tableau impacts vide.`
     }]
-  });
+  }, 'submit_cross_impact', CROSS_IMPACT_SCHEMA, 1);
 
-  const raw = extractText(message);
-  const match = raw.match(/\{[\s\S]*\}/);
-  if (!match) return { impacts: [] };
-  return JSON.parse(match[0]);
+  return result ?? { impacts: [] };
 };
 
 const generateContractFromDIPStream = async (dipSections, formData = {}, onProgress) => {
