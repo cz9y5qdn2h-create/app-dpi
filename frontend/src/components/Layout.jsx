@@ -2,7 +2,6 @@ import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
-import BottomNav from './BottomNav';
 import CommandPalette from './CommandPalette';
 import CopilotChat from './CopilotChat';
 import OnboardingTour from './OnboardingTour';
@@ -51,7 +50,7 @@ export default function Layout() {
 
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/60 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/60 z-40 md:hidden"
           onClick={() => setSidebarOpen(false)}
           style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}
         />
@@ -59,10 +58,10 @@ export default function Layout() {
 
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-      <main className="relative flex-1 min-h-screen lg:ml-64">
-        {/* Mobile header */}
+      <main className="relative flex-1 min-h-screen md:ml-64">
+        {/* Mobile header — hamburger (téléphones uniquement) */}
         <header
-          className="lg:hidden sticky top-0 z-10 flex items-center justify-between px-4 py-3 border-b"
+          className="md:hidden sticky top-0 z-10 flex items-center justify-between px-4 py-3 border-b"
           style={{ background: 'var(--header-bg)', backdropFilter: 'var(--sidebar-blur)', WebkitBackdropFilter: 'var(--sidebar-blur)', borderColor: 'var(--border-subtle)' }}
         >
           <button
@@ -95,8 +94,8 @@ export default function Layout() {
           </div>
         </header>
 
-        {/* Desktop search hint */}
-        <div className="hidden lg:flex items-center justify-end px-8 pt-6 pb-0">
+        {/* Desktop search hint — ordinateurs et tablettes */}
+        <div className="hidden md:flex items-center justify-end px-8 pt-6 pb-0">
           <button
             onClick={() => setCmdOpen(true)}
             className="flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all hover:scale-[1.02] active:scale-[0.98]"
@@ -108,12 +107,11 @@ export default function Layout() {
           </button>
         </div>
 
-        <div className="p-4 sm:p-6 lg:p-8 pb-24 lg:pb-8 animate-fade-in">
+        <div className="p-4 sm:p-6 lg:p-8 pb-8 animate-fade-in">
           <Outlet />
         </div>
       </main>
 
-      <BottomNav />
       <CommandPalette open={cmdOpen} onClose={() => setCmdOpen(false)} />
       {FEATURES.copilot && <CopilotChat />}
       <OnboardingTour />

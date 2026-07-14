@@ -163,9 +163,9 @@ export default function Sidebar({ open, onClose }) {
     <>
       <aside className={`
         sidebar-panel
-        fixed top-0 left-0 h-full w-[84vw] max-w-[320px] lg:w-64 lg:max-w-none border-r border-border-subtle
-        flex flex-col z-50 lg:z-30 transition-transform duration-300
-        ${open ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0
+        fixed top-0 left-0 h-full w-[84vw] max-w-[320px] md:w-64 md:max-w-none border-r border-border-subtle
+        flex flex-col z-50 md:z-30 transition-transform duration-300
+        ${open ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0
       `}>
         {/* Logo */}
         <div className="px-4 py-5 flex items-center justify-between" style={{ borderBottom: '0.5px solid rgba(200,169,110,0.12)', marginBottom: 8 }}>
@@ -179,7 +179,7 @@ export default function Sidebar({ open, onClose }) {
           <button
             onClick={onClose}
             aria-label="Fermer le menu"
-            className="lg:hidden flex items-center justify-center w-9 h-9 rounded-lg text-text-secondary hover:text-gold transition-colors flex-shrink-0"
+            className="md:hidden flex items-center justify-center w-9 h-9 rounded-lg text-text-secondary hover:text-gold transition-colors flex-shrink-0"
             style={{ background: 'var(--row-bg)' }}
           >
             <X className="w-5 h-5" />
