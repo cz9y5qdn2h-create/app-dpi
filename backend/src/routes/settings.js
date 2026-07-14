@@ -17,7 +17,8 @@ router.put('/profile', authMiddleware, async (req, res) => {
     renewal_alert_days,
     automation_level, notifications_email, notifications_inapp,
     notifications_sms, notification_frequency,
-    brevo_api_key, brevo_sender_name, brevo_sender_email
+    brevo_api_key, brevo_sender_name, brevo_sender_email,
+    copilot_addressing_name, copilot_formality, copilot_memory_notes
   } = req.body;
 
   // Champs de base (toujours présents — migration 001/002)
@@ -44,6 +45,10 @@ router.put('/profile', authMiddleware, async (req, res) => {
     const days = parseInt(renewal_alert_days, 10);
     if (!isNaN(days) && days >= 1 && days <= 365) extendedUpdates.renewal_alert_days = days;
   }
+  // Migration 027 — préférences Copilot IA
+  if (copilot_addressing_name !== undefined) extendedUpdates.copilot_addressing_name = copilot_addressing_name || null;
+  if (copilot_formality !== undefined && ['tu', 'vous'].includes(copilot_formality)) extendedUpdates.copilot_formality = copilot_formality;
+  if (copilot_memory_notes !== undefined) extendedUpdates.copilot_memory_notes = copilot_memory_notes?.slice(0, 2000) || null;
 
   // Essayer d'abord avec tous les champs
   let data, error;

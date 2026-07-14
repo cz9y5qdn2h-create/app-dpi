@@ -6,16 +6,32 @@ const Anthropic = require('@anthropic-ai/sdk');
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-const SYSTEM = `Tu es DIPpro Copilot, l'assistant IA intégré à la plateforme DIPpro by Iralink.
+function buildSystemPrompt(profile) {
+  const addressingName = profile?.copilot_addressing_name?.trim();
+  const formality = profile?.copilot_formality === 'tu' ? 'tu' : 'vous';
+  const memoryNotes = profile?.copilot_memory_notes?.trim();
 
-DIPpro aide les franchiseurs français à gérer leurs Documents d'Information Précontractuelle (DIP), obligatoires selon la Loi Doubin (art. L.330-3 Code de commerce).
+  const addressing = addressingName
+    ? `Appelle l'utilisateur "${addressingName}". Vouvoie/tutoie-le au "${formality}" (${formality === 'tu' ? 'tutoiement' : 'vouvoiement'}).`
+    : `Tu ne connais pas de prénom pour l'utilisateur — reste neutre. Vouvoie/tutoie-le au "${formality}".`;
+
+  const memoryBlock = memoryNotes
+    ? `\n\nNotes mémorisées par l'utilisateur à propos de lui-même ou de son activité (à prendre en compte dans tes réponses) :\n"""\n${memoryNotes}\n"""`
+    : '';
+
+  return `Tu es DIPpro Copilot, l'assistant IA intégré à la plateforme DIPpro by Iralink.
+
+DIPpro aide les franchiseurs français à gérer leurs Documents d'Information Précontractuelle (DIP) et leurs contrats de franchise, obligatoires selon la Loi Doubin (art. L.330-3 Code de commerce).
 
 Tes capacités :
 - Répondre aux questions sur le DIP, la Loi Doubin et les obligations légales franchise
-- Consulter en temps réel le DIP actif, le score de conformité, les alertes, les franchisés et l'historique
+- Consulter en temps réel le DIP actif, le contrat actif, le score de conformité, les alertes, les franchisés et l'historique
+- Modifier directement le contenu d'une section du DIP ou d'une clause du contrat, à la demande explicite de l'utilisateur
 - Effectuer des actions directes : valider ou ignorer des corrections IA
 - Faire un checkup complet du compte
 - Expliquer comment utiliser les fonctionnalités de DIPpro (import, génération IA, monitoring, export)
+
+${addressing}${memoryBlock}
 
 Si l'utilisateur demande une démonstration, une présentation, un rendez-vous ou à rencontrer l'équipe :
 → Propose-lui ce lien Cal.com : https://cal.com/theo-coutard-mhdsix/presentation-dippro
@@ -25,7 +41,9 @@ Règles :
 - Sois concis, professionnel et bienveillant
 - Mentionne l'impact légal quand pertinent (délai 20 jours, Loi Doubin, sanctions)
 - Réponds en français (ou dans la langue de l'utilisateur)
-- Avant toute action sur les données, décris clairement ce que tu vas faire`;
+- Avant de modifier une section du DIP ou une clause du contrat, annonce clairement le contenu que tu vas écrire
+- Après une modification via update_dip_section ou update_contract_clause, rappelle que la section repasse en statut "à vérifier" et que l'utilisateur doit la valider dans l'interface`;
+}
 
 const TOOLS = [
   {
@@ -70,6 +88,35 @@ const TOOLS = [
     name: 'full_checkup',
     description: "Lance un checkup complet : récupère le DIP, les alertes et l'historique pour dresser un bilan de conformité",
     input_schema: { type: 'object', properties: {}, required: [] }
+  },
+  {
+    name: 'get_contract_status',
+    description: "Récupère le contrat de franchise actif avec la liste de ses clauses (numéro, titre, statut, aperçu du contenu)",
+    input_schema: { type: 'object', properties: {}, required: [] }
+  },
+  {
+    name: 'update_dip_section',
+    description: "Réécrit le contenu d'une section du DIP actif. La section repasse automatiquement en statut 'à vérifier' pour relecture par l'utilisateur. À utiliser uniquement à la demande explicite de l'utilisateur, après lui avoir annoncé le contenu proposé.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        section_number: { type: 'integer', description: 'Numéro de la section du DIP à modifier (1 à 10)' },
+        new_content: { type: 'string', description: 'Nouveau contenu complet de la section' },
+      },
+      required: ['section_number', 'new_content']
+    }
+  },
+  {
+    name: 'update_contract_clause',
+    description: "Réécrit le contenu d'une clause du contrat de franchise actif. La clause repasse automatiquement en statut 'à vérifier' pour relecture par l'utilisateur. À utiliser uniquement à la demande explicite de l'utilisateur, après lui avoir annoncé le contenu proposé.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        clause_number: { type: 'integer', description: 'Numéro de la clause/article du contrat à modifier' },
+        new_content: { type: 'string', description: 'Nouveau contenu complet de la clause' },
+      },
+      required: ['clause_number', 'new_content']
+    }
   }
 ];
 
@@ -219,6 +266,100 @@ async function executeTool(name, input, userId) {
           recent_history: historyRes.data || []
         };
       }
+      case 'get_contract_status': {
+        const { data: contract } = await supabaseAdmin
+          .from('franchise_contracts')
+          .select('id, title, conformity_score, status, created_at, contract_clauses(clause_number, clause_title, status, content)')
+          .eq('user_id', userId)
+          .eq('status', 'actif')
+          .order('created_at', { ascending: false })
+          .maybeSingle();
+        if (!contract) return { error: 'Aucun contrat actif. Générez ou importez un contrat.' };
+        const clauses = (contract.contract_clauses || [])
+          .sort((a, b) => a.clause_number - b.clause_number)
+          .map(c => ({ clause_number: c.clause_number, clause_title: c.clause_title, status: c.status, preview: (c.content || '').slice(0, 160) }));
+        return { title: contract.title, score: contract.conformity_score, status: contract.status, clauses };
+      }
+      case 'update_dip_section': {
+        const { section_number, new_content } = input;
+        if (!section_number || !new_content?.trim()) return { error: 'section_number et new_content requis' };
+
+        const { data: dip } = await supabaseAdmin
+          .from('dip_documents')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('status', 'actif')
+          .order('created_at', { ascending: false })
+          .maybeSingle();
+        if (!dip) return { error: 'Aucun DIP actif' };
+
+        const { data: section } = await supabaseAdmin
+          .from('dip_sections')
+          .select('id, section_title, content')
+          .eq('dip_id', dip.id)
+          .eq('section_number', section_number)
+          .maybeSingle();
+        if (!section) return { error: `Section ${section_number} introuvable` };
+
+        const oldContent = section.content;
+        const { error } = await supabaseAdmin
+          .from('dip_sections')
+          .update({ content: new_content, status: 'a_verifier', last_updated: new Date().toISOString() })
+          .eq('id', section.id);
+        if (error) return { error: error.message };
+
+        await supabaseAdmin.from('audit_log').insert({
+          dip_id: dip.id,
+          section_id: section.id,
+          action: 'copilot_section_update',
+          old_content: oldContent,
+          new_content,
+          user_id: userId,
+          timestamp: new Date().toISOString(),
+        });
+
+        return { success: true, section_number, section_title: section.section_title, new_status: 'a_verifier' };
+      }
+      case 'update_contract_clause': {
+        const { clause_number, new_content } = input;
+        if (!clause_number || !new_content?.trim()) return { error: 'clause_number et new_content requis' };
+
+        const { data: contract } = await supabaseAdmin
+          .from('franchise_contracts')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('status', 'actif')
+          .order('created_at', { ascending: false })
+          .maybeSingle();
+        if (!contract) return { error: 'Aucun contrat actif' };
+
+        const { data: clause } = await supabaseAdmin
+          .from('contract_clauses')
+          .select('id, clause_title, content')
+          .eq('contract_id', contract.id)
+          .eq('clause_number', clause_number)
+          .maybeSingle();
+        if (!clause) return { error: `Clause ${clause_number} introuvable` };
+
+        const oldContent = clause.content;
+        const { error } = await supabaseAdmin
+          .from('contract_clauses')
+          .update({ content: new_content, status: 'a_verifier', last_updated: new Date().toISOString() })
+          .eq('id', clause.id);
+        if (error) return { error: error.message };
+
+        await supabaseAdmin.from('audit_log').insert({
+          dip_id: null,
+          section_id: null,
+          action: 'copilot_clause_update',
+          old_content: oldContent,
+          new_content,
+          user_id: userId,
+          timestamp: new Date().toISOString(),
+        });
+
+        return { success: true, clause_number, clause_title: clause.clause_title, new_status: 'a_verifier' };
+      }
       default:
         return { error: `Outil inconnu: ${name}` };
     }
@@ -234,6 +375,13 @@ router.post('/chat', authMiddleware, requireFranchisor, async (req, res) => {
   }
 
   try {
+    const { data: profile } = await supabaseAdmin
+      .from('users')
+      .select('copilot_addressing_name, copilot_formality, copilot_memory_notes')
+      .eq('id', req.user.id)
+      .maybeSingle();
+    const system = buildSystemPrompt(profile);
+
     let currentMessages = messages.slice(-20);
     const actions = [];
 
@@ -241,7 +389,7 @@ router.post('/chat', authMiddleware, requireFranchisor, async (req, res) => {
       const response = await anthropic.messages.create({
         model: 'claude-opus-4-7',
         max_tokens: 1024,
-        system: SYSTEM,
+        system,
         tools: TOOLS,
         messages: currentMessages
       });

@@ -64,6 +64,9 @@ export default function SettingsPage() {
   const [mfaVerifyCode, setMfaVerifyCode] = useState('');
   const [mfaError, setMfaError] = useState('');
   const [mfaLoading, setMfaLoading] = useState(false);
+  const [copilotForm, setCopilotForm] = useState({
+    copilot_addressing_name: '', copilot_formality: 'vous', copilot_memory_notes: ''
+  });
 
   useEffect(() => {
     const loadMfa = async () => {
@@ -158,6 +161,11 @@ export default function SettingsPage() {
         brevo_api_key: data.profile.brevo_api_key || '',
         brevo_sender_name: data.profile.brevo_sender_name || 'DIPpro',
         brevo_sender_email: data.profile.brevo_sender_email || ''
+      });
+      setCopilotForm({
+        copilot_addressing_name: data.profile.copilot_addressing_name || '',
+        copilot_formality: data.profile.copilot_formality || 'vous',
+        copilot_memory_notes: data.profile.copilot_memory_notes || ''
       });
     }
   }, [data]);
@@ -469,6 +477,66 @@ export default function SettingsPage() {
             </form>
           </div>
         )}
+      </div>
+
+      {/* Copilot IA */}
+      <div className="card">
+        <div className="mb-5">
+          <h2 className="font-cormorant text-xl">Copilot IA</h2>
+          <p className="font-dm-sans text-xs text-text-secondary mt-1">
+            Personnalisez la façon dont l'assistant IA s'adresse à vous. Ces préférences sont mémorisées d'une conversation à l'autre.
+          </p>
+        </div>
+        <div className="space-y-4">
+          <div>
+            <label className="label">Comment l'IA doit-elle vous appeler ?</label>
+            <input
+              className="input-field"
+              value={copilotForm.copilot_addressing_name}
+              onChange={e => setCopilotForm(f => ({ ...f, copilot_addressing_name: e.target.value }))}
+              placeholder="Ex : Théo"
+              maxLength={80}
+            />
+          </div>
+          <div>
+            <label className="label">Formule d'adresse</label>
+            <div className="flex gap-2">
+              {[['vous', 'Vouvoiement'], ['tu', 'Tutoiement']].map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setCopilotForm(f => ({ ...f, copilot_formality: value }))}
+                  className={`flex-1 py-2.5 rounded-lg text-sm font-dm-sans transition-all border ${
+                    copilotForm.copilot_formality === value
+                      ? 'bg-gold/15 border-gold/40 text-gold'
+                      : 'border-border-subtle text-text-secondary hover:text-text-primary'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div>
+            <label className="label">Notes pour l'IA (mémoire)</label>
+            <textarea
+              className="input-field resize-none min-h-24"
+              value={copilotForm.copilot_memory_notes}
+              onChange={e => setCopilotForm(f => ({ ...f, copilot_memory_notes: e.target.value.slice(0, 2000) }))}
+              placeholder="Ex : Je gère un réseau de 40 franchisés dans la restauration rapide. Je préfère des réponses courtes et directes."
+            />
+            <p className="font-dm-mono text-xs text-text-muted mt-1">{copilotForm.copilot_memory_notes.length}/2000</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => updateProfileMutation.mutate(copilotForm)}
+            disabled={updateProfileMutation.isPending}
+            className="btn-primary flex items-center gap-2"
+          >
+            {updateProfileMutation.isPending ? <LoadingSpinner size="sm" /> : <Save className="w-4 h-4" />}
+            Enregistrer les préférences
+          </button>
+        </div>
       </div>
 
       {/* Profil */}

@@ -1,16 +1,19 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, X, Send, CheckCircle, AlertTriangle, Loader2, Calendar } from 'lucide-react';
+import { Sparkles, X, Send, CheckCircle, AlertTriangle, Loader2, Calendar, ArrowLeftRight } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import api from '../lib/api';
 
 const CAL_URL = 'https://cal.com/theo-coutard-mhdsix/presentation-dippro';
+const POSITION_KEY = 'dippro-copilot-position';
 
 const SHORTCUTS = [
   { label: '🔍 Checkup complet', msg: 'Fais un checkup complet de mon DIP et dis-moi ce que je dois faire en priorité.' },
   { label: '⚠️ Mes alertes', msg: 'Liste mes alertes en attente et explique lesquelles sont prioritaires.' },
   { label: '📊 Mon score', msg: "Quel est mon score de conformité actuel et comment l'améliorer ?" },
+  { label: '📝 Modifier le DIP', msg: "Je voudrais modifier une section de mon DIP. Montre-moi d'abord les sections disponibles." },
+  { label: '📜 Modifier le contrat', msg: "Je voudrais modifier une clause de mon contrat. Montre-moi d'abord les clauses disponibles." },
   { label: '👥 Mes franchisés', msg: 'Combien ai-je de franchisés et quel est leur statut ?' },
   { label: '📋 Historique', msg: 'Montre-moi les 10 dernières modifications de mon DIP.' },
   { label: '⚖️ Loi Doubin', msg: "Explique-moi les obligations de la Loi Doubin pour mon DIP : délais, contenu obligatoire, sanctions." },
@@ -27,6 +30,9 @@ const ACTION_LABELS = {
   get_franchisees: 'Consultation franchisés',
   get_history: "Lecture de l'historique",
   full_checkup: 'Checkup en cours…',
+  get_contract_status: 'Consultation du contrat',
+  update_dip_section: 'Section du DIP modifiée',
+  update_contract_clause: 'Clause du contrat modifiée',
 };
 
 function ActionBadge({ action }) {
@@ -46,14 +52,25 @@ function ActionBadge({ action }) {
 
 export default function CopilotChat() {
   const [open, setOpen] = useState(false);
+  const [position, setPosition] = useState(() => {
+    try { return localStorage.getItem(POSITION_KEY) === 'left' ? 'left' : 'right'; } catch { return 'right'; }
+  });
   const [messages, setMessages] = useState([
-    { role: 'assistant', content: "Bonjour ! Je suis **DIPpro Copilot**, votre assistant IA franchise.\n\nJe peux :\n- 🔍 Analyser votre DIP et son score de conformité\n- ⚠️ Gérer vos alertes et corrections en attente\n- 👥 Consulter vos franchisés\n- ⚖️ Répondre à vos questions sur la Loi Doubin\n- ✅ Valider ou ignorer des corrections directement\n\nUtilisez les raccourcis ci-dessus ou posez-moi une question." }
+    { role: 'assistant', content: "Bonjour ! Je suis **DIPpro Copilot**, votre assistant IA franchise.\n\nJe peux :\n- 🔍 Analyser votre DIP et son score de conformité\n- 📝 Modifier directement une section de votre DIP ou une clause de votre contrat\n- ⚠️ Gérer vos alertes et corrections en attente\n- 👥 Consulter vos franchisés\n- ⚖️ Répondre à vos questions sur la Loi Doubin\n- ✅ Valider ou ignorer des corrections directement\n\nUtilisez les raccourcis ci-dessus ou posez-moi une question." }
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [lastActions, setLastActions] = useState([]);
   const bottomRef = useRef(null);
   const inputRef = useRef(null);
+
+  const togglePosition = () => {
+    setPosition(prev => {
+      const next = prev === 'right' ? 'left' : 'right';
+      try { localStorage.setItem(POSITION_KEY, next); } catch {}
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (open) {
@@ -104,7 +121,7 @@ export default function CopilotChat() {
       {/* Floating button */}
       <button
         onClick={() => setOpen(v => !v)}
-        className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200"
+        className={`fixed bottom-6 z-50 w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 ${position === 'right' ? 'right-6' : 'left-6'}`}
         style={{
           background: 'linear-gradient(135deg, #C8A96E, #a07840)',
           boxShadow: open
@@ -137,18 +154,18 @@ export default function CopilotChat() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 24, scale: 0.95 }}
             transition={{ type: 'spring', stiffness: 380, damping: 28 }}
-            className="fixed bottom-24 right-6 z-50 flex flex-col"
+            className={`fixed bottom-24 z-50 flex flex-col ${position === 'right' ? 'right-6' : 'left-6'}`}
             style={{
               width: 380,
               maxWidth: 'calc(100vw - 24px)',
               height: 560,
               maxHeight: 'calc(100vh - 120px)',
-              background: 'var(--glass-elevated, rgba(255,255,255,0.92))',
+              background: 'rgb(var(--bg-card) / 0.97)',
               backdropFilter: 'blur(28px) saturate(180%)',
               WebkitBackdropFilter: 'blur(28px) saturate(180%)',
               border: '1px solid rgba(200,169,110,0.28)',
               borderRadius: 20,
-              boxShadow: '0 8px 32px rgba(0,0,0,0.16), 0 24px 64px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.80)',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.24), 0 24px 64px rgba(0,0,0,0.18)',
               overflow: 'hidden',
             }}
           >
@@ -167,6 +184,13 @@ export default function CopilotChat() {
                   {loading ? 'Réfléchit…' : '● En ligne'}
                 </p>
               </div>
+              <button
+                onClick={togglePosition}
+                className="transition-opacity hover:opacity-60 p-1"
+                title={position === 'right' ? 'Déplacer à gauche' : 'Déplacer à droite'}
+              >
+                <ArrowLeftRight className="w-4 h-4" style={{ color: 'rgb(var(--text-secondary))' }} />
+              </button>
               <button onClick={() => setOpen(false)} className="transition-opacity hover:opacity-60 p-1">
                 <X className="w-4 h-4" style={{ color: 'rgb(var(--text-secondary))' }} />
               </button>
@@ -200,7 +224,7 @@ export default function CopilotChat() {
                     className="max-w-[85%] rounded-2xl px-3.5 py-2.5 font-dm-sans text-sm leading-relaxed"
                     style={m.role === 'user'
                       ? { background: 'rgba(200,169,110,0.18)', border: '0.5px solid rgba(200,169,110,0.35)', color: 'rgb(var(--text-primary))', borderBottomRightRadius: 6 }
-                      : { background: 'rgba(255,255,255,0.60)', border: '0.5px solid rgba(200,169,110,0.12)', color: 'rgb(var(--text-primary))', borderBottomLeftRadius: 6, backdropFilter: 'blur(8px)' }
+                      : { background: 'rgb(var(--bg-elevated))', border: '0.5px solid var(--border-subtle)', color: 'rgb(var(--text-primary))', borderBottomLeftRadius: 6 }
                     }
                   >
                     {m.card === 'booking' ? (
@@ -235,10 +259,10 @@ export default function CopilotChat() {
                           em: ({ children }) => <em className="italic text-text-secondary">{children}</em>,
                           code: ({ inline, children }) => inline
                             ? <code className="font-dm-mono text-xs px-1 py-0.5 rounded" style={{ background: 'rgba(200,169,110,0.12)', color: 'rgb(var(--gold))' }}>{children}</code>
-                            : <pre className="font-dm-mono text-xs p-2 rounded mt-1 mb-1 overflow-x-auto" style={{ background: 'rgba(0,0,0,0.25)', color: 'rgb(var(--text-primary))' }}><code>{children}</code></pre>,
+                            : <pre className="font-dm-mono text-xs p-2 rounded mt-1 mb-1 overflow-x-auto" style={{ background: 'rgb(var(--bg-primary))', color: 'rgb(var(--text-primary))' }}><code>{children}</code></pre>,
                           table: ({ children }) => <div className="overflow-x-auto my-2"><table className="w-full text-xs border-collapse">{children}</table></div>,
                           th: ({ children }) => <th className="text-left px-2 py-1 font-dm-mono font-semibold" style={{ borderBottom: '1px solid rgba(200,169,110,0.25)', color: 'rgb(var(--gold))' }}>{children}</th>,
-                          td: ({ children }) => <td className="px-2 py-1" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>{children}</td>,
+                          td: ({ children }) => <td className="px-2 py-1" style={{ borderBottom: '1px solid var(--border-subtle)' }}>{children}</td>,
                           h1: ({ children }) => <p className="font-semibold text-base mb-1" style={{ color: 'rgb(var(--text-primary))' }}>{children}</p>,
                           h2: ({ children }) => <p className="font-semibold text-sm mb-1 mt-2" style={{ color: 'rgb(var(--text-primary))' }}>{children}</p>,
                           h3: ({ children }) => <p className="font-medium text-sm mb-0.5 mt-1.5" style={{ color: 'rgb(var(--gold))' }}>{children}</p>,
@@ -266,7 +290,7 @@ export default function CopilotChat() {
               {loading && (
                 <div className="flex justify-start">
                   <div className="rounded-2xl px-4 py-3 flex items-center gap-2"
-                    style={{ background: 'rgba(255,255,255,0.60)', border: '0.5px solid rgba(200,169,110,0.12)', borderBottomLeftRadius: 6 }}>
+                    style={{ background: 'rgb(var(--bg-elevated))', border: '0.5px solid var(--border-subtle)', borderBottomLeftRadius: 6 }}>
                     <Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: 'rgb(var(--gold))' }} />
                     <span className="font-dm-sans text-xs" style={{ color: 'rgb(var(--text-secondary))' }}>DIPpro Copilot réfléchit…</span>
                   </div>
@@ -289,7 +313,7 @@ export default function CopilotChat() {
                   disabled={loading}
                   className="flex-1 resize-none font-dm-sans text-sm rounded-xl px-3 py-2.5 outline-none transition-all"
                   style={{
-                    background: 'rgba(255,255,255,0.70)',
+                    background: 'var(--input-bg)',
                     border: '0.5px solid rgba(200,169,110,0.22)',
                     color: 'rgb(var(--text-primary))',
                     maxHeight: 120,
@@ -314,7 +338,7 @@ export default function CopilotChat() {
                   <Send className="w-4 h-4" />
                 </button>
               </div>
-              <p className="font-dm-mono text-xs text-center mt-1.5" style={{ color: 'rgba(100,116,139,0.60)' }}>
+              <p className="font-dm-mono text-xs text-center mt-1.5" style={{ color: 'rgb(var(--text-muted))' }}>
                 Entrée pour envoyer · Shift+Entrée pour saut de ligne
               </p>
             </div>
