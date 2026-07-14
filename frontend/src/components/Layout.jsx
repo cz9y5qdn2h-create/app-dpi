@@ -37,6 +37,12 @@ export default function Layout() {
     return () => window.removeEventListener('keydown', handler);
   }, []);
 
+  // Bloque le défilement de l'arrière-plan quand le menu mobile est ouvert
+  useEffect(() => {
+    document.body.style.overflow = sidebarOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [sidebarOpen]);
+
   return (
     <div className="flex min-h-screen relative overflow-hidden" style={{ background: 'var(--page-bg)' }}>
       <div className="dip-orb dip-orb-b" />
@@ -45,8 +51,9 @@ export default function Layout() {
 
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/60 z-20 lg:hidden"
+          className="fixed inset-0 bg-black/60 z-40 lg:hidden"
           onClick={() => setSidebarOpen(false)}
+          style={{ backdropFilter: 'blur(2px)', WebkitBackdropFilter: 'blur(2px)' }}
         />
       )}
 

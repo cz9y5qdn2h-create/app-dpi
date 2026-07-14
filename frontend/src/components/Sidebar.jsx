@@ -10,7 +10,7 @@ import LiquidGlassBtn from './ui/LiquidGlassBtn';
 import {
   LayoutDashboard, FileText, Upload, Bell, History,
   Users, Settings, Download, LogOut, Phone, Zap, ShieldAlert, Sparkles,
-  Sun, Moon, FolderSync, ScrollText, ChevronDown, Play,
+  Sun, Moon, FolderSync, ScrollText, ChevronDown, Play, X,
 } from 'lucide-react';
 
 const THEME_ICONS = { moon: Moon, sparkle: Sparkles, sun: Sun };
@@ -163,17 +163,27 @@ export default function Sidebar({ open, onClose }) {
     <>
       <aside className={`
         sidebar-panel
-        fixed top-0 left-0 h-full w-64 border-r border-border-subtle
-        flex flex-col z-30 transition-transform duration-300
+        fixed top-0 left-0 h-full w-[84vw] max-w-[320px] lg:w-64 lg:max-w-none border-r border-border-subtle
+        flex flex-col z-50 lg:z-30 transition-transform duration-300
         ${open ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0
       `}>
         {/* Logo */}
-        <div className="px-4 py-5" style={{ borderBottom: '0.5px solid rgba(200,169,110,0.12)', marginBottom: 8 }}>
-          <div className="lg-logo-brand-pill">
-            <div className="lg-logo-brand-icon">D</div>
-            <span className="lg-logo-brand-text">DIPpro</span>
+        <div className="px-4 py-5 flex items-center justify-between" style={{ borderBottom: '0.5px solid rgba(200,169,110,0.12)', marginBottom: 8 }}>
+          <div>
+            <div className="lg-logo-brand-pill">
+              <div className="lg-logo-brand-icon">D</div>
+              <span className="lg-logo-brand-text">DIPpro</span>
+            </div>
+            <p className="lg-logo-brand-sub">by Iralink</p>
           </div>
-          <p className="lg-logo-brand-sub">by Iralink</p>
+          <button
+            onClick={onClose}
+            aria-label="Fermer le menu"
+            className="lg:hidden flex items-center justify-center w-9 h-9 rounded-lg text-text-secondary hover:text-gold transition-colors flex-shrink-0"
+            style={{ background: 'var(--row-bg)' }}
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Navigation */}
