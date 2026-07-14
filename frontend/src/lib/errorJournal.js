@@ -1,0 +1,98 @@
+const JOURNAL_KEY = 'dippro-error-journal';
+const MAX_ENTRIES = 30;
+
+// Empêche d'envoyer 50 fois la même erreur dans une session
+const sentSignatures = new Set();
+
+function signature(entry) {
+  return `${entry.type}::${(entry.message || '').slice(0, 120)}::${(entry.stack || '').slice(0, 80)}`;
+}
+
+export function getJournal() {
+  try {
+    return JSON.parse(localStorage.getItem(JOURNAL_KEY) || '[]');
+  } catch {
+    return [];
+  }
+}
+
+export function clearJournal() {
+  localStorage.removeItem(JOURNAL_KEY);
+}
+
+function persist(entry) {
+  try {
+    const journal = getJournal();
+    journal.unshift(entry);
+    localStorage.setItem(JOURNAL_KEY, JSON.stringify(journal.slice(0, MAX_ENTRIES)));
+  } catch {}
+}
+
+async function report(entry) {
+  const sig = signature(entry);
+  if (sentSignatures.has(sig)) return;
+  sentSignatures.add(sig);
+
+  try {
+    const token = localStorage.getItem('access_token');
+    await fetch('/api/bugs/client-error', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: 'Bearer ' + token } : {}),
+      },
+      body: JSON.stringify({
+        message: entry.message,
+        stack: entry.stack,
+        component_stack: entry.componentStack,
+        page_url: entry.url,
+        error_type: entry.type,
+      }),
+      keepalive: true,
+    });
+  } catch {}
+}
+
+export function logError(error, { type = 'error', componentStack = null } = {}) {
+  const entry = {
+    type,
+    message: error?.message || String(error || 'Erreur inconnue'),
+    stack: error?.stack || null,
+    componentStack: componentStack || null,
+    url: typeof window !== 'undefined' ? window.location.href : '',
+    at: new Date().toISOString(),
+  };
+
+  console.error(`[errorJournal:${type}]`, entry.message, error);
+  persist(entry);
+  report(entry);
+  return entry;
+}
+
+let installed = false;
+
+export function installGlobalErrorHandlers() {
+  if (installed || typeof window === 'undefined') return;
+  installed = true;
+
+  window.addEventListener('error', (e) => {
+    // Erreurs de chargement de ressource (script/img) : e.error est souvent null
+    if (e.error) {
+      logError(e.error, { type: 'window.error' });
+    } else if (e.message) {
+      logError(new Error(e.message), { type: 'window.error' });
+    }
+  });
+
+  window.addEventListener('unhandledrejection', (e) => {
+    const reason = e.reason;
+    logError(reason instanceof Error ? reason : new Error(String(reason)), {
+      type: 'unhandledrejection',
+    });
+  });
+
+  // Échec de préchargement d'un chunk lazy après un redéploiement Vercel
+  window.addEventListener('vite:preloadError', (e) => {
+    logError(e.payload || new Error('vite:preloadError'), { type: 'chunk-load' });
+  });
+}

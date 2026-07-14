@@ -1,11 +1,12 @@
 import { Component } from 'react';
-import { AlertTriangle, RefreshCw, Bug } from 'lucide-react';
+import { AlertTriangle, RefreshCw, Bug, Copy, Check } from 'lucide-react';
 import BugReportModal from './BugReportModal';
+import { logError } from '../lib/errorJournal';
 
 export default class ErrorBoundary extends Component {
   constructor(props) {
     super(props);
-    this.state = { hasError: false, error: null, showBugModal: false };
+    this.state = { hasError: false, error: null, componentStack: null, showBugModal: false, copied: false };
   }
 
   static getDerivedStateFromError(error) {
@@ -13,20 +14,45 @@ export default class ErrorBoundary extends Component {
   }
 
   componentDidCatch(error, info) {
-    console.error('[ErrorBoundary]', error, info.componentStack);
+    const componentStack = info?.componentStack || null;
+    this.setState({ componentStack });
+
+    // Journalise + envoie automatiquement au backend (email admin + BDD)
+    logError(error, { type: 'react-render', componentStack });
+
     // ChunkLoadError après un déploiement Vercel : rechargement automatique une seule fois
     const isChunkError = error?.name === 'ChunkLoadError'
       || error?.message?.includes('Failed to fetch dynamically imported module')
       || error?.message?.includes('Loading chunk')
-      || error?.message?.includes('Importing a module script failed');
+      || error?.message?.includes('Importing a module script failed')
+      || error?.message?.includes('error loading dynamically imported module');
     if (isChunkError && !sessionStorage.getItem('chunk-reload')) {
       sessionStorage.setItem('chunk-reload', '1');
       window.location.reload();
     }
   }
 
+  copyDetails = () => {
+    const { error, componentStack } = this.state;
+    const details = [
+      `Message : ${error?.message || 'N/A'}`,
+      `Type : ${error?.name || 'Error'}`,
+      `Page : ${window.location.href}`,
+      `Date : ${new Date().toISOString()}`,
+      '',
+      '--- Stack ---',
+      error?.stack || 'N/A',
+      componentStack ? '\n--- Composant ---' + componentStack : '',
+    ].join('\n');
+    navigator.clipboard?.writeText(details).then(() => {
+      this.setState({ copied: true });
+      setTimeout(() => this.setState({ copied: false }), 2000);
+    });
+  };
+
   render() {
     if (this.state.hasError) {
+      const { error, componentStack, copied } = this.state;
       return (
         <>
           <div className="flex flex-col items-center justify-center min-h-64 gap-5 p-8 text-center">
@@ -36,15 +62,41 @@ export default class ErrorBoundary extends Component {
             <div>
               <p className="font-cormorant text-2xl text-text-primary mb-2">Une erreur s'est produite</p>
               <p className="font-dm-sans text-sm text-text-secondary max-w-sm">
-                {this.state.error?.message || 'Erreur inattendue. Rechargez la page pour continuer.'}
+                {error?.message || 'Erreur inattendue. Rechargez la page pour continuer.'}
               </p>
             </div>
+
+            {/* Détail technique — permet de diagnostiquer précisément le crash */}
+            <details className="w-full max-w-lg text-left">
+              <summary className="font-dm-mono text-xs text-text-muted cursor-pointer select-none hover:text-text-secondary transition-colors">
+                Détails techniques
+              </summary>
+              <pre className="mt-2 p-3 rounded-lg bg-bg-elevated border border-border-subtle font-dm-mono text-[11px] leading-relaxed text-text-secondary overflow-auto max-h-64 whitespace-pre-wrap break-words">
+{error?.name ? `${error.name}: ` : ''}{error?.message || 'Erreur inconnue'}
+{error?.stack ? '\n\n' + error.stack : ''}
+{componentStack ? '\n' + componentStack : ''}
+              </pre>
+              <button
+                onClick={this.copyDetails}
+                className="btn-ghost flex items-center gap-2 text-xs mt-2"
+              >
+                {copied ? <Check className="w-3.5 h-3.5 text-success" /> : <Copy className="w-3.5 h-3.5" />}
+                {copied ? 'Copié !' : 'Copier les détails'}
+              </button>
+            </details>
+
             <div className="flex items-center gap-3 flex-wrap justify-center">
               <button
-                onClick={() => this.setState({ hasError: false, error: null })}
+                onClick={() => window.location.reload()}
+                className="btn-primary flex items-center gap-2"
+              >
+                <RefreshCw className="w-4 h-4" /> Recharger la page
+              </button>
+              <button
+                onClick={() => this.setState({ hasError: false, error: null, componentStack: null })}
                 className="btn-ghost flex items-center gap-2"
               >
-                <RefreshCw className="w-4 h-4" /> Réessayer
+                Réessayer
               </button>
               <button
                 onClick={() => this.setState({ showBugModal: true })}

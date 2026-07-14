@@ -7,8 +7,11 @@ import { HelmetProvider } from 'react-helmet-async';
 import './i18n';
 import App from './App';
 import ThemeProvider from './context/ThemeContext';
+import { installGlobalErrorHandlers } from './lib/errorJournal';
 import './index.css';
 import './styles/liquid-glass.css';
+
+installGlobalErrorHandlers();
 
 const queryClient = new QueryClient({
   defaultOptions: {

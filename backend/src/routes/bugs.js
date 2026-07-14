@@ -14,6 +14,15 @@ const bugLimiter = rateLimit({
   message: { error: 'Trop de signalements. Réessayez dans une heure.' }
 });
 
+// Limiteur plus souple pour la capture automatique des erreurs JS (crash runtime)
+const clientErrorLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 40,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Trop d\'erreurs signalées.' }
+});
+
 async function resolveUser(req) {
   const header = req.headers.authorization;
   if (!header?.startsWith('Bearer ')) return {};
@@ -124,6 +133,41 @@ router.post('/', bugLimiter, async (req, res) => {
     user_agent: req.get('user-agent')?.slice(0, 500) || null,
     error_stack: error_stack?.slice(0, 5000) || null,
     severity,
+  }).select().single();
+
+  if (error) return res.status(500).json({ error: error.message });
+
+  notifyAdmin(report);
+  res.status(201).json({ ok: true, bug_id: report.id });
+});
+
+// POST /api/bugs/client-error — capture automatique des crashes JS (auth optionnelle)
+router.post('/client-error', clientErrorLimiter, async (req, res) => {
+  const { userId, userEmail, userCompany } = await resolveUser(req);
+  const { message, stack, component_stack, page_url, error_type } = req.body;
+
+  if (!message?.trim() && !stack?.trim()) {
+    return res.status(400).json({ error: 'message ou stack requis' });
+  }
+
+  const description = [
+    `[CRASH AUTO] ${error_type || 'Error'} : ${(message || 'sans message').slice(0, 500)}`,
+    component_stack ? `\n\nComposant :${component_stack.slice(0, 1500)}` : '',
+  ].join('');
+
+  const fullStack = [stack || '', component_stack ? `\n\n--- Component stack ---\n${component_stack}` : '']
+    .join('')
+    .slice(0, 5000);
+
+  const { data: report, error } = await supabaseAdmin.from('bug_reports').insert({
+    user_id: userId || null,
+    user_email: userEmail || null,
+    user_company: userCompany || null,
+    description: description.slice(0, 3000),
+    page_url: page_url?.slice(0, 500) || null,
+    user_agent: req.get('user-agent')?.slice(0, 500) || null,
+    error_stack: fullStack || null,
+    severity: 'bloquant',
   }).select().single();
 
   if (error) return res.status(500).json({ error: error.message });

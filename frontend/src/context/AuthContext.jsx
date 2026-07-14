@@ -14,14 +14,39 @@ const withTimeout = (promise, ms, fallback = null) => Promise.race([
   new Promise((resolve) => setTimeout(() => resolve(fallback), ms))
 ]);
 
+const PROFILE_CACHE_KEY = 'dippro-profile-v1';
+
+function getCachedProfile(userId) {
+  try {
+    const raw = localStorage.getItem(PROFILE_CACHE_KEY);
+    if (!raw) return null;
+    const { id, data } = JSON.parse(raw);
+    return id === userId ? data : null;
+  } catch {
+    return null;
+  }
+}
+
+function setCachedProfile(userId, data) {
+  try {
+    localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify({ id: userId, data }));
+  } catch {}
+}
+
+function clearCachedProfile() {
+  localStorage.removeItem(PROFILE_CACHE_KEY);
+}
+
 async function fetchProfile(userId) {
   try {
     const result = await withTimeout(
       supabase.from('users').select('*').eq('id', userId).single(),
-      3000,
+      4000,
       { data: null }
     );
-    return result?.data || null;
+    const profile = result?.data || null;
+    if (profile) setCachedProfile(userId, profile);
+    return profile;
   } catch {
     return null;
   }
@@ -49,7 +74,7 @@ export default function AuthProvider({ children }) {
       try {
         const result = await withTimeout(
           supabase.auth.getSession(),
-          5000,
+          3000,
           { data: { session: null } }
         );
         const session = result?.data?.session;
@@ -62,10 +87,21 @@ export default function AuthProvider({ children }) {
             if (mounted) setLoading(false);
             return;
           }
+
           setUser(session.user);
           localStorage.setItem('access_token', session.access_token);
-          const p = await fetchProfile(session.user.id);
-          if (mounted) setProfile(p);
+
+          // Afficher le profil caché immédiatement — l'UI s'affiche sans attendre Supabase
+          const cached = getCachedProfile(session.user.id);
+          if (cached && mounted) {
+            setProfile(cached);
+            setLoading(false);
+          }
+
+          // Fetch en background et mettre à jour si différent
+          const fresh = await fetchProfile(session.user.id);
+          if (mounted && fresh) setProfile(fresh);
+          if (!cached && mounted) setLoading(false);
         }
       } catch (err) {
         console.error('Auth init error:', err);
@@ -106,6 +142,7 @@ export default function AuthProvider({ children }) {
         } else {
           setUser(null);
           setProfile(null);
+          clearCachedProfile();
           localStorage.removeItem('access_token');
         }
         if (event !== 'INITIAL_SESSION' && mounted) setLoading(false);
@@ -174,6 +211,7 @@ export default function AuthProvider({ children }) {
 
   const logout = async () => {
     await supabase.auth.signOut();
+    clearCachedProfile();
     localStorage.removeItem('access_token');
     setUser(null);
     setProfile(null);
