@@ -7,7 +7,7 @@ import StatusBadge from '../components/ui/StatusBadge';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import {
   Upload, ChevronDown, ChevronUp, Edit3, Check, X,
-  FileText, ScrollText, Link2, Share2, Copy, Link2Off, Eye
+  FileText, ScrollText, Link2, Share2, Copy, Link2Off, Eye, Download
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -17,6 +17,7 @@ export default function ContractPage() {
   const [editingClause, setEditingClause] = useState(null);
   const [editContent, setEditContent] = useState('');
   const [shareLoading, setShareLoading] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [showSharePanel, setShowSharePanel] = useState(false);
   const [showLinkPanel, setShowLinkPanel] = useState(false);
 
@@ -54,6 +55,25 @@ export default function ContractPage() {
   const contract = data?.contracts?.find(c => c.status === 'actif') ?? data?.contracts?.[0];
   const clauses = contract?.contract_clauses?.sort((a, b) => a.clause_number - b.clause_number) || [];
   const dip = dipData?.dips?.find(d => d.status === 'actif') ?? dipData?.dips?.[0];
+
+  const handleDownloadPdf = async () => {
+    if (!contract) return;
+    setDownloadingPdf(true);
+    try {
+      const res = await api.get(`/contracts/${contract.id}/pdf`, { responseType: 'blob' });
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Contrat_${(contract.title || 'franchise').replace(/[^a-z0-9]/gi, '_')}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('PDF téléchargé');
+    } catch {
+      toast.error('Impossible de générer le PDF');
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
 
   const handleGenerateShareLink = async () => {
     if (!contract) return;
@@ -110,7 +130,15 @@ export default function ContractPage() {
         title={contract.title}
         subtitle={`Score de conformité : ${contract.conformity_score}% • ${clauses.length} clauses`}
         action={
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            <button
+              onClick={handleDownloadPdf}
+              disabled={downloadingPdf}
+              className="btn-secondary flex items-center gap-2 text-sm"
+            >
+              {downloadingPdf ? <LoadingSpinner size="sm" /> : <Download className="w-4 h-4" />}
+              PDF
+            </button>
             <button
               onClick={() => setShowLinkPanel(v => !v)}
               className={`btn-secondary flex items-center gap-2 text-sm ${showLinkPanel ? 'border-gold/40 text-gold' : ''}`}

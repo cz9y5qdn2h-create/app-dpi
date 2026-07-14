@@ -1,6 +1,7 @@
 const express = require('express');
 const path = require('path');
 const crypto = require('crypto');
+const PDFDocument = require('pdfkit');
 const { v4: uuidv4 } = require('uuid');
 const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware, requireFranchisor } = require('../middleware/auth');
@@ -496,6 +497,65 @@ router.get('/:id', authMiddleware, async (req, res) => {
     .single();
   if (error || !data) return res.status(404).json({ error: 'Contrat introuvable' });
   res.json({ contract: data });
+});
+
+// GET /api/contracts/:id/pdf — le contrat en document classique (conventionnel)
+router.get('/:id/pdf', authMiddleware, async (req, res) => {
+  const { data: contract, error } = await supabaseAdmin
+    .from('franchise_contracts')
+    .select('*, contract_clauses(*)')
+    .eq('id', req.params.id)
+    .eq('user_id', req.user.id)
+    .single();
+  if (error || !contract) return res.status(404).json({ error: 'Contrat introuvable' });
+
+  const { data: user } = await supabaseAdmin.from('users')
+    .select('company_name, siret, email').eq('id', req.user.id).single();
+  const clauses = (contract.contract_clauses || []).sort((a, b) => a.clause_number - b.clause_number);
+
+  const doc = new PDFDocument({ size: 'A4', margin: 56, bufferPages: true });
+  res.setHeader('Content-Type', 'application/pdf');
+  const safe = (user?.company_name || 'contrat').replace(/[^a-z0-9]/gi, '_').substring(0, 40);
+  res.setHeader('Content-Disposition', `attachment; filename="Contrat-franchise-${safe}.pdf"`);
+  doc.pipe(res);
+
+  // Page de garde
+  doc.moveDown(7);
+  doc.fillColor('#111').fontSize(26).font('Helvetica-Bold').text('Contrat de Franchise', { align: 'center' });
+  if (contract.title) {
+    doc.moveDown(0.5);
+    doc.fillColor('#888').fontSize(12).font('Helvetica').text(contract.title, { align: 'center' });
+  }
+  doc.moveDown(3);
+  doc.fillColor('#000').fontSize(16).font('Helvetica-Bold').text(user?.company_name || 'Franchiseur', { align: 'center' });
+  doc.moveDown(0.3);
+  doc.fillColor('#444').fontSize(10).font('Helvetica');
+  if (user?.siret) doc.text('SIRET : ' + user.siret, { align: 'center' });
+  doc.text('Établi le ' + new Date().toLocaleDateString('fr-FR'), { align: 'center' });
+
+  // Corps — clauses en flux continu
+  doc.addPage();
+  clauses.forEach((c, idx) => {
+    if (idx > 0) doc.moveDown(1.3);
+    doc.fillColor('#C8A96E').fontSize(9).font('Helvetica-Bold')
+      .text(`ARTICLE ${c.clause_number}`, { characterSpacing: 1 });
+    doc.moveDown(0.15);
+    doc.fillColor('#111').fontSize(14).font('Helvetica-Bold').text(c.clause_title || '');
+    doc.moveDown(0.4);
+    doc.fillColor('#222').fontSize(10.5).font('Helvetica')
+      .text(c.content || 'Non renseigné', { align: 'justify', lineGap: 2 });
+  });
+
+  const range = doc.bufferedPageRange();
+  for (let i = 0; i < range.count; i++) {
+    doc.switchToPage(range.start + i);
+    doc.page.margins.bottom = 0;
+    doc.fillColor('#999').fontSize(8).font('Helvetica')
+      .text(`Contrat de franchise — ${user?.company_name || ''} — Page ${i + 1} / ${range.count}`,
+        50, doc.page.height - 35, { align: 'center', width: doc.page.width - 100, lineBreak: false });
+  }
+
+  doc.end();
 });
 
 // POST /api/contracts/:id/link-dip — relie le contrat à un DIP existant (tunnel)

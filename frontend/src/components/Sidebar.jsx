@@ -10,7 +10,7 @@ import LiquidGlassBtn from './ui/LiquidGlassBtn';
 import {
   LayoutDashboard, FileText, Upload, Bell, History,
   Users, Settings, Download, LogOut, Phone, Zap, ShieldAlert, Sparkles,
-  Sun, Moon, FolderSync, ScrollText, ChevronDown, Play, X,
+  Sun, Moon, FolderSync, ScrollText, ChevronDown, Play, X, ShieldCheck,
 } from 'lucide-react';
 
 const THEME_ICONS = { moon: Moon, sparkle: Sparkles, sun: Sun };
@@ -139,6 +139,7 @@ export default function Sidebar({ open, onClose }) {
         { to: '/alerts', icon: Bell, label: t('nav.alerts'), count: pendingCount, tourId: 'nav-alerts' },
         { to: '/history', icon: History, label: t('nav.history'), tourId: 'nav-history' },
         { to: '/franchisees', icon: Users, label: t('nav.franchisees'), tourId: 'nav-franchisees' },
+        { to: '/certifications', icon: ShieldCheck, label: 'Certifications' },
         { to: '/export', icon: Download, label: t('nav.export') },
       ],
     },

@@ -61,6 +61,7 @@ export default function DIPPage() {
   const [formData, setFormData] = useState(emptyForm());
   const [generating, setGenerating] = useState(false);
   const [downloadingDocx, setDownloadingDocx] = useState(false);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [downloadingXlsx, setDownloadingXlsx] = useState(false);
   const [importingXlsx, setImportingXlsx] = useState(false);
   const [shareLoading, setShareLoading] = useState(false);
@@ -191,6 +192,25 @@ export default function DIPPage() {
     navigator.clipboard.writeText(url).then(() => toast.success('Lien copié dans le presse-papiers'));
   };
 
+  const handleDownloadPdf = async () => {
+    if (!dip) return;
+    setDownloadingPdf(true);
+    try {
+      const res = await api.get(`/export/${dip.id}/document-pdf`, { responseType: 'blob' });
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `DIP_${(profile?.company_name || 'Franchiseur').replace(/[^a-z0-9]/gi, '_')}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('PDF téléchargé');
+    } catch {
+      toast.error('Impossible de générer le PDF');
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
   const handleDownloadXlsx = async () => {
     if (!dip) return;
     setDownloadingXlsx(true);
@@ -283,6 +303,14 @@ export default function DIPPage() {
         action={
           dip && (
             <div className="flex gap-2 flex-wrap">
+              <button
+                onClick={handleDownloadPdf}
+                disabled={downloadingPdf}
+                className="btn-secondary flex items-center gap-2 text-sm"
+              >
+                {downloadingPdf ? <LoadingSpinner size="sm" /> : <Download className="w-4 h-4" />}
+                PDF
+              </button>
               <button
                 onClick={handleDownloadDocx}
                 disabled={downloadingDocx}

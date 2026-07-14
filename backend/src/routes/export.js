@@ -124,6 +124,65 @@ router.get('/:dipId/pdf', authMiddleware, async (req, res) => {
   doc.end();
 });
 
+// GET /api/export/:dipId/document-pdf — le DIP en document classique (conventionnel)
+router.get('/:dipId/document-pdf', authMiddleware, async (req, res) => {
+  const dip = await loadDip(req.params.dipId, req.user.id);
+  if (!dip) return res.status(404).json({ error: 'DIP introuvable' });
+
+  const user = await loadUser(req.user.id);
+  const sections = dip.dip_sections || [];
+
+  const doc = new PDFDocument({ size: 'A4', margin: 56, bufferPages: true });
+  res.setHeader('Content-Type', 'application/pdf');
+  const safe = (user.company_name || 'DIP').replace(/[^a-z0-9]/gi, '_').substring(0, 40);
+  res.setHeader('Content-Disposition', `attachment; filename="DIP-${safe}.pdf"`);
+  doc.pipe(res);
+
+  // Page de garde
+  doc.moveDown(7);
+  doc.fillColor('#111').fontSize(26).font('Helvetica-Bold')
+    .text("Document d'Information Précontractuelle", { align: 'center' });
+  doc.moveDown(0.5);
+  doc.fillColor('#888').fontSize(11).font('Helvetica')
+    .text('Loi Doubin — Article L.330-3 du Code de commerce', { align: 'center' });
+  doc.moveDown(3);
+  doc.fillColor('#000').fontSize(16).font('Helvetica-Bold')
+    .text(user.company_name || 'Franchiseur', { align: 'center' });
+  doc.moveDown(0.3);
+  doc.fillColor('#444').fontSize(10).font('Helvetica');
+  if (user.siret) doc.text('SIRET : ' + user.siret, { align: 'center' });
+  doc.text('Établi le ' + new Date().toLocaleDateString('fr-FR'), { align: 'center' });
+  doc.moveDown(3);
+  doc.fillColor('#999').fontSize(8).font('Helvetica')
+    .text("Ce document doit être remis au candidat franchisé au moins 20 jours avant la signature du contrat de franchise (Art. L.330-3 du Code de commerce).",
+      100, doc.y, { align: 'center', width: doc.page.width - 200 });
+
+  // Corps — sections en flux continu
+  doc.addPage();
+  sections.forEach((s, idx) => {
+    if (idx > 0) doc.moveDown(1.3);
+    doc.fillColor('#C8A96E').fontSize(9).font('Helvetica-Bold')
+      .text(`SECTION ${s.section_number}`, { characterSpacing: 1 });
+    doc.moveDown(0.15);
+    doc.fillColor('#111').fontSize(14).font('Helvetica-Bold').text(s.section_title || '');
+    doc.moveDown(0.4);
+    doc.fillColor('#222').fontSize(10.5).font('Helvetica')
+      .text(s.content || 'Non renseigné', { align: 'justify', lineGap: 2 });
+  });
+
+  // Pied de page numéroté (margins.bottom = 0 évite l'ajout de pages blanches)
+  const range = doc.bufferedPageRange();
+  for (let i = 0; i < range.count; i++) {
+    doc.switchToPage(range.start + i);
+    doc.page.margins.bottom = 0;
+    doc.fillColor('#999').fontSize(8).font('Helvetica')
+      .text(`${user.company_name || 'DIP'} — Document d'Information Précontractuelle — Page ${i + 1} / ${range.count}`,
+        50, doc.page.height - 35, { align: 'center', width: doc.page.width - 100, lineBreak: false });
+  }
+
+  doc.end();
+});
+
 // GET /api/export/:dipId/docx — DIP reformulé en DOCX
 router.get('/:dipId/docx', authMiddleware, async (req, res) => {
   const dip = await loadDip(req.params.dipId, req.user.id);
