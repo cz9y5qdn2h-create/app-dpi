@@ -24,6 +24,43 @@ function invalidateRoleCache(userId) {
   roleCache.delete(userId);
 }
 
+// Cache statut MFA — évite un appel listFactors() par requête. Un token émis
+// avant l'activation de l'A2F ne servira jamais plus de MFA_TTL sans être
+// re-vérifié auprès de Supabase.
+const mfaCache = new Map();
+const MFA_TTL = 5 * 60 * 1000;
+
+function getCachedMfaRequired(userId) {
+  const entry = mfaCache.get(userId);
+  if (entry && Date.now() < entry.exp) return entry.required;
+  mfaCache.delete(userId);
+  return null;
+}
+
+function setCachedMfaRequired(userId, required) {
+  mfaCache.set(userId, { required, exp: Date.now() + MFA_TTL });
+  if (mfaCache.size > 2000) {
+    const now = Date.now();
+    for (const [k, v] of mfaCache) if (now > v.exp) mfaCache.delete(k);
+  }
+}
+
+function invalidateMfaCache(userId) {
+  mfaCache.delete(userId);
+}
+
+// Décode le payload d'un JWT sans revérifier la signature — la signature et
+// l'expiration ont déjà été validées par supabaseAdmin.auth.getUser(token)
+// juste avant l'appel de cette fonction.
+function decodeJwtClaims(token) {
+  try {
+    const payload = token.split('.')[1];
+    return JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+  } catch {
+    return null;
+  }
+}
+
 const authMiddleware = async (req, res, next) => {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -39,6 +76,36 @@ const authMiddleware = async (req, res, next) => {
     const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
     if (error || !user) {
       return res.status(401).json({ error: 'Session expirée. Reconnectez-vous.' });
+    }
+
+    // Vérification réelle de l'A2F : un token émis avant la validation du
+    // second facteur (aal1) ne doit jamais donner accès à l'API si
+    // l'utilisateur a un facteur MFA vérifié enregistré. Sans ce contrôle,
+    // le MFA n'est qu'un écran côté frontend — un token aal1 intercepté ou
+    // obtenu directement via l'API Auth de Supabase contournerait totalement
+    // la vérification en deux étapes.
+    const claims = decodeJwtClaims(token);
+    const aal = claims?.aal || 'aal1';
+
+    if (aal !== 'aal2') {
+      let mfaRequired = getCachedMfaRequired(user.id);
+      if (mfaRequired === null) {
+        try {
+          const { data: factorsData, error: mfaError } = await supabaseAdmin.auth.admin.mfa.listFactors({ userId: user.id });
+          if (mfaError) throw mfaError;
+          mfaRequired = (factorsData?.factors || []).some(f => f.status === 'verified');
+          setCachedMfaRequired(user.id, mfaRequired);
+        } catch (mfaErr) {
+          // Panne transitoire de l'API admin Supabase : ne bloque pas tout le
+          // service pour un incident réseau ponctuel. Pas de cache posé —
+          // la vérification sera retentée à la prochaine requête.
+          console.error('MFA check failed (fail-open):', mfaErr.message);
+          mfaRequired = false;
+        }
+      }
+      if (mfaRequired) {
+        return res.status(401).json({ error: 'Vérification en deux étapes requise.', code: 'MFA_REQUIRED' });
+      }
     }
 
     req.user = { id: user.id, email: user.email || '', user_metadata: user.user_metadata || {} };
@@ -106,4 +173,4 @@ const requireFranchisor = async (req, res, next) => {
   }
 };
 
-module.exports = { authMiddleware, requireFranchisor, invalidateRoleCache };
+module.exports = { authMiddleware, requireFranchisor, invalidateRoleCache, invalidateMfaCache };

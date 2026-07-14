@@ -174,9 +174,16 @@ export default function AuthProvider({ children }) {
 
     mfaPendingRef.current = false;
     localStorage.setItem('access_token', data.session.access_token);
-    const p = await fetchProfile(data.user.id);
-    setProfile(p);
+
+    // Affiche le profil caché immédiatement — la redirection ne doit pas
+    // attendre l'aller-retour réseau vers Supabase (jusqu'à 4s de timeout)
+    const cached = getCachedProfile(data.user.id);
+    if (cached) setProfile(cached);
     setUser(data.user);
+
+    // Rafraîchit en arrière-plan, sans bloquer le retour de login()
+    fetchProfile(data.user.id).then(p => { if (p) setProfile(p); });
+
     return data.user;
   };
 
@@ -185,9 +192,13 @@ export default function AuthProvider({ children }) {
     if (error) throw new Error('Code incorrect');
     mfaPendingRef.current = false;
     localStorage.setItem('access_token', data.session.access_token);
-    const p = await fetchProfile(data.user.id);
-    setProfile(p);
+
+    const cached = getCachedProfile(data.user.id);
+    if (cached) setProfile(cached);
     setUser(data.user);
+
+    fetchProfile(data.user.id).then(p => { if (p) setProfile(p); });
+
     return data.user;
   };
 
