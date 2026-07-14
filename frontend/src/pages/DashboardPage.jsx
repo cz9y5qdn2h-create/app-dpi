@@ -167,22 +167,24 @@ export default function DashboardPage() {
           {/* Bandeau Corrections IA — visible si sections non conformes */}
           {sectionsToCorrect > 0 && (
             <div className="card lg-alert-gold p-6">
-              <div className="flex items-center gap-4 flex-wrap">
-                <div className="w-10 h-10 rounded-lg bg-gold/10 border border-gold/25 flex items-center justify-center flex-shrink-0">
-                  <Sparkles className="w-5 h-5 text-gold" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-dm-sans text-sm font-medium text-text-primary">
-                    {sectionsToCorrect} {t('dashboard.sectionsToImprove')}
-                  </p>
-                  <p className="font-dm-sans text-xs text-text-secondary mt-0.5">
-                    {t('dashboard.aiCorrectionHint')}
-                  </p>
+              <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                <div className="flex items-start gap-4 flex-1 min-w-0">
+                  <div className="w-10 h-10 rounded-lg bg-gold/10 border border-gold/25 flex items-center justify-center flex-shrink-0">
+                    <Sparkles className="w-5 h-5 text-gold" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-dm-sans text-sm font-medium text-text-primary">
+                      {sectionsToCorrect} {t('dashboard.sectionsToImprove')}
+                    </p>
+                    <p className="font-dm-sans text-xs text-text-secondary mt-0.5">
+                      {t('dashboard.aiCorrectionHint')}
+                    </p>
+                  </div>
                 </div>
                 <button
                   onClick={() => aiCorrectionMutation.mutate()}
                   disabled={aiCorrectionMutation.isPending}
-                  className="btn-liquid-glass flex items-center gap-2 flex-shrink-0"
+                  className="btn-liquid-glass flex items-center justify-center gap-2 flex-shrink-0 w-full sm:w-auto"
                 >
                   {aiCorrectionMutation.isPending ? (
                     <><LoadingSpinner size="sm" /> {t('dashboard.claudeAnalyzing')}</>
