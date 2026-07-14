@@ -13,6 +13,9 @@ import './styles/liquid-glass.css';
 
 installGlobalErrorHandlers();
 
+const BUILD_VERSION = '2026-07-14-api-fix';
+console.info('DIPpro build', BUILD_VERSION);
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
