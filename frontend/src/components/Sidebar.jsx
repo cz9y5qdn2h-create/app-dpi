@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import api from '../lib/api';
 import CalModal from './CalModal';
+import OnboardingModal from './OnboardingModal';
 import LiquidGlassBtn from './ui/LiquidGlassBtn';
 import {
   LayoutDashboard, FileText, Upload, Bell, History,
@@ -87,6 +88,7 @@ export default function Sidebar({ open, onClose }) {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [calOpen, setCalOpen] = useState(false);
+  const [presentationOpen, setPresentationOpen] = useState(false);
 
   const toggleLang = () => {
     const next = i18n.language === 'fr' ? 'en' : 'fr';
@@ -207,7 +209,7 @@ export default function Sidebar({ open, onClose }) {
         {/* Bottom section */}
         <div className="px-3 py-4 border-t border-border-subtle space-y-3">
           <button
-            onClick={() => { setCalOpen(true); onClose?.(); }}
+            onClick={() => { setPresentationOpen(true); onClose?.(); }}
             className="nav-link w-full text-left"
             style={{ opacity: 0.6, fontSize: 12 }}
           >
@@ -278,6 +280,9 @@ export default function Sidebar({ open, onClose }) {
       </aside>
 
       <CalModal open={calOpen} onClose={() => setCalOpen(false)} />
+      {presentationOpen && (
+        <OnboardingModal forceShow onClose={() => setPresentationOpen(false)} />
+      )}
     </>
   );
 }
