@@ -50,18 +50,18 @@ Secteurs cibles : restauration, immobilier, beauté/coiffure, fitness, services 
 ## Éditeur
 
 **Iralink Agency** — théo@iralink-agency.com
-Éditeur de la plateforme DIPpro, accessible à l'adresse https://dippro.business
+Éditeur de la plateforme DIPpro, accessible à l'adresse https://iralink-agency.dippro.business
 Hébergement exclusivement en Europe (AWS eu-west / Supabase)
 
 ## Pages importantes
 
-- Site principal : https://dippro.business/
-- Accès anticipé / liste d'attente : https://dippro.business/waitlist
-- Inscription : https://dippro.business/register
-- Connexion : https://dippro.business/login
-- CGU : https://dippro.business/cgu
-- Politique de confidentialité : https://dippro.business/privacy
-- Mentions légales : https://dippro.business/mentions-legales
+- Site principal : https://iralink-agency.dippro.business/
+- Accès anticipé / liste d'attente : https://iralink-agency.dippro.business/waitlist
+- Inscription : https://iralink-agency.dippro.business/register
+- Connexion : https://iralink-agency.dippro.business/login
+- CGU : https://iralink-agency.dippro.business/cgu
+- Politique de confidentialité : https://iralink-agency.dippro.business/privacy
+- Mentions légales : https://iralink-agency.dippro.business/mentions-legales
 
 ## Mots-clés SEO principaux
 

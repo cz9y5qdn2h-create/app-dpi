@@ -444,8 +444,8 @@ export default function LandingPage() {
       <Helmet>
         <title>DIPpro — Gestion légale du DIP pour franchiseurs</title>
         <meta name="description" content="DIPpro automatise la gestion légale du Document d'Information Précontractuelle. Score de conformité Loi Doubin en 30 secondes, attestation PDF certifiée SHA-256, alertes réglementaires automatiques. Pour franchiseurs français." />
-        <link rel="canonical" href="https://dippro.business/" />
-        <meta property="og:url" content="https://dippro.business/" />
+        <link rel="canonical" href="https://iralink-agency.dippro.business/" />
+        <meta property="og:url" content="https://iralink-agency.dippro.business/" />
         <script type="application/ld+json">{JSON.stringify(faqSchema)}</script>
         <script type="application/ld+json">{JSON.stringify(howToSchema)}</script>
       </Helmet>

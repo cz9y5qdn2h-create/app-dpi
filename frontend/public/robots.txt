@@ -23,7 +23,7 @@ Disallow: /integrations
 Disallow: /analytics
 Disallow: /api/
 
-Sitemap: https://dippro.business/sitemap.xml
+Sitemap: https://iralink-agency.dippro.business/sitemap.xml
 
 User-agent: GPTBot
 Allow: /

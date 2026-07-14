@@ -13,7 +13,7 @@ const LEGAL_CONTENT = {
     sections: [
       {
         title: "1. Objet et champ d'application",
-        content: `Les présentes Conditions Générales d'Utilisation (CGU) régissent l'accès et l'utilisation de la plateforme DIPpro, service SaaS édité par Iralink Agency (ci-après « Iralink » ou « l'Éditeur »), accessible à l'adresse dippro.business.
+        content: `Les présentes Conditions Générales d'Utilisation (CGU) régissent l'accès et l'utilisation de la plateforme DIPpro, service SaaS édité par Iralink Agency (ci-après « Iralink » ou « l'Éditeur »), accessible à l'adresse iralink-agency.dippro.business.
 
 DIPpro est un outil d'aide à la gestion et à la conformité des Documents d'Information Précontractuelle (DIP) pour les franchiseurs, dans le cadre de la Loi Doubin (Loi n° 89-1008 du 31 décembre 1989, codifiée à l'article L.330-3 du Code de commerce et ses décrets d'application).
 

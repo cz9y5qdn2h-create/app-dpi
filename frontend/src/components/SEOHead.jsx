@@ -1,6 +1,6 @@
 import { Helmet } from 'react-helmet-async';
 
-const SITE_URL = 'https://dippro.business';
+const SITE_URL = 'https://iralink-agency.dippro.business';
 const SITE_NAME = 'DIPpro';
 const OG_IMAGE = `${SITE_URL}/og-image.png`;
 const DEFAULT_DESC = "DIPpro automatise la gestion légale du Document d'Information Précontractuelle. Score de conformité Loi Doubin en 30 secondes. Attestation PDF certifiée. Pour franchiseurs français.";
