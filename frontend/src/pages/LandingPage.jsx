@@ -924,7 +924,7 @@ export default function LandingPage() {
               <div>
                 <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 11, fontWeight: 600, color: 'rgba(244,242,238,0.30)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>Produit</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {[['#fonctionnalites', 'Fonctionnalités'], ['#comment', 'Comment ça marche'], ['#faq', 'FAQ']].map(([href, label]) => (
+                  {[['#fonctionnalites', 'Fonctionnalités'], ['#comment', 'Comment ça marche'], ['#faq', 'FAQ'], ['/blog', 'Blog']].map(([href, label]) => (
                     <a key={href} href={href} style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 13, color: 'rgba(244,242,238,0.32)', textDecoration: 'none' }}
                       onMouseEnter={e => (e.target.style.color = 'rgba(244,242,238,0.65)')}
                       onMouseLeave={e => (e.target.style.color = 'rgba(244,242,238,0.32)')}>
