@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   Shield, CheckCircle, Bell, Users, Download, Zap, ArrowRight,
   ChevronDown, Sparkles, AlertTriangle, FileText, Send, Lock,
-  FileCheck, Clock, TrendingUp, Star, GitBranch
+  FileCheck, Clock, TrendingUp, Star, GitBranch, Menu, X
 } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import api from '../lib/api';
@@ -387,6 +387,9 @@ export default function LandingPage() {
   const formRef = useRef(null);
   const [waitlistCount, setWaitlistCount] = useState(null);
   const [formDone, setFormDone] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const NAV_LINKS = [['#comment', 'Comment ça marche'], ['#fonctionnalites', 'Fonctionnalités'], ['#faq', 'FAQ']];
 
   useEffect(() => {
     api.get('/waitlist/count').then(r => setWaitlistCount(r.data?.count)).catch(() => {});
@@ -461,8 +464,8 @@ export default function LandingPage() {
           </div>
 
           {/* Nav desktop */}
-          <nav style={{ display: 'flex', alignItems: 'center', gap: 24 }} className="hidden md:flex">
-            {[['#comment', 'Comment ça marche'], ['#fonctionnalites', 'Fonctionnalités'], ['#faq', 'FAQ']].map(([href, label]) => (
+          <nav style={{ alignItems: 'center', gap: 24 }} className="hidden md:flex">
+            {NAV_LINKS.map(([href, label]) => (
               <a key={href} href={href} style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 13, color: 'rgba(244,242,238,0.42)', textDecoration: 'none', transition: 'color 0.15s' }}
                 onMouseEnter={e => (e.target.style.color = '#F4F2EE')}
                 onMouseLeave={e => (e.target.style.color = 'rgba(244,242,238,0.42)')}>
@@ -471,17 +474,75 @@ export default function LandingPage() {
             ))}
           </nav>
 
-          {/* Right CTA */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Link to="/login" style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 13, color: 'rgba(244,242,238,0.40)', textDecoration: 'none' }}
-              className="hidden sm:block">
+          {/* Right CTA — ordinateurs et tablettes */}
+          <div style={{ alignItems: 'center', gap: 10 }} className="hidden md:flex">
+            <Link to="/login" style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 13, color: 'rgba(244,242,238,0.40)', textDecoration: 'none' }}>
               Connexion
             </Link>
             <button onClick={scrollToForm} style={btnGold}>
               Liste d&apos;attente <ArrowRight style={{ width: 15, height: 15 }} />
             </button>
           </div>
+
+          {/* Hamburger — mobile uniquement */}
+          <button
+            onClick={() => setMenuOpen(o => !o)}
+            aria-label={menuOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
+            className="md:hidden flex items-center justify-center"
+            style={{
+              width: 40, height: 40, borderRadius: 10,
+              background: 'rgba(200,169,110,0.10)', border: '0.5px solid rgba(200,169,110,0.30)',
+              color: GOLD, cursor: 'pointer',
+            }}
+          >
+            {menuOpen ? <X style={{ width: 20, height: 20 }} /> : <Menu style={{ width: 20, height: 20 }} />}
+          </button>
         </div>
+
+        {/* Panneau menu mobile */}
+        {menuOpen && (
+          <div
+            className="md:hidden flex flex-col"
+            style={{
+              borderTop: '0.5px solid rgba(200,169,110,0.14)',
+              background: 'rgba(8,8,8,0.96)',
+              backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
+              padding: '8px 16px 20px',
+              gap: 4,
+            }}
+          >
+            {NAV_LINKS.map(([href, label]) => (
+              <a
+                key={href}
+                href={href}
+                onClick={() => setMenuOpen(false)}
+                style={{
+                  fontFamily: 'DM Sans, sans-serif', fontSize: 15, color: 'rgba(244,242,238,0.75)',
+                  textDecoration: 'none', padding: '14px 8px', borderRadius: 8,
+                  borderBottom: '0.5px solid rgba(244,242,238,0.06)',
+                }}
+              >
+                {label}
+              </a>
+            ))}
+            <Link
+              to="/login"
+              onClick={() => setMenuOpen(false)}
+              style={{
+                fontFamily: 'DM Sans, sans-serif', fontSize: 15, color: 'rgba(244,242,238,0.75)',
+                textDecoration: 'none', padding: '14px 8px', borderRadius: 8,
+              }}
+            >
+              Connexion
+            </Link>
+            <button
+              onClick={() => { setMenuOpen(false); scrollToForm(); }}
+              style={{ ...btnGold, width: '100%', justifyContent: 'center', marginTop: 10 }}
+            >
+              Liste d&apos;attente <ArrowRight style={{ width: 15, height: 15 }} />
+            </button>
+          </div>
+        )}
       </header>
 
       {/* ── HERO ─────────────────────────────────────────────── */}
