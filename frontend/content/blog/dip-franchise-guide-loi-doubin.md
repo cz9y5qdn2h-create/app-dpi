@@ -8,7 +8,7 @@ author: "Iralink Agency"
 
 ## Qu'est-ce que le DIP en franchise ?
 
-Le **Document d'Information Précontractuelle (DIP)** est un document obligatoire que tout franchiseur doit remettre à chaque candidat franchisé **avant** la signature du contrat de franchise. Son cadre légal est la **Loi Doubin** (loi n° 89-1008 du 31 décembre 1989), codifiée à l'**article L.330-3 du Code de commerce**, complétée par le **Décret n° 91-337 du 1er avril 1991** qui en fixe le contenu précis.
+Le **Document d'Information Précontractuelle (DIP)** est un document obligatoire que tout franchiseur doit remettre à chaque candidat franchisé **avant** la signature du contrat de franchise. Son cadre légal est la **Loi Doubin** (loi n° 89-1008 du 31 décembre 1989), codifiée à l'**article L.330-3 du Code de commerce**, complétée par le **Décret n° 91-337 du 4 avril 1991** qui en fixe le contenu précis.
 
 Son objectif : permettre au futur franchisé de **s'engager en connaissance de cause**, avec une information sincère sur le réseau, sa santé financière et le marché.
 

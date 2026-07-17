@@ -529,6 +529,146 @@ global_score : 0-100. Pénalités : -20 par section non_conforme, -8 par a_verif
 };
 
 /**
+ * Générer un DIP complet à partir du formulaire guidé (8 étapes) rempli par le
+ * franchiseur, avec la même grille de conformité stricte Loi Doubin que
+ * parseDIPSections (bloquant légal vs qualité), pour garantir un niveau de
+ * rigueur juridique identique quelle que soit la voie d'entrée (upload ou
+ * génération assistée).
+ */
+const generateDIPFromForm = async (formData, sourceText = '') => {
+  const sourceSection = sourceText
+    ? `\nDOCUMENT SOURCE FOURNI EN COMPLÉMENT (à utiliser pour enrichir les sections insuffisamment couvertes par le formulaire) :\n${sourceText.substring(0, 12000)}\n`
+    : '';
+
+  const result = await callClaudeToolUse({
+    model: MODEL_OPUS,
+    max_tokens: 16000,
+    thinking: { type: 'adaptive' },
+    system: CACHED_SYSTEM,
+    messages: [{
+      role: 'user',
+      content: `Rédige un DIP complet et conforme à la Loi Doubin (art. L.330-3 Code de commerce, Décret n°91-337 du 4 avril 1991) à partir des données ci-dessous, en respectant strictement la grille de conformité par section.
+
+DONNÉES DU FORMULAIRE FRANCHISEUR :
+${JSON.stringify(formData, null, 2)}
+${sourceSection}
+GRILLE DE CONFORMITÉ OBLIGATOIRE PAR SECTION (Décret 91-337) :
+
+SECTION 1 — Identité du franchiseur [Réf. Décret art.1 §1]
+BLOQUANT si absent : dénomination sociale, forme juridique, numéro RCS + ville, adresse siège, nom du dirigeant responsable
+
+SECTION 2 — Historique dirigeant et enseigne [Réf. Décret art.1 §2]
+BLOQUANT si absent : historique professionnel du dirigeant sur 5 ans minimum, date de création de l'enseigne
+
+SECTION 3 — État du réseau [Réf. Décret art.1 §3]
+BLOQUANT si absent : nombre exact de franchisés actifs, entrées/sorties sur 12 mois avec motifs
+
+SECTION 4 — Comptes annuels [Réf. Décret art.1 §4 — BLOQUANT absolu]
+BLOQUANT si absent : résultats des 2 derniers exercices clos (CA et résultat net), dates de clôture
+
+SECTION 5 — Marque et propriété intellectuelle [Réf. Décret art.1 §5]
+BLOQUANT si absent : numéro de dépôt INPI de la marque principale, statut de la marque
+
+SECTION 6 — Informations financières [Réf. Décret art.1 §6 — BLOQUANT absolu]
+BLOQUANT si absent : droit d'entrée (ou mention explicite "aucun"), redevance d'exploitation, redevance publicitaire, investissement global estimé
+
+SECTION 7 — Territoire exclusif [Réf. Décret art.1 §7]
+BLOQUANT si absent : définition du périmètre territorial, mention du caractère exclusif ou non
+
+SECTION 8 — Contrat [Réf. Décret art.1 §8 — BLOQUANT absolu]
+BLOQUANT si absent : durée du contrat, conditions de renouvellement, conditions et motifs de résiliation
+
+SECTION 9 — Litiges [Réf. Décret art.1 §9 — BLOQUANT absolu]
+BLOQUANT si absent : toute mention de litiges est obligatoire ; si aucun, la phrase "Aucun litige en cours à la date de remise du présent document" doit figurer explicitement
+
+SECTION 10 — Comptes prévisionnels [Réf. Décret art.1 §10]
+Non bloquant si absent, mais fortement recommandé. Si présent, DOIT inclure un avertissement explicite sur le caractère non garanti des projections (Cass. com. 1er juin 2022 — dol sur prévisionnels grossièrement erronés sans réserve).
+
+INSTRUCTIONS :
+- Rédige un texte complet, professionnel et directement utilisable dans le DIP officiel pour chaque section
+- Utilise les données du formulaire en priorité absolue ; le document source ne sert qu'à compléter ce qui manque
+- Si une donnée obligatoire reste introuvable après formulaire et document source, écris "Non renseigné — à compléter avant remise" dans le contenu et liste-la dans mandatory_elements_missing
+- N'invente JAMAIS une donnée factuelle (chiffres, dates, numéros RCS/INPI) absente des sources fournies
+
+RETOURNE CE JSON EXACTEMENT — sans markdown, sans texte avant ou après :
+{
+  "sections": [
+    {
+      "section_number": 1,
+      "section_title": "Identité du franchiseur",
+      "content": "texte rédigé pour cette section, prêt à intégrer dans le DIP",
+      "status": "conforme",
+      "legal_blocking": false,
+      "mandatory_elements_found": ["dénomination sociale", "RCS"],
+      "mandatory_elements_missing": [],
+      "issues": [],
+      "legal_reference": "Décret 91-337 art.1 §1"
+    }
+  ],
+  "compliance_level": "CONFORME",
+  "blocking_issues": [],
+  "global_score": 85,
+  "summary": "état global du DIP généré, lacunes bloquantes éventuelles"
+}
+
+Valeurs pour status : "conforme" | "a_verifier" | "non_conforme"
+Valeurs pour compliance_level : "CONFORME" | "RÉVISIONS_MINEURES" | "RÉVISIONS_MAJEURES" | "BLOQUANT_NON_ENVOYABLE"
+global_score : 0-100. Pénalités : -20 par section non_conforme, -8 par a_verifier.`
+    }]
+  }, 'generate_dip_from_form', DIP_ANALYSIS_SCHEMA, 2);
+  if (!result) throw new Error('L\'IA n\'a pas retourné de JSON valide. Réessayez.');
+
+  if (!result.compliance_level) {
+    const hasBlocking = (result.sections || []).some(s => s.legal_blocking);
+    const nonConformes = (result.sections || []).filter(s => s.status === 'non_conforme').length;
+    const aVerifier = (result.sections || []).filter(s => s.status === 'a_verifier').length;
+    if (hasBlocking) result.compliance_level = 'BLOQUANT_NON_ENVOYABLE';
+    else if (nonConformes) result.compliance_level = 'RÉVISIONS_MAJEURES';
+    else if (aVerifier) result.compliance_level = 'RÉVISIONS_MINEURES';
+    else result.compliance_level = 'CONFORME';
+  }
+
+  result.global_score = result.global_score ?? Math.round(
+    ((result.sections || []).filter(s => s.status === 'conforme').length / Math.max(1, (result.sections || []).length)) * 100
+  );
+
+  return result;
+};
+
+/**
+ * Rédige le texte d'un champ du formulaire DIP à partir de réponses à des
+ * sous-questions guidées (widget "Rédiger avec l'assistant IA").
+ */
+const formulateField = async (fieldLabel, answers) => {
+  const qaBlock = (answers || [])
+    .filter(qa => qa.answer?.trim())
+    .map(qa => `Q : ${qa.question}\nR : ${qa.answer}`)
+    .join('\n\n');
+
+  if (!qaBlock) throw new Error('Aucune réponse fournie.');
+
+  const message = await callClaude({
+    model: MODEL_SONNET,
+    max_tokens: 1024,
+    system: [{ type: 'text', text: 'Tu es un rédacteur juridique spécialisé en droit de la franchise française (Loi Doubin, art. L.330-3 Code de commerce). Tu rédiges des textes factuels, professionnels, directement utilisables dans un DIP officiel — jamais de donnée inventée.', cache_control: { type: 'ephemeral' } }],
+    messages: [{
+      role: 'user',
+      content: `Rédige le texte du champ "${fieldLabel}" à partir des réponses suivantes du franchiseur :
+
+${qaBlock}
+
+INSTRUCTIONS :
+- Un paragraphe fluide et professionnel, pas une liste de questions/réponses
+- Utilise UNIQUEMENT les informations fournies ci-dessus — n'invente aucune donnée
+- Si une réponse est vide ou insuffisante, n'en fais pas mention plutôt que d'inventer
+- Réponds uniquement avec le texte rédigé, sans préambule ni guillemets`
+    }]
+  });
+
+  return extractText(message);
+};
+
+/**
  * Comparer deux versions d'un DIP — détecter les changements à valider légalement
  */
 const compareDIPVersions = async (previousText, newText) => {
@@ -1419,7 +1559,7 @@ INSTRUCTIONS :
 };
 
 module.exports = {
-  parseDIPSections, compareDIPVersions, detectChanges,
+  parseDIPSections, generateDIPFromForm, formulateField, compareDIPVersions, detectChanges,
   generateUpdateSummary, correctSection, correctSectionWithAnswers,
   analyzeDocumentForDIPImpact, generateChangesCertificate,
   parseContractClauses, compareContractVersions, generateContractFromDIP,

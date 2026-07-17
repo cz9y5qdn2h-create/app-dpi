@@ -1,15 +1,14 @@
 const express = require('express');
 const path = require('path');
 const { authMiddleware, requireFranchisor } = require('../middleware/auth');
-const { analyzeDIP, generateDIPFromForm, compareDIPVersions, verifyLegalData, generateDocx } = require('../config/dipAgent');
+const { parseDIPSections, generateDIPFromForm, formulateField, compareDIPVersions } = require('../config/claude');
+const { generateDocx } = require('../config/docxGenerator');
 const errMsg = require('../config/errorMessage');
 
 const router = express.Router();
 
 const MAX_TEXT_CHARS = 500_000;
 const MAX_FILE_BYTES = 50 * 1024 * 1024;
-
-const SAFE_FILENAME_RE = /^[a-zA-Z0-9._-]+$/;
 
 const sanitizeFilename = (name) =>
   String(name || 'document.pdf').replace(/[^a-zA-Z0-9._-]/g, '_').substring(0, 255);
@@ -28,7 +27,7 @@ const extractText = async (buffer, filename) => {
   throw new Error('Format non supporté (PDF ou DOCX requis)');
 };
 
-// POST /api/agent/analyze
+// POST /api/agent/analyze — analyse un DIP existant (texte ou fichier)
 router.post('/analyze', authMiddleware, requireFranchisor, async (req, res) => {
   try {
     let rawText = req.body.text;
@@ -45,14 +44,14 @@ router.post('/analyze', authMiddleware, requireFranchisor, async (req, res) => {
     if (!rawText) return res.status(400).json({ error: 'text ou file requis' });
     if (rawText.length > MAX_TEXT_CHARS) rawText = rawText.substring(0, MAX_TEXT_CHARS);
 
-    const result = await analyzeDIP(rawText);
+    const result = await parseDIPSections(rawText);
     res.json({ success: true, ...result });
   } catch (err) {
     res.status(500).json({ error: errMsg(err) });
   }
 });
 
-// POST /api/agent/generate
+// POST /api/agent/generate — génère un DIP complet depuis le formulaire guidé
 router.post('/generate', authMiddleware, requireFranchisor, async (req, res) => {
   try {
     const { formData, file, filename } = req.body;
@@ -76,7 +75,21 @@ router.post('/generate', authMiddleware, requireFranchisor, async (req, res) => 
   }
 });
 
-// POST /api/agent/compare
+// POST /api/agent/formulate-field — rédige un champ du formulaire depuis des sous-questions guidées
+router.post('/formulate-field', authMiddleware, requireFranchisor, async (req, res) => {
+  try {
+    const { field_label, answers } = req.body;
+    if (!field_label || !Array.isArray(answers)) {
+      return res.status(400).json({ error: 'field_label et answers requis' });
+    }
+    const text = await formulateField(field_label, answers);
+    res.json({ success: true, text });
+  } catch (err) {
+    res.status(500).json({ error: errMsg(err) });
+  }
+});
+
+// POST /api/agent/compare — compare deux versions d'un DIP
 router.post('/compare', authMiddleware, requireFranchisor, async (req, res) => {
   try {
     let { previousText, newText } = req.body;
@@ -102,20 +115,7 @@ router.post('/compare', authMiddleware, requireFranchisor, async (req, res) => {
   }
 });
 
-// POST /api/agent/verify
-router.post('/verify', authMiddleware, requireFranchisor, async (req, res) => {
-  try {
-    const { companyInfo } = req.body;
-    if (!companyInfo) return res.status(400).json({ error: 'companyInfo requis' });
-
-    const result = await verifyLegalData(companyInfo);
-    res.json({ success: true, ...result });
-  } catch (err) {
-    res.status(500).json({ error: errMsg(err) });
-  }
-});
-
-// POST /api/agent/docx
+// POST /api/agent/docx — export DOCX du DIP généré
 router.post('/docx', authMiddleware, requireFranchisor, async (req, res) => {
   try {
     const { sections, companyName } = req.body;

@@ -1,11 +1,11 @@
 # DIPpro by Iralink
 
-> DIPpro est un logiciel SaaS B2B pour franchiseurs français. Il automatise la gestion légale du Document d'Information Précontractuelle (DIP), obligatoire selon la Loi Doubin (Art. L.330-3 Code de commerce, Décret n°91-337 du 1er avril 1991).
+> DIPpro est un logiciel SaaS B2B pour franchiseurs français. Il automatise la gestion légale du Document d'Information Précontractuelle (DIP), obligatoire selon la Loi Doubin (Art. L.330-3 Code de commerce, Décret n°91-337 du 4 avril 1991).
 
 ## Qu'est-ce que DIPpro ?
 
 DIPpro est une plateforme de conformité franchise qui :
-- Analyse automatiquement un DIP par intelligence artificielle (Claude Opus 4.7) en moins de 30 secondes
+- Analyse automatiquement un DIP par intelligence artificielle (Claude Opus 4.8) en moins de 30 secondes
 - Évalue les 10 sections réglementaires obligatoires de la Loi Doubin avec un score de conformité
 - Génère un DIP complet via un formulaire en 8 étapes assisté par IA
 - Détecte les modifications légales à notifier sous 20 jours aux franchisés
@@ -16,7 +16,7 @@ DIPpro est une plateforme de conformité franchise qui :
 ## Cadre légal couvert
 
 - **Loi Doubin** (Loi n° 89-1008 du 31 décembre 1989) — Art. L.330-3 Code de commerce
-- **Décret n°91-337 du 1er avril 1991** — contenu obligatoire du DIP (10 sections)
+- **Décret n°91-337 du 4 avril 1991** — contenu obligatoire du DIP (10 sections)
 - **Obligation de délai** : le DIP doit être remis 20 jours minimum avant signature du contrat de franchise
 - **Jurisprudence** : Cour de cassation, arrêt du 26 juin 2024 — nullité du contrat en cas de DIP absent ou inexact
 - **RGPD** — hébergement Europe, audit log immuable, chiffrement TLS
