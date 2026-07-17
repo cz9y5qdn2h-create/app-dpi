@@ -28,6 +28,7 @@ const integrationsRoutes = require('./routes/integrations');
 const cronRoutes          = require('./routes/cron');
 const feedbackRoutes      = require('./routes/feedback');
 const bugRoutes           = require('./routes/bugs');
+const documentRoutes      = require('./routes/documents');
 
 const app = express();
 
@@ -123,6 +124,7 @@ app.use('/api/integrations',  integrationsRoutes);
 app.use('/api/cron',          cronRoutes);
 app.use('/api/feedback',      feedbackRoutes);
 app.use('/api/bugs',          bugRoutes);
+app.use('/api/documents',     documentRoutes);
 
 // Health check — ne retourne jamais les clés en clair
 app.get('/api/health', async (req, res) => {

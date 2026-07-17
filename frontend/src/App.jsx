@@ -33,6 +33,7 @@ const FranchiseesPage    = lazy(() => import('./pages/FranchiseesPage'));
 const SettingsPage       = lazy(() => import('./pages/SettingsPage'));
 const ExportPage         = lazy(() => import('./pages/ExportPage'));
 const CertificatesPage   = lazy(() => import('./pages/CertificatesPage'));
+const DocumentsPage      = lazy(() => import('./pages/DocumentsPage'));
 const AdminPage          = lazy(() => import('./pages/AdminPage'));
 const ApiConfigPage      = lazy(() => import('./pages/ApiConfigPage'));
 const MonitorPage        = lazy(() => import('./pages/MonitorPage'));
@@ -118,6 +119,7 @@ export default function App() {
           <Route path="settings"    element={<ErrorBoundary><S><SettingsPage /></S></ErrorBoundary>} />
           <Route path="export"      element={<ErrorBoundary><S><ExportPage /></S></ErrorBoundary>} />
           <Route path="certifications" element={<ErrorBoundary><S><CertificatesPage /></S></ErrorBoundary>} />
+          <Route path="documents"      element={<ErrorBoundary><S><DocumentsPage /></S></ErrorBoundary>} />
           <Route path="admin"       element={<ErrorBoundary><S><AdminPage /></S></ErrorBoundary>} />
           <Route path="monitor"     element={FEATURES.monitor ? <ErrorBoundary><S><MonitorPage /></S></ErrorBoundary> : <Navigate to="/dashboard" replace />} />
           <Route path="monitoring"  element={<ErrorBoundary><S><DocMonitoringPage /></S></ErrorBoundary>} />

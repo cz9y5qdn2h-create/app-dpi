@@ -923,6 +923,55 @@ Sois direct et factuel.`
   return extractText(message);
 };
 
+// Types de pièces sources que le franchiseur peut fournir dans sa bibliothèque
+// de documents, mappés sur la section DIP qu'ils permettent de renseigner.
+// Source de vérité unique — réutilisée par la route documents.js et le frontend.
+const DOCUMENT_TYPES = [
+  { key: 'kbis',                label: 'Extrait Kbis / RCS',                          section_number: 1,    required: true  },
+  { key: 'statuts',              label: 'Statuts de la société',                       section_number: 1,    required: true  },
+  { key: 'parcours_dirigeant',   label: 'CV / parcours du dirigeant (5 ans)',          section_number: 2,    required: false },
+  { key: 'liste_franchises',     label: 'Liste des franchisés et succursales',          section_number: 3,    required: true  },
+  { key: 'comptes_n1',           label: 'Comptes annuels — dernier exercice clos',      section_number: 4,    required: true  },
+  { key: 'comptes_n2',           label: 'Comptes annuels — avant-dernier exercice',     section_number: 4,    required: true  },
+  { key: 'depot_inpi',           label: 'Certificat de dépôt de marque (INPI)',          section_number: 5,    required: true  },
+  { key: 'grille_tarifaire',     label: 'Grille tarifaire (droit d\'entrée, redevances)', section_number: 6,   required: true  },
+  { key: 'territoire',           label: 'Carte ou description de la zone territoriale', section_number: 7,    required: false },
+  { key: 'contrat_type',         label: 'Contrat de franchise type',                    section_number: 8,    required: true  },
+  { key: 'attestation_litiges',  label: 'Attestation d\'absence de litige ou jugements', section_number: 9,   required: false },
+  { key: 'business_plan',        label: 'Business plan prévisionnel type',              section_number: 10,   required: false },
+  { key: 'autre',                label: 'Autre document justificatif',                  section_number: null, required: false },
+];
+
+/**
+ * Extrait les données factuelles utiles d'une pièce source (Kbis, comptes
+ * annuels, INPI...) uploadée dans la bibliothèque de documents du
+ * franchiseur. Le résumé produit est réinjecté comme contexte lors de la
+ * génération d'un DIP (generateDIPFromForm), pour réduire la saisie manuelle.
+ */
+const extractDocumentData = async (documentText, documentType, fileName) => {
+  const typeInfo = DOCUMENT_TYPES.find(t => t.key === documentType);
+  const typeLabel = typeInfo?.label || 'Document justificatif';
+
+  const message = await callClaude({
+    model: MODEL_HAIKU,
+    max_tokens: 800,
+    system: [{ type: 'text', text: 'Tu extrais des données factuelles de documents juridiques et comptables français pour alimenter un Document d\'Information Précontractuelle (Loi Doubin). Tu ne retiens que ce qui est explicitement écrit dans le document — jamais d\'invention ni d\'estimation.', cache_control: { type: 'ephemeral' } }],
+    messages: [{
+      role: 'user',
+      content: `Document fourni : "${fileName}" — type déclaré : ${typeLabel}.
+
+CONTENU DU DOCUMENT :
+${documentText.substring(0, 15000)}
+
+Extrais en 5 à 10 lignes maximum les données factuelles utiles à la rédaction d'un DIP (chiffres, dates, numéros, noms, montants — verbatim autant que possible). N'inclus que ce qui est explicitement présent dans le document. Si le document ne correspond pas au type "${typeLabel}" annoncé, indique-le clairement en premier.
+
+Réponds uniquement avec le résumé factuel, sans préambule.`
+    }]
+  });
+
+  return extractText(message);
+};
+
 /**
  * Générer un certificat de conformité et de remise pour un DIP ou une modification.
  * Ce certificat constitue une pièce de traçabilité opposable en cas de litige.
@@ -1561,7 +1610,7 @@ INSTRUCTIONS :
 module.exports = {
   parseDIPSections, generateDIPFromForm, formulateField, compareDIPVersions, detectChanges,
   generateUpdateSummary, correctSection, correctSectionWithAnswers,
-  analyzeDocumentForDIPImpact, generateChangesCertificate,
+  analyzeDocumentForDIPImpact, generateChangesCertificate, extractDocumentData, DOCUMENT_TYPES,
   parseContractClauses, compareContractVersions, generateContractFromDIP,
   generateContractFromDIPStream, analyzeCrossImpact, assessLitigationRisks,
   CONTRACT_CLAUSES_DEFAULT, CLAUSE_DIP_SECTION_MAP

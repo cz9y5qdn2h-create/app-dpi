@@ -3,6 +3,7 @@ const path = require('path');
 const { authMiddleware, requireFranchisor } = require('../middleware/auth');
 const { parseDIPSections, generateDIPFromForm, formulateField, compareDIPVersions } = require('../config/claude');
 const { generateDocx } = require('../config/docxGenerator');
+const { supabaseAdmin } = require('../config/supabase');
 const errMsg = require('../config/errorMessage');
 
 const router = express.Router();
@@ -66,6 +67,24 @@ router.post('/generate', authMiddleware, requireFranchisor, async (req, res) => 
       const buffer = Buffer.from(fileStr, 'base64');
       sourceText = await extractText(buffer, sanitizeFilename(filename));
       if (sourceText.length > MAX_TEXT_CHARS) sourceText = sourceText.substring(0, MAX_TEXT_CHARS);
+    }
+
+    // Enrichit avec les résumés extraits de la bibliothèque de documents du
+    // franchiseur (Kbis, comptes annuels, INPI...) — réduit la saisie manuelle.
+    const { data: libraryDocs } = await supabaseAdmin
+      .from('franchisor_documents')
+      .select('document_type, file_name, extracted_summary')
+      .eq('user_id', req.user.id)
+      .eq('extraction_status', 'done')
+      .not('extracted_summary', 'is', null);
+
+    if (libraryDocs?.length > 0) {
+      const libraryBlock = libraryDocs
+        .map(d => `[${d.document_type} — ${d.file_name}]\n${d.extracted_summary}`)
+        .join('\n\n');
+      sourceText = sourceText
+        ? `${sourceText}\n\n--- BIBLIOTHÈQUE DE DOCUMENTS DU FRANCHISEUR ---\n${libraryBlock}`
+        : libraryBlock;
     }
 
     const result = await generateDIPFromForm(formData, sourceText);
