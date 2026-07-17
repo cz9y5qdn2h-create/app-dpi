@@ -8,14 +8,22 @@ const router = express.Router();
 
 const STATUS_LABEL = { conforme: 'Conforme', a_verifier: 'À vérifier', non_conforme: 'Non conforme' };
 
+// Accessible au propriétaire du DIP, ou à un avocat ayant une relation active
+// avec ce franchiseur (portail avocat — export en lecture seule).
 async function loadDip(dipId, userId) {
   const { data: dip, error } = await supabaseAdmin
     .from('dip_documents')
     .select('*, dip_sections(*)')
     .eq('id', dipId)
-    .eq('user_id', userId)
     .single();
   if (error || !dip) return null;
+
+  if (dip.user_id !== userId) {
+    const { data: relation } = await supabaseAdmin
+      .from('avocat_franchiseurs').select('status')
+      .eq('avocat_id', userId).eq('franchiseur_id', dip.user_id).maybeSingle();
+    if (relation?.status !== 'active') return null;
+  }
 
   const sections = (dip.dip_sections || []).sort((a, b) => a.section_number - b.section_number);
   return { ...dip, dip_sections: sections };
@@ -49,7 +57,7 @@ router.get('/:dipId/pdf', authMiddleware, async (req, res) => {
   const dip = await loadDip(req.params.dipId, req.user.id);
   if (!dip) return res.status(404).json({ error: 'DIP introuvable' });
 
-  const user = await loadUser(req.user.id);
+  const user = await loadUser(dip.user_id);
   const sections = dip.dip_sections || [];
   const conforme = sections.filter(s => s.status === 'conforme').length;
   const aVerifier = sections.filter(s => s.status === 'a_verifier').length;
@@ -129,7 +137,7 @@ router.get('/:dipId/document-pdf', authMiddleware, async (req, res) => {
   const dip = await loadDip(req.params.dipId, req.user.id);
   if (!dip) return res.status(404).json({ error: 'DIP introuvable' });
 
-  const user = await loadUser(req.user.id);
+  const user = await loadUser(dip.user_id);
   const sections = dip.dip_sections || [];
 
   const doc = new PDFDocument({ size: 'A4', margin: 56, bufferPages: true });
@@ -188,7 +196,7 @@ router.get('/:dipId/docx', authMiddleware, async (req, res) => {
   const dip = await loadDip(req.params.dipId, req.user.id);
   if (!dip) return res.status(404).json({ error: 'DIP introuvable' });
 
-  const user = await loadUser(req.user.id);
+  const user = await loadUser(dip.user_id);
   const sections = dip.dip_sections || [];
 
   const children = [];
@@ -264,7 +272,7 @@ router.get('/:dipId/xlsx', authMiddleware, async (req, res) => {
   const dip = await loadDip(req.params.dipId, req.user.id);
   if (!dip) return res.status(404).json({ error: 'DIP introuvable' });
 
-  const user = await loadUser(req.user.id);
+  const user = await loadUser(dip.user_id);
   const sections = dip.dip_sections || [];
 
   const wb = new ExcelJS.Workbook();

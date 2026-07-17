@@ -7,24 +7,32 @@ import toast from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
-export default function ProposalsPanel({ dipId }) {
+// target = { type: 'dip', id } ou { type: 'contract', id } — le panel s'adapte
+// aux endpoints avocat correspondants (sections DIP ou clauses de contrat).
+export default function ProposalsPanel({ target }) {
   const queryClient = useQueryClient();
   const [expanded, setExpanded] = useState(null);
   const [comment, setComment] = useState('');
 
+  const isContract = target?.type === 'contract';
+  const listPath = isContract ? `/avocat/contract/${target.id}/proposals` : `/avocat/dip/${target?.id}/proposals`;
+  const actionBase = isContract ? '/avocat/clause-proposals' : '/avocat/proposals';
+  const invalidateKey = isContract ? ['contracts'] : ['dips'];
+
   const { data, isLoading } = useQuery({
-    queryKey: ['proposals', dipId],
-    queryFn: () => api.get(`/avocat/dip/${dipId}/proposals`).then(r => r.data),
+    queryKey: ['proposals', target?.type, target?.id],
+    queryFn: () => api.get(listPath).then(r => r.data),
+    enabled: !!target?.id,
     refetchInterval: 30000,
   });
 
   const acceptMutation = useMutation({
     mutationFn: (proposalId) =>
-      api.put(`/avocat/proposals/${proposalId}/accept`, { reviewer_comment: comment }),
+      api.put(`${actionBase}/${proposalId}/accept`, { reviewer_comment: comment }),
     onSuccess: () => {
-      toast.success('Proposition acceptée — section mise à jour');
-      queryClient.invalidateQueries({ queryKey: ['proposals', dipId] });
-      queryClient.invalidateQueries({ queryKey: ['dips'] });
+      toast.success(isContract ? 'Proposition acceptée — clause mise à jour' : 'Proposition acceptée — section mise à jour');
+      queryClient.invalidateQueries({ queryKey: ['proposals', target?.type, target?.id] });
+      queryClient.invalidateQueries({ queryKey: invalidateKey });
       setExpanded(null);
       setComment('');
     },
@@ -33,10 +41,10 @@ export default function ProposalsPanel({ dipId }) {
 
   const rejectMutation = useMutation({
     mutationFn: (proposalId) =>
-      api.put(`/avocat/proposals/${proposalId}/reject`, { reviewer_comment: comment }),
+      api.put(`${actionBase}/${proposalId}/reject`, { reviewer_comment: comment }),
     onSuccess: () => {
       toast.success('Proposition rejetée');
-      queryClient.invalidateQueries({ queryKey: ['proposals', dipId] });
+      queryClient.invalidateQueries({ queryKey: ['proposals', target?.type, target?.id] });
       setExpanded(null);
       setComment('');
     },
@@ -92,7 +100,7 @@ export default function ProposalsPanel({ dipId }) {
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="font-dm-sans text-xs text-text-secondary truncate">
-                    {p.proposer?.company_name || 'Avocat'} • Section {p.section_id?.slice(0, 6)}…
+                    {p.proposer?.company_name || 'Avocat'} • {isContract ? 'Clause' : 'Section'} {(p.section_id || p.clause_id)?.slice(0, 6)}…
                   </p>
                   <p className="font-dm-mono text-xs text-text-muted">
                     {formatDistanceToNow(new Date(p.reviewed_at || p.created_at), { addSuffix: true, locale: fr })}

@@ -1,6 +1,8 @@
 const express = require('express');
+const { v4: uuidv4 } = require('uuid');
 const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware } = require('../middleware/auth');
+const errMsg = require('../config/errorMessage');
 const router = express.Router();
 
 const requireAvocat = async (req, res, next) => {
@@ -47,6 +49,72 @@ router.get('/dashboard', authMiddleware, requireAvocat, async (req, res) => {
   });
 });
 
+// ─── Lien d'invitation avocat (généré depuis Paramètres) ───────────────────
+// Contrairement à /invite (email connu à l'avance), ce lien générique peut
+// être partagé par n'importe quel canal — aucune adresse email requise.
+
+// GET /api/avocat/invite-link — récupère le lien actuel du franchiseur (s'il existe)
+router.get('/invite-link', authMiddleware, async (req, res) => {
+  const { data } = await supabaseAdmin
+    .from('users').select('avocat_invite_token').eq('id', req.user.id).single();
+
+  const appUrl = process.env.APP_URL || 'https://app-dpi.vercel.app';
+  const token = data?.avocat_invite_token || null;
+  res.json({ token, url: token ? `${appUrl}/avocat/rejoindre/${token}` : null });
+});
+
+// POST /api/avocat/invite-link — génère (ou régénère) le lien d'invitation
+router.post('/invite-link', authMiddleware, async (req, res) => {
+  const token = uuidv4();
+  const { error } = await supabaseAdmin
+    .from('users').update({ avocat_invite_token: token }).eq('id', req.user.id);
+  if (error) return res.status(500).json({ error: errMsg(error) });
+
+  const appUrl = process.env.APP_URL || 'https://app-dpi.vercel.app';
+  res.json({ token, url: `${appUrl}/avocat/rejoindre/${token}` });
+});
+
+// DELETE /api/avocat/invite-link — révoque le lien (l'ancien lien devient invalide)
+router.delete('/invite-link', authMiddleware, async (req, res) => {
+  const { error } = await supabaseAdmin
+    .from('users').update({ avocat_invite_token: null }).eq('id', req.user.id);
+  if (error) return res.status(500).json({ error: errMsg(error) });
+  res.json({ success: true });
+});
+
+// POST /api/avocat/join/:token — l'avocat connecté rejoint l'espace d'un franchiseur via son lien
+router.post('/join/:token', authMiddleware, async (req, res) => {
+  const { data: profile } = await supabaseAdmin.from('users').select('role, company_name').eq('id', req.user.id).single();
+  if (profile?.role !== 'avocat') {
+    return res.status(403).json({ error: 'Ce lien est réservé aux comptes avocat.' });
+  }
+
+  const { data: franchiseur } = await supabaseAdmin
+    .from('users').select('id, company_name').eq('avocat_invite_token', req.params.token).maybeSingle();
+  if (!franchiseur) return res.status(404).json({ error: 'Lien invalide ou expiré.' });
+
+  const { data: existing } = await supabaseAdmin
+    .from('avocat_franchiseurs').select('id, status')
+    .eq('avocat_id', req.user.id).eq('franchiseur_id', franchiseur.id).maybeSingle();
+
+  if (existing) {
+    if (existing.status !== 'active') {
+      await supabaseAdmin.from('avocat_franchiseurs')
+        .update({ status: 'active', accepted_at: new Date().toISOString() }).eq('id', existing.id);
+    }
+  } else {
+    await supabaseAdmin.from('avocat_franchiseurs').insert({
+      avocat_id: req.user.id,
+      franchiseur_id: franchiseur.id,
+      status: 'active',
+      invited_at: new Date().toISOString(),
+      accepted_at: new Date().toISOString(),
+    });
+  }
+
+  res.json({ success: true, franchiseur_id: franchiseur.id, franchiseur_name: franchiseur.company_name });
+});
+
 // GET /api/avocat/franchiseur/:franchiseurId/dip — DIP d'un franchiseur pour cet avocat
 router.get('/franchiseur/:franchiseurId/dip', authMiddleware, requireAvocat, async (req, res) => {
   const { franchiseurId } = req.params;
@@ -76,6 +144,37 @@ router.get('/franchiseur/:franchiseurId/dip', authMiddleware, requireAvocat, asy
   }
 
   res.json({ dip, franchiseur, proposals });
+});
+
+// GET /api/avocat/franchiseur/:franchiseurId/contract — contrat d'un franchiseur pour cet avocat
+router.get('/franchiseur/:franchiseurId/contract', authMiddleware, requireAvocat, async (req, res) => {
+  const { franchiseurId } = req.params;
+
+  const { data: relation } = await supabaseAdmin
+    .from('avocat_franchiseurs').select('status')
+    .eq('avocat_id', req.user.id).eq('franchiseur_id', franchiseurId).maybeSingle();
+
+  if (relation?.status !== 'active') return res.status(403).json({ error: 'Relation inactive ou inexistante' });
+
+  const { data: contracts } = await supabaseAdmin
+    .from('franchise_contracts').select('*, contract_clauses(*)')
+    .eq('user_id', franchiseurId).eq('status', 'actif').limit(1);
+
+  const contract = contracts?.[0] || null;
+
+  const { data: franchiseur } = await supabaseAdmin
+    .from('users').select('id, company_name, email').eq('id', franchiseurId).single();
+
+  let proposals = [];
+  if (contract) {
+    const { data } = await supabaseAdmin
+      .from('contract_clause_proposals').select('*')
+      .eq('contract_id', contract.id).eq('proposed_by', req.user.id)
+      .order('created_at', { ascending: false });
+    proposals = data || [];
+  }
+
+  res.json({ contract, franchiseur, proposals });
 });
 
 // POST /api/avocat/sections/:sectionId/propose — proposer une modification
@@ -181,6 +280,118 @@ router.put('/proposals/:id/reject', authMiddleware, async (req, res) => {
   if (dip?.user_id !== req.user.id) return res.status(403).json({ error: 'Seul le franchiseur peut rejeter' });
 
   await supabaseAdmin.from('dip_section_proposals').update({
+    status: 'rejected',
+    reviewer_id: req.user.id,
+    reviewed_at: new Date().toISOString(),
+    reviewer_comment: reviewer_comment || null,
+  }).eq('id', req.params.id);
+
+  res.json({ ok: true });
+});
+
+// POST /api/avocat/clauses/:clauseId/propose — proposer une modification de clause
+router.post('/clauses/:clauseId/propose', authMiddleware, requireAvocat, async (req, res) => {
+  const { content, contract_id } = req.body;
+  if (!content?.trim() || !contract_id) return res.status(400).json({ error: 'content et contract_id requis' });
+
+  const { data: contract } = await supabaseAdmin
+    .from('franchise_contracts').select('user_id').eq('id', contract_id).maybeSingle();
+  if (!contract) return res.status(404).json({ error: 'Contrat introuvable' });
+
+  const { data: relation } = await supabaseAdmin
+    .from('avocat_franchiseurs').select('status')
+    .eq('avocat_id', req.user.id).eq('franchiseur_id', contract.user_id).maybeSingle();
+
+  if (relation?.status !== 'active') return res.status(403).json({ error: 'Relation inactive' });
+
+  const { data: clause } = await supabaseAdmin
+    .from('contract_clauses').select('content').eq('id', req.params.clauseId).eq('contract_id', contract_id).maybeSingle();
+
+  const { data: proposal, error } = await supabaseAdmin
+    .from('contract_clause_proposals')
+    .insert({
+      clause_id: req.params.clauseId,
+      contract_id,
+      proposed_by: req.user.id,
+      content_proposed: content.trim(),
+      content_before: clause?.content || null,
+    })
+    .select().single();
+
+  if (error) return res.status(500).json({ error: error.message });
+  res.status(201).json({ proposal });
+});
+
+// GET /api/avocat/contract/:contractId/proposals — propositions sur un contrat (franchiseur ou avocat)
+router.get('/contract/:contractId/proposals', authMiddleware, async (req, res) => {
+  const { data: contract } = await supabaseAdmin
+    .from('franchise_contracts').select('user_id').eq('id', req.params.contractId).maybeSingle();
+  if (!contract) return res.status(404).json({ error: 'Contrat introuvable' });
+
+  const isOwner = contract.user_id === req.user.id;
+  if (!isOwner) {
+    const { data: rel } = await supabaseAdmin
+      .from('avocat_franchiseurs').select('status')
+      .eq('avocat_id', req.user.id).eq('franchiseur_id', contract.user_id).maybeSingle();
+    if (rel?.status !== 'active') return res.status(403).json({ error: 'Accès refusé' });
+  }
+
+  const { data: proposals } = await supabaseAdmin
+    .from('contract_clause_proposals')
+    .select('*, proposer:users!proposed_by(id, company_name, email, role)')
+    .eq('contract_id', req.params.contractId)
+    .order('created_at', { ascending: false });
+
+  res.json({ proposals: proposals || [] });
+});
+
+// PUT /api/avocat/clause-proposals/:id/accept — franchiseur accepte la proposition
+router.put('/clause-proposals/:id/accept', authMiddleware, async (req, res) => {
+  const { reviewer_comment } = req.body;
+
+  const { data: proposal } = await supabaseAdmin
+    .from('contract_clause_proposals').select('*').eq('id', req.params.id).maybeSingle();
+  if (!proposal) return res.status(404).json({ error: 'Proposition introuvable' });
+  if (proposal.status !== 'pending') return res.status(400).json({ error: 'Proposition déjà traitée' });
+
+  const { data: contract } = await supabaseAdmin
+    .from('franchise_contracts').select('user_id').eq('id', proposal.contract_id).single();
+  if (contract?.user_id !== req.user.id) return res.status(403).json({ error: 'Seul le franchiseur peut valider' });
+
+  const now = new Date().toISOString();
+
+  await Promise.all([
+    supabaseAdmin.from('contract_clauses').update({
+      content: proposal.content_proposed,
+      last_edited_by: proposal.proposed_by,
+      last_edited_at: now,
+    }).eq('id', proposal.clause_id),
+
+    supabaseAdmin.from('contract_clause_proposals').update({
+      status: 'accepted',
+      reviewer_id: req.user.id,
+      reviewed_at: now,
+      reviewer_comment: reviewer_comment || null,
+    }).eq('id', req.params.id),
+  ]);
+
+  res.json({ ok: true });
+});
+
+// PUT /api/avocat/clause-proposals/:id/reject — franchiseur rejette la proposition
+router.put('/clause-proposals/:id/reject', authMiddleware, async (req, res) => {
+  const { reviewer_comment } = req.body;
+
+  const { data: proposal } = await supabaseAdmin
+    .from('contract_clause_proposals').select('contract_id, status').eq('id', req.params.id).maybeSingle();
+  if (!proposal) return res.status(404).json({ error: 'Proposition introuvable' });
+  if (proposal.status !== 'pending') return res.status(400).json({ error: 'Proposition déjà traitée' });
+
+  const { data: contract } = await supabaseAdmin
+    .from('franchise_contracts').select('user_id').eq('id', proposal.contract_id).single();
+  if (contract?.user_id !== req.user.id) return res.status(403).json({ error: 'Seul le franchiseur peut rejeter' });
+
+  await supabaseAdmin.from('contract_clause_proposals').update({
     status: 'rejected',
     reviewer_id: req.user.id,
     reviewed_at: new Date().toISOString(),

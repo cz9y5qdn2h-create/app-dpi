@@ -505,12 +505,20 @@ router.get('/:id/pdf', authMiddleware, async (req, res) => {
     .from('franchise_contracts')
     .select('*, contract_clauses(*)')
     .eq('id', req.params.id)
-    .eq('user_id', req.user.id)
     .single();
   if (error || !contract) return res.status(404).json({ error: 'Contrat introuvable' });
 
+  // Accessible au propriétaire, ou à un avocat ayant une relation active
+  // avec ce franchiseur (portail avocat — export en lecture seule).
+  if (contract.user_id !== req.user.id) {
+    const { data: relation } = await supabaseAdmin
+      .from('avocat_franchiseurs').select('status')
+      .eq('avocat_id', req.user.id).eq('franchiseur_id', contract.user_id).maybeSingle();
+    if (relation?.status !== 'active') return res.status(404).json({ error: 'Contrat introuvable' });
+  }
+
   const { data: user } = await supabaseAdmin.from('users')
-    .select('company_name, siret, email').eq('id', req.user.id).single();
+    .select('company_name, siret, email').eq('id', contract.user_id).single();
   const clauses = (contract.contract_clauses || []).sort((a, b) => a.clause_number - b.clause_number);
 
   const doc = new PDFDocument({ size: 'A4', margin: 56, bufferPages: true });

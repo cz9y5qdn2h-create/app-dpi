@@ -11,11 +11,13 @@ import CompletionReminderWidget from './CompletionReminderWidget';
 import api from '../lib/api';
 import { FEATURES } from '../lib/features';
 import { Bell, Menu, Search, Bug } from 'lucide-react';
+import { PENDING_TOKEN_KEY } from '../pages/AvocatJoinPage';
 
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
   const [bugModalOpen, setBugModalOpen] = useState(false);
+  const navigate = useNavigate();
 
   const { data: alertsData } = useQuery({
     queryKey: ['alerts', 'pending'],
@@ -24,6 +26,14 @@ export default function Layout() {
     retry: false
   });
   const pendingCount = alertsData?.alerts?.length || 0;
+
+  // Complète l'accès avocat par lien si l'utilisateur s'est inscrit/connecté
+  // depuis un autre écran que la page de jonction (ex: via "Créer un compte").
+  useEffect(() => {
+    let pendingToken;
+    try { pendingToken = localStorage.getItem(PENDING_TOKEN_KEY); } catch { pendingToken = null; }
+    if (pendingToken) navigate(`/avocat/rejoindre/${pendingToken}`, { replace: true });
+  }, []);
 
   useEffect(() => {
     const handler = (e) => {

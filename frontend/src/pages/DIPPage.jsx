@@ -446,7 +446,7 @@ export default function DIPPage() {
       )}
 
       {/* Panel propositions avocat — visible uniquement pour le franchiseur */}
-      {dip && <ProposalsPanel dipId={dip.id} />}
+      {dip && <ProposalsPanel target={{ type: 'dip', id: dip.id }} />}
 
       {dip && <AIDisclaimer />}
 

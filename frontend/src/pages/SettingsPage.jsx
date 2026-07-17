@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import PageHeader from '../components/ui/PageHeader';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
-import { Save, Plus, Trash2, Database, Mail, Cloud, Globe, CheckCircle, Eye, EyeOff, Send, Sun, Moon, Sparkles, Lock, Key, Calendar, AlertCircle, Bell, Briefcase, RotateCcw } from 'lucide-react';
+import { Save, Plus, Trash2, Database, Mail, Cloud, Globe, CheckCircle, Eye, EyeOff, Send, Sun, Moon, Sparkles, Lock, Key, Calendar, AlertCircle, Bell, Briefcase, RotateCcw, Copy, Link2, Link2Off } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
@@ -184,6 +184,34 @@ export default function SettingsPage() {
     onSuccess: () => { toast.success('Configuration email enregistrée'); queryClient.invalidateQueries({ queryKey: ['settings'] }); },
     onError: (err) => toast.error(err.message)
   });
+
+  const { data: avocatLinkData } = useQuery({
+    queryKey: ['avocat-invite-link'],
+    queryFn: () => api.get('/avocat/invite-link').then(r => r.data),
+  });
+
+  const generateAvocatLinkMutation = useMutation({
+    mutationFn: () => api.post('/avocat/invite-link'),
+    onSuccess: () => {
+      toast.success('Lien généré');
+      queryClient.invalidateQueries({ queryKey: ['avocat-invite-link'] });
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const revokeAvocatLinkMutation = useMutation({
+    mutationFn: () => api.delete('/avocat/invite-link'),
+    onSuccess: () => {
+      toast.success('Lien révoqué');
+      queryClient.invalidateQueries({ queryKey: ['avocat-invite-link'] });
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const copyAvocatLink = () => {
+    if (!avocatLinkData?.url) return;
+    navigator.clipboard.writeText(avocatLinkData.url).then(() => toast.success('Lien copié dans le presse-papiers'));
+  };
 
   const testEmailMutation = useMutation({
     mutationFn: () => api.post('/notifications/test', { channel: 'email', target: data?.profile?.email }),
@@ -587,6 +615,52 @@ export default function SettingsPage() {
               Enregistrer le profil
             </button>
           </form>
+        )}
+      </div>
+
+      {/* Partage avocat par lien */}
+      <div className="card">
+        <div className="mb-5">
+          <h2 className="font-cormorant text-xl flex items-center gap-2">
+            <Briefcase className="w-4 h-4 text-gold" /> Partager avec mon avocat
+          </h2>
+          <p className="font-dm-sans text-xs text-text-secondary mt-1">
+            Générez un lien unique à transmettre à votre avocat par le canal de votre choix (email, SMS…). En le suivant, il obtient un accès direct à votre DIP et votre contrat.
+          </p>
+        </div>
+
+        {avocatLinkData?.url ? (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 bg-bg-elevated rounded-lg px-3 py-2">
+              <Link2 className="w-3.5 h-3.5 text-text-secondary flex-shrink-0" />
+              <span className="font-dm-mono text-xs text-text-primary truncate flex-1">{avocatLinkData.url}</span>
+              <button onClick={copyAvocatLink} className="btn-ghost p-1 flex-shrink-0" title="Copier le lien">
+                <Copy className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={copyAvocatLink} className="btn-primary flex items-center gap-2 text-xs py-1.5 px-3">
+                <Copy className="w-3.5 h-3.5" /> Copier le lien
+              </button>
+              <button
+                onClick={() => revokeAvocatLinkMutation.mutate()}
+                disabled={revokeAvocatLinkMutation.isPending}
+                className="btn-ghost flex items-center gap-2 text-xs text-danger hover:text-danger/80"
+              >
+                {revokeAvocatLinkMutation.isPending ? <LoadingSpinner size="sm" /> : <Link2Off className="w-3.5 h-3.5" />}
+                Révoquer l'accès
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => generateAvocatLinkMutation.mutate()}
+            disabled={generateAvocatLinkMutation.isPending}
+            className="btn-liquid-glass-prominent flex items-center gap-2 text-sm"
+          >
+            {generateAvocatLinkMutation.isPending ? <LoadingSpinner size="sm" /> : <Link2 className="w-4 h-4" />}
+            Générer le lien de partage
+          </button>
         )}
       </div>
 

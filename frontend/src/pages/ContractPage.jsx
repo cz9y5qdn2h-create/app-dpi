@@ -6,6 +6,7 @@ import PageHeader from '../components/ui/PageHeader';
 import StatusBadge from '../components/ui/StatusBadge';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { useAIAssist, AIAssistTrigger, AIAssistPanel } from '../components/AIAssistWidget';
+import ProposalsPanel from '../components/ProposalsPanel';
 import {
   Upload, ChevronDown, ChevronUp, Edit3, Check, X,
   FileText, ScrollText, Link2, Share2, Copy, Link2Off, Eye, Download
@@ -233,6 +234,8 @@ export default function ContractPage() {
           )}
         </div>
       )}
+
+      <ProposalsPanel target={{ type: 'contract', id: contract.id }} />
 
       <div className="card">
         <div className="flex items-center justify-between mb-2">
