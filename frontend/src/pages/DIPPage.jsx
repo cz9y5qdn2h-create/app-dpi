@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ProposalsPanel from '../components/ProposalsPanel';
+import { useAIAssist, AIAssistTrigger, AIAssistPanel } from '../components/AIAssistWidget';
 
 const SECTION_DESCRIPTIONS = [
   '',
@@ -514,6 +515,7 @@ export default function DIPPage() {
                 isEditing={editingSection === section.id}
                 editContent={editContent}
                 onEdit={() => { setEditingSection(section.id); setEditContent(section.content || ''); }}
+                onAIAssist={(text) => { setEditingSection(section.id); setEditContent(text); }}
                 onEditChange={setEditContent}
                 onSave={(status) => updateMutation.mutate({ dipId: dip.id, sectionId: section.id, content: editContent, status })}
                 onCancelEdit={() => setEditingSection(null)}
@@ -1011,7 +1013,8 @@ function TextArea({ label, value, onChange, placeholder = '', rows = 3 }) {
   );
 }
 
-function SectionAccordion({ section, dipId, description, isExpanded, onToggle, isEditing, editContent, onEdit, onEditChange, onSave, onCancelEdit, isSaving }) {
+function SectionAccordion({ section, dipId, description, isExpanded, onToggle, isEditing, editContent, onEdit, onAIAssist, onEditChange, onSave, onCancelEdit, isSaving }) {
+  const aiAssist = useAIAssist(`/dip/${dipId}/sections/${section.id}/ai-assist`);
   return (
     <div className={`card transition-all duration-300 ${isExpanded ? 'border-border-default' : 'hover:border-border-default cursor-pointer'}`}>
       <div className="flex items-center gap-4" onClick={isEditing ? undefined : onToggle}>
@@ -1046,12 +1049,20 @@ function SectionAccordion({ section, dipId, description, isExpanded, onToggle, i
                   {section.content || <span className="text-text-secondary italic">Contenu non renseigné</span>}
                 </pre>
               </div>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-3">
                 <p className="font-dm-mono text-xs text-text-secondary">
                   Mis à jour le {section.last_updated ? new Date(section.last_updated).toLocaleDateString('fr-FR') : 'N/A'}
                 </p>
-                <button onClick={onEdit} className="btn-ghost flex items-center gap-2 text-sm"><Edit3 className="w-4 h-4" /> Modifier</button>
+                <div className="flex items-center gap-2">
+                  <AIAssistTrigger onClick={aiAssist.start} />
+                  <button onClick={onEdit} className="btn-ghost flex items-center gap-2 text-sm"><Edit3 className="w-4 h-4" /> Modifier</button>
+                </div>
               </div>
+              {aiAssist.open && (
+                <div className="mt-3">
+                  <AIAssistPanel state={aiAssist} onApply={onAIAssist} />
+                </div>
+              )}
             </div>
           )}
         </div>

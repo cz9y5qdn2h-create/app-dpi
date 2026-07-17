@@ -1079,6 +1079,123 @@ const CONTRACT_CLAUSES_DEFAULT = [
 const CLAUSE_DIP_SECTION_MAP = [8, 6, 7, 1, 8, 5, 8, 8, 8, 9];
 
 /**
+ * Générer une correction IA pour une clause de contrat non conforme ou à vérifier.
+ * Retourne needs_info: true + questions si le contenu est trop vide pour corriger —
+ * équivalent contrat de correctSection.
+ */
+const correctClause = async (clause) => {
+  const { clause_number, clause_title, content, issues = [], status } = clause;
+
+  const result = await callClaudeToolUse({
+    model: MODEL_OPUS,
+    max_tokens: 4096,
+    thinking: { type: 'adaptive' },
+    system: CACHED_SYSTEM_CONTRACT,
+    messages: [{
+      role: 'user',
+      content: `Tu dois corriger cette clause du contrat de franchise pour la rendre juridiquement rigoureuse.
+
+CLAUSE ${clause_number} — ${clause_title}
+Statut actuel : ${status}
+Problèmes : ${issues.length > 0 ? issues.join('; ') : 'Clause incomplète ou insuffisante'}
+
+CONTENU ACTUEL :
+${content || '(Clause vide ou non renseignée)'}
+
+RÈGLE CRITIQUE — ÉVALUE D'ABORD :
+Si le contenu actuel est vide ou trop vague pour produire une correction utile (moins de 3 informations factuelles exploitables), tu DOIS demander des informations au franchiseur plutôt que de générer une clause remplie de placeholders.
+
+CAS 1 — Tu as assez d'informations → corrige directement :
+{
+  "needs_info": false,
+  "questions": [],
+  "corrected_content": "Texte complet et corrigé, prêt à intégrer dans le contrat",
+  "corrections_made": ["liste des améliorations apportées"],
+  "remaining_issues": ["données spécifiques encore manquantes"],
+  "confidence": "haute|moyenne|faible"
+}
+
+CAS 2 — Le contenu est trop vide pour corriger correctement → pose des questions :
+{
+  "needs_info": true,
+  "questions": ["Question précise 1 ?", "Question précise 2 ?", "Question précise 3 ?"],
+  "corrected_content": null,
+  "corrections_made": [],
+  "remaining_issues": [],
+  "confidence": null
+}
+
+RÈGLES pour les questions (CAS 2) :
+- Maximum 4 questions, courtes et précises
+- Chaque question cible une donnée factuelle manquante indispensable
+- Questions en français, formulées pour un franchiseur non juriste
+- Ne pose des questions QUE si le contenu est vraiment insuffisant
+
+Retourne uniquement le JSON, sans markdown.`
+    }]
+  }, 'submit_clause_correction', SECTION_CORRECTION_SCHEMA, 1);
+  if (!result) {
+    return {
+      needs_info: false,
+      questions: [],
+      corrected_content: content,
+      corrections_made: [],
+      remaining_issues: ['Correction IA indisponible — réessayez'],
+      confidence: 'faible'
+    };
+  }
+  return result;
+};
+
+/**
+ * Générer une correction de clause en utilisant les réponses du franchiseur
+ * aux questions posées — équivalent contrat de correctSectionWithAnswers.
+ */
+const correctClauseWithAnswers = async (clause, questionsAndAnswers) => {
+  const { clause_number, clause_title, content, status } = clause;
+
+  const qaBlock = questionsAndAnswers
+    .map((qa, i) => `Q${i + 1} : ${qa.question}\nRéponse : ${qa.answer}`)
+    .join('\n\n');
+
+  const result = await callClaudeToolUse({
+    model: MODEL_OPUS,
+    max_tokens: 4096,
+    thinking: { type: 'adaptive' },
+    system: CACHED_SYSTEM_CONTRACT,
+    messages: [{
+      role: 'user',
+      content: `Tu dois rédiger le contenu complet de cette clause du contrat de franchise en intégrant les informations fournies par le franchiseur.
+
+CLAUSE ${clause_number} — ${clause_title}
+Statut actuel : ${status}
+
+CONTENU EXISTANT (peut être vide) :
+${content || '(Clause vide)'}
+
+INFORMATIONS FOURNIES PAR LE FRANCHISEUR :
+${qaBlock}
+
+INSTRUCTIONS :
+- Rédige un texte complet, professionnel et juridiquement rigoureux
+- Intègre toutes les informations fournies ci-dessus
+- Si une donnée est encore manquante, indique "[À COMPLÉTER : description]"
+- Le texte doit être directement utilisable dans le contrat officiel`
+    }]
+  }, 'submit_clause_correction_with_answers', SECTION_WITH_ANSWERS_SCHEMA, 2);
+
+  if (!result) {
+    return {
+      corrected_content: content || '',
+      corrections_made: [],
+      remaining_issues: ['Correction IA indisponible — réessayez'],
+      confidence: 'faible'
+    };
+  }
+  return result;
+};
+
+/**
  * Analyser et extraire les clauses d'un contrat de franchise
  */
 const parseContractClauses = async (rawText) => {
@@ -1613,5 +1730,6 @@ module.exports = {
   analyzeDocumentForDIPImpact, generateChangesCertificate, extractDocumentData, DOCUMENT_TYPES,
   parseContractClauses, compareContractVersions, generateContractFromDIP,
   generateContractFromDIPStream, analyzeCrossImpact, assessLitigationRisks,
+  correctClause, correctClauseWithAnswers,
   CONTRACT_CLAUSES_DEFAULT, CLAUSE_DIP_SECTION_MAP
 };

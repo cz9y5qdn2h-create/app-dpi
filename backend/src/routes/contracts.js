@@ -5,7 +5,7 @@ const PDFDocument = require('pdfkit');
 const { v4: uuidv4 } = require('uuid');
 const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware, requireFranchisor } = require('../middleware/auth');
-const { parseContractClauses, compareContractVersions, generateContractFromDIP, generateContractFromDIPStream } = require('../config/claude');
+const { parseContractClauses, compareContractVersions, generateContractFromDIP, generateContractFromDIPStream, correctClause, correctClauseWithAnswers } = require('../config/claude');
 const { triggerCrossImpactAlerts } = require('../utils/crossImpact');
 const errMsg = require('../config/errorMessage');
 const router = express.Router();
@@ -616,6 +616,30 @@ router.put('/:id/clauses/:clauseId', authMiddleware, requireFranchisor, async (r
   await supabaseAdmin.from('franchise_contracts').update({ conformity_score: score }).eq('id', req.params.id);
 
   res.json({ clause: data, conformity_score: score });
+});
+
+// POST /api/contracts/:id/clauses/:clauseId/ai-assist — widget "Aide à la rédaction"
+router.post('/:id/clauses/:clauseId/ai-assist', authMiddleware, requireFranchisor, async (req, res) => {
+  const { answers } = req.body;
+
+  const { data: ownerContract } = await supabaseAdmin
+    .from('franchise_contracts').select('id').eq('id', req.params.id).eq('user_id', req.user.id).single();
+  if (!ownerContract) return res.status(404).json({ error: 'Contrat introuvable' });
+
+  const { data: clause } = await supabaseAdmin
+    .from('contract_clauses').select('*').eq('id', req.params.clauseId).eq('contract_id', req.params.id).single();
+  if (!clause) return res.status(404).json({ error: 'Clause introuvable' });
+
+  try {
+    if (Array.isArray(answers) && answers.length > 0) {
+      const result = await correctClauseWithAnswers(clause, answers);
+      return res.json({ needs_info: false, ...result });
+    }
+    const result = await correctClause(clause);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: errMsg(err) });
+  }
 });
 
 // POST /api/contracts/:id/share-link

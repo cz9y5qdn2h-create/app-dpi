@@ -5,6 +5,7 @@ import api from '../lib/api';
 import PageHeader from '../components/ui/PageHeader';
 import StatusBadge from '../components/ui/StatusBadge';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+import { useAIAssist, AIAssistTrigger, AIAssistPanel } from '../components/AIAssistWidget';
 import {
   Upload, ChevronDown, ChevronUp, Edit3, Check, X,
   FileText, ScrollText, Link2, Share2, Copy, Link2Off, Eye, Download
@@ -266,6 +267,7 @@ export default function ContractPage() {
             isEditing={editingClause === clause.id}
             editContent={editContent}
             onEdit={() => { setEditingClause(clause.id); setEditContent(clause.content || ''); }}
+            onAIAssist={(text) => { setEditingClause(clause.id); setEditContent(text); }}
             onEditChange={setEditContent}
             onSave={(status) => updateMutation.mutate({ contractId: contract.id, clauseId: clause.id, content: editContent, status })}
             onCancelEdit={() => setEditingClause(null)}
@@ -277,7 +279,8 @@ export default function ContractPage() {
   );
 }
 
-function ClauseAccordion({ clause, isExpanded, onToggle, isEditing, editContent, onEdit, onEditChange, onSave, onCancelEdit, isSaving }) {
+function ClauseAccordion({ clause, contractId, isExpanded, onToggle, isEditing, editContent, onEdit, onAIAssist, onEditChange, onSave, onCancelEdit, isSaving }) {
+  const aiAssist = useAIAssist(`/contracts/${contractId}/clauses/${clause.id}/ai-assist`);
   return (
     <div className={`card transition-all duration-300 ${isExpanded ? 'border-border-default' : 'hover:border-border-default cursor-pointer'}`}>
       <div className="flex items-center gap-4" onClick={isEditing ? undefined : onToggle}>
@@ -311,12 +314,20 @@ function ClauseAccordion({ clause, isExpanded, onToggle, isEditing, editContent,
                   {clause.content || <span className="text-text-secondary italic">Contenu non renseigné</span>}
                 </pre>
               </div>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-3">
                 <p className="font-dm-mono text-xs text-text-secondary">
                   Mis à jour le {clause.last_updated ? new Date(clause.last_updated).toLocaleDateString('fr-FR') : 'N/A'}
                 </p>
-                <button onClick={onEdit} className="btn-ghost flex items-center gap-2 text-sm"><Edit3 className="w-4 h-4" /> Modifier</button>
+                <div className="flex items-center gap-2">
+                  <AIAssistTrigger onClick={aiAssist.start} />
+                  <button onClick={onEdit} className="btn-ghost flex items-center gap-2 text-sm"><Edit3 className="w-4 h-4" /> Modifier</button>
+                </div>
               </div>
+              {aiAssist.open && (
+                <div className="mt-3">
+                  <AIAssistPanel state={aiAssist} onApply={onAIAssist} />
+                </div>
+              )}
             </div>
           )}
         </div>

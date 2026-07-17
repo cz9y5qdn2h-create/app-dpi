@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware, requireFranchisor } = require('../middleware/auth');
-const { parseDIPSections, compareDIPVersions, assessLitigationRisks } = require('../config/claude');
+const { parseDIPSections, compareDIPVersions, assessLitigationRisks, correctSection, correctSectionWithAnswers } = require('../config/claude');
 const { triggerCrossImpactAlerts } = require('../utils/crossImpact');
 const errMsg = require('../config/errorMessage');
 const router = express.Router();
@@ -474,6 +474,33 @@ router.put('/:id/sections/:sectionId', authMiddleware, requireFranchisor, async 
   await supabaseAdmin.from('dip_documents').update({ conformity_score: score }).eq('id', req.params.id);
 
   res.json({ section: data, conformity_score: score });
+});
+
+// POST /api/dip/:id/sections/:sectionId/ai-assist — widget "Aide à la rédaction"
+// Sans answers : évalue la section et retourne soit des questions ciblées, soit
+// un texte proposé directement si le contenu actuel est déjà exploitable.
+// Avec answers : génère le texte final à partir des réponses fournies.
+router.post('/:id/sections/:sectionId/ai-assist', authMiddleware, requireFranchisor, async (req, res) => {
+  const { answers } = req.body;
+
+  const { data: ownerDip } = await supabaseAdmin
+    .from('dip_documents').select('id').eq('id', req.params.id).eq('user_id', req.user.id).single();
+  if (!ownerDip) return res.status(404).json({ error: 'DIP introuvable' });
+
+  const { data: section } = await supabaseAdmin
+    .from('dip_sections').select('*').eq('id', req.params.sectionId).eq('dip_id', req.params.id).single();
+  if (!section) return res.status(404).json({ error: 'Section introuvable' });
+
+  try {
+    if (Array.isArray(answers) && answers.length > 0) {
+      const result = await correctSectionWithAnswers(section, answers);
+      return res.json({ needs_info: false, ...result });
+    }
+    const result = await correctSection(section);
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: errMsg(err) });
+  }
 });
 
 // POST /api/dip/check/:id
