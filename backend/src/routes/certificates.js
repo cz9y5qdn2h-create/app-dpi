@@ -408,7 +408,21 @@ router.get('/public/:token', async (req, res) => {
   if (error || !data) return res.status(404).json({ error: 'Attestation introuvable ou lien invalide' });
 
   if (req.query.format === 'json') {
-    return res.json({ certificate: data });
+    // Ce endpoint est public (aucune authentification) : n'expose que les
+    // champs descriptifs du certificat. `deliveries` (noms/emails de TOUS
+    // les franchisés notifiés) et `changes_snapshot` (détail des
+    // modifications) restent confidentiels — un franchisé consultant sa
+    // propre attestation ne doit pas voir les coordonnées des autres.
+    const {
+      id, certificate_type, certificate_title, legal_summary, warnings,
+      compliance_level, global_score, changes_count, generated_at, status, sha256_dip,
+    } = data;
+    return res.json({
+      certificate: {
+        id, certificate_type, certificate_title, legal_summary, warnings,
+        compliance_level, global_score, changes_count, generated_at, status, sha256_dip,
+      },
+    });
   }
 
   if (data.pdf_url) return res.redirect(302, data.pdf_url);

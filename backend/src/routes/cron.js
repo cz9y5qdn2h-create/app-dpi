@@ -23,7 +23,12 @@ const BATCH_SIZE = 4;       // sources vérifiées en parallèle par batch
 
 function isAuthorized(req) {
   const secret = process.env.CRON_SECRET;
-  if (!secret) return true; // dev local sans secret configuré
+  if (!secret) {
+    // Fail-closed en production : un secret manquant ne doit jamais rendre
+    // ce endpoint public (il déclenche des appels IA coûteux et des emails
+    // à tous les franchisés). Fail-open uniquement en dev local.
+    return process.env.NODE_ENV !== 'production';
+  }
   return req.headers.authorization === `Bearer ${secret}`;
 }
 

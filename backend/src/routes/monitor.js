@@ -1,4 +1,5 @@
 const express = require('express');
+const crypto = require('crypto');
 const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware, requireFranchisor } = require('../middleware/auth');
 const { encrypt, decrypt } = require('../config/encryption');
@@ -6,6 +7,22 @@ const { analyzeDocumentForDIPImpact } = require('../config/claude');
 const pdfParse = require('pdf-parse');
 const mammoth = require('mammoth');
 const router = express.Router();
+
+// State OAuth signé (HMAC) — transporte uniquement l'id utilisateur, jamais
+// son token de session. Le token brut apparaissait auparavant dans l'URL de
+// redirection OAuth (potentiellement journalisé par Google/Microsoft, un
+// proxy, ou exposé via l'en-tête Referer). Même pattern que integrations.js.
+function signState(payload) {
+  const sig = crypto.createHmac('sha256', process.env.JWT_SECRET || 'fallback').update(payload).digest('hex');
+  return Buffer.from(JSON.stringify({ payload, sig })).toString('base64url');
+}
+
+function verifyState(raw) {
+  const { payload, sig } = JSON.parse(Buffer.from(raw, 'base64url').toString());
+  const expected = crypto.createHmac('sha256', process.env.JWT_SECRET || 'fallback').update(payload).digest('hex');
+  if (sig !== expected) throw new Error('invalid_state');
+  return JSON.parse(payload);
+}
 
 // ── OAuth constants ────────────────────────────────────────────────────────
 
@@ -450,7 +467,7 @@ router.get('/google/auth', authMiddleware, requireFranchisor, async (req, res) =
     return res.status(503).json({ error: 'Google Drive non configuré — ajoutez GOOGLE_CLIENT_ID dans Vercel' });
   }
   const redirectUri = `${process.env.BACKEND_URL || 'https://dippro.business'}/api/monitor/google/callback`;
-  const state = Buffer.from(req.token).toString('base64url');
+  const state = signState(JSON.stringify({ userId: req.user.id }));
   const params = new URLSearchParams({
     client_id: process.env.GOOGLE_CLIENT_ID,
     redirect_uri: redirectUri,
@@ -468,11 +485,10 @@ router.get('/google/callback', async (req, res) => {
   const frontendUrl = process.env.FRONTEND_URL || 'https://dippro.business';
   if (oauthError || !code || !state) return res.redirect(`${frontendUrl}/monitor?error=oauth_denied`);
 
-  try {
-    const token = Buffer.from(String(state), 'base64url').toString('utf8');
-    const { data: { user }, error: authErr } = await supabaseAdmin.auth.getUser(token);
-    if (authErr || !user) return res.redirect(`${frontendUrl}/monitor?error=invalid_session`);
+  let userId;
+  try { ({ userId } = verifyState(String(state))); } catch { return res.redirect(`${frontendUrl}/monitor?error=invalid_session`); }
 
+  try {
     const redirectUri = `${process.env.BACKEND_URL || 'https://dippro.business'}/api/monitor/google/callback`;
     const tokenResp = await fetch(GOOGLE_TOKEN_URL, {
       method: 'POST',
@@ -495,7 +511,7 @@ router.get('/google/callback', async (req, res) => {
     const expiresAt = new Date(Date.now() + (tokens.expires_in || 3600) * 1000).toISOString();
 
     await supabaseAdmin.from('document_monitors').upsert({
-      user_id: user.id,
+      user_id: userId,
       source: 'google_drive',
       access_token: encrypt(tokens.access_token),
       refresh_token: tokens.refresh_token ? encrypt(tokens.refresh_token) : undefined,
@@ -544,7 +560,7 @@ router.get('/onedrive/auth', authMiddleware, requireFranchisor, async (req, res)
     return res.status(503).json({ error: 'OneDrive non configuré — ajoutez MICROSOFT_CLIENT_ID dans Vercel' });
   }
   const redirectUri = `${process.env.BACKEND_URL || 'https://dippro.business'}/api/monitor/onedrive/callback`;
-  const state = Buffer.from(req.token).toString('base64url');
+  const state = signState(JSON.stringify({ userId: req.user.id }));
   const params = new URLSearchParams({
     client_id: process.env.MICROSOFT_CLIENT_ID,
     redirect_uri: redirectUri,
@@ -561,11 +577,10 @@ router.get('/onedrive/callback', async (req, res) => {
   const frontendUrl = process.env.FRONTEND_URL || 'https://dippro.business';
   if (oauthError || !code || !state) return res.redirect(`${frontendUrl}/monitor?error=oauth_denied`);
 
-  try {
-    const token = Buffer.from(String(state), 'base64url').toString('utf8');
-    const { data: { user }, error: authErr } = await supabaseAdmin.auth.getUser(token);
-    if (authErr || !user) return res.redirect(`${frontendUrl}/monitor?error=invalid_session`);
+  let userId;
+  try { ({ userId } = verifyState(String(state))); } catch { return res.redirect(`${frontendUrl}/monitor?error=invalid_session`); }
 
+  try {
     const redirectUri = `${process.env.BACKEND_URL || 'https://dippro.business'}/api/monitor/onedrive/callback`;
     const tokenResp = await fetch(MS_TOKEN_URL, {
       method: 'POST',
@@ -589,7 +604,7 @@ router.get('/onedrive/callback', async (req, res) => {
     const expiresAt = new Date(Date.now() + (tokens.expires_in || 3600) * 1000).toISOString();
 
     await supabaseAdmin.from('document_monitors').upsert({
-      user_id: user.id,
+      user_id: userId,
       source: 'onedrive',
       access_token: encrypt(tokens.access_token),
       refresh_token: tokens.refresh_token ? encrypt(tokens.refresh_token) : undefined,
@@ -885,7 +900,13 @@ router.post('/check-now', authMiddleware, requireFranchisor, async (req, res) =>
 // GET /api/monitor/run — endpoint cron Vercel
 router.get('/run', async (req, res) => {
   const secret = process.env.MONITOR_CRON_SECRET;
-  if (secret && req.headers.authorization !== `Bearer ${secret}`) {
+  if (secret) {
+    if (req.headers.authorization !== `Bearer ${secret}`) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+  } else if (process.env.NODE_ENV === 'production') {
+    // Fail-closed en production : sans secret configuré, ce endpoint public
+    // pourrait être déclenché par n'importe qui pour tous les utilisateurs.
     return res.status(401).json({ error: 'Unauthorized' });
   }
 

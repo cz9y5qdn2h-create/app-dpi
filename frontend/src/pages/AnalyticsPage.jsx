@@ -23,10 +23,10 @@ function StatCard({ icon: Icon, label, value, sub, color = '#C8A96E' }) {
         <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `${color}18`, border: `1px solid ${color}30` }}>
           <Icon className="w-4 h-4" style={{ color }} />
         </div>
-        <span className="font-dm-sans text-xs" style={{ color: 'var(--color-text-secondary)' }}>{label}</span>
+        <span className="font-dm-sans text-xs" style={{ color: 'rgb(var(--text-secondary))' }}>{label}</span>
       </div>
-      <p className="font-cormorant text-3xl font-light" style={{ color: 'var(--color-text-primary)' }}>{value}</p>
-      {sub && <p className="font-dm-mono text-xs" style={{ color: 'var(--color-text-muted)' }}>{sub}</p>}
+      <p className="font-cormorant text-3xl font-light" style={{ color: 'rgb(var(--text-primary))' }}>{value}</p>
+      {sub && <p className="font-dm-mono text-xs" style={{ color: 'rgb(var(--text-muted))' }}>{sub}</p>}
     </div>
   );
 }
@@ -37,19 +37,19 @@ function SectionBar({ section, maxTime }) {
   const barColor = openRate >= 70 ? '#22C55E' : openRate >= 40 ? '#C8A96E' : openRate > 0 ? '#EF4444' : '#334155';
 
   return (
-    <div className="flex items-center gap-3 py-2.5 border-b" style={{ borderColor: 'var(--color-border-subtle)' }}>
+    <div className="flex items-center gap-3 py-2.5 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
       <span className="font-dm-mono text-xs w-5 flex-shrink-0" style={{ color: '#C8A96E' }}>
         {String(section.section_number).padStart(2, '0')}
       </span>
-      <span className="font-dm-sans text-xs truncate flex-1" style={{ color: 'var(--color-text-secondary)', minWidth: 0 }}>
+      <span className="font-dm-sans text-xs truncate flex-1" style={{ color: 'rgb(var(--text-secondary))', minWidth: 0 }}>
         {section.section_title}
       </span>
       <div className="flex items-center gap-2 flex-shrink-0">
         {/* Barre temps */}
-        <div className="w-24 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--color-border-subtle)' }}>
+        <div className="w-24 h-1.5 rounded-full overflow-hidden" style={{ background: 'var(--border-subtle)' }}>
           <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, background: barColor }} />
         </div>
-        <span className="font-dm-mono text-xs w-10 text-right" style={{ color: 'var(--color-text-muted)' }}>
+        <span className="font-dm-mono text-xs w-10 text-right" style={{ color: 'rgb(var(--text-muted))' }}>
           {section.avg_time_s > 0 ? fmtTime(section.avg_time_s) : '—'}
         </span>
         <span className="font-dm-mono text-xs w-9 text-right" style={{ color: barColor }}>
@@ -73,7 +73,7 @@ export default function AnalyticsPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'var(--color-gold)' }} />
+        <div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: 'rgb(var(--gold))' }} />
       </div>
     );
   }
@@ -81,7 +81,7 @@ export default function AnalyticsPage() {
   if (isError || !data) {
     return (
       <div className="max-w-3xl mx-auto py-10 text-center">
-        <p className="font-dm-sans text-sm" style={{ color: 'var(--color-text-secondary)' }}>Analytics introuvables pour ce DIP.</p>
+        <p className="font-dm-sans text-sm" style={{ color: 'rgb(var(--text-secondary))' }}>Analytics introuvables pour ce DIP.</p>
         <Link to="/dip" className="btn-ghost mt-4 inline-block text-sm">← Retour au DIP</Link>
       </div>
     );
@@ -101,10 +101,10 @@ export default function AnalyticsPage() {
           <ArrowLeft className="w-4 h-4" />
         </Link>
         <div>
-          <h1 className="font-cormorant text-2xl" style={{ color: 'var(--color-text-primary)' }}>
+          <h1 className="font-cormorant text-2xl" style={{ color: 'rgb(var(--text-primary))' }}>
             {t('analytics.title')}
           </h1>
-          <p className="font-dm-sans text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
+          <p className="font-dm-sans text-xs mt-0.5" style={{ color: 'rgb(var(--text-muted))' }}>
             {dip_title}
           </p>
         </div>
@@ -120,11 +120,11 @@ export default function AnalyticsPage() {
 
       {total_visits === 0 ? (
         <div className="card p-12 text-center">
-          <BarChart2 className="w-10 h-10 mx-auto mb-4" style={{ color: 'var(--color-border-default)' }} />
-          <h2 className="font-cormorant text-xl mb-2" style={{ color: 'var(--color-text-primary)' }}>
+          <BarChart2 className="w-10 h-10 mx-auto mb-4" style={{ color: 'var(--border-default)' }} />
+          <h2 className="font-cormorant text-xl mb-2" style={{ color: 'rgb(var(--text-primary))' }}>
             {t('analytics.empty.title')}
           </h2>
-          <p className="font-dm-sans text-sm" style={{ color: 'var(--color-text-secondary)' }}>
+          <p className="font-dm-sans text-sm" style={{ color: 'rgb(var(--text-secondary))' }}>
             {t('analytics.empty.desc')}
           </p>
           <Link to="/dip" className="btn-primary mt-6 inline-block text-sm">
@@ -136,10 +136,10 @@ export default function AnalyticsPage() {
           {/* Heatmap sections */}
           <div className="card p-5">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="font-cormorant text-lg" style={{ color: 'var(--color-text-primary)' }}>
+              <h2 className="font-cormorant text-lg" style={{ color: 'rgb(var(--text-primary))' }}>
                 {t('analytics.engagementTitle')}
               </h2>
-              <div className="flex items-center gap-4 font-dm-mono text-xs" style={{ color: 'var(--color-text-muted)' }}>
+              <div className="flex items-center gap-4 font-dm-mono text-xs" style={{ color: 'rgb(var(--text-muted))' }}>
                 <span>temps moy.</span>
                 <span>taux ouv.</span>
               </div>
@@ -149,7 +149,7 @@ export default function AnalyticsPage() {
                 <SectionBar key={s.section_number} section={s} maxTime={maxTime} />
               ))}
             </div>
-            <div className="mt-4 flex items-center gap-4 font-dm-sans text-xs" style={{ color: 'var(--color-text-muted)' }}>
+            <div className="mt-4 flex items-center gap-4 font-dm-sans text-xs" style={{ color: 'rgb(var(--text-muted))' }}>
               <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full inline-block" style={{ background: '#22C55E' }} /> {t('analytics.legend.high')}</span>
               <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full inline-block" style={{ background: '#C8A96E' }} /> {t('analytics.legend.medium')}</span>
               <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full inline-block" style={{ background: '#EF4444' }} /> {t('analytics.legend.low')}</span>
@@ -160,8 +160,8 @@ export default function AnalyticsPage() {
           {mostRead && leastRead && mostRead.section_number !== leastRead.section_number && (
             <div className="rounded-xl p-4 flex items-start gap-3" style={{ background: 'rgba(200,169,110,0.06)', border: '1px solid rgba(200,169,110,0.2)' }}>
               <TrendingUp className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#C8A96E' }} />
-              <div className="font-dm-sans text-xs leading-relaxed" style={{ color: 'var(--color-text-secondary)' }}>
-                <strong style={{ color: 'var(--color-text-primary)' }}>Insight commercial :</strong>{' '}
+              <div className="font-dm-sans text-xs leading-relaxed" style={{ color: 'rgb(var(--text-secondary))' }}>
+                <strong style={{ color: 'rgb(var(--text-primary))' }}>Insight commercial :</strong>{' '}
                 Les candidats passent le plus de temps sur <strong style={{ color: '#C8A96E' }}>«&nbsp;{mostRead.section_title}&nbsp;»</strong> (§{mostRead.section_number})
                 {mostRead.avg_time_s > 0 && ` — ${fmtTime(mostRead.avg_time_s)} en moyenne`}.
                 {leastRead.open_rate_pct < 30 && (
@@ -173,24 +173,24 @@ export default function AnalyticsPage() {
 
           {/* Liste des visites */}
           <div className="card p-5">
-            <h2 className="font-cormorant text-lg mb-4" style={{ color: 'var(--color-text-primary)' }}>
+            <h2 className="font-cormorant text-lg mb-4" style={{ color: 'rgb(var(--text-primary))' }}>
               {t('analytics.visitsHistory')} ({visits.length})
             </h2>
             <div className="space-y-2">
               {visits.map((v, i) => (
-                <div key={v.visit_id} className="flex items-center gap-3 px-3 py-2.5 rounded-lg" style={{ background: 'var(--color-bg-elevated)' }}>
-                  <span className="font-dm-mono text-xs w-5 flex-shrink-0" style={{ color: 'var(--color-text-muted)' }}>
+                <div key={v.visit_id} className="flex items-center gap-3 px-3 py-2.5 rounded-lg" style={{ background: 'rgb(var(--bg-elevated))' }}>
+                  <span className="font-dm-mono text-xs w-5 flex-shrink-0" style={{ color: 'rgb(var(--text-muted))' }}>
                     {String(i + 1).padStart(2, '0')}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="font-dm-sans text-xs" style={{ color: 'var(--color-text-primary)' }}>
+                    <p className="font-dm-sans text-xs" style={{ color: 'rgb(var(--text-primary))' }}>
                       {fmtDate(v.first_seen_at)}
                     </p>
-                    <p className="font-dm-mono text-xs mt-0.5" style={{ color: 'var(--color-text-muted)' }}>
+                    <p className="font-dm-mono text-xs mt-0.5" style={{ color: 'rgb(var(--text-muted))' }}>
                       Sections consultées : {v.sections_opened.map(n => `§${n}`).join(', ')}
                     </p>
                   </div>
-                  <div className="flex items-center gap-1.5 font-dm-mono text-xs flex-shrink-0" style={{ color: 'var(--color-text-secondary)' }}>
+                  <div className="flex items-center gap-1.5 font-dm-mono text-xs flex-shrink-0" style={{ color: 'rgb(var(--text-secondary))' }}>
                     <Clock className="w-3 h-3" />
                     {fmtTime(v.total_time_s)}
                   </div>

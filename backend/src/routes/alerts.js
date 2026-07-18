@@ -50,10 +50,18 @@ router.post('/analyze', authMiddleware, requireFranchisor, async (req, res) => {
   }
 
   try {
+    // Vérifie que le DIP appartient bien à l'utilisateur AVANT de charger quoi
+    // que ce soit — sans ce contrôle, n'importe quel section_id/dip_id d'un
+    // autre franchiseur pouvait être lu et son contenu renvoyé dans la réponse.
+    const { data: dip } = await supabaseAdmin
+      .from('dip_documents').select('id').eq('id', dip_id).eq('user_id', req.user.id).single();
+    if (!dip) return res.status(404).json({ error: 'DIP introuvable' });
+
     const { data: section } = await supabaseAdmin
       .from('dip_sections')
       .select('*')
       .eq('id', section_id)
+      .eq('dip_id', dip_id)
       .single();
 
     if (!section) return res.status(404).json({ error: 'Section introuvable' });

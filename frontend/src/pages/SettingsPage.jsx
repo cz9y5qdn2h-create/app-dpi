@@ -418,7 +418,7 @@ export default function SettingsPage() {
               onClick={disableMfa}
               disabled={mfaLoading}
               className="btn-secondary flex items-center gap-2"
-              style={{ color: 'var(--color-danger)', borderColor: 'rgba(var(--color-danger-rgb),0.30)' }}
+              style={{ color: 'rgb(var(--danger))', borderColor: 'rgb(var(--danger) / 0.30)' }}
             >
               {mfaLoading ? <LoadingSpinner size="sm" /> : <Key className="w-4 h-4" />}
               Désactiver l'A2F

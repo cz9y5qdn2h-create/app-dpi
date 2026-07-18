@@ -123,10 +123,10 @@ export default function CopilotChat() {
         onClick={() => setOpen(v => !v)}
         className={`fixed bottom-6 z-50 w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 ${position === 'right' ? 'right-6' : 'left-6'}`}
         style={{
-          background: 'linear-gradient(135deg, #C8A96E, #a07840)',
+          background: 'linear-gradient(135deg, rgb(var(--gold)), rgb(var(--gold) / 0.7))',
           boxShadow: open
-            ? '0 0 0 3px rgba(200,169,110,0.30), 0 8px 24px rgba(200,169,110,0.35)'
-            : '0 4px 20px rgba(200,169,110,0.40), 0 8px 32px rgba(0,0,0,0.20)',
+            ? '0 0 0 3px rgb(var(--gold) / 0.30), 0 8px 24px rgb(var(--gold) / 0.35)'
+            : '0 4px 20px rgb(var(--gold) / 0.40), 0 8px 32px rgba(0,0,0,0.20)',
         }}
         title="DIPpro Copilot"
       >
@@ -163,7 +163,7 @@ export default function CopilotChat() {
               background: 'rgb(var(--bg-card) / 0.97)',
               backdropFilter: 'blur(28px) saturate(180%)',
               WebkitBackdropFilter: 'blur(28px) saturate(180%)',
-              border: '1px solid rgba(200,169,110,0.28)',
+              border: '1px solid rgb(var(--gold) / 0.28)',
               borderRadius: 20,
               boxShadow: '0 8px 32px rgba(0,0,0,0.24), 0 24px 64px rgba(0,0,0,0.18)',
               overflow: 'hidden',
@@ -171,9 +171,9 @@ export default function CopilotChat() {
           >
             {/* Header */}
             <div className="flex items-center gap-3 px-4 py-3.5 flex-shrink-0"
-              style={{ borderBottom: '0.5px solid rgba(200,169,110,0.18)', background: 'rgba(200,169,110,0.05)' }}>
+              style={{ borderBottom: '0.5px solid rgb(var(--gold) / 0.18)', background: 'rgb(var(--gold) / 0.05)' }}>
               <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-                style={{ background: 'linear-gradient(135deg, #C8A96E, #a07840)' }}>
+                style={{ background: 'linear-gradient(135deg, rgb(var(--gold)), rgb(var(--gold) / 0.7))' }}>
                 <Sparkles className="w-4 h-4 text-white" />
               </div>
               <div className="flex-1 min-w-0">
@@ -198,7 +198,7 @@ export default function CopilotChat() {
 
             {/* Shortcuts */}
             <div className="flex gap-2 px-3 py-2 overflow-x-auto flex-shrink-0"
-              style={{ borderBottom: '0.5px solid rgba(200,169,110,0.10)', scrollbarWidth: 'none' }}>
+              style={{ borderBottom: '0.5px solid rgb(var(--gold) / 0.10)', scrollbarWidth: 'none' }}>
               {SHORTCUTS.map(sc => (
                 <button
                   key={sc.label}
@@ -206,8 +206,8 @@ export default function CopilotChat() {
                   disabled={loading && !sc.booking}
                   className="whitespace-nowrap font-dm-sans text-xs px-3 py-1.5 rounded-full transition-all flex-shrink-0"
                   style={{
-                    background: sc.booking ? 'rgba(200,169,110,0.16)' : 'rgba(200,169,110,0.08)',
-                    border: `0.5px solid ${sc.booking ? 'rgba(200,169,110,0.40)' : 'rgba(200,169,110,0.22)'}`,
+                    background: sc.booking ? 'rgb(var(--gold) / 0.16)' : 'rgb(var(--gold) / 0.08)',
+                    border: `0.5px solid ${sc.booking ? 'rgb(var(--gold) / 0.40)' : 'rgb(var(--gold) / 0.22)'}`,
                     color: 'rgb(var(--gold))',
                   }}
                 >
@@ -223,7 +223,7 @@ export default function CopilotChat() {
                   <div
                     className="max-w-[85%] rounded-2xl px-3.5 py-2.5 font-dm-sans text-sm leading-relaxed"
                     style={m.role === 'user'
-                      ? { background: 'rgba(200,169,110,0.18)', border: '0.5px solid rgba(200,169,110,0.35)', color: 'rgb(var(--text-primary))', borderBottomRightRadius: 6 }
+                      ? { background: 'rgb(var(--gold) / 0.18)', border: '0.5px solid rgb(var(--gold) / 0.35)', color: 'rgb(var(--text-primary))', borderBottomRightRadius: 6 }
                       : { background: 'rgb(var(--bg-elevated))', border: '0.5px solid var(--border-subtle)', color: 'rgb(var(--text-primary))', borderBottomLeftRadius: 6 }
                     }
                   >
@@ -238,8 +238,8 @@ export default function CopilotChat() {
                           rel="noopener noreferrer"
                           className="flex items-center justify-center gap-2 py-2.5 rounded-xl font-dm-sans text-sm font-medium transition-all"
                           style={{
-                            background: 'rgba(200,169,110,0.18)',
-                            border: '0.5px solid rgba(200,169,110,0.45)',
+                            background: 'rgb(var(--gold) / 0.18)',
+                            border: '0.5px solid rgb(var(--gold) / 0.45)',
                             color: 'rgb(var(--gold))',
                           }}
                         >
@@ -258,16 +258,16 @@ export default function CopilotChat() {
                           strong: ({ children }) => <strong className="font-semibold" style={{ color: 'rgb(var(--text-primary))' }}>{children}</strong>,
                           em: ({ children }) => <em className="italic text-text-secondary">{children}</em>,
                           code: ({ inline, children }) => inline
-                            ? <code className="font-dm-mono text-xs px-1 py-0.5 rounded" style={{ background: 'rgba(200,169,110,0.12)', color: 'rgb(var(--gold))' }}>{children}</code>
+                            ? <code className="font-dm-mono text-xs px-1 py-0.5 rounded" style={{ background: 'rgb(var(--gold) / 0.12)', color: 'rgb(var(--gold))' }}>{children}</code>
                             : <pre className="font-dm-mono text-xs p-2 rounded mt-1 mb-1 overflow-x-auto" style={{ background: 'rgb(var(--bg-primary))', color: 'rgb(var(--text-primary))' }}><code>{children}</code></pre>,
                           table: ({ children }) => <div className="overflow-x-auto my-2"><table className="w-full text-xs border-collapse">{children}</table></div>,
-                          th: ({ children }) => <th className="text-left px-2 py-1 font-dm-mono font-semibold" style={{ borderBottom: '1px solid rgba(200,169,110,0.25)', color: 'rgb(var(--gold))' }}>{children}</th>,
+                          th: ({ children }) => <th className="text-left px-2 py-1 font-dm-mono font-semibold" style={{ borderBottom: '1px solid rgb(var(--gold) / 0.25)', color: 'rgb(var(--gold))' }}>{children}</th>,
                           td: ({ children }) => <td className="px-2 py-1" style={{ borderBottom: '1px solid var(--border-subtle)' }}>{children}</td>,
                           h1: ({ children }) => <p className="font-semibold text-base mb-1" style={{ color: 'rgb(var(--text-primary))' }}>{children}</p>,
                           h2: ({ children }) => <p className="font-semibold text-sm mb-1 mt-2" style={{ color: 'rgb(var(--text-primary))' }}>{children}</p>,
                           h3: ({ children }) => <p className="font-medium text-sm mb-0.5 mt-1.5" style={{ color: 'rgb(var(--gold))' }}>{children}</p>,
-                          blockquote: ({ children }) => <blockquote className="border-l-2 pl-3 my-1" style={{ borderColor: 'rgba(200,169,110,0.4)', color: 'rgb(var(--text-secondary))' }}>{children}</blockquote>,
-                          hr: () => <hr className="my-2" style={{ borderColor: 'rgba(200,169,110,0.15)' }} />,
+                          blockquote: ({ children }) => <blockquote className="border-l-2 pl-3 my-1" style={{ borderColor: 'rgb(var(--gold) / 0.4)', color: 'rgb(var(--text-secondary))' }}>{children}</blockquote>,
+                          hr: () => <hr className="my-2" style={{ borderColor: 'rgb(var(--gold) / 0.15)' }} />,
                         }}
                       >
                         {m.content}
@@ -301,7 +301,7 @@ export default function CopilotChat() {
 
             {/* Input */}
             <div className="px-3 pb-3 pt-2 flex-shrink-0"
-              style={{ borderTop: '0.5px solid rgba(200,169,110,0.12)' }}>
+              style={{ borderTop: '0.5px solid rgb(var(--gold) / 0.12)' }}>
               <div className="flex gap-2 items-end">
                 <textarea
                   ref={inputRef}
@@ -314,7 +314,7 @@ export default function CopilotChat() {
                   className="flex-1 resize-none font-dm-sans text-sm rounded-xl px-3 py-2.5 outline-none transition-all"
                   style={{
                     background: 'var(--input-bg)',
-                    border: '0.5px solid rgba(200,169,110,0.22)',
+                    border: '0.5px solid rgb(var(--gold) / 0.22)',
                     color: 'rgb(var(--text-primary))',
                     maxHeight: 120,
                     overflowY: 'auto',
@@ -329,9 +329,9 @@ export default function CopilotChat() {
                   disabled={!input.trim() || loading}
                   className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-all"
                   style={{
-                    background: !input.trim() || loading ? 'rgba(200,169,110,0.15)' : 'rgba(200,169,110,0.90)',
-                    border: '0.5px solid rgba(200,169,110,0.35)',
-                    color: !input.trim() || loading ? 'rgba(200,169,110,0.40)' : 'white',
+                    background: !input.trim() || loading ? 'rgb(var(--gold) / 0.15)' : 'rgb(var(--gold) / 0.90)',
+                    border: '0.5px solid rgb(var(--gold) / 0.35)',
+                    color: !input.trim() || loading ? 'rgb(var(--gold) / 0.40)' : 'white',
                     cursor: !input.trim() || loading ? 'not-allowed' : 'pointer',
                   }}
                 >

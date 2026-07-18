@@ -357,6 +357,11 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 
 router.post('/:dipId/import-xlsx', authMiddleware, upload.single('file'), async (req, res) => {
   const dip = await loadDip(req.params.dipId, req.user.id);
   if (!dip) return res.status(404).json({ error: 'DIP introuvable' });
+  // loadDip autorise aussi un avocat en lecture (export PDF/JSON/XLSX) — mais
+  // cette route ÉCRIT dans le DIP, donc seul le propriétaire peut l'utiliser.
+  if (dip.user_id !== req.user.id) {
+    return res.status(403).json({ error: 'Seul le franchiseur propriétaire peut importer des modifications.' });
+  }
   if (!req.file) return res.status(400).json({ error: 'Fichier Excel requis' });
 
   const wb = new ExcelJS.Workbook();

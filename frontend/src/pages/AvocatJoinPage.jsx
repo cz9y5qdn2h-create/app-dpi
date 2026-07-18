@@ -4,8 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import api from '../lib/api';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { Briefcase, CheckCircle, AlertCircle, LogIn, UserPlus } from 'lucide-react';
-
-export const PENDING_TOKEN_KEY = 'dippro-pending-avocat-token';
+import { PENDING_AVOCAT_TOKEN_KEY as PENDING_TOKEN_KEY } from '../lib/constants';
 
 export default function AvocatJoinPage() {
   const { token } = useParams();

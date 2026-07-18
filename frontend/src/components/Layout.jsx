@@ -11,7 +11,7 @@ import CompletionReminderWidget from './CompletionReminderWidget';
 import api from '../lib/api';
 import { FEATURES } from '../lib/features';
 import { Bell, Menu, Search, Bug } from 'lucide-react';
-import { PENDING_TOKEN_KEY } from '../pages/AvocatJoinPage';
+import { PENDING_AVOCAT_TOKEN_KEY as PENDING_TOKEN_KEY } from '../lib/constants';
 
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
