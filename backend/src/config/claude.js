@@ -1318,7 +1318,7 @@ const compareContractVersions = async (previousText, newText) => {
   }
 
   const result = await callClaudeToolUse({
-    model: MODEL_SONNET,
+    model: MODEL_OPUS,
     max_tokens: 8192,
     system: CACHED_SYSTEM_CONTRACT,
     messages: [{
@@ -1558,7 +1558,7 @@ Valeurs pour status : "conforme" | "a_verifier" | "non_conforme"`;
   let charsReceived = 0;
 
   const stream = claude.messages.stream({
-    model: MODEL_SONNET,
+    model: MODEL_OPUS,
     max_tokens: 12000,
     system: CACHED_SYSTEM_CONTRACT,
     messages: [{ role: 'user', content: userContent }],
