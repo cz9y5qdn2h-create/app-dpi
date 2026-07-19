@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { Shield, Eye, EyeOff, AlertCircle, CheckCircle, ArrowRight, Building2, Scale } from 'lucide-react';
@@ -14,9 +14,13 @@ export default function RegisterPage() {
   const { register } = useAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   // null = sélection profil, 'franchiseur' | 'avocat' = profil choisi
-  const [selectedRole, setSelectedRole] = useState(null);
+  // pré-rempli si on arrive via un lien d'invitation avocat (?role=avocat)
+  const [selectedRole, setSelectedRole] = useState(
+    searchParams.get('role') === 'avocat' ? 'avocat' : null
+  );
   const [step, setStep] = useState(0);
   const [form, setForm] = useState({
     company_name: '',

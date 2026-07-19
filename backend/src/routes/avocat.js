@@ -401,42 +401,30 @@ router.put('/clause-proposals/:id/reject', authMiddleware, async (req, res) => {
   res.json({ ok: true });
 });
 
-// POST /api/avocat/invite — franchiseur invite son avocat
+// POST /api/avocat/invite — franchiseur envoie son lien d'invitation par email
+// Réutilise le même token que /invite-link (une seule source de vérité pour
+// l'accès avocat) : si l'avocat a déjà un compte, le lien le connecte en un
+// clic ; sinon il l'amène sur l'inscription puis le lie automatiquement.
 router.post('/invite', authMiddleware, async (req, res) => {
   const { lawyer_email } = req.body;
   if (!lawyer_email?.trim()) return res.status(400).json({ error: 'Email requis' });
 
   const email = lawyer_email.trim().toLowerCase();
+  const appUrl = process.env.APP_URL || 'https://app-dpi.vercel.app';
 
   const { data: franchiseur } = await supabaseAdmin
-    .from('users').select('id, company_name').eq('id', req.user.id).single();
+    .from('users').select('id, company_name, avocat_invite_token').eq('id', req.user.id).single();
 
-  // Sauvegarder l'email avocat dans le profil franchiseur
   await supabaseAdmin.from('users').update({ lawyer_email: email }).eq('id', req.user.id);
 
-  // Si l'avocat est déjà inscrit, créer la relation automatiquement
-  const { data: existingAvocat } = await supabaseAdmin
-    .from('users').select('id, role').eq('email', email).maybeSingle();
-
-  if (existingAvocat?.role === 'avocat') {
-    const { data: existing } = await supabaseAdmin
-      .from('avocat_franchiseurs').select('id')
-      .eq('avocat_id', existingAvocat.id).eq('franchiseur_id', req.user.id).maybeSingle();
-
-    if (!existing) {
-      await supabaseAdmin.from('avocat_franchiseurs').insert({
-        avocat_id: existingAvocat.id,
-        franchiseur_id: req.user.id,
-        status: 'active',
-        invited_at: new Date().toISOString(),
-        accepted_at: new Date().toISOString(),
-      });
-    }
+  let token = franchiseur?.avocat_invite_token;
+  if (!token) {
+    token = uuidv4();
+    await supabaseAdmin.from('users').update({ avocat_invite_token: token }).eq('id', req.user.id);
   }
+  const joinUrl = `${appUrl}/avocat/rejoindre/${token}`;
 
-  // Envoyer l'email d'invitation via la clé Brevo système
   const brevoKey = process.env.BREVO_API_KEY;
-  const appUrl = process.env.APP_URL || 'https://app-dpi.vercel.app';
   const companyName = franchiseur?.company_name || 'Un franchiseur';
 
   if (brevoKey) {
@@ -461,15 +449,15 @@ router.post('/invite', authMiddleware, async (req, res) => {
   <div style="background:#fff;border-radius:0 0 12px 12px;padding:32px;border:1px solid #f0ece4;border-top:none">
     <p style="margin:0 0 16px;font-size:15px">Bonjour,</p>
     <p style="margin:0 0 16px;font-size:15px"><strong>${companyName}</strong> vous invite à consulter et annoter son Document d'Information Précontractuelle (DIP) directement sur <strong>DIPpro</strong>.</p>
-    <p style="margin:0 0 16px;font-size:14px;color:#475569">En créant un compte avocat, vous pourrez :</p>
+    <p style="margin:0 0 16px;font-size:14px;color:#475569">En cliquant sur le lien ci-dessous, vous pourrez :</p>
     <ul style="margin:0 0 24px;padding-left:20px;color:#475569;font-size:14px;line-height:2">
       <li>Consulter toutes les sections du DIP de votre client</li>
       <li>Proposer des modifications directement dans l'interface</li>
       <li>Suivre l'historique des versions et validations</li>
       <li>Accompagner plusieurs réseaux de franchise depuis un seul espace</li>
     </ul>
-    <a href="${appUrl}/register?role=avocat" style="display:inline-block;background:linear-gradient(135deg,#C8A96E,#A8893E);color:#1A1826;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px">Créer mon compte avocat →</a>
-    <p style="margin:24px 0 0;font-size:12px;color:#94A3B8">Après inscription, recherchez <strong>${companyName}</strong> dans votre tableau de bord pour accéder à son DIP.</p>
+    <a href="${joinUrl}" style="display:inline-block;background:linear-gradient(135deg,#C8A96E,#A8893E);color:#1A1826;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px">Accéder à l'espace de ${companyName} →</a>
+    <p style="margin:24px 0 0;font-size:12px;color:#94A3B8">Si vous n'avez pas encore de compte DIPpro, ce lien vous proposera d'en créer un — vous serez automatiquement connecté à ce dossier ensuite.</p>
     <hr style="border:none;border-top:1px solid #f0ece4;margin:24px 0">
     <p style="margin:0;font-size:11px;color:#94A3B8">DIPpro — Gestion des DIP franchise · Loi Doubin · <a href="${appUrl}/cgu" style="color:#C8A96E">CGU</a></p>
   </div>
@@ -481,7 +469,7 @@ router.post('/invite', authMiddleware, async (req, res) => {
     }
   }
 
-  res.json({ success: true, message: 'Invitation envoyée' });
+  res.json({ success: true, message: 'Invitation envoyée', url: joinUrl });
 });
 
 module.exports = router;

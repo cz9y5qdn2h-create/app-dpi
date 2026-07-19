@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Scale, Network, Mail, ArrowRight, ArrowLeft, CheckCircle, X } from 'lucide-react';
+import { Scale, Network, Mail, Copy, ArrowRight, ArrowLeft, CheckCircle, X } from 'lucide-react';
+import toast from 'react-hot-toast';
 import api from '../lib/api';
+import { useAuth } from '../context/AuthContext';
 
 const TOTAL = 3;
 
@@ -17,7 +19,6 @@ export default function OnboardingAvocat({ profile, onComplete }) {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     nb_networks: '',
-    client_emails_raw: '',
   });
 
   const goTo = (next) => {
@@ -29,16 +30,10 @@ export default function OnboardingAvocat({ profile, onComplete }) {
 
   const finish = async () => {
     setSaving(true);
-    const emails = form.client_emails_raw
-      .split('\n')
-      .map(e => e.trim())
-      .filter(e => e.includes('@'));
-
     try {
       await api.post('/onboarding', {
         role: 'avocat',
         nb_networks: form.nb_networks ? parseInt(form.nb_networks, 10) : undefined,
-        client_emails: emails,
       });
     } catch {
       // non-blocking
@@ -84,7 +79,7 @@ export default function OnboardingAvocat({ profile, onComplete }) {
           <AnimatePresence custom={dir} mode="wait">
             <motion.div key={step} custom={dir} variants={variants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.28, ease: 'easeInOut' }}>
               {step === 0 && <StepCabinet form={form} set={set} />}
-              {step === 1 && <StepClients form={form} set={set} />}
+              {step === 1 && <StepShare />}
               {step === 2 && <StepDone profile={profile} />}
             </motion.div>
           </AnimatePresence>
@@ -167,8 +162,15 @@ function StepCabinet({ form, set }) {
   );
 }
 
-function StepClients({ form, set }) {
-  const count = form.client_emails_raw.split('\n').filter(e => e.trim().includes('@')).length;
+function StepShare() {
+  const { user } = useAuth();
+  const email = user?.email || '';
+
+  const copyEmail = () => {
+    if (!email) return;
+    navigator.clipboard.writeText(email).then(() => toast.success('Email copié'));
+  };
+
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
@@ -176,26 +178,22 @@ function StepClients({ form, set }) {
           <Mail style={{ width: 18, height: 18, color: 'rgb(var(--gold))' }} />
         </div>
         <div>
-          <p className="font-dm-sans" style={{ fontSize: 15, fontWeight: 600, color: 'rgb(var(--text-primary))' }}>Vos clients franchiseurs</p>
-          <p className="font-dm-sans" style={{ fontSize: 12, color: 'rgb(var(--text-secondary))' }}>Invitez-les à rejoindre DIPpro (optionnel)</p>
+          <p className="font-dm-sans" style={{ fontSize: 15, fontWeight: 600, color: 'rgb(var(--text-primary))' }}>Connectez-vous à vos clients</p>
+          <p className="font-dm-sans" style={{ fontSize: 12, color: 'rgb(var(--text-secondary))' }}>C'est votre client franchiseur qui vous invite, pas l'inverse</p>
         </div>
       </div>
-      <div>
-        <label className="font-dm-sans" style={{ fontSize: 12, fontWeight: 500, color: 'rgb(var(--text-secondary))', display: 'block', marginBottom: 6 }}>
-          Emails des franchiseurs clients — un par ligne
-        </label>
-        <textarea
-          value={form.client_emails_raw}
-          onChange={e => set('client_emails_raw', e.target.value)}
-          placeholder={'client1@reseau.fr\nclient2@franchise.com\nclient3@groupe.fr'}
-          className="input-field"
-          style={{ width: '100%', minHeight: 120, resize: 'vertical', fontFamily: 'DM Mono, monospace', fontSize: 12 }}
-          autoFocus
-        />
-        <p className="font-dm-sans" style={{ fontSize: 11, color: 'rgb(var(--text-muted))', marginTop: 6 }}>
-          {count > 0 ? `${count} adresse${count > 1 ? 's' : ''} détectée${count > 1 ? 's' : ''}` : 'Vous pourrez aussi les inviter depuis votre dashboard.'}
-        </p>
-      </div>
+      <p className="font-dm-sans" style={{ fontSize: 13, color: 'rgb(var(--text-secondary))', marginBottom: 14, lineHeight: 1.6 }}>
+        Depuis DIPpro, un franchiseur génère un lien d'invitation dans ses <strong>Paramètres</strong> et vous le transmet. En cliquant dessus, vous accédez immédiatement à son DIP et à son contrat. Transmettez-lui simplement l'adresse ci-dessous :
+      </p>
+      <button
+        type="button"
+        onClick={copyEmail}
+        className="input-field flex items-center justify-between gap-2 w-full"
+        style={{ fontFamily: 'DM Mono, monospace', fontSize: 13, cursor: 'pointer' }}
+      >
+        <span>{email}</span>
+        <Copy style={{ width: 14, height: 14, color: 'rgb(var(--gold))', flexShrink: 0 }} />
+      </button>
     </div>
   );
 }

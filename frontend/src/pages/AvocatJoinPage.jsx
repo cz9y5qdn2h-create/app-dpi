@@ -60,7 +60,7 @@ export default function AvocatJoinPage() {
               <Link to="/login" className="btn-primary flex items-center justify-center gap-2">
                 <LogIn className="w-4 h-4" /> Se connecter
               </Link>
-              <Link to="/register" className="btn-secondary flex items-center justify-center gap-2">
+              <Link to="/register?role=avocat" className="btn-secondary flex items-center justify-center gap-2">
                 <UserPlus className="w-4 h-4" /> Créer un compte avocat
               </Link>
             </div>
