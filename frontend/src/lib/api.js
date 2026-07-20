@@ -40,8 +40,8 @@ api.interceptors.response.use(
       }
       return Promise.reject(new Error('Session expirée, reconnectez-vous.'));
     }
-    if (status === 403) return Promise.reject(new Error('Accès refusé.'));
-    if (status === 404) return Promise.reject(new Error('Ressource introuvable.'));
+    if (status === 403) return Promise.reject(new Error(msg));
+    if (status === 404) return Promise.reject(new Error(msg));
     if (status >= 500) return Promise.reject(new Error(msg));
 
     return Promise.reject(new Error(msg));
