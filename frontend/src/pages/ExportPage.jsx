@@ -28,7 +28,7 @@ export default function ExportPage() {
       window.URL.revokeObjectURL(url);
       toast.success('Téléchargement terminé', { id: t });
     } catch (err) {
-      toast.error('Erreur lors de l\'export', { id: t });
+      toast.error(err.message || 'Erreur lors de l\'export', { id: t });
     }
   };
 
@@ -57,7 +57,7 @@ export default function ExportPage() {
       window.URL.revokeObjectURL(url);
       toast.success('Export JSON téléchargé');
     } catch (err) {
-      toast.error('Erreur lors de l\'export');
+      toast.error(err.message || 'Erreur lors de l\'export');
     }
   };
 

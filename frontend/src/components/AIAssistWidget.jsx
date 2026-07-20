@@ -33,8 +33,8 @@ export function useAIAssist(apiPath) {
       } else {
         setProposedText(data.corrected_content || '');
       }
-    } catch {
-      toast.error('Assistant IA indisponible — réessayez');
+    } catch (err) {
+      toast.error(err.message || 'Assistant IA indisponible — réessayez');
       setOpen(false);
     } finally {
       setLoading(false);
@@ -47,8 +47,8 @@ export function useAIAssist(apiPath) {
       const payload = questions.map((q, i) => ({ question: q, answer: answers[i] || '' }));
       const { data } = await api.post(apiPath, { answers: payload });
       setProposedText(data.corrected_content || '');
-    } catch {
-      toast.error('Erreur lors de la génération — réessayez');
+    } catch (err) {
+      toast.error(err.message || 'Erreur lors de la génération — réessayez');
     } finally {
       setLoading(false);
     }

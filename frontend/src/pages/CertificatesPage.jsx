@@ -42,8 +42,8 @@ export default function CertificatesPage() {
       a.click();
       URL.revokeObjectURL(url);
       toast.success('Attestation téléchargée');
-    } catch {
-      toast.error('Impossible de télécharger cette attestation');
+    } catch (err) {
+      toast.error(err.message || 'Impossible de télécharger cette attestation');
     } finally {
       setDownloadingId(null);
     }

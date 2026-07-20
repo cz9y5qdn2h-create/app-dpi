@@ -179,6 +179,28 @@ export default function SettingsPage() {
     onError: (err) => toast.error(err.message)
   });
 
+  // Mutations dédiées par section — le formulaire Profil, les préférences
+  // Copilot, le niveau d'automatisation et les notifications partageaient
+  // tous la même mutation : cliquer "Enregistrer" sur une seule section
+  // affichait le spinner et désactivait les 3 autres boutons sans rapport.
+  const copilotMutation = useMutation({
+    mutationFn: (d) => api.put('/settings/profile', d),
+    onSuccess: () => { toast.success('Préférences enregistrées'); queryClient.invalidateQueries({ queryKey: ['settings'] }); },
+    onError: (err) => toast.error(err.message)
+  });
+
+  const automationMutation = useMutation({
+    mutationFn: (d) => api.put('/settings/profile', d),
+    onSuccess: () => { toast.success('Niveau d\'automatisation enregistré'); queryClient.invalidateQueries({ queryKey: ['settings'] }); },
+    onError: (err) => toast.error(err.message)
+  });
+
+  const notificationsMutation = useMutation({
+    mutationFn: (d) => api.put('/settings/profile', d),
+    onSuccess: () => { toast.success('Préférences de notification enregistrées'); queryClient.invalidateQueries({ queryKey: ['settings'] }); },
+    onError: (err) => toast.error(err.message)
+  });
+
   const saveBrevoMutation = useMutation({
     mutationFn: (d) => api.put('/settings/profile', d),
     onSuccess: () => { toast.success('Configuration email enregistrée'); queryClient.invalidateQueries({ queryKey: ['settings'] }); },
@@ -557,11 +579,11 @@ export default function SettingsPage() {
           </div>
           <button
             type="button"
-            onClick={() => updateProfileMutation.mutate(copilotForm)}
-            disabled={updateProfileMutation.isPending}
+            onClick={() => copilotMutation.mutate(copilotForm)}
+            disabled={copilotMutation.isPending}
             className="btn-primary flex items-center gap-2"
           >
-            {updateProfileMutation.isPending ? <LoadingSpinner size="sm" /> : <Save className="w-4 h-4" />}
+            {copilotMutation.isPending ? <LoadingSpinner size="sm" /> : <Save className="w-4 h-4" />}
             Enregistrer les préférences
           </button>
         </div>
@@ -718,11 +740,11 @@ export default function SettingsPage() {
 
             <button
               type="button"
-              onClick={() => updateProfileMutation.mutate({ automation_level: profileForm.automation_level })}
-              disabled={updateProfileMutation.isPending}
+              onClick={() => automationMutation.mutate({ automation_level: profileForm.automation_level })}
+              disabled={automationMutation.isPending}
               className="btn-liquid-glass w-full mt-2"
             >
-              {updateProfileMutation.isPending ? <LoadingSpinner size="sm" /> : <CheckCircle className="w-4 h-4" />}
+              {automationMutation.isPending ? <LoadingSpinner size="sm" /> : <CheckCircle className="w-4 h-4" />}
               Enregistrer le niveau d'automatisation
             </button>
           </div>
@@ -822,17 +844,17 @@ export default function SettingsPage() {
 
             <button
               type="button"
-              onClick={() => updateProfileMutation.mutate({
+              onClick={() => notificationsMutation.mutate({
                 notifications_email: profileForm.notifications_email,
                 notifications_inapp: profileForm.notifications_inapp,
                 notifications_sms: profileForm.notifications_sms,
                 notification_frequency: profileForm.notification_frequency,
                 renewal_alert_days: profileForm.renewal_alert_days
               })}
-              disabled={updateProfileMutation.isPending}
+              disabled={notificationsMutation.isPending}
               className="btn-liquid-glass w-full"
             >
-              {updateProfileMutation.isPending ? <LoadingSpinner size="sm" /> : <Save className="w-4 h-4" />}
+              {notificationsMutation.isPending ? <LoadingSpinner size="sm" /> : <Save className="w-4 h-4" />}
               Enregistrer les notifications
             </button>
           </div>

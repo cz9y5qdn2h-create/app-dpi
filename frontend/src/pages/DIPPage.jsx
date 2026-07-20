@@ -154,7 +154,7 @@ export default function DIPPage() {
       toast.success('Lien de partage généré');
       return res.data;
     } catch (err) {
-      toast.error('Impossible de générer le lien');
+      toast.error(err.message || 'Impossible de générer le lien');
     } finally {
       setShareLoading(false);
     }
@@ -166,8 +166,8 @@ export default function DIPPage() {
     try {
       await api.post('/avocat/invite', { lawyer_email: lawyerEmail.trim() });
       toast.success(`Invitation envoyée à ${lawyerEmail.trim()}`);
-    } catch {
-      toast.error('Impossible d\'envoyer l\'invitation');
+    } catch (err) {
+      toast.error(err.message || 'Impossible d\'envoyer l\'invitation');
     } finally {
       setInviteLoading(false);
     }
@@ -181,7 +181,7 @@ export default function DIPPage() {
       queryClient.invalidateQueries({ queryKey: ['dips'] });
       toast.success('Lien révoqué — les franchisés n\'y ont plus accès');
     } catch (err) {
-      toast.error('Impossible de révoquer le lien');
+      toast.error(err.message || 'Impossible de révoquer le lien');
     } finally {
       setShareLoading(false);
     }
@@ -205,8 +205,8 @@ export default function DIPPage() {
       a.click();
       URL.revokeObjectURL(url);
       toast.success('PDF téléchargé');
-    } catch {
-      toast.error('Impossible de générer le PDF');
+    } catch (err) {
+      toast.error(err.message || 'Impossible de générer le PDF');
     } finally {
       setDownloadingPdf(false);
     }
@@ -224,8 +224,8 @@ export default function DIPPage() {
       a.click();
       URL.revokeObjectURL(url);
       toast.success('Excel téléchargé');
-    } catch {
-      toast.error('Impossible de générer le fichier Excel');
+    } catch (err) {
+      toast.error(err.message || 'Impossible de générer le fichier Excel');
     } finally {
       setDownloadingXlsx(false);
     }

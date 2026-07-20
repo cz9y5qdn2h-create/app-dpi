@@ -70,8 +70,8 @@ export default function ContractPage() {
       a.click();
       URL.revokeObjectURL(url);
       toast.success('PDF téléchargé');
-    } catch {
-      toast.error('Impossible de générer le PDF');
+    } catch (err) {
+      toast.error(err.message || 'Impossible de générer le PDF');
     } finally {
       setDownloadingPdf(false);
     }
@@ -84,8 +84,8 @@ export default function ContractPage() {
       await api.post(`/contracts/${contract.id}/share-link`);
       queryClient.invalidateQueries({ queryKey: ['contracts'] });
       toast.success('Lien de partage généré');
-    } catch {
-      toast.error('Impossible de générer le lien');
+    } catch (err) {
+      toast.error(err.message || 'Impossible de générer le lien');
     } finally {
       setShareLoading(false);
     }
@@ -98,8 +98,8 @@ export default function ContractPage() {
       await api.delete(`/contracts/${contract.id}/share-link`);
       queryClient.invalidateQueries({ queryKey: ['contracts'] });
       toast.success('Lien révoqué');
-    } catch {
-      toast.error('Impossible de révoquer le lien');
+    } catch (err) {
+      toast.error(err.message || 'Impossible de révoquer le lien');
     } finally {
       setShareLoading(false);
     }

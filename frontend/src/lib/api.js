@@ -35,7 +35,17 @@ api.interceptors.response.use(
       return Promise.reject(new Error('Le serveur est inaccessible. Verifiez votre connexion.'));
     }
     const status = error.response.status;
-    const raw = error.response.data?.error ?? error.response.data?.message ?? error.message;
+
+    // Les téléchargements (responseType: 'blob') reçoivent le corps d'erreur
+    // JSON du backend sous forme de Blob binaire, pas d'objet parsé — sans
+    // ce cas particulier, error.response.data?.error est toujours undefined
+    // et le vrai message ("DIP introuvable", quota dépassé...) est perdu.
+    let data = error.response.data;
+    if (data instanceof Blob && data.type?.includes('json')) {
+      try { data = JSON.parse(await data.text()); } catch {}
+    }
+
+    const raw = data?.error ?? data?.message ?? error.message;
     const msg = typeof raw === 'string' ? raw : (raw?.message ?? JSON.stringify(raw) ?? 'Erreur inconnue');
 
     if (status === 401) {

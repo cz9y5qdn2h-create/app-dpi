@@ -16,7 +16,7 @@ const NAV_ITEMS = [
   { label: 'Historique',       to: '/history',      icon: History,         group: 'Navigation' },
   { label: 'Franchisés',       to: '/franchisees',  icon: Users,           group: 'Navigation' },
   { label: 'Export',           to: '/export',       icon: Download,        group: 'Navigation' },
-  { label: 'Surveillance docs',to: '/monitor',      icon: FolderSync,      group: 'Navigation' },
+  { label: 'Surveillance docs',to: '/monitoring',    icon: FolderSync,      group: 'Navigation' },
   { label: 'Intégrations',     to: '/integrations', icon: Zap,             group: 'Navigation' },
   { label: 'Paramètres',       to: '/settings',     icon: Settings,        group: 'Navigation' },
 ];
