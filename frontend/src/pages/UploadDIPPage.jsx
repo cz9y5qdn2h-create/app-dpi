@@ -144,7 +144,7 @@ export default function UploadDIPPage() {
     } catch (err) {
       console.error('Upload error:', err);
       setStep('error');
-      setError(err.response?.data?.error || err.message || 'Erreur inconnue');
+      setError(err.message || 'Erreur inconnue');
     }
   };
 

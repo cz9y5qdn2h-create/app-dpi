@@ -74,7 +74,7 @@ export default function DIPPage() {
   const litigationMutation = useMutation({
     mutationFn: (dipId) => api.post(`/dip/${dipId}/litigation-risks`).then(r => r.data),
     onSuccess: (data) => setLitigationData(data.litigation_risks),
-    onError: (err) => toast.error(err.response?.data?.error || 'Analyse impossible — réessayez'),
+    onError: (err) => toast.error(err.message || 'Analyse impossible — réessayez'),
   });
 
   const { data, isLoading } = useQuery({
@@ -244,7 +244,7 @@ export default function DIPPage() {
       toast.success(`${res.data.updated} section(s) mises à jour depuis l'Excel`);
       queryClient.invalidateQueries({ queryKey: ['dips'] });
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Erreur lors de l\'import Excel');
+      toast.error(err.message || 'Erreur lors de l\'import Excel');
     } finally {
       setImportingXlsx(false);
       e.target.value = '';

@@ -32,7 +32,7 @@ export default function AvocatJoinPage() {
         setTimeout(() => navigate('/dashboard'), 2200);
       })
       .catch((err) => {
-        setErrorMsg(err.response?.data?.error || err.message || 'Erreur inconnue');
+        setErrorMsg(err.message || 'Erreur inconnue');
         setState('error');
       });
   }, [user, authLoading, token, navigate]);

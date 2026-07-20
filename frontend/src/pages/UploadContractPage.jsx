@@ -110,7 +110,7 @@ export default function UploadContractPage() {
 
     } catch (err) {
       setStep('error');
-      setError(err.response?.data?.error || err.message || 'Erreur inconnue');
+      setError(err.message || 'Erreur inconnue');
     }
   };
 

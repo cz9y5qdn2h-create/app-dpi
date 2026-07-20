@@ -253,7 +253,7 @@ function WaitlistFormDark({ onSuccess }) {
       if (res.data.already_exists) setAlreadyExists(true);
       else { setSuccess(true); onSuccess?.(); }
     } catch (err) {
-      setError(err.response?.data?.error || 'Une erreur est survenue. Réessayez.');
+      setError(err.message || 'Une erreur est survenue. Réessayez.');
     } finally {
       setLoading(false);
     }
