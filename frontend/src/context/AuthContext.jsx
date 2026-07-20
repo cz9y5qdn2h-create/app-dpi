@@ -9,10 +9,32 @@ export function useAuth() {
   return ctx;
 }
 
-const withTimeout = (promise, ms, fallback = null) => Promise.race([
-  promise,
-  new Promise((resolve) => setTimeout(() => resolve(fallback), ms))
-]);
+const withTimeout = (promise, ms, fallback = null) => {
+  // Si cette promesse perd la course (ex: le Lock Web "sb-...-auth-token"
+  // lui est volé par un autre onglet/appel concurrent — cause du crash
+  // "Lock was released because another request stole it"), son rejet
+  // arrive APRÈS que Promise.race ait déjà tranché : personne ne
+  // l'observe plus, et il remonte comme unhandledrejection. On l'attrape
+  // ici pour de bon, indépendamment de l'issue de la course.
+  promise.catch(() => {});
+  return Promise.race([
+    promise,
+    new Promise((resolve) => setTimeout(() => resolve(fallback), ms))
+  ]);
+};
+
+// L'appel Supabase le plus exposé aux locks volés (getSession() en
+// interne) — jamais await brut ailleurs dans ce fichier : un timeout
+// dégrade en "pas de palier A2F détecté côté client", et authMiddleware
+// (backend) reste l'unique garde-fou réel sur aal2.
+async function getAAL() {
+  const result = await withTimeout(
+    supabase.auth.mfa.getAuthenticatorAssuranceLevel(),
+    3000,
+    { data: null }
+  );
+  return result?.data || {};
+}
 
 const PROFILE_CACHE_KEY = 'dippro-profile-v1';
 
@@ -82,7 +104,7 @@ export default function AuthProvider({ children }) {
         if (!mounted) return;
 
         if (session?.user) {
-          const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+          const aalData = await getAAL();
           if (aalData?.nextLevel === 'aal2' && aalData?.currentLevel !== 'aal2') {
             if (mounted) setLoading(false);
             return;
@@ -116,36 +138,39 @@ export default function AuthProvider({ children }) {
       async (event, session) => {
         if (!mounted) return;
 
-        if (event === 'PASSWORD_RECOVERY') {
-          if (mounted) { setNeedsPasswordReset(true); setLoading(false); }
-          return;
-        }
-
-        if (event === 'SIGNED_IN' && !mfaPendingRef.current) {
-          const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-          if (aalData?.nextLevel === 'aal2' && aalData?.currentLevel !== 'aal2') {
-            if (mounted) setLoading(false);
+        try {
+          if (event === 'PASSWORD_RECOVERY') {
+            setNeedsPasswordReset(true);
             return;
           }
-        }
 
-        if (mfaPendingRef.current && event === 'SIGNED_IN') {
-          if (mounted) setLoading(false);
-          return;
-        }
+          if (event === 'SIGNED_IN' && !mfaPendingRef.current) {
+            const aalData = await getAAL();
+            if (aalData?.nextLevel === 'aal2' && aalData?.currentLevel !== 'aal2') {
+              return;
+            }
+          }
 
-        if (session?.user) {
-          setUser(session.user);
-          localStorage.setItem('access_token', session.access_token);
-          const p = await fetchProfile(session.user.id);
-          if (mounted) setProfile(p);
-        } else {
-          setUser(null);
-          setProfile(null);
-          clearCachedProfile();
-          localStorage.removeItem('access_token');
+          if (mfaPendingRef.current && event === 'SIGNED_IN') {
+            return;
+          }
+
+          if (session?.user) {
+            setUser(session.user);
+            localStorage.setItem('access_token', session.access_token);
+            const p = await fetchProfile(session.user.id);
+            if (mounted) setProfile(p);
+          } else {
+            setUser(null);
+            setProfile(null);
+            clearCachedProfile();
+            localStorage.removeItem('access_token');
+          }
+        } catch (err) {
+          console.error('Auth state change error:', err);
+        } finally {
+          if (event !== 'INITIAL_SESSION' && mounted) setLoading(false);
         }
-        if (event !== 'INITIAL_SESSION' && mounted) setLoading(false);
       }
     );
 
@@ -163,7 +188,7 @@ export default function AuthProvider({ children }) {
       throw new Error('Identifiants invalides');
     }
 
-    const { data: aalData } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    const aalData = await getAAL();
     if (aalData?.nextLevel === 'aal2' && aalData?.currentLevel !== 'aal2') {
       const { data: factors } = await supabase.auth.mfa.listFactors();
       const totpFactor = factors?.totp?.find(f => f.status === 'verified');
@@ -217,6 +242,22 @@ export default function AuthProvider({ children }) {
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Erreur lors de la création du compte');
+
+    // Le compte est créé côté backend via l'API admin Supabase, qui n'ouvre
+    // aucune session navigateur. Sans cette connexion explicite, l'écran
+    // d'onboarding qui suit renvoie l'utilisateur sur la page d'accueil
+    // publique (TrialGuard voit user=null) au lieu du tableau de bord — il
+    // doit ensuite se reconnecter manuellement pour que quoi que ce soit
+    // (dont un lien d'invitation avocat en attente) puisse aboutir.
+    const { data: sessionData, error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+    if (!signInError && sessionData?.user) {
+      localStorage.setItem('access_token', sessionData.session.access_token);
+      const cached = getCachedProfile(sessionData.user.id);
+      if (cached) setProfile(cached);
+      setUser(sessionData.user);
+      fetchProfile(sessionData.user.id).then(p => { if (p) setProfile(p); });
+    }
+
     return data;
   };
 
