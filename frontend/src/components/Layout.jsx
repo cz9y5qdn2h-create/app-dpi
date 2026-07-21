@@ -10,6 +10,7 @@ import BugReportModal from './BugReportModal';
 import CompletionReminderWidget from './CompletionReminderWidget';
 import api from '../lib/api';
 import { FEATURES } from '../lib/features';
+import { useAuth } from '../context/AuthContext';
 import { Bell, Menu, Search, Bug } from 'lucide-react';
 import { PENDING_AVOCAT_TOKEN_KEY as PENDING_TOKEN_KEY } from '../lib/constants';
 
@@ -18,6 +19,16 @@ export default function Layout() {
   const [cmdOpen, setCmdOpen] = useState(false);
   const [bugModalOpen, setBugModalOpen] = useState(false);
   const navigate = useNavigate();
+  const { refreshProfile } = useAuth();
+
+  // Le profil (dont le rôle, ex: passage à admin) n'était rechargé qu'à la
+  // connexion ou au premier chargement de page — une session laissée ouverte
+  // pouvait afficher un menu périmé (ex: lien "Admin" absent) alors que le
+  // backend, lui, revérifie toujours le rôle en base à chaque appel.
+  useEffect(() => {
+    const interval = setInterval(refreshProfile, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   const { data: alertsData } = useQuery({
     queryKey: ['alerts', 'pending'],
