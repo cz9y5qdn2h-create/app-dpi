@@ -89,7 +89,7 @@ export default function HistoryPage() {
                             <p className="font-dm-sans text-xs text-text-secondary mt-0.5">{log.dip_documents.title}</p>
                           )}
                           {(log.old_content || log.new_content) && (
-                            <div className="grid grid-cols-2 gap-2 mt-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3">
                               {log.old_content && (
                                 <div className="bg-danger/5 border border-danger/15 rounded p-2">
                                   <p className="font-dm-mono text-xs text-danger mb-1">{t('history.before')}</p>

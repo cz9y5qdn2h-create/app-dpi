@@ -32,7 +32,7 @@ export default function CalModal({ open, onClose }) {
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
 
       {/* Modal */}
-      <div className="relative w-full max-w-2xl rounded-xl shadow-2xl overflow-hidden animate-slide-up"
+      <div className="relative w-full max-w-2xl rounded-xl shadow-2xl overflow-hidden animate-slide-up max-h-[90vh] overflow-y-auto flex flex-col"
         style={{ background: 'rgb(var(--bg-card))', backdropFilter: 'blur(24px) saturate(160%)', WebkitBackdropFilter: 'blur(24px) saturate(160%)', border: '1px solid rgb(var(--border-subtle))' }}>
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-border-subtle">
@@ -117,7 +117,7 @@ export default function CalModal({ open, onClose }) {
           </div>
         ) : (
           /* Cal.com iframe */
-          <div style={{ height: '600px' }}>
+          <div style={{ height: 'min(600px, 70vh)' }}>
             <iframe
               src={CAL_URL}
               width="100%"

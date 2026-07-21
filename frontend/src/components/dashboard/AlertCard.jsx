@@ -34,7 +34,7 @@ export default function AlertCard({ alert, compact = false }) {
       </div>
 
       {alert.old_value && (
-        <div className="grid grid-cols-2 gap-3 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
           <div className="bg-danger/5 border border-danger/20 rounded p-3">
             <p className="font-dm-mono text-xs text-danger mb-1">Ancienne valeur</p>
             <p className="font-dm-sans text-xs text-text-primary line-clamp-3">{alert.old_value}</p>

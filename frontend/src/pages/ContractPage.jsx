@@ -245,7 +245,7 @@ export default function ContractPage() {
         <div className="w-full h-2 bg-bg-elevated rounded-full overflow-hidden">
           <div className="h-full rounded-full bg-gold transition-all duration-700" style={{ width: `${contract.conformity_score}%` }} />
         </div>
-        <div className="flex gap-6 mt-4">
+        <div className="flex flex-wrap gap-4 sm:gap-6 mt-4">
           {[
             { label: 'Conformes', key: 'conforme', color: 'text-success' },
             { label: 'À vérifier', key: 'a_verifier', color: 'text-gold' },

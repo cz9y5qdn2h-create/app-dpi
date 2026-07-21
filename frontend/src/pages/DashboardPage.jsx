@@ -348,19 +348,21 @@ function LegalStatusBanner({ score, nonConforme, uploadDate }) {
 
   if (outdated) {
     return (
-      <div className="card border-gold/20 flex items-start gap-4 p-5">
-        <div className="w-10 h-10 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center flex-shrink-0">
-          <ShieldAlert className="w-5 h-5 text-gold" />
+      <div className="card border-gold/20 flex flex-col sm:flex-row sm:items-start gap-4 p-5">
+        <div className="flex items-start gap-4 flex-1 min-w-0">
+          <div className="w-10 h-10 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center flex-shrink-0">
+            <ShieldAlert className="w-5 h-5 text-gold" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-dm-sans text-sm font-medium text-text-primary">
+              DIP importé il y a {daysSinceImport} jours — mise à jour recommandée
+            </p>
+            <p className="font-dm-sans text-xs text-text-secondary mt-1">
+              La Loi Doubin exige que le DIP reflète la situation <em>réelle et actuelle</em> du réseau. Importez une version à jour.
+            </p>
+          </div>
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="font-dm-sans text-sm font-medium text-text-primary">
-            DIP importé il y a {daysSinceImport} jours — mise à jour recommandée
-          </p>
-          <p className="font-dm-sans text-xs text-text-secondary mt-1">
-            La Loi Doubin exige que le DIP reflète la situation <em>réelle et actuelle</em> du réseau. Importez une version à jour.
-          </p>
-        </div>
-        <Link to="/dip/upload" className="btn-ghost text-xs py-1.5 flex-shrink-0">Mettre à jour</Link>
+        <Link to="/dip/upload" className="btn-ghost text-xs py-1.5 flex-shrink-0 w-full sm:w-auto text-center">Mettre à jour</Link>
       </div>
     );
   }

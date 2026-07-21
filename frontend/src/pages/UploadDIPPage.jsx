@@ -353,15 +353,15 @@ export default function UploadDIPPage() {
 
         <div className="grid grid-cols-3 gap-4">
           <div className="card text-center py-4">
-            <p className="font-cormorant text-3xl text-text-primary">{changements.length}</p>
+            <p className="font-cormorant text-xl sm:text-3xl text-text-primary">{changements.length}</p>
             <p className="font-dm-sans text-xs text-text-secondary">Changements</p>
           </div>
           <div className="card text-center py-4">
-            <p className="font-cormorant text-3xl text-danger">{critiques}</p>
+            <p className="font-cormorant text-xl sm:text-3xl text-danger">{critiques}</p>
             <p className="font-dm-sans text-xs text-text-secondary">Impact critique</p>
           </div>
           <div className="card text-center py-4">
-            <p className="font-cormorant text-3xl text-gold">{approvedIds.size}</p>
+            <p className="font-cormorant text-xl sm:text-3xl text-gold">{approvedIds.size}</p>
             <p className="font-dm-sans text-xs text-text-secondary">Approuvés</p>
           </div>
         </div>
@@ -473,7 +473,7 @@ export default function UploadDIPPage() {
 
         {changements.length > 0 && (
           <div className="sticky bottom-6 card border-border-default bg-bg-card/90 backdrop-blur-sm shadow-xl">
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
               <div className="flex-1">
                 <p className="font-dm-sans text-sm text-text-secondary">
                   {automationLevel === 1
@@ -484,7 +484,7 @@ export default function UploadDIPPage() {
               <button
                 onClick={handleFinalApprove}
                 disabled={automationLevel === 1 && approvedIds.size === 0 && rejectedIds.size === 0}
-                className="btn-liquid-glass-prominent flex-shrink-0"
+                className="btn-liquid-glass-prominent flex-shrink-0 w-full sm:w-auto justify-center"
               >
                 <CheckCircle className="w-4 h-4" /> Valider la nouvelle version
               </button>
@@ -506,7 +506,7 @@ export default function UploadDIPPage() {
       <div className="space-y-5">
         <div
           {...getRootProps()}
-          className={`relative border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-all duration-300 ${
+          className={`relative border-2 border-dashed rounded-lg p-6 sm:p-12 text-center cursor-pointer transition-all duration-300 ${
             isDragActive ? 'border-gold bg-gold/5'
             : file ? 'border-success/40 bg-success/3'
             : 'border-border-default hover:border-gold hover:bg-gold/3'

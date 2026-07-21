@@ -458,7 +458,7 @@ export default function DIPPage() {
             tab === 'view' ? 'bg-gold/20 text-gold font-medium' : 'text-text-secondary hover:text-text-primary'
           }`}
         >
-          <span className="flex items-center justify-center gap-2"><FileText className="w-3.5 h-3.5" /> Vue DIP</span>
+          <span className="flex items-center justify-center gap-2"><FileText className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Vue DIP</span></span>
         </button>
         <button
           onClick={() => setTab('risks')}
@@ -466,7 +466,7 @@ export default function DIPPage() {
             tab === 'risks' ? 'bg-danger/15 text-danger font-medium' : 'text-text-secondary hover:text-text-primary'
           }`}
         >
-          <span className="flex items-center justify-center gap-2"><Scale className="w-3.5 h-3.5" /> Risques juridiques</span>
+          <span className="flex items-center justify-center gap-2"><Scale className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Risques juridiques</span></span>
         </button>
         <button
           onClick={() => setTab('generate')}
@@ -474,7 +474,7 @@ export default function DIPPage() {
             tab === 'generate' ? 'bg-gold/20 text-gold font-medium' : 'text-text-secondary hover:text-text-primary'
           }`}
         >
-          <span className="flex items-center justify-center gap-2"><Sparkles className="w-3.5 h-3.5" /> Générer avec l'IA</span>
+          <span className="flex items-center justify-center gap-2"><Sparkles className="w-3.5 h-3.5" /> <span className="hidden sm:inline">Générer avec l'IA</span></span>
         </button>
       </div>
 
@@ -489,7 +489,7 @@ export default function DIPPage() {
             <div className="w-full h-2 bg-bg-elevated rounded-full overflow-hidden">
               <div className="h-full rounded-full bg-gold transition-all duration-700" style={{ width: `${dip.conformity_score}%` }} />
             </div>
-            <div className="flex gap-6 mt-4">
+            <div className="flex flex-wrap gap-3 sm:gap-6 mt-4">
               {[
                 { label: 'Conformes', key: 'conforme', color: 'text-success' },
                 { label: 'À vérifier', key: 'a_verifier', color: 'text-gold' },
@@ -858,7 +858,7 @@ export default function DIPPage() {
                       ].map(({ key, label }) => (
                         <div key={key} className="mb-4">
                           <p className="font-dm-mono text-xs text-gold mb-2">{label}</p>
-                          <div className="grid grid-cols-3 gap-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             <Field label="Année" type="number" value={formData.comptes[key].annee} onChange={v => set(`comptes.${key}.annee`, v)} />
                             <Field label="CA (€)" type="number" value={formData.comptes[key].ca} onChange={v => set(`comptes.${key}.ca`, v)} placeholder="2 500 000" />
                             <Field label="Résultat net (€)" type="number" value={formData.comptes[key].resultat} onChange={v => set(`comptes.${key}.resultat`, v)} placeholder="180 000" />
@@ -877,7 +877,7 @@ export default function DIPPage() {
                       <Field label="Nom de la marque" value={formData.marque.nom_marque} onChange={v => set('marque.nom_marque', v)} placeholder="PIZZA VILLAGE" />
                       <Field label="N° dépôt INPI" value={formData.marque.inpi_numero} onChange={v => set('marque.inpi_numero', v)} placeholder="4234567" />
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <Field label="Date dépôt INPI" type="date" value={formData.marque.inpi_date} onChange={v => set('marque.inpi_date', v)} />
                       <Field label="Territoire de protection" value={formData.marque.territoire} onChange={v => set('marque.territoire', v)} placeholder="France, UE" />
                     </div>
@@ -894,7 +894,7 @@ export default function DIPPage() {
 
                     <div className="border-t border-border-subtle pt-4">
                       <p className="font-dm-mono text-xs text-gold uppercase tracking-widest mb-2">Territoire & Contrat</p>
-                      <div className="grid grid-cols-2 gap-4 mb-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-3">
                         <div>
                           <label className="label">Type de territoire</label>
                           <select className="input-field" value={formData.territoire.type_exclusivite} onChange={e => set('territoire.type_exclusivite', e.target.value)}>
@@ -939,7 +939,7 @@ export default function DIPPage() {
                       return (
                         <div key={key} className="bg-bg-elevated rounded-lg p-4">
                           <p className="font-dm-mono text-xs text-gold mb-3">{label}</p>
-                          <div className="grid grid-cols-3 gap-3">
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             <Field label="CA prévisionnel (€)" type="number" value={formData.previsionnels[key].ca} onChange={v => set(`previsionnels.${key}.ca`, v)} placeholder="400 000" />
                             <Field label="Charges totales (€)" type="number" value={formData.previsionnels[key].charges} onChange={v => set(`previsionnels.${key}.charges`, v)} placeholder="320 000" />
                             <div>

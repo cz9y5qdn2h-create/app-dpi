@@ -339,7 +339,7 @@ export default function SettingsPage() {
         <h2 className="font-cormorant text-xl mb-5">{t('settings.sections.appearance')}</h2>
         <p className="font-dm-sans text-sm text-text-primary">{t('settings.theme.label')}</p>
         <p className="font-dm-sans text-xs text-text-secondary mt-0.5 mb-4">{t('settings.theme.description')}</p>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
           {themes.map(({ id, label, icon }) => {
             const Icon = icon === 'moon' ? Moon : icon === 'sun' ? Sun : Sparkles;
             const active = theme === id;
@@ -347,7 +347,7 @@ export default function SettingsPage() {
               <button
                 key={id}
                 onClick={() => setTheme(id)}
-                className={`flex flex-col items-center gap-2 py-4 rounded-xl border transition-all duration-200 ${active ? 'border-gold bg-gold/10' : 'border-border-default hover:border-border-subtle hover:bg-bg-elevated'}`}
+                className={`flex flex-col items-center gap-2 py-3 sm:py-4 rounded-xl border transition-all duration-200 ${active ? 'border-gold bg-gold/10' : 'border-border-default hover:border-border-subtle hover:bg-bg-elevated'}`}
               >
                 <Icon className={`w-5 h-5 ${active ? 'text-gold' : 'text-text-secondary'}`} />
                 <span className={`font-dm-sans text-xs ${active ? 'text-gold' : 'text-text-secondary'}`}>{label}</span>
@@ -798,7 +798,7 @@ export default function SettingsPage() {
             {/* Fréquence */}
             <div>
               <p className="font-dm-sans text-sm text-text-primary mb-3">{t('settings.notifications.frequency')}</p>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 {[
                   { value: 'immediate', label: t('settings.notifications.immediate') },
                   { value: 'daily', label: t('settings.notifications.dailyDigest') },
