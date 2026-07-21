@@ -66,10 +66,16 @@ export default function DashboardPage() {
     onError: (err) => toast.error(err.message)
   });
 
-  const handleCheck = async () => {
-    if (!dip) return;
-    await api.post(`/dip/check/${dip.id}`);
-  };
+  const [lastCheckedAt, setLastCheckedAt] = useState(null);
+
+  const manualCheckMutation = useMutation({
+    mutationFn: () => api.post(`/dip/check/${dip.id}`).then(r => r.data),
+    onSuccess: (data) => {
+      toast.success('Checkup manuel effectué');
+      setLastCheckedAt(data.checked_at);
+    },
+    onError: (err) => toast.error(err.message || 'Checkup impossible — réessayez'),
+  });
 
   if (profile?.role === 'avocat') return <AvocatDashboard />;
 
@@ -151,6 +157,20 @@ export default function DashboardPage() {
               <ConformityGauge score={dip.conformity_score || 0} />
               <p className="font-dm-sans text-xs text-text-secondary mt-2">Score de conformité Loi Doubin</p>
               <AIDisclaimer className="mt-1" />
+              <button
+                onClick={() => manualCheckMutation.mutate()}
+                disabled={manualCheckMutation.isPending}
+                className="btn-ghost flex items-center gap-1.5 text-xs mt-2"
+                title="Marque toutes les sections du DIP comme vérifiées à l'instant"
+              >
+                {manualCheckMutation.isPending ? <LoadingSpinner size="sm" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                Checkup manuel
+              </button>
+              {lastCheckedAt && (
+                <p className="font-dm-mono text-[11px] text-text-muted">
+                  Vérifié {formatDistanceToNow(new Date(lastCheckedAt), { addSuffix: true, locale: fr })}
+                </p>
+              )}
             </div>
 
             <div className="lg:col-span-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
