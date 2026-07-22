@@ -20,14 +20,20 @@ export default class ErrorBoundary extends Component {
     // Journalise + envoie automatiquement au backend (email admin + BDD)
     logError(error, { type: 'react-render', componentStack });
 
-    // ChunkLoadError après un déploiement Vercel : rechargement automatique une seule fois
+    // ChunkLoadError après un déploiement Vercel : rechargement automatique.
+    // La clé est propre à chaque route (pas un seul flag global pour toute la
+    // session) — sinon un chunk périmé rencontré sur une page consommait la
+    // seule tentative disponible, laissant toute autre page qui rencontre le
+    // même souci ensuite bloquée sans recharger (ex: /admin resté figé après
+    // qu'une autre page ait déjà déclenché le rechargement automatique).
     const isChunkError = error?.name === 'ChunkLoadError'
       || error?.message?.includes('Failed to fetch dynamically imported module')
       || error?.message?.includes('Loading chunk')
       || error?.message?.includes('Importing a module script failed')
       || error?.message?.includes('error loading dynamically imported module');
-    if (isChunkError && !sessionStorage.getItem('chunk-reload')) {
-      sessionStorage.setItem('chunk-reload', '1');
+    const reloadKey = `chunk-reload:${window.location.pathname}`;
+    if (isChunkError && !sessionStorage.getItem(reloadKey)) {
+      sessionStorage.setItem(reloadKey, '1');
       window.location.reload();
     }
   }

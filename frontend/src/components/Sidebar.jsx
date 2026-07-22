@@ -103,7 +103,21 @@ export default function Sidebar({ open, onClose }) {
     retry: false
   });
   const pendingCount = alertsData?.alerts?.length || 0;
-  const isAdmin = profile?.role === 'admin';
+
+  // Le rôle affiché dans le menu vient normalement du profil chargé par
+  // AuthContext (Supabase client, mis en cache et parfois périmé). Pour le
+  // lien Admin spécifiquement — critique et déjà source de confusion — on
+  // vérifie aussi directement via le backend (source de vérité, toujours à
+  // jour, aucun cache) et on affiche le lien si l'une des deux sources dit
+  // "admin".
+  const { data: meData } = useQuery({
+    queryKey: ['auth-me'],
+    queryFn: () => api.get('/auth/me').then(r => r.data),
+    staleTime: 30000,
+    refetchInterval: 30000,
+    retry: false,
+  });
+  const isAdmin = profile?.role === 'admin' || meData?.user?.role === 'admin';
 
   const navGroups = [
     {

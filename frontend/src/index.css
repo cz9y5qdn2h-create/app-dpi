@@ -207,12 +207,20 @@
 @layer base {
   * { box-sizing: border-box; }
 
-  html { scroll-behavior: smooth; }
+  html {
+    scroll-behavior: smooth;
+    /* Sur mobile, le rebond de défilement (overscroll) découvre ce qu'il y a
+       derrière le fond fixe du body — sans ce fond ici aussi, ça affiche des
+       liserets blancs en haut/bas de l'écran. */
+    background: var(--page-bg);
+    min-height: 100%;
+  }
 
   body {
     background: var(--page-bg);
     background-attachment: fixed;
     min-height: 100vh;
+    min-height: 100dvh;
     color: rgb(var(--text-primary));
     font-family: 'Geist', sans-serif;
     font-weight: 400;
