@@ -334,14 +334,19 @@ const LITIGATION_ASSESSMENT_SCHEMA = {
 
 const SYSTEM_DIP_EXPERT = `Tu es un expert juridique senior spécialisé en droit de la franchise française.
 Tu maîtrises parfaitement :
-- La Loi Doubin (Loi n°89-1008 du 31 décembre 1989) et l'article L.330-3 du Code de commerce
-- Les obligations d'information précontractuelle du franchiseur envers les candidats franchisés
-- Les 10 sections réglementaires obligatoires du DIP (Document d'Information Précontractuelle)
-- La jurisprudence récente sur la nullité des contrats de franchise pour DIP incomplet ou inexact
+- La Loi Doubin (Loi n°89-1008 du 31 décembre 1989), codifiée à l'article L.330-3 du Code de commerce, et son décret d'application codifié à l'article R.330-1 (dernière modification substantielle : décret n°2023-1394 du 30 décembre 2023)
+- Les 6 catégories de mentions obligatoires de l'article R.330-1 (identité et structure ; marque ; domiciliations bancaires ; historique/marché/comptes annuels ; présentation du réseau ; durée/exclusivités/investissements) et les 10 sections pratiques du DIP qui les couvrent dans cette application
+- Le devoir général d'information précontractuelle de l'article 1112-1 du Code civil, qui se CUMULE avec le Code de commerce et couvre des informations déterminantes absentes du R.330-1 (difficultés du réseau, restructurations, procédures collectives)
+- Le sanction pénale de l'article R.330-2 (contravention de 5e classe) en cas de non-remise du DIP au moins 20 jours avant signature ou tout versement de somme — délai qui recommence à courir à compter de la dernière communication en cas de remise fragmentée
+- Le principe fondateur Cass. com., 20 mars 2007, n°06-11.290 : un manquement à l'obligation d'information précontractuelle N'ENTRAÎNE JAMAIS la nullité automatique — le candidat doit démontrer un vice du consentement (erreur, dol) que ce manquement a déterminé (art. 1130 s. Code civil)
+- La jurisprudence sur les prévisionnels : Cass. com. 1er déc. 2021 (n°18-26.572) et Cass. com. 1er juin 2022 (n°21-16.481), qui sanctionnent des prévisionnels grossièrement erronés sans en garantir la véracité
+- Le devoir d'actualisation de l'information jusqu'à la signature (Cass. com., 26 juin 2024, n°23-14.085) : le silence intentionnel sur un fait déterminant survenu après la remise du DIP constitue un dol par réticence
 
 Règles absolues :
 - Réponds TOUJOURS en JSON valide, sans markdown, sans texte avant ou après
 - Si une information est absente du document, indique "Non renseigné" (ne pas inventer)
+- Une information vague, générique ou non exploitable (ex: chiffres sans explication, "voir annexe" sans annexe jointe, étude de marché purement nationale sans données locales) n'est PAS conforme — au mieux "à vérifier", jamais "conforme" sur la seule base de la présence du mot-clé
+- Ne jamais présenter un DIP incomplet comme entraînant une nullité automatique ou certaine du contrat — toujours formuler au conditionnel, sous réserve d'un vice du consentement démontré
 - Applique les critères de conformité de la Loi Doubin strictement`;
 
 const CACHED_SYSTEM = [{ type: 'text', text: SYSTEM_DIP_EXPERT, cache_control: { type: 'ephemeral' } }];
@@ -379,45 +384,45 @@ Améliore la robustesse du DIP mais ne bloque pas l'envoi immédiat.
 
 GRILLE DE CONFORMITÉ OBLIGATOIRE PAR SECTION (Art. R.330-1 Code de commerce, codifiant le Décret n°91-337 du 4 avril 1991) :
 
-SECTION 1 — Identité du franchiseur [Réf. Art. R.330-1 C. com. §1]
-BLOQUANT si absent : dénomination sociale, forme juridique, numéro RCS + ville, adresse siège, nom du dirigeant responsable
+SECTION 1 — Identité du franchiseur [Réf. Art. R.330-1, 1° et 3° C. com.]
+BLOQUANT si absent : dénomination sociale, forme juridique, numéro RCS + ville, adresse siège, nom du dirigeant responsable, AU MOINS UNE domiciliation bancaire de l'entreprise (R.330-1, 3° — peut être limité aux 5 principales, mais une absence totale est non conforme)
 À VÉRIFIER : capital social, date immatriculation
 
-SECTION 2 — Historique dirigeant et enseigne [Réf. Art. R.330-1 C. com. §2]
+SECTION 2 — Historique dirigeant et enseigne [Réf. Art. R.330-1, 4° C. com.]
 BLOQUANT si absent : historique professionnel du dirigeant sur 5 ans minimum (exigence légale explicite), date de création de l'enseigne
 À VÉRIFIER : parcours détaillé, expériences antérieures dans la franchise
 
-SECTION 3 — État du réseau [Réf. Art. R.330-1 C. com. §3 — jurisprudence Cass. com.]
-BLOQUANT si absent : nombre exact de franchisés actifs, nombre exact d'entrées sur 12 mois, nombre exact de sorties sur 12 mois avec motifs (résiliation, non-renouvellement, cession, fermeture volontaire, autre)
-À VÉRIFIER : adresses des franchisés ou liste disponible sur demande, nombre d'établissements en propre
+SECTION 3 — État du réseau [Réf. Art. R.330-1, 5° a-d C. com.]
+BLOQUANT si absent : nombre exact de franchisés actifs, nombre exact d'entrées sur 12 mois, nombre exact de sorties sur 12 mois EN DISTINGUANT expiration/résiliation/annulation (R.330-1, 5° c — une simple mention globale sans cette distinction est insuffisante)
+À VÉRIFIER : adresses des franchisés ou liste disponible sur demande (limité aux 50 plus proches si réseau > 50 exploitants), nombre d'établissements en propre, présence d'un établissement concurrent autorisé par le franchiseur dans la zone (R.330-1, 5° d)
 
-SECTION 4 — Comptes annuels [Réf. Art. R.330-1 C. com. §4 — BLOQUANT absolu]
+SECTION 4 — Comptes annuels [Réf. Art. R.330-1, 4° C. com. — BLOQUANT absolu]
 BLOQUANT si absent : résultats des 2 derniers exercices comptables clos (chiffre d'affaires ET résultat net pour chaque exercice), dates de clôture
 Les bilans complets peuvent être en annexe mais les chiffres clés doivent figurer dans le DIP.
 
-SECTION 5 — Marque et propriété intellectuelle [Réf. Art. R.330-1 C. com. §5]
+SECTION 5 — Marque et propriété intellectuelle [Réf. Art. R.330-1, 2° C. com.]
 BLOQUANT si absent : numéro de dépôt INPI de la marque principale, statut de la marque (déposée/enregistrée)
-À VÉRIFIER : date de dépôt, classes de protection, date d'expiration, marques secondaires
+À VÉRIFIER : date de dépôt, classes de protection, date d'expiration, marques secondaires, durée de la licence si la marque est concédée (pas cédée)
 
-SECTION 6 — Informations financières [Réf. Art. R.330-1 C. com. §6 — BLOQUANT absolu]
+SECTION 6 — Informations financières [Réf. Pratique du secteur + Art. R.330-1, 6° C. com. — BLOQUANT absolu]
 BLOQUANT si absent : montant du droit d'entrée (ou mention explicite "aucun droit d'entrée"), taux ou montant de la redevance d'exploitation, taux ou montant de la redevance publicitaire (ou "aucune"), estimation de l'investissement global requis
 À VÉRIFIER : conditions de paiement détaillées, aides au financement
 
-SECTION 7 — Territoire exclusif [Réf. Art. R.330-1 C. com. §7]
+SECTION 7 — Territoire exclusif [Réf. Art. R.330-1, 6° C. com.]
 BLOQUANT si absent : définition du périmètre territorial (même si non exclusif, la mention doit être explicite), mention du caractère exclusif ou non
 À VÉRIFIER : critères de délimitation précis, conditions de modification
 
-SECTION 8 — Contrat [Réf. Art. R.330-1 C. com. §8 — BLOQUANT absolu]
+SECTION 8 — Contrat [Réf. Art. R.330-1, 6° C. com. — BLOQUANT absolu]
 BLOQUANT si absent : durée du contrat en années, conditions de renouvellement, conditions et motifs de résiliation par chaque partie
-À VÉRIFIER : conditions de cession du fonds, droit de préemption, clause de non-concurrence post-contractuelle
+À VÉRIFIER : conditions de cession du fonds, droit de préemption, clause de non-concurrence post-contractuelle, cohérence avec le projet de contrat de franchise s'il est fourni (L.330-3 al. 1 impose sa communication conjointe avec le DIP)
 
-SECTION 9 — Litiges [Réf. Art. R.330-1 C. com. §9 — BLOQUANT absolu]
-BLOQUANT si absent : TOUTE mention de litiges passés et en cours est obligatoire. Si aucun litige : la phrase "Aucun litige en cours à la date de remise du présent document" ou équivalent doit figurer explicitement. L'absence totale de cette section est un motif régulier d'annulation.
+SECTION 9 — Litiges [Réf. Art. 1112-1 Code civil — hors périmètre strict du R.330-1, mais son omission volontaire est une cause de dol reconnue (Cass. com., 26 juin 2024, n°23-14.085) — BLOQUANT absolu]
+BLOQUANT si absent : TOUTE mention de litiges passés et procédures collectives touchant le réseau ou ses dirigeants est obligatoire. Si aucun litige : la phrase "Aucun litige en cours à la date de remise du présent document" ou équivalent doit figurer explicitement. L'absence totale expose à un risque de dol par réticence si elle était intentionnelle — PAS une nullité automatique ou certaine (formule ce risque au conditionnel).
 À VÉRIFIER : précision sur la nature des litiges mentionnés
 
-SECTION 10 — Comptes prévisionnels [Réf. Art. R.330-1 C. com. §10]
+SECTION 10 — Comptes prévisionnels [Réf. Jurisprudence — hors périmètre strict du R.330-1 : Cass. com. 1er déc. 2021 (n°18-26.572) et Cass. com. 1er juin 2022 (n°21-16.481)]
 BLOQUANT si absent : aucun prévisionnel = non bloquant si les 9 autres sections sont conformes, mais fortement recommandé
-À VÉRIFIER : présence de projections sur 2-3 ans, hypothèses documentées, avertissement sur le caractère prévisionnel (non-garantie)
+À VÉRIFIER : présence de projections sur 2-3 ans, hypothèses documentées explicitement, avertissement sur le caractère non garanti des projections, cohérence avec la performance réelle du réseau décrite en Section 3
 
 RETOURNE CE JSON EXACTEMENT — sans markdown, sans texte avant ou après :
 {
@@ -431,7 +436,7 @@ RETOURNE CE JSON EXACTEMENT — sans markdown, sans texte avant ou après :
       "mandatory_elements_found": ["dénomination sociale", "RCS", "siège", "dirigeant"],
       "mandatory_elements_missing": [],
       "issues": [],
-      "legal_reference": "Art. R.330-1 C. com. (Décret 91-337 art.1 §1)"
+      "legal_reference": "Art. R.330-1, 1° et 3° C. com."
     }
   ],
   "compliance_level": "CONFORME",
@@ -464,11 +469,21 @@ global_score : 0-100. Pénalités : -20 par section non_conforme, -8 par a_verif
     'Comptes prévisionnels'
   ];
 
+  // Chaque section pratique du DIP ne correspond pas à un point R.330-1 du même
+  // numéro — la table exacte (vérifiée contre le skill dip-loi-doubin) : 1→1°+3°,
+  // 2→4°, 3→5° a-d, 4→4°, 5→2°, 6→6° (pratique), 7→6°, 8→6°, 9→hors R.330-1
+  // (art. 1112-1 C.civ.), 10→hors R.330-1 (jurisprudence).
   const LEGAL_REFS = [
-    'Art. R.330-1 C. com. (Décret 91-337 art.1 §1)', 'Art. R.330-1 C. com. (Décret 91-337 art.1 §2)', 'Art. R.330-1 C. com. (Décret 91-337 art.1 §3)',
-    'Art. R.330-1 C. com. (Décret 91-337 art.1 §4)', 'Art. R.330-1 C. com. (Décret 91-337 art.1 §5)', 'Art. R.330-1 C. com. (Décret 91-337 art.1 §6)',
-    'Art. R.330-1 C. com. (Décret 91-337 art.1 §7)', 'Art. R.330-1 C. com. (Décret 91-337 art.1 §8)', 'Art. R.330-1 C. com. (Décret 91-337 art.1 §9)',
-    'Art. R.330-1 C. com. (Décret 91-337 art.1 §10)'
+    'Art. R.330-1, 1° et 3° C. com.',
+    'Art. R.330-1, 4° C. com.',
+    'Art. R.330-1, 5° a-d C. com.',
+    'Art. R.330-1, 4° C. com.',
+    'Art. R.330-1, 2° C. com.',
+    'Pratique du secteur + Art. R.330-1, 6° C. com.',
+    'Art. R.330-1, 6° C. com.',
+    'Art. R.330-1, 6° C. com.',
+    'Art. 1112-1 Code civil (hors périmètre R.330-1)',
+    'Jurisprudence — Cass. com. 1er déc. 2021 et 1er juin 2022 (hors périmètre R.330-1)'
   ];
 
   // Compléter les sections manquantes
@@ -554,35 +569,35 @@ ${JSON.stringify(formData, null, 2)}
 ${sourceSection}
 GRILLE DE CONFORMITÉ OBLIGATOIRE PAR SECTION (Art. R.330-1 Code de commerce, codifiant le Décret n°91-337 du 4 avril 1991) :
 
-SECTION 1 — Identité du franchiseur [Réf. Art. R.330-1 C. com. §1]
-BLOQUANT si absent : dénomination sociale, forme juridique, numéro RCS + ville, adresse siège, nom du dirigeant responsable
+SECTION 1 — Identité du franchiseur [Réf. Art. R.330-1, 1° et 3° C. com.]
+BLOQUANT si absent : dénomination sociale, forme juridique, numéro RCS + ville, adresse siège, nom du dirigeant responsable, au moins une domiciliation bancaire de l'entreprise (R.330-1, 3°)
 
-SECTION 2 — Historique dirigeant et enseigne [Réf. Art. R.330-1 C. com. §2]
+SECTION 2 — Historique dirigeant et enseigne [Réf. Art. R.330-1, 4° C. com.]
 BLOQUANT si absent : historique professionnel du dirigeant sur 5 ans minimum, date de création de l'enseigne
 
-SECTION 3 — État du réseau [Réf. Art. R.330-1 C. com. §3]
-BLOQUANT si absent : nombre exact de franchisés actifs, entrées/sorties sur 12 mois avec motifs
+SECTION 3 — État du réseau [Réf. Art. R.330-1, 5° a-d C. com.]
+BLOQUANT si absent : nombre exact de franchisés actifs, entrées/sorties sur 12 mois en distinguant expiration/résiliation/annulation (R.330-1, 5° c)
 
-SECTION 4 — Comptes annuels [Réf. Art. R.330-1 C. com. §4 — BLOQUANT absolu]
+SECTION 4 — Comptes annuels [Réf. Art. R.330-1, 4° C. com. — BLOQUANT absolu]
 BLOQUANT si absent : résultats des 2 derniers exercices clos (CA et résultat net), dates de clôture
 
-SECTION 5 — Marque et propriété intellectuelle [Réf. Art. R.330-1 C. com. §5]
+SECTION 5 — Marque et propriété intellectuelle [Réf. Art. R.330-1, 2° C. com.]
 BLOQUANT si absent : numéro de dépôt INPI de la marque principale, statut de la marque
 
-SECTION 6 — Informations financières [Réf. Art. R.330-1 C. com. §6 — BLOQUANT absolu]
+SECTION 6 — Informations financières [Réf. Pratique du secteur + Art. R.330-1, 6° C. com. — BLOQUANT absolu]
 BLOQUANT si absent : droit d'entrée (ou mention explicite "aucun"), redevance d'exploitation, redevance publicitaire, investissement global estimé
 
-SECTION 7 — Territoire exclusif [Réf. Art. R.330-1 C. com. §7]
+SECTION 7 — Territoire exclusif [Réf. Art. R.330-1, 6° C. com.]
 BLOQUANT si absent : définition du périmètre territorial, mention du caractère exclusif ou non
 
-SECTION 8 — Contrat [Réf. Art. R.330-1 C. com. §8 — BLOQUANT absolu]
+SECTION 8 — Contrat [Réf. Art. R.330-1, 6° C. com. — BLOQUANT absolu]
 BLOQUANT si absent : durée du contrat, conditions de renouvellement, conditions et motifs de résiliation
 
-SECTION 9 — Litiges [Réf. Art. R.330-1 C. com. §9 — BLOQUANT absolu]
-BLOQUANT si absent : toute mention de litiges est obligatoire ; si aucun, la phrase "Aucun litige en cours à la date de remise du présent document" doit figurer explicitement
+SECTION 9 — Litiges [Réf. Art. 1112-1 Code civil — hors périmètre R.330-1, omission = dol si intentionnelle (Cass. com. 26 juin 2024, n°23-14.085) — BLOQUANT absolu]
+BLOQUANT si absent : toute mention de litiges et procédures collectives est obligatoire ; si aucun, la phrase "Aucun litige en cours à la date de remise du présent document" doit figurer explicitement
 
-SECTION 10 — Comptes prévisionnels [Réf. Art. R.330-1 C. com. §10]
-Non bloquant si absent, mais fortement recommandé. Si présent, DOIT inclure un avertissement explicite sur le caractère non garanti des projections (Cass. com. 1er juin 2022 — dol sur prévisionnels grossièrement erronés sans réserve).
+SECTION 10 — Comptes prévisionnels [Réf. Jurisprudence — hors périmètre R.330-1 : Cass. com. 1er déc. 2021 (n°18-26.572) et 1er juin 2022 (n°21-16.481)]
+Non bloquant si absent, mais fortement recommandé. Si présent, DOIT inclure un avertissement explicite sur le caractère non garanti des projections.
 
 INSTRUCTIONS :
 - Rédige un texte complet, professionnel et directement utilisable dans le DIP officiel pour chaque section
@@ -602,7 +617,7 @@ RETOURNE CE JSON EXACTEMENT — sans markdown, sans texte avant ou après :
       "mandatory_elements_found": ["dénomination sociale", "RCS"],
       "mandatory_elements_missing": [],
       "issues": [],
-      "legal_reference": "Art. R.330-1 C. com. (Décret 91-337 art.1 §1)"
+      "legal_reference": "Art. R.330-1, 1° et 3° C. com."
     }
   ],
   "compliance_level": "CONFORME",
@@ -1682,10 +1697,9 @@ TYPE responsabilite_precontractuelle [Art. 1112-1 Code civil]
 → Résultat : dommages-intérêts. Plus accessible que la nullité, souvent cumulé.
 → Sections à risque : toute section incomplète.
 
-TYPE dol_previsionnel [Cass. com., 1er juin 2022]
+TYPE dol_previsionnel [Cass. com., 1er déc. 2021, n°18-26.572 ; Cass. com., 1er juin 2022, n°21-16.481]
 → Les prévisionnels remis "grossièrement erronés" touchent "la substance même du contrat de franchise".
-→ RISQUE SPÉCIFIQUE : Section 10 avec projections financières sans avertissement explicite "à titre indicatif, sans garantie de résultat".
-→ Jurisprudence : Cass. com., 1er juin 2022.
+→ RISQUE SPÉCIFIQUE : Section 10 avec projections financières sans avertissement explicite "à titre indicatif, sans garantie de résultat", ou incohérentes avec la performance réelle du réseau décrite en Section 3.
 
 TYPE desequilibre_significatif [Art. L442-1, I, 2° Code commerce]
 → Clauses créant un déséquilibre manifeste entre les droits et obligations des parties.
@@ -1698,9 +1712,9 @@ TYPE rupture_brutale [Art. L442-1, II Code commerce — Cass. com., 22 juin 2022
 → Applicable après plusieurs années de relation. Préavis insuffisant = indemnisation obligatoire.
 → Section à risque : Section 8 (conditions de résiliation, durée du préavis).
 
-TYPE ordre_public_l330_3 [Art. L330-3 Code commerce — Cass. 1re civ., 25 janv. 2017, n°15-28.064]
-→ L.330-3 est d'ordre public : toute clause du DIP ou du contrat visant à exonérer le franchiseur de son obligation d'information précontractuelle est réputée non écrite.
-→ ATTENTION — PAS de nullité automatique : la Cour de cassation exige la preuve d'un vice du consentement (erreur ou dol) résultant du manquement ; la seule absence ou insuffisance d'une section légalement bloquante ne suffit pas à elle seule. Formule toujours le risque au conditionnel ("expose à un risque de nullité si le candidat franchisé démontre que le manquement a déterminé son consentement"), jamais comme une nullité certaine ou automatique.
+TYPE ordre_public_l330_3 [Art. L330-3 Code commerce — Cass. 1re civ., 25 janv. 2017, n°15-28.064 — Cass. com., 20 mars 2007, n°06-11.290]
+→ L.330-3 est d'ordre public (Cass. 1re civ., 25 janv. 2017) : toute clause du DIP ou du contrat visant à exonérer le franchiseur de son obligation d'information précontractuelle est réputée non écrite.
+→ ATTENTION — PAS de nullité automatique : le principe fondateur Cass. com., 20 mars 2007 (n°06-11.290) interdit de déduire un vice du consentement du seul manquement à l'obligation d'information précontractuelle ; le candidat doit démontrer que l'absence ou l'insuffisance d'information a provoqué une erreur ou un dol ayant déterminé son consentement. Formule toujours le risque au conditionnel ("expose à un risque de nullité si le candidat franchisé démontre que le manquement a déterminé son consentement"), jamais comme une nullité certaine ou automatique.
 
 INSTRUCTIONS :
 1. Ne retourne des risques QUE pour les sections qui présentent des problèmes réels (status ≠ conforme OU legal_blocking = true)
