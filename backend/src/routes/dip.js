@@ -596,7 +596,7 @@ router.post('/:id/share-link', authMiddleware, requireFranchisor, async (req, re
 
   if (error) return res.status(500).json({ error: error.message });
 
-  const baseUrl = process.env.FRONTEND_URL || 'https://dippro.fr';
+  const baseUrl = process.env.FRONTEND_URL || process.env.APP_URL || 'https://iralink-agency.dippro.business';
   res.json({ token, share_url: `${baseUrl}/dip/partage/${token}` });
 });
 

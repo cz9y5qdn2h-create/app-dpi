@@ -141,7 +141,7 @@ function escapeHtml(str) {
 
 async function sendBrevoEmail(email, name, summary, dipId) {
   try {
-    const frontendUrl = process.env.FRONTEND_URL || 'https://dippro.fr';
+    const frontendUrl = process.env.FRONTEND_URL || process.env.APP_URL || 'https://iralink-agency.dippro.business';
     const response = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: {

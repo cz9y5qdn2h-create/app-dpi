@@ -226,7 +226,7 @@ router.get('/daily', async (req, res) => {
   }
 
   const startedAt = Date.now();
-  const appUrl = process.env.APP_URL || 'https://app-dpi.vercel.app';
+  const appUrl = process.env.FRONTEND_URL || process.env.APP_URL || 'https://iralink-agency.dippro.business';
   const report = { sourcesChecked: 0, usersNotified: 0, alertsCreated: 0, errors: 0 };
 
   try {

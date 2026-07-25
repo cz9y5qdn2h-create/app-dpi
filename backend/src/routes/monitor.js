@@ -482,7 +482,7 @@ router.get('/google/auth', authMiddleware, requireFranchisor, async (req, res) =
 
 router.get('/google/callback', async (req, res) => {
   const { code, state, error: oauthError } = req.query;
-  const frontendUrl = process.env.FRONTEND_URL || 'https://dippro.business';
+  const frontendUrl = process.env.FRONTEND_URL || process.env.APP_URL || 'https://iralink-agency.dippro.business';
   if (oauthError || !code || !state) return res.redirect(`${frontendUrl}/monitor?error=oauth_denied`);
 
   let userId;
@@ -574,7 +574,7 @@ router.get('/onedrive/auth', authMiddleware, requireFranchisor, async (req, res)
 
 router.get('/onedrive/callback', async (req, res) => {
   const { code, state, error: oauthError } = req.query;
-  const frontendUrl = process.env.FRONTEND_URL || 'https://dippro.business';
+  const frontendUrl = process.env.FRONTEND_URL || process.env.APP_URL || 'https://iralink-agency.dippro.business';
   if (oauthError || !code || !state) return res.redirect(`${frontendUrl}/monitor?error=oauth_denied`);
 
   let userId;

@@ -139,7 +139,7 @@ async function notifyFranchisees({ userId, certId, dipId, publicToken, cert, pdf
 
   if (!franchisees?.length) return;
 
-  const baseUrl      = process.env.FRONTEND_URL || 'https://dippro.fr';
+  const baseUrl      = process.env.FRONTEND_URL || process.env.APP_URL || 'https://iralink-agency.dippro.business';
   const attestationUrl = pdfUrl || `${baseUrl}/attestation/${publicToken}`;
   const summary      = cert.legal_summary || cert.certificate_text || '';
   const sentAt       = new Date().toISOString();
@@ -238,7 +238,7 @@ router.post('/', authMiddleware, requireFranchisor, async (req, res) => {
 
     if (saveErr) throw new Error(saveErr.message);
 
-    const baseUrl = process.env.FRONTEND_URL || 'https://dippro.fr';
+    const baseUrl = process.env.FRONTEND_URL || process.env.APP_URL || 'https://iralink-agency.dippro.business';
 
     res.status(201).json({
       certificate: saved,
@@ -334,7 +334,7 @@ router.get('/', authMiddleware, async (req, res) => {
 
   if (error) return res.status(500).json({ error: errMsg(error) });
 
-  const baseUrl = process.env.FRONTEND_URL || 'https://dippro.fr';
+  const baseUrl = process.env.FRONTEND_URL || process.env.APP_URL || 'https://iralink-agency.dippro.business';
   const certs = (data || []).map(c => ({
     ...c,
     public_url: c.public_token ? `${baseUrl}/attestation/${c.public_token}` : null,
@@ -353,7 +353,7 @@ router.get('/:id', authMiddleware, async (req, res) => {
 
   if (error || !data) return res.status(404).json({ error: 'Certificat introuvable' });
 
-  const baseUrl = process.env.FRONTEND_URL || 'https://dippro.fr';
+  const baseUrl = process.env.FRONTEND_URL || process.env.APP_URL || 'https://iralink-agency.dippro.business';
   res.json({
     certificate: data,
     public_url:  data.public_token ? `${baseUrl}/attestation/${data.public_token}` : null,

@@ -22,7 +22,7 @@ const MICROSOFT_AUTH_URL = 'https://login.microsoftonline.com/common/oauth2/v2.0
 const MICROSOFT_TOKEN_URL = 'https://login.microsoftonline.com/common/oauth2/v2.0/token';
 
 function getAppUrl() {
-  return process.env.APP_URL || 'https://app-dpi.vercel.app';
+  return process.env.FRONTEND_URL || process.env.APP_URL || 'https://iralink-agency.dippro.business';
 }
 
 // GET /api/integrations/status
