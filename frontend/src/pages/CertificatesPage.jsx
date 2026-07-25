@@ -34,11 +34,11 @@ export default function CertificatesPage() {
   const handleDownload = async (cert) => {
     setDownloadingId(cert.id);
     try {
-      const res = await api.get(`/certificates/${cert.id}/pdf`, { responseType: 'blob' });
+      const res = await api.get(`/certificates/${cert.id}/docx`, { responseType: 'blob' });
       const url = URL.createObjectURL(res.data);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `Attestation_${(TYPE_LABELS[cert.certificate_type] || 'DIP').replace(/[^a-z0-9]/gi, '_')}_${cert.id.substring(0, 8)}.pdf`;
+      a.download = `Attestation_${(TYPE_LABELS[cert.certificate_type] || 'DIP').replace(/[^a-z0-9]/gi, '_')}_${cert.id.substring(0, 8)}.docx`;
       a.click();
       URL.revokeObjectURL(url);
       toast.success('Attestation téléchargée');
@@ -138,7 +138,7 @@ export default function CertificatesPage() {
                     className="btn-secondary flex items-center gap-2 text-sm"
                   >
                     {downloadingId === cert.id ? <LoadingSpinner size="sm" /> : <Download className="w-4 h-4" />}
-                    Télécharger le PDF
+                    Télécharger (DOCX)
                   </button>
                 </div>
               </div>

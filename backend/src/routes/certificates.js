@@ -4,6 +4,7 @@ const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware, requireFranchisor } = require('../middleware/auth');
 const { generateChangesCertificate } = require('../config/claude');
 const { generateCertificatePDF } = require('../config/certificatePdf');
+const { generateCertificateDocx } = require('../config/certificateDocx');
 const errMsg = require('../config/errorMessage');
 const router = express.Router();
 
@@ -47,6 +48,16 @@ const sendPdfFromBuffer = (res, pdfBuffer, cert) => {
     'Cache-Control':       'public, max-age=86400',
   });
   res.send(pdfBuffer);
+};
+
+const sendDocxFromBuffer = (res, docxBuffer, cert) => {
+  const filename = `attestation-dip-${cert.certificate_type.toLowerCase()}-${cert.id.split('-')[0]}.docx`;
+  res.set({
+    'Content-Type':        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'Content-Disposition': `attachment; filename="${filename}"`,
+    'Content-Length':      docxBuffer.length,
+  });
+  res.send(docxBuffer);
 };
 
 // ─── Email HTML template ──────────────────────────────────────────────────────
@@ -394,6 +405,31 @@ router.get('/:id/pdf', authMiddleware, async (req, res) => {
   }
 });
 
+// ─── GET /api/certificates/:id/docx — DOCX (authentifié) ─────────────────────
+router.get('/:id/docx', authMiddleware, async (req, res) => {
+  const { data, error } = await supabaseAdmin
+    .from('dip_certificates')
+    .select('*')
+    .eq('id', req.params.id)
+    .eq('user_id', req.user.id)
+    .single();
+
+  if (error || !data) return res.status(404).json({ error: 'Certificat introuvable' });
+
+  if (data.status === 'pending') {
+    return res.status(202).json({ error: 'Attestation en cours de génération, réessayez dans quelques secondes.' });
+  }
+
+  try {
+    const franchiseur = await fetchFranchiseur(data.user_id, '');
+    const docxBuffer  = await generateCertificateDocx(data, franchiseur);
+    sendDocxFromBuffer(res, docxBuffer, data);
+  } catch (err) {
+    console.error('DOCX generation error:', err.message);
+    res.status(500).json({ error: errMsg(err) });
+  }
+});
+
 // ─── GET /api/certificates/public/:token — accès public sans auth ─────────────
 router.get('/public/:token', async (req, res) => {
   const token = req.params.token;
@@ -425,6 +461,22 @@ router.get('/public/:token', async (req, res) => {
     });
   }
 
+  // Le document rendu (PDF/DOCX) ne doit jamais exposer les coordonnées des
+  // autres franchisés notifiés à qui que ce soit disposant du seul lien
+  // public — même restriction que la branche ?format=json ci-dessus.
+  const publicSafeData = { ...data, deliveries: [] };
+
+  if (req.query.format === 'docx') {
+    try {
+      const franchiseur = await fetchFranchiseur(data.user_id, '');
+      const docxBuffer  = await generateCertificateDocx(publicSafeData, franchiseur);
+      return sendDocxFromBuffer(res, docxBuffer, data);
+    } catch (err) {
+      console.error('Public DOCX error:', err.message);
+      return res.status(500).json({ error: 'Erreur de génération du document' });
+    }
+  }
+
   if (data.pdf_url) return res.redirect(302, data.pdf_url);
 
   if (data.status === 'pending') {
@@ -433,7 +485,7 @@ router.get('/public/:token', async (req, res) => {
 
   try {
     const franchiseur = await fetchFranchiseur(data.user_id, '');
-    const pdfBuffer   = await generateCertificatePDF(data, franchiseur);
+    const pdfBuffer   = await generateCertificatePDF(publicSafeData, franchiseur);
 
     try {
       const url = await uploadPdfToStorage(pdfBuffer, data.id, data.certificate_type, data.public_token);
