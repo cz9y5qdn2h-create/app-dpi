@@ -158,9 +158,13 @@ router.post('/users', authMiddleware, requireAdmin, async (req, res) => {
   });
   if (authError) return res.status(400).json({ error: authError.message });
 
-  const { data: profile } = await supabaseAdmin.from('users').insert({
+  // upsert : handle_new_user() a déjà inséré une ligne par défaut
+  // (role='franchiseur') au moment de la création du compte auth.users —
+  // un .insert() ici échouait silencieusement sur le conflit de clé primaire
+  // et le rôle choisi ici n'était jamais réellement appliqué.
+  const { data: profile } = await supabaseAdmin.from('users').upsert({
     id: authData.user.id, email, role, company_name, created_at: new Date().toISOString()
-  }).select().single();
+  }, { onConflict: 'id' }).select().single();
 
   res.status(201).json({ user: profile });
 });

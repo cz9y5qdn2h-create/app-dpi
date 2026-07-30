@@ -165,7 +165,15 @@ router.post('/register', async (req, res) => {
 
     const trialExpiresAt = new Date(Date.now() + 5 * 24 * 3600 * 1000).toISOString();
 
-    const { error: profileError } = await supabaseAdmin.from('users').insert({
+    // upsert, pas insert : le trigger handle_new_user() a déjà créé une ligne
+    // public.users (role='franchiseur' par défaut, car createUser() ci-dessus
+    // ne transmet aucun user_metadata) au moment même où auth.users a été
+    // inséré. Un simple .insert() ici entre en conflit sur la clé primaire et
+    // échoue silencieusement (l'erreur n'était que loguée) — le rôle et
+    // toutes les autres valeurs soumises à l'inscription (nom, CGU,
+    // consentement marketing, disclaimer IA) étaient donc systématiquement
+    // perdus au profit des valeurs par défaut du trigger.
+    const { error: profileError } = await supabaseAdmin.from('users').upsert({
       id: authData.user.id,
       email,
       role,
@@ -178,9 +186,9 @@ router.post('/register', async (req, res) => {
       terms_version,
       marketing_consent: Boolean(marketing_consent),
       ai_disclaimer_accepted: Boolean(ai_disclaimer_accepted),
-    });
+    }, { onConflict: 'id' });
 
-    if (profileError) console.warn('Profile insert error:', profileError.message);
+    if (profileError) console.warn('Profile upsert error:', profileError.message);
 
     res.status(201).json({ message: 'Compte créé avec succès', user_id: authData.user.id });
   } catch (err) {
@@ -209,7 +217,9 @@ router.post('/provision-oauth', authMiddleware, async (req, res) => {
     }
 
     const trialExpiresAt = new Date(Date.now() + 5 * 24 * 3600 * 1000).toISOString();
-    await supabaseAdmin.from('users').insert({
+    // upsert pour la même raison que /register : handle_new_user() a déjà
+    // créé la ligne au moment de la création du compte auth.users OAuth.
+    await supabaseAdmin.from('users').upsert({
       id: req.user.id,
       email: req.user.email,
       role: 'franchiseur',
@@ -218,7 +228,7 @@ router.post('/provision-oauth', authMiddleware, async (req, res) => {
       trial_expires_at: trialExpiresAt,
       appointment_booked: false,
       created_at: new Date().toISOString()
-    });
+    }, { onConflict: 'id' });
 
     res.status(201).json({ message: 'Profil créé', existing: false });
   } catch (err) {
