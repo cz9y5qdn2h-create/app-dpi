@@ -82,6 +82,12 @@ function TrialGuard({ children }) {
   return children;
 }
 
+function FranchisorOnlyRoute({ children }) {
+  const { profile } = useAuth();
+  if (profile?.role === 'avocat') return <Navigate to="/dashboard" replace />;
+  return children;
+}
+
 const S = ({ children }) => <Suspense fallback={<PageLoader />}>{children}</Suspense>;
 
 export default function App() {
@@ -109,24 +115,24 @@ export default function App() {
 
         <Route path="/" element={<TrialGuard><Layout /></TrialGuard>}>
           <Route path="dashboard"   element={<ErrorBoundary><S><DashboardPage /></S></ErrorBoundary>} />
-          <Route path="dip"         element={<ErrorBoundary><S><DIPPage /></S></ErrorBoundary>} />
-          <Route path="dip/upload"  element={<ErrorBoundary><S><UploadDIPPage /></S></ErrorBoundary>} />
-          <Route path="dip/generate" element={<ErrorBoundary><S><GenerateDIPPage /></S></ErrorBoundary>} />
-          <Route path="contrat"             element={<ErrorBoundary><S><ContractPage /></S></ErrorBoundary>} />
-          <Route path="contrat/upload"      element={<ErrorBoundary><S><UploadContractPage /></S></ErrorBoundary>} />
-          <Route path="contrat/generate"    element={<ErrorBoundary><S><GenerateContractPage /></S></ErrorBoundary>} />
-          <Route path="alerts"      element={<ErrorBoundary><S><AlertsPage /></S></ErrorBoundary>} />
-          <Route path="history"     element={<ErrorBoundary><S><HistoryPage /></S></ErrorBoundary>} />
-          <Route path="franchisees" element={<ErrorBoundary><S><FranchiseesPage /></S></ErrorBoundary>} />
+          <Route path="dip"         element={<FranchisorOnlyRoute><ErrorBoundary><S><DIPPage /></S></ErrorBoundary></FranchisorOnlyRoute>} />
+          <Route path="dip/upload"  element={<FranchisorOnlyRoute><ErrorBoundary><S><UploadDIPPage /></S></ErrorBoundary></FranchisorOnlyRoute>} />
+          <Route path="dip/generate" element={<FranchisorOnlyRoute><ErrorBoundary><S><GenerateDIPPage /></S></ErrorBoundary></FranchisorOnlyRoute>} />
+          <Route path="contrat"             element={<FranchisorOnlyRoute><ErrorBoundary><S><ContractPage /></S></ErrorBoundary></FranchisorOnlyRoute>} />
+          <Route path="contrat/upload"      element={<FranchisorOnlyRoute><ErrorBoundary><S><UploadContractPage /></S></ErrorBoundary></FranchisorOnlyRoute>} />
+          <Route path="contrat/generate"    element={<FranchisorOnlyRoute><ErrorBoundary><S><GenerateContractPage /></S></ErrorBoundary></FranchisorOnlyRoute>} />
+          <Route path="alerts"      element={<FranchisorOnlyRoute><ErrorBoundary><S><AlertsPage /></S></ErrorBoundary></FranchisorOnlyRoute>} />
+          <Route path="history"     element={<FranchisorOnlyRoute><ErrorBoundary><S><HistoryPage /></S></ErrorBoundary></FranchisorOnlyRoute>} />
+          <Route path="franchisees" element={<FranchisorOnlyRoute><ErrorBoundary><S><FranchiseesPage /></S></ErrorBoundary></FranchisorOnlyRoute>} />
           <Route path="settings"    element={<ErrorBoundary><S><SettingsPage /></S></ErrorBoundary>} />
-          <Route path="export"      element={<ErrorBoundary><S><ExportPage /></S></ErrorBoundary>} />
-          <Route path="certifications" element={<ErrorBoundary><S><CertificatesPage /></S></ErrorBoundary>} />
-          <Route path="documents"      element={<ErrorBoundary><S><DocumentsPage /></S></ErrorBoundary>} />
+          <Route path="export"      element={<FranchisorOnlyRoute><ErrorBoundary><S><ExportPage /></S></ErrorBoundary></FranchisorOnlyRoute>} />
+          <Route path="certifications" element={<FranchisorOnlyRoute><ErrorBoundary><S><CertificatesPage /></S></ErrorBoundary></FranchisorOnlyRoute>} />
+          <Route path="documents"      element={<FranchisorOnlyRoute><ErrorBoundary><S><DocumentsPage /></S></ErrorBoundary></FranchisorOnlyRoute>} />
           <Route path="admin"       element={<ErrorBoundary><S><AdminPage /></S></ErrorBoundary>} />
-          <Route path="monitor"     element={FEATURES.monitor ? <ErrorBoundary><S><MonitorPage /></S></ErrorBoundary> : <Navigate to="/dashboard" replace />} />
-          <Route path="monitoring"  element={<ErrorBoundary><S><DocMonitoringPage /></S></ErrorBoundary>} />
-          <Route path="integrations" element={<ErrorBoundary><S><ApiConfigPage /></S></ErrorBoundary>} />
-          <Route path="analytics/dip/:dipId"          element={<ErrorBoundary><S><AnalyticsPage /></S></ErrorBoundary>} />
+          <Route path="monitor"     element={FEATURES.monitor ? <FranchisorOnlyRoute><ErrorBoundary><S><MonitorPage /></S></ErrorBoundary></FranchisorOnlyRoute> : <Navigate to="/dashboard" replace />} />
+          <Route path="monitoring"  element={<FranchisorOnlyRoute><ErrorBoundary><S><DocMonitoringPage /></S></ErrorBoundary></FranchisorOnlyRoute>} />
+          <Route path="integrations" element={<FranchisorOnlyRoute><ErrorBoundary><S><ApiConfigPage /></S></ErrorBoundary></FranchisorOnlyRoute>} />
+          <Route path="analytics/dip/:dipId"          element={<FranchisorOnlyRoute><ErrorBoundary><S><AnalyticsPage /></S></ErrorBoundary></FranchisorOnlyRoute>} />
           <Route path="dip/avocat/:franchiseurId"      element={<ErrorBoundary><S><DIPAvocatPage /></S></ErrorBoundary>} />
           <Route path="design-preview" element={FEATURES.design_preview ? <ErrorBoundary><S><DesignPreviewPage /></S></ErrorBoundary> : <Navigate to="/dashboard" replace />} />
         </Route>

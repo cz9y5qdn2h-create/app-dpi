@@ -118,8 +118,24 @@ export default function Sidebar({ open, onClose }) {
     retry: false,
   });
   const isAdmin = profile?.role === 'admin' || meData?.user?.role === 'admin';
+  const isAvocat = profile?.role === 'avocat';
 
-  const navGroups = [
+  const navGroups = isAvocat ? [
+    {
+      key: 'dashboard',
+      flat: true,
+      items: [
+        { to: '/dashboard', icon: LayoutDashboard, label: 'Mes clients' },
+      ],
+    },
+    {
+      key: 'tools',
+      flat: true,
+      items: [
+        { to: '/settings', icon: Settings, label: t('nav.settings') },
+      ],
+    },
+  ] : [
     {
       key: 'dashboard',
       flat: true,
