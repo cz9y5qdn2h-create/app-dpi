@@ -282,10 +282,6 @@ export default function Sidebar({ open, onClose }) {
             <p className="font-dm-mono text-xs text-text-secondary truncate mt-0.5">
               {profile?.email || ''}
             </p>
-            {/* Diagnostic temporaire — à retirer une fois l'accès admin confirmé */}
-            <p className="font-dm-mono text-[10px] mt-1" style={{ color: 'rgb(var(--danger))' }}>
-              DEBUG · profil={profile?.role || 'null'} · backend={meData?.user?.role || 'null'} · isAdmin={String(isAdmin)}
-            </p>
           </div>
 
           <button

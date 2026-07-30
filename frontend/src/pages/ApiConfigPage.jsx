@@ -140,7 +140,7 @@ function LocalFilesSection() {
         onDragLeave={() => setDragging(false)}
         onDrop={onDrop}
         onClick={() => fileInputRef.current?.click()}
-        className={`border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-all ${
+        className={`border-2 border-dashed rounded-xl p-6 sm:p-10 text-center cursor-pointer transition-all ${
           dragging
             ? 'border-gold bg-gold/8 scale-[1.01]'
             : 'border-border-default hover:border-gold/40 hover:bg-bg-elevated'

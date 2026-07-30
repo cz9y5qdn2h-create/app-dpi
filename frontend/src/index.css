@@ -783,6 +783,40 @@ button:active svg, a:active svg { transform: scale(0.9); }
   color: var(--v2-gold);
 }
 
+/* ── Slide V2 — conteneur plein écran pour la présentation "diaporama" ── */
+.slide-v2 {
+  background: var(--v2-surface);
+  border: 1px solid var(--v2-border);
+  border-radius: 20px;
+  padding: clamp(20px, 4vw, 48px);
+  position: relative;
+  overflow: hidden;
+}
+.slide-v2::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(245,200,66,0.04) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+/* ── Dropzone V2 — dépôt de fichiers sobre, sans effet verre ── */
+.dropzone-v2 {
+  background: var(--v2-surface);
+  border: 1.5px dashed var(--v2-border);
+  border-radius: 14px;
+  padding: 1.25rem;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.18s ease, background 0.18s ease;
+}
+.dropzone-v2:hover,
+.dropzone-v2[data-active="true"] {
+  border-color: var(--v2-gold);
+  background: var(--v2-surface-hi);
+}
+
 /* ═══════════════════════════════════════════════════════════════
    MOBILE EXPERIENCE — Touch & responsive optimizations
    ═══════════════════════════════════════════════════════════════ */

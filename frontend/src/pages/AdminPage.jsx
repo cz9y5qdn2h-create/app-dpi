@@ -314,7 +314,7 @@ export default function AdminPage() {
             <div className="space-y-2">
               {(usersData?.users || []).map(u => (
                 <div key={u.id} className={`card transition-all ${selectedUser === u.id ? 'border-gold/40' : ''}`}>
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-4 flex-wrap">
                     <div className="w-10 h-10 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center flex-shrink-0">
                       <span className="font-cormorant text-lg text-gold">{(u.company_name || u.email)[0].toUpperCase()}</span>
                     </div>
@@ -368,7 +368,7 @@ export default function AdminPage() {
 
                   {/* Edit inline */}
                   {editUser?.id === u.id && (
-                    <div className="mt-4 pt-4 border-t border-border-subtle grid grid-cols-2 gap-3">
+                    <div className="mt-4 pt-4 border-t border-border-subtle grid grid-cols-1 sm:grid-cols-2 gap-3">
                       <div><label className="label">Société</label>
                         <input className="input-field" value={editUser.company_name || ''} onChange={e => setEditUser(f => ({ ...f, company_name: e.target.value }))} /></div>
                       <div><label className="label">Rôle</label>
@@ -388,7 +388,7 @@ export default function AdminPage() {
 
                   {/* Detail panel */}
                   {selectedUser === u.id && userDetail && (
-                    <div className="mt-4 pt-4 border-t border-border-subtle grid grid-cols-2 gap-4 text-sm">
+                    <div className="mt-4 pt-4 border-t border-border-subtle grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                       <div>
                         <p className="font-dm-mono text-xs text-gold mb-2">DIPs ({userDetail.dips?.length || 0})</p>
                         {userDetail.dips?.map(d => (
@@ -416,7 +416,7 @@ export default function AdminPage() {
       {activeTab === 'dips' && (
         <div className="space-y-2">
           {(dipsData?.dips || []).map(d => (
-            <div key={d.id} className="card flex items-center gap-4">
+            <div key={d.id} className="card flex items-center gap-4 flex-wrap">
               <div className="flex-1 min-w-0">
                 <p className="font-dm-sans text-sm font-medium text-text-primary truncate">{d.title}</p>
                 <p className="font-dm-mono text-xs text-text-secondary">{d.users?.company_name || d.users?.email || '—'}</p>

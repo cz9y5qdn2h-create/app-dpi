@@ -315,7 +315,7 @@ function AddSourceModal({ onClose, onAdd, prefill }) {
     >
       <div
         className="card w-full max-w-lg"
-        style={{ padding: '28px', maxHeight: '90vh', overflowY: 'auto' }}
+        style={{ padding: 'clamp(16px, 4vw, 28px)', maxHeight: '90vh', overflowY: 'auto' }}
       >
         <div className="flex items-center justify-between mb-6">
           <h2 className="font-cormorant text-xl text-text-primary" style={{ fontWeight: 400 }}>

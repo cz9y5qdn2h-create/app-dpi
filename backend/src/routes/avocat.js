@@ -472,4 +472,131 @@ router.post('/invite', authMiddleware, async (req, res) => {
   res.json({ success: true, message: 'Invitation envoyée', url: joinUrl });
 });
 
+// ─── Annexes de section DIP / clause de contrat ───────────────────────────
+// Bucket privé 'dip-annexes' (créé par la migration 037) — chemin toujours
+// préfixé par l'id du franchiseur PROPRIÉTAIRE (jamais l'auteur de
+// l'upload), pour que la policy storage reste simple à vérifier. Upload
+// direct client → Supabase Storage (même pattern que DocumentsPage.jsx),
+// ces routes ne font qu'enregistrer les métadonnées après coup.
+const ANNEX_BUCKET = 'dip-annexes';
+
+// Retourne l'id du franchiseur propriétaire si userId y a accès (propriétaire
+// du DIP, ou avocat avec relation active vers ce franchiseur), sinon null.
+async function resolveDipOwner(dipId, userId) {
+  const { data: dip } = await supabaseAdmin.from('dip_documents').select('user_id').eq('id', dipId).maybeSingle();
+  if (!dip) return null;
+  if (dip.user_id === userId) return dip.user_id;
+  const { data: rel } = await supabaseAdmin
+    .from('avocat_franchiseurs').select('status')
+    .eq('avocat_id', userId).eq('franchiseur_id', dip.user_id).maybeSingle();
+  return rel?.status === 'active' ? dip.user_id : null;
+}
+
+async function resolveContractOwner(contractId, userId) {
+  const { data: contract } = await supabaseAdmin.from('franchise_contracts').select('user_id').eq('id', contractId).maybeSingle();
+  if (!contract) return null;
+  if (contract.user_id === userId) return contract.user_id;
+  const { data: rel } = await supabaseAdmin
+    .from('avocat_franchiseurs').select('status')
+    .eq('avocat_id', userId).eq('franchiseur_id', contract.user_id).maybeSingle();
+  return rel?.status === 'active' ? contract.user_id : null;
+}
+
+// POST /api/avocat/sections/:sectionId/annexes
+router.post('/sections/:sectionId/annexes', authMiddleware, async (req, res) => {
+  const { dip_id, file_name, storage_path, size_bytes } = req.body;
+  if (!dip_id || !file_name || !storage_path) {
+    return res.status(400).json({ error: 'dip_id, file_name et storage_path requis' });
+  }
+  const ownerId = await resolveDipOwner(dip_id, req.user.id);
+  if (!ownerId) return res.status(403).json({ error: 'Accès refusé' });
+  if (!storage_path.startsWith(`${ownerId}/`)) return res.status(403).json({ error: 'Chemin de stockage invalide' });
+
+  const { data: signedUrlData } = await supabaseAdmin.storage.from(ANNEX_BUCKET).createSignedUrl(storage_path, 3600);
+  const { data: inserted, error } = await supabaseAdmin
+    .from('dip_section_annexes')
+    .insert({
+      section_id: req.params.sectionId,
+      dip_id,
+      uploaded_by: req.user.id,
+      file_name: file_name.substring(0, 255),
+      storage_path,
+      file_url: signedUrlData?.signedUrl || null,
+      size_bytes: size_bytes || null,
+    })
+    .select().single();
+  if (error) return res.status(500).json({ error: error.message });
+  res.status(201).json({ annexe: inserted });
+});
+
+// GET /api/avocat/sections/:sectionId/annexes
+router.get('/sections/:sectionId/annexes', authMiddleware, async (req, res) => {
+  const { data: section } = await supabaseAdmin.from('dip_sections').select('dip_id').eq('id', req.params.sectionId).maybeSingle();
+  if (!section) return res.status(404).json({ error: 'Section introuvable' });
+  const ownerId = await resolveDipOwner(section.dip_id, req.user.id);
+  if (!ownerId) return res.status(403).json({ error: 'Accès refusé' });
+
+  const { data, error } = await supabaseAdmin
+    .from('dip_section_annexes').select('*').eq('section_id', req.params.sectionId).order('created_at', { ascending: false });
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ annexes: data || [] });
+});
+
+// POST /api/avocat/clauses/:clauseId/annexes
+router.post('/clauses/:clauseId/annexes', authMiddleware, async (req, res) => {
+  const { contract_id, file_name, storage_path, size_bytes } = req.body;
+  if (!contract_id || !file_name || !storage_path) {
+    return res.status(400).json({ error: 'contract_id, file_name et storage_path requis' });
+  }
+  const ownerId = await resolveContractOwner(contract_id, req.user.id);
+  if (!ownerId) return res.status(403).json({ error: 'Accès refusé' });
+  if (!storage_path.startsWith(`${ownerId}/`)) return res.status(403).json({ error: 'Chemin de stockage invalide' });
+
+  const { data: signedUrlData } = await supabaseAdmin.storage.from(ANNEX_BUCKET).createSignedUrl(storage_path, 3600);
+  const { data: inserted, error } = await supabaseAdmin
+    .from('dip_section_annexes')
+    .insert({
+      clause_id: req.params.clauseId,
+      contract_id,
+      uploaded_by: req.user.id,
+      file_name: file_name.substring(0, 255),
+      storage_path,
+      file_url: signedUrlData?.signedUrl || null,
+      size_bytes: size_bytes || null,
+    })
+    .select().single();
+  if (error) return res.status(500).json({ error: error.message });
+  res.status(201).json({ annexe: inserted });
+});
+
+// GET /api/avocat/clauses/:clauseId/annexes
+router.get('/clauses/:clauseId/annexes', authMiddleware, async (req, res) => {
+  const { data: clause } = await supabaseAdmin.from('contract_clauses').select('contract_id').eq('id', req.params.clauseId).maybeSingle();
+  if (!clause) return res.status(404).json({ error: 'Clause introuvable' });
+  const ownerId = await resolveContractOwner(clause.contract_id, req.user.id);
+  if (!ownerId) return res.status(403).json({ error: 'Accès refusé' });
+
+  const { data, error } = await supabaseAdmin
+    .from('dip_section_annexes').select('*').eq('clause_id', req.params.clauseId).order('created_at', { ascending: false });
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ annexes: data || [] });
+});
+
+// DELETE /api/avocat/annexes/:id
+router.delete('/annexes/:id', authMiddleware, async (req, res) => {
+  const { data: annexe, error: fetchErr } = await supabaseAdmin
+    .from('dip_section_annexes').select('*').eq('id', req.params.id).maybeSingle();
+  if (fetchErr || !annexe) return res.status(404).json({ error: 'Annexe introuvable' });
+
+  const ownerId = annexe.dip_id
+    ? await resolveDipOwner(annexe.dip_id, req.user.id)
+    : await resolveContractOwner(annexe.contract_id, req.user.id);
+  if (!ownerId && annexe.uploaded_by !== req.user.id) return res.status(403).json({ error: 'Accès refusé' });
+
+  await supabaseAdmin.storage.from(ANNEX_BUCKET).remove([annexe.storage_path]);
+  const { error } = await supabaseAdmin.from('dip_section_annexes').delete().eq('id', req.params.id);
+  if (error) return res.status(500).json({ error: error.message });
+  res.json({ success: true });
+});
+
 module.exports = router;
