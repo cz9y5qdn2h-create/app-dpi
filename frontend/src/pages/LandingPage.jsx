@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import {
   Shield, CheckCircle, Bell, Users, Download, Zap, ArrowRight,
   ChevronDown, Sparkles, AlertTriangle, FileText, Send, Lock,
-  FileCheck, Clock, TrendingUp, Star, GitBranch, Menu, X
+  FileCheck, Clock, TrendingUp, Star, GitBranch, Menu, X, BookOpen
 } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import api from '../lib/api';
@@ -51,7 +51,7 @@ const HOW_STEPS = [
 const FAQS = [
   {
     q: "Qu'est-ce que le DIP ?",
-    a: "Le Document d'Information Précontractuelle est obligatoire pour tout franchiseur (Art. L.330-3 Code de commerce). Il doit être remis au candidat franchisé 20 jours avant la signature. Son absence ou son inexactitude suffit à entraîner la nullité du contrat — confirmé par la Cour de cassation, 26 juin 2024.",
+    a: "Le Document d'Information Précontractuelle est obligatoire pour tout franchiseur (Art. L.330-3 Code de commerce). Il doit être remis au candidat franchisé 20 jours avant la signature. Son absence expose à une sanction pénale, et son inexactitude peut entraîner la nullité du contrat dès lors qu'elle a vicié le consentement du franchisé — la Cour de cassation a même étendu ce risque à la dissimulation d'informations survenues après la remise du DIP (arrêt du 26 juin 2024).",
   },
   {
     q: "Combien coûte DIPpro ?",
@@ -861,6 +861,64 @@ export default function LandingPage() {
                 Déjà un compte ? →
               </Link>
             </div>
+          </div>
+        </FadeIn>
+      </section>
+
+      {/* ── RESSOURCES ───────────────────────────────────────── */}
+      <section id="ressources" style={{ maxWidth: 1100, margin: '0 auto', padding: '0 24px 88px' }}>
+        <FadeIn>
+          <div style={{ textAlign: 'center', marginBottom: 48 }}>
+            <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontWeight: 300, fontSize: 'clamp(2rem, 4vw, 2.6rem)', color: '#F4F2EE' }}>
+              Comprendre le DIP et la Loi Doubin
+            </h2>
+            <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 14, color: 'rgba(244,242,238,0.42)', marginTop: 12, maxWidth: 480, marginLeft: 'auto', marginRight: 'auto' }}>
+              Nos guides juridiques de référence, rédigés et vérifiés pour les franchiseurs.
+            </p>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20 }}>
+            {[
+              {
+                href: '/blog/dip-non-conforme-risques-sanctions',
+                title: 'DIP non conforme : quels risques réels en 2026 ?',
+                desc: 'Sanction pénale, nullité, dol postérieur à la remise du DIP : ce que dit vraiment la jurisprudence.',
+              },
+              {
+                href: '/blog/dip-franchise-guide-loi-doubin',
+                title: 'DIP franchise : le guide complet de la Loi Doubin',
+                desc: 'Les 10 sections obligatoires, le délai des 20 jours, les sanctions — le guide de référence.',
+              },
+              {
+                href: '/blog/nullite-contrat-franchise-dip',
+                title: 'Nullité du contrat de franchise : ce qu\'il faut savoir',
+                desc: 'Dans quels cas un DIP défaillant peut réellement conduire à l\'annulation du contrat.',
+              },
+            ].map(({ href, title, desc }) => (
+              <a
+                key={href}
+                href={href}
+                style={{
+                  display: 'block', borderRadius: 18, padding: 24, textDecoration: 'none',
+                  background: 'rgba(244,242,238,0.02)', border: '0.5px solid rgba(244,242,238,0.08)',
+                  transition: 'border-color 0.2s ease, background 0.2s ease',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(200,169,110,0.35)'; e.currentTarget.style.background = 'rgba(200,169,110,0.04)'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(244,242,238,0.08)'; e.currentTarget.style.background = 'rgba(244,242,238,0.02)'; }}
+              >
+                <BookOpen style={{ width: 18, height: 18, color: GOLD, marginBottom: 14 }} />
+                <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 15, fontWeight: 500, color: '#F4F2EE', marginBottom: 8, lineHeight: 1.35 }}>
+                  {title}
+                </p>
+                <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 13, color: 'rgba(244,242,238,0.42)', lineHeight: 1.5 }}>
+                  {desc}
+                </p>
+              </a>
+            ))}
+          </div>
+          <div style={{ textAlign: 'center', marginTop: 28 }}>
+            <a href="/blog" style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 13, color: GOLD, textDecoration: 'none' }}>
+              Voir tous les articles →
+            </a>
           </div>
         </FadeIn>
       </section>
