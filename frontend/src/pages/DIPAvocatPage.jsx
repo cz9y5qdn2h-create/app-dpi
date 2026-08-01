@@ -6,6 +6,7 @@ import { useDropzone } from 'react-dropzone';
 import api from '../lib/api';
 import { supabase } from '../lib/supabase';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
+import RedlineView from '../components/RedlineView';
 import {
   ChevronLeft, ChevronRight, Edit3, Check, X, AlertCircle,
   ArrowLeft, FileText, ScrollText, Download, Paperclip, Trash2,
@@ -166,6 +167,31 @@ export default function DIPAvocatPage() {
               : <EmptyState label="Ce franchiseur n'a pas encore de contrat actif." />
         )}
       </div>
+    </div>
+  );
+}
+
+function HistoryItem({ proposal: p }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="text-xs font-dm-sans">
+      <button onClick={() => setOpen(v => !v)} className="w-full flex items-center gap-2 text-left">
+        <ChevronDown className="w-3 h-3 flex-shrink-0 transition-transform" style={{ transform: open ? 'rotate(180deg)' : 'none', color: 'rgb(var(--text-muted))' }} />
+        <span style={{ color: p.status === 'accepted' ? 'rgb(91 216 154)' : 'rgb(241 124 124)' }}>
+          {p.status === 'accepted' ? '✓ Acceptée' : '✗ Rejetée'}
+        </span>
+        <span style={{ color: 'rgb(var(--text-muted))' }}>{formatDistanceToNow(new Date(p.created_at), { addSuffix: true, locale: fr })}</span>
+      </button>
+      {open && (
+        <div className="mt-2 mb-1 ml-5 rounded-lg p-3" style={{ background: 'var(--v2-surface)', border: '1px solid var(--v2-border)' }}>
+          <RedlineView before={p.content_before ?? ''} after={p.content_proposed} className="text-xs" />
+          {p.reviewer_comment && (
+            <p className="mt-2 pt-2 italic" style={{ borderTop: '1px solid var(--v2-border)', color: 'rgb(var(--text-muted))' }}>
+              « {p.reviewer_comment} »
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -331,16 +357,24 @@ function SlideDeck({ mode, dip, contract, franchiseurId, franchiseur }) {
 
           {pendingProposal && (
             <div className="mb-4 px-3 py-2 rounded-lg font-dm-mono text-xs" style={{ background: 'rgba(245,200,66,0.08)', border: '1px solid var(--v2-border-hot)', color: 'var(--v2-gold)' }}>
-              Proposition en attente de validation par le franchiseur
+              Proposition en attente de validation par le franchiseur — suivi des modifications ci-dessous
             </div>
           )}
 
           {!isEditing ? (
             <>
               <div className="rounded-xl p-4 mb-4" style={{ background: 'var(--v2-surface)', minHeight: 120 }}>
-                <p className="font-dm-sans text-sm whitespace-pre-wrap leading-relaxed" style={{ color: 'rgb(var(--text-primary))' }}>
-                  {current.content || <span style={{ color: 'rgb(var(--text-muted))' }} className="italic">Non renseigné</span>}
-                </p>
+                {pendingProposal ? (
+                  <RedlineView
+                    before={pendingProposal.content_before ?? current.content ?? ''}
+                    after={pendingProposal.content_proposed}
+                    className="font-dm-sans text-sm"
+                  />
+                ) : (
+                  <p className="font-dm-sans text-sm whitespace-pre-wrap leading-relaxed" style={{ color: 'rgb(var(--text-primary))' }}>
+                    {current.content || <span style={{ color: 'rgb(var(--text-muted))' }} className="italic">Non renseigné</span>}
+                  </p>
+                )}
               </div>
               <button
                 onClick={() => { setIsEditing(true); setEditContent(current.content || ''); }}
@@ -360,6 +394,14 @@ function SlideDeck({ mode, dip, contract, franchiseurId, franchiseur }) {
                 style={{ background: 'var(--v2-surface)', border: '1px solid var(--v2-border-hot)', color: 'rgb(var(--text-primary))', minHeight: 180 }}
                 autoFocus
               />
+
+              <div>
+                <p className="mono-label-v2 mb-1.5">Suivi des modifications</p>
+                <div className="rounded-xl p-4" style={{ background: 'var(--v2-surface)', border: '1px solid var(--v2-border)', minHeight: 80 }}>
+                  <RedlineView before={current.content || ''} after={editContent} className="font-dm-sans text-sm" emptyLabel="Commencez à rédiger pour voir l'aperçu." />
+                </div>
+              </div>
+
               <p className="font-dm-sans text-xs" style={{ color: 'rgb(var(--text-muted))' }}>
                 Le franchiseur devra valider cette modification avant qu'elle s'applique au document.
               </p>
@@ -382,14 +424,7 @@ function SlideDeck({ mode, dip, contract, franchiseurId, franchiseur }) {
             <div className="pt-3 mb-4" style={{ borderTop: '1px solid var(--v2-border)' }}>
               <p className="mono-label-v2 mb-2">Historique</p>
               <div className="space-y-1.5">
-                {reviewedProposals.map(p => (
-                  <div key={p.id} className="flex items-center gap-2 text-xs font-dm-sans">
-                    <span style={{ color: p.status === 'accepted' ? 'rgb(91 216 154)' : 'rgb(241 124 124)' }}>
-                      {p.status === 'accepted' ? '✓ Acceptée' : '✗ Rejetée'}
-                    </span>
-                    <span style={{ color: 'rgb(var(--text-muted))' }}>{formatDistanceToNow(new Date(p.created_at), { addSuffix: true, locale: fr })}</span>
-                  </div>
-                ))}
+                {reviewedProposals.map(p => <HistoryItem key={p.id} proposal={p} />)}
               </div>
             </div>
           )}

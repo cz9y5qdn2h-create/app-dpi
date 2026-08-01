@@ -6,6 +6,7 @@ import { Check, X, ChevronDown, ChevronUp, MessageSquare } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import RedlineView from './RedlineView';
 
 // target = { type: 'dip', id } ou { type: 'contract', id } — le panel s'adapte
 // aux endpoints avocat correspondants (sections DIP ou clauses de contrat).
@@ -136,25 +137,11 @@ function ProposalCard({ proposal, expanded, onToggle, comment, onCommentChange, 
 
       {expanded && (
         <div className="p-4 space-y-4">
-          {/* Diff */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {proposal.content_before && (
-              <div>
-                <p className="font-dm-mono text-xs text-text-muted mb-1.5">Contenu actuel</p>
-                <div className="bg-danger/5 border border-danger/15 rounded-lg p-3">
-                  <p className="font-dm-sans text-xs text-text-secondary whitespace-pre-wrap leading-relaxed line-clamp-6">
-                    {proposal.content_before}
-                  </p>
-                </div>
-              </div>
-            )}
-            <div>
-              <p className="font-dm-mono text-xs text-text-muted mb-1.5">Proposition</p>
-              <div className="bg-success/5 border border-success/15 rounded-lg p-3">
-                <p className="font-dm-sans text-xs text-text-primary whitespace-pre-wrap leading-relaxed line-clamp-6">
-                  {proposal.content_proposed}
-                </p>
-              </div>
+          {/* Suivi des modifications — ajouts soulignés, suppressions barrées */}
+          <div>
+            <p className="font-dm-mono text-xs text-text-muted mb-1.5">Suivi des modifications</p>
+            <div className="bg-bg-elevated border border-gold/15 rounded-lg p-3">
+              <RedlineView before={proposal.content_before ?? ''} after={proposal.content_proposed} className="text-xs" />
             </div>
           </div>
 
