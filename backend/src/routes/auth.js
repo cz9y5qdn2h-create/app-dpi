@@ -1,4 +1,5 @@
 const express = require('express');
+const { getAppUrl } = require('../config/appUrl');
 const crypto = require('crypto');
 const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware } = require('../middleware/auth');
@@ -66,7 +67,7 @@ router.post('/forgot-password', async (req, res) => {
       expires_at: expiresAt,
     });
 
-    const frontendUrl = process.env.FRONTEND_URL || process.env.APP_URL || 'https://iralink-agency.dippro.business';
+    const frontendUrl = getAppUrl();
     const resetUrl = `${frontendUrl}/reset-password?token=${token}`;
 
     await sendResetEmail(email, profile.company_name || '', resetUrl);

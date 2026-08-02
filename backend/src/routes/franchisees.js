@@ -1,4 +1,5 @@
 const express = require('express');
+const { getAppUrl } = require('../config/appUrl');
 const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware, requireFranchisor } = require('../middleware/auth');
 const { generateUpdateSummary } = require('../config/claude');
@@ -141,7 +142,7 @@ function escapeHtml(str) {
 
 async function sendBrevoEmail(email, name, summary, dipId) {
   try {
-    const frontendUrl = process.env.FRONTEND_URL || process.env.APP_URL || 'https://iralink-agency.dippro.business';
+    const frontendUrl = getAppUrl();
     const response = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: {

@@ -1,4 +1,5 @@
 const express = require('express');
+const { getAppUrl } = require('../config/appUrl');
 const path = require('path');
 const crypto = require('crypto');
 const PDFDocument = require('pdfkit');
@@ -664,7 +665,7 @@ router.post('/:id/share-link', authMiddleware, requireFranchisor, async (req, re
 
   if (error) return res.status(500).json({ error: error.message });
 
-  const baseUrl = process.env.FRONTEND_URL || process.env.APP_URL || 'https://iralink-agency.dippro.business';
+  const baseUrl = getAppUrl();
   res.json({ token, share_url: `${baseUrl}/contrat/partage/${token}` });
 });
 

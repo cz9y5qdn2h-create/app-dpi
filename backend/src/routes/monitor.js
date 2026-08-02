@@ -1,4 +1,5 @@
 const express = require('express');
+const { getAppUrl } = require('../config/appUrl');
 const crypto = require('crypto');
 const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware, requireFranchisor } = require('../middleware/auth');
@@ -482,7 +483,7 @@ router.get('/google/auth', authMiddleware, requireFranchisor, async (req, res) =
 
 router.get('/google/callback', async (req, res) => {
   const { code, state, error: oauthError } = req.query;
-  const frontendUrl = process.env.FRONTEND_URL || process.env.APP_URL || 'https://iralink-agency.dippro.business';
+  const frontendUrl = getAppUrl();
   if (oauthError || !code || !state) return res.redirect(`${frontendUrl}/monitor?error=oauth_denied`);
 
   let userId;
@@ -574,7 +575,7 @@ router.get('/onedrive/auth', authMiddleware, requireFranchisor, async (req, res)
 
 router.get('/onedrive/callback', async (req, res) => {
   const { code, state, error: oauthError } = req.query;
-  const frontendUrl = process.env.FRONTEND_URL || process.env.APP_URL || 'https://iralink-agency.dippro.business';
+  const frontendUrl = getAppUrl();
   if (oauthError || !code || !state) return res.redirect(`${frontendUrl}/monitor?error=oauth_denied`);
 
   let userId;

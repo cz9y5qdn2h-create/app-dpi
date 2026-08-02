@@ -1,4 +1,5 @@
 const express = require('express');
+const { getAppUrl } = require('../config/appUrl');
 const crypto = require('crypto');
 const router = express.Router();
 const { supabaseAdmin } = require('../config/supabase');
@@ -20,10 +21,6 @@ const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth';
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const MICROSOFT_AUTH_URL = 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize';
 const MICROSOFT_TOKEN_URL = 'https://login.microsoftonline.com/common/oauth2/v2.0/token';
-
-function getAppUrl() {
-  return process.env.FRONTEND_URL || process.env.APP_URL || 'https://iralink-agency.dippro.business';
-}
 
 // GET /api/integrations/status
 router.get('/status', authMiddleware, async (req, res) => {

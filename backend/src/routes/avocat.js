@@ -1,4 +1,5 @@
 const express = require('express');
+const { getAppUrl } = require('../config/appUrl');
 const { v4: uuidv4 } = require('uuid');
 const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware } = require('../middleware/auth');
@@ -58,7 +59,7 @@ router.get('/invite-link', authMiddleware, async (req, res) => {
   const { data } = await supabaseAdmin
     .from('users').select('avocat_invite_token').eq('id', req.user.id).single();
 
-  const appUrl = process.env.FRONTEND_URL || process.env.APP_URL || 'https://iralink-agency.dippro.business';
+  const appUrl = getAppUrl();
   const token = data?.avocat_invite_token || null;
   res.json({ token, url: token ? `${appUrl}/avocat/rejoindre/${token}` : null });
 });
@@ -70,7 +71,7 @@ router.post('/invite-link', authMiddleware, async (req, res) => {
     .from('users').update({ avocat_invite_token: token }).eq('id', req.user.id);
   if (error) return res.status(500).json({ error: errMsg(error) });
 
-  const appUrl = process.env.FRONTEND_URL || process.env.APP_URL || 'https://iralink-agency.dippro.business';
+  const appUrl = getAppUrl();
   res.json({ token, url: `${appUrl}/avocat/rejoindre/${token}` });
 });
 
@@ -410,7 +411,7 @@ router.post('/invite', authMiddleware, async (req, res) => {
   if (!lawyer_email?.trim()) return res.status(400).json({ error: 'Email requis' });
 
   const email = lawyer_email.trim().toLowerCase();
-  const appUrl = process.env.FRONTEND_URL || process.env.APP_URL || 'https://iralink-agency.dippro.business';
+  const appUrl = getAppUrl();
 
   const { data: franchiseur } = await supabaseAdmin
     .from('users').select('id, company_name, avocat_invite_token').eq('id', req.user.id).single();
