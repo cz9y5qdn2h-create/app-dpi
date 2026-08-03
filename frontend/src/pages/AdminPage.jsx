@@ -337,6 +337,7 @@ export default function AdminPage() {
                   <div><label className="label">Rôle</label>
                     <select className="input-field" value={createForm.role} onChange={e => setCreateForm(f => ({ ...f, role: e.target.value }))}>
                       <option value="franchiseur">Franchiseur</option>
+                      <option value="avocat">Avocat</option>
                       <option value="admin">Admin</option>
                     </select>
                   </div>
@@ -387,7 +388,7 @@ export default function AdminPage() {
                     <span className={`font-dm-mono text-xs px-2 py-0.5 rounded border ${
                       u.role === 'admin' ? 'text-danger border-danger/30 bg-danger/10' : 'text-gold border-gold/20 bg-gold/5'
                     }`}>{u.role}</span>
-                    {u.role !== 'admin' && (
+                    {u.role !== 'admin' && u.role !== 'avocat' && (
                       <span className={`font-dm-mono text-xs px-2 py-0.5 rounded border ${
                         u.appointment_booked
                           ? 'text-success border-success/30 bg-success/10'
@@ -399,7 +400,7 @@ export default function AdminPage() {
                       </span>
                     )}
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      {u.role !== 'admin' && !u.appointment_booked && (
+                      {u.role !== 'admin' && u.role !== 'avocat' && !u.appointment_booked && (
                         <button
                           onClick={() => { if (confirm(`Débloquer l'accès de ${u.email} ?`)) unlockMutation.mutate(u.id); }}
                           title="Débloquer l'accès (RDV confirmé)"
