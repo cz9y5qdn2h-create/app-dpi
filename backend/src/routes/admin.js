@@ -1,7 +1,9 @@
 const express = require('express');
+const { v4: uuidv4 } = require('uuid');
 const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware } = require('../middleware/auth');
 const { isPasswordPwned } = require('../utils/passwordSecurity');
+const { getAppUrl } = require('../config/appUrl');
 const router = express.Router();
 
 // Middleware admin strict
@@ -85,7 +87,7 @@ router.get('/users/:id', authMiddleware, requireAdmin, async (req, res) => {
   res.json({ user, dips: dips || [], franchisees: franchisees || [] });
 });
 
-const ALLOWED_ROLES = ['franchiseur', 'admin'];
+const ALLOWED_ROLES = ['franchiseur', 'admin', 'avocat'];
 
 // PUT /api/admin/users/:id — Modifier un utilisateur
 router.put('/users/:id', authMiddleware, requireAdmin, async (req, res) => {
@@ -188,6 +190,144 @@ router.get('/activity', authMiddleware, requireAdmin, async (req, res) => {
     .order('timestamp', { ascending: false })
     .limit(50);
   res.json({ activity: data || [] });
+});
+
+// ─── Comptes avocat — création et accès simplifié ──────────────────────────
+// L'admin crée directement un compte avocat (sans mot de passe : l'accès se
+// fait uniquement via le lien permanent renvoyé ici) et peut le lier
+// immédiatement à un ou plusieurs franchiseurs, sans passer par le circuit
+// d'invitation propre à chaque franchiseur.
+
+// GET /api/admin/avocats — liste des comptes avocat + franchiseurs liés
+router.get('/avocats', authMiddleware, requireAdmin, async (req, res) => {
+  const { data: avocats, error } = await supabaseAdmin
+    .from('users')
+    .select('id, email, company_name, created_at, avocat_access_token')
+    .eq('role', 'avocat')
+    .order('created_at', { ascending: false });
+  if (error) return res.status(500).json({ error: error.message });
+
+  const ids = (avocats || []).map(a => a.id);
+  let relations = [];
+  if (ids.length) {
+    const { data } = await supabaseAdmin
+      .from('avocat_franchiseurs')
+      .select('avocat_id, franchiseur_id, status, franchiseur:users!franchiseur_id(id, company_name)')
+      .in('avocat_id', ids)
+      .eq('status', 'active');
+    relations = data || [];
+  }
+
+  const appUrl = getAppUrl();
+  const enriched = (avocats || []).map(a => ({
+    ...a,
+    access_url: a.avocat_access_token ? `${appUrl}/api/auth/avocat-login/${a.avocat_access_token}` : null,
+    franchiseurs: relations.filter(r => r.avocat_id === a.id).map(r => r.franchiseur),
+  }));
+
+  res.json({ avocats: enriched });
+});
+
+// POST /api/admin/avocats — créer (ou compléter) un compte avocat
+router.post('/avocats', authMiddleware, requireAdmin, async (req, res) => {
+  const { email, company_name, franchiseur_ids = [] } = req.body;
+  if (!email?.trim() || !company_name?.trim()) {
+    return res.status(400).json({ error: 'Email et nom du cabinet requis' });
+  }
+  const normalizedEmail = email.trim().toLowerCase();
+
+  const { data: existing } = await supabaseAdmin
+    .from('users').select('id, role, avocat_access_token').eq('email', normalizedEmail).maybeSingle();
+  if (existing && existing.role !== 'avocat') {
+    return res.status(409).json({ error: 'Un compte existe déjà avec cet email sous un autre rôle.' });
+  }
+
+  let userId = existing?.id;
+  if (!userId) {
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email: normalizedEmail, email_confirm: true,
+    });
+    if (authError) return res.status(400).json({ error: authError.message });
+    userId = authData.user.id;
+  }
+
+  const accessToken = existing?.avocat_access_token || uuidv4();
+  const upsertPayload = {
+    id: userId, email: normalizedEmail, role: 'avocat', company_name: company_name.trim(),
+    trial_expires_at: null, avocat_access_token: accessToken,
+  };
+  if (!existing) upsertPayload.created_at = new Date().toISOString();
+
+  const { data: profile, error: profileError } = await supabaseAdmin
+    .from('users').upsert(upsertPayload, { onConflict: 'id' }).select().single();
+  if (profileError) return res.status(500).json({ error: profileError.message });
+
+  if (Array.isArray(franchiseur_ids) && franchiseur_ids.length) {
+    const now = new Date().toISOString();
+    for (const franchiseurId of franchiseur_ids) {
+      const { data: relExisting } = await supabaseAdmin
+        .from('avocat_franchiseurs').select('id, status')
+        .eq('avocat_id', userId).eq('franchiseur_id', franchiseurId).maybeSingle();
+      if (relExisting) {
+        if (relExisting.status !== 'active') {
+          await supabaseAdmin.from('avocat_franchiseurs')
+            .update({ status: 'active', accepted_at: now }).eq('id', relExisting.id);
+        }
+      } else {
+        await supabaseAdmin.from('avocat_franchiseurs').insert({
+          avocat_id: userId, franchiseur_id: franchiseurId, status: 'active', invited_at: now, accepted_at: now,
+        });
+      }
+    }
+  }
+
+  res.status(201).json({ user: profile, access_url: `${getAppUrl()}/api/auth/avocat-login/${accessToken}` });
+});
+
+// POST /api/admin/avocats/:id/regenerate-link — révoque l'ancien lien, en émet un nouveau
+router.post('/avocats/:id/regenerate-link', authMiddleware, requireAdmin, async (req, res) => {
+  const { data: user } = await supabaseAdmin.from('users').select('id, role').eq('id', req.params.id).maybeSingle();
+  if (!user || user.role !== 'avocat') return res.status(404).json({ error: 'Compte avocat introuvable' });
+
+  const accessToken = uuidv4();
+  const { error } = await supabaseAdmin.from('users').update({ avocat_access_token: accessToken }).eq('id', req.params.id);
+  if (error) return res.status(500).json({ error: error.message });
+
+  res.json({ access_url: `${getAppUrl()}/api/auth/avocat-login/${accessToken}` });
+});
+
+// POST /api/admin/avocats/:id/franchiseurs — lier un avocat existant à un franchiseur (admin bypass)
+router.post('/avocats/:id/franchiseurs', authMiddleware, requireAdmin, async (req, res) => {
+  const { franchiseur_id } = req.body;
+  if (!franchiseur_id) return res.status(400).json({ error: 'franchiseur_id requis' });
+
+  const { data: avocat } = await supabaseAdmin.from('users').select('id, role').eq('id', req.params.id).maybeSingle();
+  if (!avocat || avocat.role !== 'avocat') return res.status(404).json({ error: 'Compte avocat introuvable' });
+
+  const now = new Date().toISOString();
+  const { data: relExisting } = await supabaseAdmin
+    .from('avocat_franchiseurs').select('id, status')
+    .eq('avocat_id', req.params.id).eq('franchiseur_id', franchiseur_id).maybeSingle();
+
+  if (relExisting) {
+    if (relExisting.status !== 'active') {
+      await supabaseAdmin.from('avocat_franchiseurs')
+        .update({ status: 'active', accepted_at: now }).eq('id', relExisting.id);
+    }
+  } else {
+    await supabaseAdmin.from('avocat_franchiseurs').insert({
+      avocat_id: req.params.id, franchiseur_id, status: 'active', invited_at: now, accepted_at: now,
+    });
+  }
+
+  res.json({ success: true });
+});
+
+// DELETE /api/admin/avocats/:id/franchiseurs/:franchiseurId — délier
+router.delete('/avocats/:id/franchiseurs/:franchiseurId', authMiddleware, requireAdmin, async (req, res) => {
+  await supabaseAdmin.from('avocat_franchiseurs')
+    .delete().eq('avocat_id', req.params.id).eq('franchiseur_id', req.params.franchiseurId);
+  res.json({ success: true });
 });
 
 module.exports = router;

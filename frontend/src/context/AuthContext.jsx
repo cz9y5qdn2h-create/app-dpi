@@ -76,7 +76,7 @@ async function fetchProfile(userId) {
 
 function isTrialExpiredFn(profile) {
   if (!profile) return false;
-  if (profile.role === 'admin') return false;
+  if (profile.role === 'admin' || profile.role === 'avocat') return false;
   if (profile.appointment_booked === true) return false;
   if (!profile.trial_expires_at) return false;
   return new Date() > new Date(profile.trial_expires_at);
@@ -279,7 +279,7 @@ export default function AuthProvider({ children }) {
   const isTrialExpired = isTrialExpiredFn(profile);
 
   const trialDaysLeft = (() => {
-    if (!profile?.trial_expires_at || profile.role === 'admin' || profile.appointment_booked) return null;
+    if (!profile?.trial_expires_at || profile.role === 'admin' || profile.role === 'avocat' || profile.appointment_booked) return null;
     const diff = new Date(profile.trial_expires_at) - new Date();
     return Math.max(0, Math.ceil(diff / (1000 * 3600 * 24)));
   })();

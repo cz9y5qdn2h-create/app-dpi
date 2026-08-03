@@ -164,7 +164,11 @@ router.post('/register', async (req, res) => {
     });
     if (authError) return res.status(400).json({ error: authError.message });
 
-    const trialExpiresAt = new Date(Date.now() + 5 * 24 * 3600 * 1000).toISOString();
+    // Un avocat n'a pas d'essai à durée limitée — il n'est pas client direct,
+    // seulement invité par un franchiseur. Un trial_expires_at fixé quand
+    // même l'aurait fait expirer 5 jours après son inscription et bloquer
+    // tout accès au tableau de bord avocat via TrialGuard.
+    const trialExpiresAt = role === 'avocat' ? null : new Date(Date.now() + 5 * 24 * 3600 * 1000).toISOString();
 
     // upsert, pas insert : le trigger handle_new_user() a déjà créé une ligne
     // public.users (role='franchiseur' par défaut, car createUser() ci-dessus
@@ -196,6 +200,35 @@ router.post('/register', async (req, res) => {
     console.error('Register error:', err);
     res.status(500).json({ error: err.message });
   }
+});
+
+// GET /api/auth/avocat-login/:token — accès permanent pour un compte avocat
+// créé depuis la console admin. Le token stocké (users.avocat_access_token)
+// ne change jamais tant qu'il n'est pas régénéré — mais il ne sert jamais
+// directement à authentifier : à chaque visite, on redemande à Supabase un
+// magiclink fraîchement signé (generateLink) et on redirige dessus. Résultat
+// pour l'avocat : un seul lien, permanent, qui "marche à chaque fois".
+router.get('/avocat-login/:token', async (req, res) => {
+  const appUrl = getAppUrl();
+  const { data: user } = await supabaseAdmin
+    .from('users').select('id, email, role').eq('avocat_access_token', req.params.token).maybeSingle();
+
+  if (!user || user.role !== 'avocat') {
+    return res.redirect(303, `${appUrl}/login?error=lien_invalide`);
+  }
+
+  const { data, error } = await supabaseAdmin.auth.admin.generateLink({
+    type: 'magiclink',
+    email: user.email,
+    options: { redirectTo: `${appUrl}/dashboard` },
+  });
+
+  if (error || !data?.properties?.action_link) {
+    console.error('avocat-login generateLink error:', error?.message);
+    return res.redirect(303, `${appUrl}/login?error=lien_indisponible`);
+  }
+
+  res.redirect(303, data.properties.action_link);
 });
 
 // POST /api/auth/provision-oauth — créer/mettre à jour le profil après OAuth Google/Apple

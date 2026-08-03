@@ -7,7 +7,8 @@ import StatusBadge from '../components/ui/StatusBadge';
 import {
   Users, FileText, AlertTriangle, TrendingUp, Shield,
   Edit3, Trash2, Plus, Key, X, Check, Eye, ChevronDown, ChevronUp, Activity, Unlock,
-  Clock, MessageSquare, Mail, PhoneCall, Bug, CheckCircle, Circle
+  Clock, MessageSquare, Mail, PhoneCall, Bug, CheckCircle, Circle,
+  Briefcase, Copy, RefreshCw, Link2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
@@ -24,6 +25,10 @@ export default function AdminPage() {
   const [editUser, setEditUser] = useState(null);
   const [waitlistFilter, setWaitlistFilter] = useState('all');
   const [waitlistNotes, setWaitlistNotes] = useState({});
+  const [showCreateAvocat, setShowCreateAvocat] = useState(false);
+  const [createAvocatForm, setCreateAvocatForm] = useState({ email: '', company_name: '', franchiseur_ids: [] });
+  const [linkingAvocatId, setLinkingAvocatId] = useState(null);
+  const [linkFranchiseurId, setLinkFranchiseurId] = useState('');
 
   const { data: stats, isLoading: statsLoading } = useQuery({
     queryKey: ['admin-stats'],
@@ -33,7 +38,13 @@ export default function AdminPage() {
   const { data: usersData, isLoading: usersLoading } = useQuery({
     queryKey: ['admin-users'],
     queryFn: () => api.get('/admin/users').then(r => r.data),
-    enabled: activeTab === 'users'
+    enabled: activeTab === 'users' || activeTab === 'avocats'
+  });
+
+  const { data: avocatsData, isLoading: avocatsLoading } = useQuery({
+    queryKey: ['admin-avocats'],
+    queryFn: () => api.get('/admin/avocats').then(r => r.data),
+    enabled: activeTab === 'avocats'
   });
 
   const { data: dipsData } = useQuery({
@@ -161,12 +172,63 @@ export default function AdminPage() {
     onError: (err) => toast.error(err.message)
   });
 
+  const createAvocatMutation = useMutation({
+    mutationFn: (d) => api.post('/admin/avocats', d),
+    onSuccess: (res) => {
+      toast.success('Compte avocat créé');
+      queryClient.invalidateQueries({ queryKey: ['admin-avocats'] });
+      setShowCreateAvocat(false);
+      setCreateAvocatForm({ email: '', company_name: '', franchiseur_ids: [] });
+      copyToClipboard(res.data.access_url, 'Lien d\'accès copié — envoyez-le à l\'avocat');
+    },
+    onError: (err) => toast.error(err.message)
+  });
+
+  const regenerateLinkMutation = useMutation({
+    mutationFn: (id) => api.post(`/admin/avocats/${id}/regenerate-link`),
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-avocats'] });
+      copyToClipboard(res.data.access_url, 'Nouveau lien copié — l\'ancien ne fonctionne plus');
+    },
+    onError: (err) => toast.error(err.message)
+  });
+
+  const linkFranchiseurMutation = useMutation({
+    mutationFn: ({ avocatId, franchiseurId }) => api.post(`/admin/avocats/${avocatId}/franchiseurs`, { franchiseur_id: franchiseurId }),
+    onSuccess: () => {
+      toast.success('Franchiseur lié');
+      queryClient.invalidateQueries({ queryKey: ['admin-avocats'] });
+      setLinkingAvocatId(null);
+      setLinkFranchiseurId('');
+    },
+    onError: (err) => toast.error(err.message)
+  });
+
+  const unlinkFranchiseurMutation = useMutation({
+    mutationFn: ({ avocatId, franchiseurId }) => api.delete(`/admin/avocats/${avocatId}/franchiseurs/${franchiseurId}`),
+    onSuccess: () => {
+      toast.success('Franchiseur délié');
+      queryClient.invalidateQueries({ queryKey: ['admin-avocats'] });
+    },
+    onError: (err) => toast.error(err.message)
+  });
+
+  const copyToClipboard = (text, message) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(
+      () => toast.success(message || 'Copié'),
+      () => toast.error('Copie impossible — copiez le lien manuellement')
+    );
+  };
+
   const pendingWaitlist = waitlistCountData?.pending || 0;
   const openBugs = openBugsCount?.total || 0;
+  const franchiseurOptions = (usersData?.users || []).filter(u => u.role === 'franchiseur');
 
   const tabs = [
     { key: 'dashboard', label: 'Dashboard', icon: TrendingUp },
     { key: 'users', label: 'Franchiseurs', icon: Users },
+    { key: 'avocats', label: 'Avocats', icon: Briefcase },
     { key: 'dips', label: 'Tous les DIPs', icon: FileText },
     { key: 'activity', label: 'Activité', icon: Activity },
     { key: 'waitlist', label: 'Liste d\'attente', icon: Clock, badge: pendingWaitlist },
@@ -403,6 +465,152 @@ export default function AdminPage() {
                           <p key={f.id} className="font-dm-sans text-xs text-text-secondary py-1 border-b border-border-subtle">{f.name} — {f.email}</p>
                         ))}
                       </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* AVOCATS */}
+      {activeTab === 'avocats' && (
+        <div className="space-y-4">
+          <div className="flex items-start justify-between gap-3 flex-wrap">
+            <p className="font-dm-sans text-xs text-text-secondary max-w-md leading-relaxed">
+              Un compte avocat n'a pas de mot de passe — l'accès se fait uniquement via le lien
+              permanent ci-dessous, à transmettre par n'importe quel canal. Il reste valable tant
+              qu'il n'est pas régénéré.
+            </p>
+            <button onClick={() => setShowCreateAvocat(true)} className="btn-liquid-glass flex-shrink-0">
+              <Plus className="w-4 h-4" /> Créer un compte avocat
+            </button>
+          </div>
+
+          {showCreateAvocat && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-black/70" onClick={() => setShowCreateAvocat(false)} />
+              <div className="relative card w-full max-w-md">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="font-cormorant text-xl text-text-primary">Créer un compte avocat</h3>
+                  <button onClick={() => setShowCreateAvocat(false)}><X className="w-5 h-5 text-text-secondary" /></button>
+                </div>
+                <div className="space-y-4">
+                  <div><label className="label">Email</label>
+                    <input className="input-field" type="email" value={createAvocatForm.email}
+                      onChange={e => setCreateAvocatForm(f => ({ ...f, email: e.target.value }))} placeholder="avocat@cabinet.fr" /></div>
+                  <div><label className="label">Nom du cabinet</label>
+                    <input className="input-field" value={createAvocatForm.company_name}
+                      onChange={e => setCreateAvocatForm(f => ({ ...f, company_name: e.target.value }))} placeholder="Cabinet Dupont & Associés" /></div>
+                  <div>
+                    <label className="label">Lier immédiatement à des franchiseurs (optionnel)</label>
+                    <div className="max-h-40 overflow-y-auto space-y-1.5 rounded-lg border border-border-subtle p-2">
+                      {franchiseurOptions.length === 0 && (
+                        <p className="font-dm-sans text-xs text-text-muted px-1 py-1">Aucun franchiseur pour le moment.</p>
+                      )}
+                      {franchiseurOptions.map(f => (
+                        <label key={f.id} className="flex items-center gap-2 px-1 py-1 rounded hover:bg-bg-elevated cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={createAvocatForm.franchiseur_ids.includes(f.id)}
+                            onChange={e => setCreateAvocatForm(fo => ({
+                              ...fo,
+                              franchiseur_ids: e.target.checked
+                                ? [...fo.franchiseur_ids, f.id]
+                                : fo.franchiseur_ids.filter(id => id !== f.id),
+                            }))}
+                          />
+                          <span className="font-dm-sans text-xs text-text-secondary">{f.company_name || f.email}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => createAvocatMutation.mutate(createAvocatForm)}
+                    disabled={createAvocatMutation.isPending || !createAvocatForm.email.trim() || !createAvocatForm.company_name.trim()}
+                    className="btn-liquid-glass-prominent w-full"
+                  >
+                    {createAvocatMutation.isPending ? <LoadingSpinner size="sm" /> : <Check className="w-4 h-4" />}
+                    Créer et copier le lien d'accès
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {avocatsLoading ? <LoadingSpinner size="lg" /> : (
+            <div className="space-y-2">
+              {(avocatsData?.avocats || []).length === 0 && (
+                <div className="card text-center py-12">
+                  <Briefcase className="w-8 h-8 mx-auto mb-3 text-text-muted" />
+                  <p className="font-dm-sans text-sm text-text-secondary">Aucun compte avocat pour le moment.</p>
+                </div>
+              )}
+              {(avocatsData?.avocats || []).map(a => (
+                <div key={a.id} className="card">
+                  <div className="flex items-center gap-4 flex-wrap">
+                    <div className="w-10 h-10 rounded-lg bg-gold/10 border border-gold/20 flex items-center justify-center flex-shrink-0">
+                      <Briefcase className="w-4 h-4 text-gold" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-dm-sans text-sm font-medium text-text-primary">{a.company_name || '—'}</p>
+                      <p className="font-dm-mono text-xs text-text-secondary">{a.email}</p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <button
+                        onClick={() => copyToClipboard(a.access_url, 'Lien d\'accès copié')}
+                        title="Copier le lien d'accès"
+                        className="p-1.5 rounded hover:bg-bg-elevated text-text-secondary hover:text-gold transition-colors"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => { if (confirm(`Régénérer le lien de ${a.email} ? L'ancien lien cessera de fonctionner.`)) regenerateLinkMutation.mutate(a.id); }}
+                        title="Régénérer le lien"
+                        disabled={regenerateLinkMutation.isPending}
+                        className="p-1.5 rounded hover:bg-bg-elevated text-text-secondary hover:text-gold transition-colors"
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => setLinkingAvocatId(linkingAvocatId === a.id ? null : a.id)}
+                        title="Lier à un franchiseur"
+                        className="p-1.5 rounded hover:bg-bg-elevated text-text-secondary hover:text-gold transition-colors"
+                      >
+                        <Link2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {(a.franchiseurs || []).length === 0 ? (
+                      <span className="font-dm-mono text-xs text-text-muted">Aucun franchiseur lié</span>
+                    ) : a.franchiseurs.map(f => (
+                      <span key={f.id} className="flex items-center gap-1.5 font-dm-mono text-xs px-2 py-0.5 rounded border border-border-subtle bg-bg-elevated text-text-secondary">
+                        {f.company_name || f.id}
+                        <button onClick={() => unlinkFranchiseurMutation.mutate({ avocatId: a.id, franchiseurId: f.id })} title="Délier">
+                          <X className="w-3 h-3 hover:text-danger" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+
+                  {linkingAvocatId === a.id && (
+                    <div className="mt-3 pt-3 border-t border-border-subtle flex items-center gap-2 flex-wrap">
+                      <select className="input-field flex-1 min-w-[200px]" value={linkFranchiseurId} onChange={e => setLinkFranchiseurId(e.target.value)}>
+                        <option value="">Choisir un franchiseur…</option>
+                        {franchiseurOptions
+                          .filter(f => !(a.franchiseurs || []).some(af => af.id === f.id))
+                          .map(f => <option key={f.id} value={f.id}>{f.company_name || f.email}</option>)}
+                      </select>
+                      <button
+                        onClick={() => linkFranchiseurMutation.mutate({ avocatId: a.id, franchiseurId: linkFranchiseurId })}
+                        disabled={!linkFranchiseurId || linkFranchiseurMutation.isPending}
+                        className="btn-liquid-glass"
+                      >
+                        <Check className="w-4 h-4" /> Lier
+                      </button>
                     </div>
                   )}
                 </div>
