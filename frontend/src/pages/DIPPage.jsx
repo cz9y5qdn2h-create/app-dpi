@@ -4,18 +4,20 @@ import { Link } from 'react-router-dom';
 import api from '../lib/api';
 import { useAuth } from '../context/AuthContext';
 import PageHeader from '../components/ui/PageHeader';
-import StatusBadge from '../components/ui/StatusBadge';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import AIDisclaimer from '../components/ui/AIDisclaimer';
 import {
-  Upload, ChevronDown, ChevronUp, Edit3, Check, X,
+  Upload,
   Sparkles, Download, FileText, Plus, Trash2, AlertCircle,
   Share2, Copy, Link2Off, Eye, BarChart2, Briefcase, Send,
   Scale, ShieldAlert, ShieldCheck, Info, RotateCcw, Clock, Archive
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import ProposalsPanel from '../components/ProposalsPanel';
-import { useAIAssist, AIAssistTrigger, AIAssistPanel } from '../components/AIAssistWidget';
+import DocumentSection from '../components/document/DocumentSection';
+import PositionPill from '../components/document/PositionPill';
+import SignaturePad from '../components/document/SignaturePad';
+import { useSectionScrollTracking } from '../lib/useSectionScrollTracking';
 
 const SECTION_DESCRIPTIONS = [
   '',
@@ -55,9 +57,6 @@ export default function DIPPage() {
   const queryClient = useQueryClient();
   const { profile } = useAuth();
   const [tab, setTab] = useState('view');
-  const [expandedSection, setExpandedSection] = useState(null);
-  const [editingSection, setEditingSection] = useState(null);
-  const [editContent, setEditContent] = useState('');
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState(emptyForm());
   const [generating, setGenerating] = useState(false);
@@ -98,7 +97,25 @@ export default function DIPPage() {
     onSuccess: () => {
       toast.success('Section mise à jour');
       queryClient.invalidateQueries({ queryKey: ['dips'] });
-      setEditingSection(null);
+    },
+    onError: (err) => toast.error(err.message)
+  });
+
+  const signMutation = useMutation({
+    mutationFn: ({ dipId, signature_image, signed_by }) =>
+      api.post(`/dip/${dipId}/signature`, { signature_image, signed_by }),
+    onSuccess: () => {
+      toast.success('Document signé');
+      queryClient.invalidateQueries({ queryKey: ['dips'] });
+    },
+    onError: (err) => toast.error(err.message)
+  });
+
+  const clearSignatureMutation = useMutation({
+    mutationFn: (dipId) => api.delete(`/dip/${dipId}/signature`),
+    onSuccess: () => {
+      toast.success('Signature réinitialisée');
+      queryClient.invalidateQueries({ queryKey: ['dips'] });
     },
     onError: (err) => toast.error(err.message)
   });
@@ -106,6 +123,7 @@ export default function DIPPage() {
   const dip = data?.dips?.find(d => d.status === 'actif') ?? data?.dips?.[0];
   const sections = dip?.dip_sections?.sort((a, b) => a.section_number - b.section_number) || [];
   const archivedDips = (allDipsData?.dips || []).filter(d => d.status === 'archive');
+  const { activeIndex, registerRef } = useSectionScrollTracking(sections);
 
   const set = (path, value) => {
     const keys = path.split('.');
@@ -503,26 +521,46 @@ export default function DIPPage() {
             </div>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-4">
             {sections.map(section => (
-              <SectionAccordion
+              <DocumentSection
                 key={section.id}
-                section={section}
-                dipId={dip.id}
+                id={section.id}
+                number={section.section_number}
+                title={section.section_title}
+                status={section.status}
+                content={section.content}
+                lastUpdated={section.last_updated}
                 description={SECTION_DESCRIPTIONS[section.section_number] || ''}
-                isExpanded={expandedSection === section.id}
-                onToggle={() => setExpandedSection(expandedSection === section.id ? null : section.id)}
-                isEditing={editingSection === section.id}
-                editContent={editContent}
-                onEdit={() => { setEditingSection(section.id); setEditContent(section.content || ''); }}
-                onAIAssist={(text) => { setEditingSection(section.id); setEditContent(text); }}
-                onEditChange={setEditContent}
-                onSave={(status) => updateMutation.mutate({ dipId: dip.id, sectionId: section.id, content: editContent, status })}
-                onCancelEdit={() => setEditingSection(null)}
+                aiAssistPath={`/dip/${dip.id}/sections/${section.id}/ai-assist`}
+                onSave={(content, status) => updateMutation.mutateAsync({ dipId: dip.id, sectionId: section.id, content, status })}
                 isSaving={updateMutation.isPending}
+                registerRef={registerRef}
               />
             ))}
           </div>
+
+          {/* Case signature */}
+          <div className="card">
+            <p className="font-cormorant text-xl text-text-primary mb-1">Signature</p>
+            <p className="font-dm-sans text-xs text-text-secondary mb-4">
+              Signature du représentant du franchiseur — horodatée, associée à cette version du document.
+            </p>
+            <SignaturePad
+              signature={dip}
+              isSaving={signMutation.isPending}
+              isClearing={clearSignatureMutation.isPending}
+              onSign={(signature_image, signed_by) => signMutation.mutate({ dipId: dip.id, signature_image, signed_by })}
+              onClear={() => clearSignatureMutation.mutate(dip.id)}
+            />
+          </div>
+
+          <PositionPill
+            index={activeIndex}
+            total={sections.length}
+            label={sections[activeIndex]?.section_title}
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          />
 
           {/* Versions précédentes */}
           {archivedDips.length > 0 && (
@@ -1013,60 +1051,3 @@ function TextArea({ label, value, onChange, placeholder = '', rows = 3 }) {
   );
 }
 
-function SectionAccordion({ section, dipId, description, isExpanded, onToggle, isEditing, editContent, onEdit, onAIAssist, onEditChange, onSave, onCancelEdit, isSaving }) {
-  const aiAssist = useAIAssist(`/dip/${dipId}/sections/${section.id}/ai-assist`);
-  return (
-    <div className={`card transition-all duration-300 ${isExpanded ? 'border-border-default' : 'hover:border-border-default cursor-pointer'}`}>
-      <div className="flex items-center gap-4" onClick={isEditing ? undefined : onToggle}>
-        <span className="font-dm-mono text-sm text-gold/60 w-6 flex-shrink-0">{String(section.section_number).padStart(2, '0')}</span>
-        <div className="flex-1 min-w-0">
-          <p className="font-dm-sans text-sm text-text-primary font-medium">{section.section_title}</p>
-          {description && <p className="font-dm-sans text-xs text-text-secondary mt-0.5 hidden sm:block">{description}</p>}
-        </div>
-        <div className="flex items-center gap-3">
-          <StatusBadge status={section.status} />
-          {isExpanded ? <ChevronUp className="w-4 h-4 text-text-secondary" /> : <ChevronDown className="w-4 h-4 text-text-secondary" />}
-        </div>
-      </div>
-
-      {isExpanded && (
-        <div className="mt-4 pt-4 border-t border-border-subtle animate-slide-up">
-          {isEditing ? (
-            <div className="space-y-3">
-              <textarea className="input-field min-h-48 resize-none font-dm-mono text-sm" value={editContent} onChange={e => onEditChange(e.target.value)} placeholder="Contenu de la section..." />
-              <div className="flex items-center gap-3">
-                <button onClick={() => onSave('conforme')} disabled={isSaving} className="btn-primary flex items-center gap-2 text-sm py-2">
-                  {isSaving ? <LoadingSpinner size="sm" /> : <Check className="w-4 h-4" />} Valider comme conforme
-                </button>
-                <button onClick={() => onSave('a_verifier')} disabled={isSaving} className="btn-secondary flex items-center gap-2 text-sm py-2">Enregistrer</button>
-                <button onClick={onCancelEdit} className="btn-ghost flex items-center gap-2 text-sm"><X className="w-4 h-4" /> Annuler</button>
-              </div>
-            </div>
-          ) : (
-            <div>
-              <div className="bg-bg-elevated rounded p-4 mb-4">
-                <pre className="font-dm-sans text-sm text-text-primary whitespace-pre-wrap leading-relaxed">
-                  {section.content || <span className="text-text-secondary italic">Contenu non renseigné</span>}
-                </pre>
-              </div>
-              <div className="flex items-center justify-between flex-wrap gap-3">
-                <p className="font-dm-mono text-xs text-text-secondary">
-                  Mis à jour le {section.last_updated ? new Date(section.last_updated).toLocaleDateString('fr-FR') : 'N/A'}
-                </p>
-                <div className="flex items-center gap-2">
-                  <AIAssistTrigger onClick={aiAssist.start} />
-                  <button onClick={onEdit} className="btn-ghost flex items-center gap-2 text-sm"><Edit3 className="w-4 h-4" /> Modifier</button>
-                </div>
-              </div>
-              {aiAssist.open && (
-                <div className="mt-3">
-                  <AIAssistPanel state={aiAssist} onApply={onAIAssist} />
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}

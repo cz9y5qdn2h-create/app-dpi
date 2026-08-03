@@ -344,7 +344,7 @@ router.post('/approve-changes', authMiddleware, requireFranchisor, async (req, r
 // GET /api/dip — retourne les DIPs actifs et brouillons, avec fallback archive
 router.get('/', authMiddleware, async (req, res) => {
   // raw_text exclu de la liste (peut peser 50KB par DIP)
-  const COLS = 'id,user_id,title,file_url,status,conformity_score,compliance_level,blocking_issues,sha256,share_token,share_token_views,upload_date,created_at,updated_at,dip_sections(id,section_number,section_title,status,last_checked,last_updated)';
+  const COLS = 'id,user_id,title,file_url,status,conformity_score,compliance_level,blocking_issues,sha256,share_token,share_token_views,upload_date,created_at,updated_at,signature_image,signed_by,signed_at,dip_sections(id,section_number,section_title,status,last_checked,last_updated,content)';
 
   // ?all=true retourne toutes les versions (historique)
   if (req.query.all === 'true') {
@@ -475,6 +475,42 @@ router.put('/:id/sections/:sectionId', authMiddleware, requireFranchisor, async 
   await supabaseAdmin.from('dip_documents').update({ conformity_score: score }).eq('id', req.params.id);
 
   res.json({ section: data, conformity_score: score });
+});
+
+// POST /api/dip/:id/signature — case signature du document (DIP)
+router.post('/:id/signature', authMiddleware, requireFranchisor, async (req, res) => {
+  const { signature_image, signed_by } = req.body;
+  if (!signature_image?.trim() || !signed_by?.trim()) {
+    return res.status(400).json({ error: 'signature_image et signed_by requis' });
+  }
+
+  const { data: ownerDip } = await supabaseAdmin
+    .from('dip_documents').select('id').eq('id', req.params.id).eq('user_id', req.user.id).single();
+  if (!ownerDip) return res.status(404).json({ error: 'DIP introuvable' });
+
+  const { data, error } = await supabaseAdmin
+    .from('dip_documents')
+    .update({ signature_image, signed_by: signed_by.trim().substring(0, 200), signed_at: new Date().toISOString() })
+    .eq('id', req.params.id)
+    .select('id, signature_image, signed_by, signed_at').single();
+
+  if (error) return res.status(500).json({ error: errMsg(error) });
+  res.json({ dip: data });
+});
+
+// DELETE /api/dip/:id/signature — réinitialise la signature
+router.delete('/:id/signature', authMiddleware, requireFranchisor, async (req, res) => {
+  const { data: ownerDip } = await supabaseAdmin
+    .from('dip_documents').select('id').eq('id', req.params.id).eq('user_id', req.user.id).single();
+  if (!ownerDip) return res.status(404).json({ error: 'DIP introuvable' });
+
+  const { error } = await supabaseAdmin
+    .from('dip_documents')
+    .update({ signature_image: null, signed_by: null, signed_at: null })
+    .eq('id', req.params.id);
+
+  if (error) return res.status(500).json({ error: errMsg(error) });
+  res.json({ success: true });
 });
 
 // POST /api/dip/:id/sections/:sectionId/ai-assist — widget "Aide à la rédaction"

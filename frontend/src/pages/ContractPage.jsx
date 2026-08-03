@@ -3,21 +3,20 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import api from '../lib/api';
 import PageHeader from '../components/ui/PageHeader';
-import StatusBadge from '../components/ui/StatusBadge';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
-import { useAIAssist, AIAssistTrigger, AIAssistPanel } from '../components/AIAssistWidget';
 import ProposalsPanel from '../components/ProposalsPanel';
+import DocumentSection from '../components/document/DocumentSection';
+import PositionPill from '../components/document/PositionPill';
+import SignaturePad from '../components/document/SignaturePad';
+import { useSectionScrollTracking } from '../lib/useSectionScrollTracking';
 import {
-  Upload, ChevronDown, ChevronUp, Edit3, Check, X,
-  FileText, ScrollText, Link2, Share2, Copy, Link2Off, Eye, Download
+  Upload,
+  FileText, Link2, Share2, Copy, Link2Off, Eye, Download
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function ContractPage() {
   const queryClient = useQueryClient();
-  const [expandedClause, setExpandedClause] = useState(null);
-  const [editingClause, setEditingClause] = useState(null);
-  const [editContent, setEditContent] = useState('');
   const [shareLoading, setShareLoading] = useState(false);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [showSharePanel, setShowSharePanel] = useState(false);
@@ -39,7 +38,25 @@ export default function ContractPage() {
     onSuccess: () => {
       toast.success('Clause mise à jour');
       queryClient.invalidateQueries({ queryKey: ['contracts'] });
-      setEditingClause(null);
+    },
+    onError: (err) => toast.error(err.message)
+  });
+
+  const signMutation = useMutation({
+    mutationFn: ({ contractId, signature_image, signed_by }) =>
+      api.post(`/contracts/${contractId}/signature`, { signature_image, signed_by }),
+    onSuccess: () => {
+      toast.success('Document signé');
+      queryClient.invalidateQueries({ queryKey: ['contracts'] });
+    },
+    onError: (err) => toast.error(err.message)
+  });
+
+  const clearSignatureMutation = useMutation({
+    mutationFn: (contractId) => api.delete(`/contracts/${contractId}/signature`),
+    onSuccess: () => {
+      toast.success('Signature réinitialisée');
+      queryClient.invalidateQueries({ queryKey: ['contracts'] });
     },
     onError: (err) => toast.error(err.message)
   });
@@ -57,6 +74,7 @@ export default function ContractPage() {
   const contract = data?.contracts?.find(c => c.status === 'actif') ?? data?.contracts?.[0];
   const clauses = contract?.contract_clauses?.sort((a, b) => a.clause_number - b.clause_number) || [];
   const dip = dipData?.dips?.find(d => d.status === 'actif') ?? dipData?.dips?.[0];
+  const { activeIndex, registerRef } = useSectionScrollTracking(clauses);
 
   const handleDownloadPdf = async () => {
     if (!contract) return;
@@ -259,82 +277,45 @@ export default function ContractPage() {
         </div>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-4">
         {clauses.map(clause => (
-          <ClauseAccordion
+          <DocumentSection
             key={clause.id}
-            clause={clause}
-            contractId={contract.id}
-            isExpanded={expandedClause === clause.id}
-            onToggle={() => setExpandedClause(expandedClause === clause.id ? null : clause.id)}
-            isEditing={editingClause === clause.id}
-            editContent={editContent}
-            onEdit={() => { setEditingClause(clause.id); setEditContent(clause.content || ''); }}
-            onAIAssist={(text) => { setEditingClause(clause.id); setEditContent(text); }}
-            onEditChange={setEditContent}
-            onSave={(status) => updateMutation.mutate({ contractId: contract.id, clauseId: clause.id, content: editContent, status })}
-            onCancelEdit={() => setEditingClause(null)}
+            id={clause.id}
+            number={clause.clause_number}
+            title={clause.clause_title}
+            status={clause.status}
+            content={clause.content}
+            lastUpdated={clause.last_updated}
+            aiAssistPath={`/contracts/${contract.id}/clauses/${clause.id}/ai-assist`}
+            onSave={(content, status) => updateMutation.mutateAsync({ contractId: contract.id, clauseId: clause.id, content, status })}
             isSaving={updateMutation.isPending}
+            registerRef={registerRef}
           />
         ))}
       </div>
-    </div>
-  );
-}
 
-function ClauseAccordion({ clause, contractId, isExpanded, onToggle, isEditing, editContent, onEdit, onAIAssist, onEditChange, onSave, onCancelEdit, isSaving }) {
-  const aiAssist = useAIAssist(`/contracts/${contractId}/clauses/${clause.id}/ai-assist`);
-  return (
-    <div className={`card transition-all duration-300 ${isExpanded ? 'border-border-default' : 'hover:border-border-default cursor-pointer'}`}>
-      <div className="flex items-center gap-4" onClick={isEditing ? undefined : onToggle}>
-        <ScrollText className="w-4 h-4 text-gold/60 flex-shrink-0" />
-        <div className="flex-1 min-w-0">
-          <p className="font-dm-sans text-sm text-text-primary font-medium">{clause.clause_title}</p>
-        </div>
-        <div className="flex items-center gap-3">
-          <StatusBadge status={clause.status} />
-          {isExpanded ? <ChevronUp className="w-4 h-4 text-text-secondary" /> : <ChevronDown className="w-4 h-4 text-text-secondary" />}
-        </div>
+      {/* Case signature */}
+      <div className="card">
+        <p className="font-cormorant text-xl text-text-primary mb-1">Signature</p>
+        <p className="font-dm-sans text-xs text-text-secondary mb-4">
+          Signature du représentant du franchiseur — horodatée, associée à cette version du contrat.
+        </p>
+        <SignaturePad
+          signature={contract}
+          isSaving={signMutation.isPending}
+          isClearing={clearSignatureMutation.isPending}
+          onSign={(signature_image, signed_by) => signMutation.mutate({ contractId: contract.id, signature_image, signed_by })}
+          onClear={() => clearSignatureMutation.mutate(contract.id)}
+        />
       </div>
 
-      {isExpanded && (
-        <div className="mt-4 pt-4 border-t border-border-subtle animate-slide-up">
-          {isEditing ? (
-            <div className="space-y-3">
-              <textarea className="input-field min-h-48 resize-none font-dm-mono text-sm" value={editContent} onChange={e => onEditChange(e.target.value)} placeholder="Contenu de la clause..." />
-              <div className="flex items-center gap-3">
-                <button onClick={() => onSave('conforme')} disabled={isSaving} className="btn-primary flex items-center gap-2 text-sm py-2">
-                  {isSaving ? <LoadingSpinner size="sm" /> : <Check className="w-4 h-4" />} Valider comme conforme
-                </button>
-                <button onClick={() => onSave('a_verifier')} disabled={isSaving} className="btn-secondary flex items-center gap-2 text-sm py-2">Enregistrer</button>
-                <button onClick={onCancelEdit} className="btn-ghost flex items-center gap-2 text-sm"><X className="w-4 h-4" /> Annuler</button>
-              </div>
-            </div>
-          ) : (
-            <div>
-              <div className="bg-bg-elevated rounded p-4 mb-4">
-                <pre className="font-dm-sans text-sm text-text-primary whitespace-pre-wrap leading-relaxed">
-                  {clause.content || <span className="text-text-secondary italic">Contenu non renseigné</span>}
-                </pre>
-              </div>
-              <div className="flex items-center justify-between flex-wrap gap-3">
-                <p className="font-dm-mono text-xs text-text-secondary">
-                  Mis à jour le {clause.last_updated ? new Date(clause.last_updated).toLocaleDateString('fr-FR') : 'N/A'}
-                </p>
-                <div className="flex items-center gap-2">
-                  <AIAssistTrigger onClick={aiAssist.start} />
-                  <button onClick={onEdit} className="btn-ghost flex items-center gap-2 text-sm"><Edit3 className="w-4 h-4" /> Modifier</button>
-                </div>
-              </div>
-              {aiAssist.open && (
-                <div className="mt-3">
-                  <AIAssistPanel state={aiAssist} onApply={onAIAssist} />
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      )}
+      <PositionPill
+        index={activeIndex}
+        total={clauses.length}
+        label={clauses[activeIndex]?.clause_title}
+        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+      />
     </div>
   );
 }

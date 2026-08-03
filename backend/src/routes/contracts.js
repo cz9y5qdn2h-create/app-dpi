@@ -627,6 +627,42 @@ router.put('/:id/clauses/:clauseId', authMiddleware, requireFranchisor, async (r
   res.json({ clause: data, conformity_score: score });
 });
 
+// POST /api/contracts/:id/signature — case signature du document (contrat)
+router.post('/:id/signature', authMiddleware, requireFranchisor, async (req, res) => {
+  const { signature_image, signed_by } = req.body;
+  if (!signature_image?.trim() || !signed_by?.trim()) {
+    return res.status(400).json({ error: 'signature_image et signed_by requis' });
+  }
+
+  const { data: ownerContract } = await supabaseAdmin
+    .from('franchise_contracts').select('id').eq('id', req.params.id).eq('user_id', req.user.id).single();
+  if (!ownerContract) return res.status(404).json({ error: 'Contrat introuvable' });
+
+  const { data, error } = await supabaseAdmin
+    .from('franchise_contracts')
+    .update({ signature_image, signed_by: signed_by.trim().substring(0, 200), signed_at: new Date().toISOString() })
+    .eq('id', req.params.id)
+    .select('id, signature_image, signed_by, signed_at').single();
+
+  if (error) return res.status(500).json({ error: errMsg(error) });
+  res.json({ contract: data });
+});
+
+// DELETE /api/contracts/:id/signature — réinitialise la signature
+router.delete('/:id/signature', authMiddleware, requireFranchisor, async (req, res) => {
+  const { data: ownerContract } = await supabaseAdmin
+    .from('franchise_contracts').select('id').eq('id', req.params.id).eq('user_id', req.user.id).single();
+  if (!ownerContract) return res.status(404).json({ error: 'Contrat introuvable' });
+
+  const { error } = await supabaseAdmin
+    .from('franchise_contracts')
+    .update({ signature_image: null, signed_by: null, signed_at: null })
+    .eq('id', req.params.id);
+
+  if (error) return res.status(500).json({ error: errMsg(error) });
+  res.json({ success: true });
+});
+
 // POST /api/contracts/:id/clauses/:clauseId/ai-assist — widget "Aide à la rédaction"
 router.post('/:id/clauses/:clauseId/ai-assist', authMiddleware, requireFranchisor, async (req, res) => {
   const { answers } = req.body;
