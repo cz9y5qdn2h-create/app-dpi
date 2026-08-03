@@ -19,13 +19,13 @@ import { fr } from 'date-fns/locale';
 const SECTION_DESCRIPTIONS = [
   '',
   'Raison sociale, forme juridique, capital, dirigeants, RCS, adresse du siège social, domiciliation bancaire.',
-  'Date de création de l\'enseigne, historique du dirigeant sur les 5 dernières années.',
-  'Nombre de franchisés, implantations, ouvertures et fermetures des 2 dernières années.',
+  'Date de création de l\'enseigne, historique du dirigeant sur les 5 dernières années, état général et LOCAL du marché avec perspectives de développement (R.330-1, 4°).',
+  'Nombre de franchisés, implantations, ouvertures et fermetures des 2 dernières années, présence d\'un concurrent autorisé dans la zone, résultats réels des sites pilotes.',
   'Comptes annuels des 2 derniers exercices (bilan, compte de résultat).',
-  'Marques déposées, brevets, savoir-faire protégé, durée de protection.',
+  'Marques déposées, brevets, savoir-faire protégé, durée de protection (ou durée de la licence si la marque est concédée et non cédée).',
   'Droits d\'entrée, redevances, CA moyen des franchisés, tableaux financiers.',
   'Zone d\'exclusivité territoriale, conditions de modification.',
-  'Durée du contrat, conditions de renouvellement et de résiliation.',
+  'Durée du contrat, conditions de renouvellement, de résiliation et clause de non-concurrence post-contractuelle.',
   'Litiges en cours et survenus dans les 5 dernières années.',
   'Comptes prévisionnels d\'un point de vente type.',
 ];

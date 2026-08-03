@@ -389,12 +389,12 @@ BLOQUANT si absent : dénomination sociale, forme juridique, numéro RCS + ville
 À VÉRIFIER : capital social, date immatriculation
 
 SECTION 2 — Historique dirigeant et enseigne [Réf. Art. R.330-1, 4° C. com.]
-BLOQUANT si absent : historique professionnel du dirigeant sur 5 ans minimum (exigence légale explicite), date de création de l'enseigne
-À VÉRIFIER : parcours détaillé, expériences antérieures dans la franchise
+BLOQUANT si absent : historique professionnel du dirigeant sur 5 ans minimum (exigence légale explicite), date de création de l'enseigne, présentation de l'état général ET LOCAL du marché des produits/services concernés avec les perspectives de développement (R.330-1, 4° — une présentation purement nationale ou générique, sans donnée réelle sur la zone de chalandise envisagée, ne satisfait PAS cette exigence et doit être notée a_verifier au mieux)
+À VÉRIFIER : parcours détaillé, expériences antérieures dans la franchise, sources et date des données de marché citées
 
 SECTION 3 — État du réseau [Réf. Art. R.330-1, 5° a-d C. com.]
 BLOQUANT si absent : nombre exact de franchisés actifs, nombre exact d'entrées sur 12 mois, nombre exact de sorties sur 12 mois EN DISTINGUANT expiration/résiliation/annulation (R.330-1, 5° c — une simple mention globale sans cette distinction est insuffisante)
-À VÉRIFIER : adresses des franchisés ou liste disponible sur demande (limité aux 50 plus proches si réseau > 50 exploitants), nombre d'établissements en propre, présence d'un établissement concurrent autorisé par le franchiseur dans la zone (R.330-1, 5° d)
+À VÉRIFIER : adresses des franchisés ou liste disponible sur demande (limité aux 50 plus proches si réseau > 50 exploitants), nombre d'établissements en propre, présence d'un établissement concurrent autorisé par le franchiseur dans la zone (R.330-1, 5° d), et — point de vigilance jurisprudentiel fréquent — silence sur une rentabilité insuffisante ou des résultats déficitaires connus chez des franchisés ou sites comparables déjà en activité, qui peut caractériser une réticence dolosive s'il est intentionnel
 
 SECTION 4 — Comptes annuels [Réf. Art. R.330-1, 4° C. com. — BLOQUANT absolu]
 BLOQUANT si absent : résultats des 2 derniers exercices comptables clos (chiffre d'affaires ET résultat net pour chaque exercice), dates de clôture
@@ -573,16 +573,18 @@ SECTION 1 — Identité du franchiseur [Réf. Art. R.330-1, 1° et 3° C. com.]
 BLOQUANT si absent : dénomination sociale, forme juridique, numéro RCS + ville, adresse siège, nom du dirigeant responsable, au moins une domiciliation bancaire de l'entreprise (R.330-1, 3°)
 
 SECTION 2 — Historique dirigeant et enseigne [Réf. Art. R.330-1, 4° C. com.]
-BLOQUANT si absent : historique professionnel du dirigeant sur 5 ans minimum, date de création de l'enseigne
+BLOQUANT si absent : historique professionnel du dirigeant sur 5 ans minimum, date de création de l'enseigne, présentation de l'état général ET LOCAL du marché avec perspectives de développement (R.330-1, 4° — une présentation purement nationale sans étude de la zone de chalandise ne suffit pas)
 
 SECTION 3 — État du réseau [Réf. Art. R.330-1, 5° a-d C. com.]
 BLOQUANT si absent : nombre exact de franchisés actifs, entrées/sorties sur 12 mois en distinguant expiration/résiliation/annulation (R.330-1, 5° c)
+Si fournie, la mention d'un établissement concurrent déjà autorisé dans la zone (R.330-1, 5° d) et des résultats des sites pilotes/unités comparables doit être fidèle — ne jamais taire une rentabilité insuffisante ou des résultats déficitaires fournis par le franchiseur dans les données du formulaire.
 
 SECTION 4 — Comptes annuels [Réf. Art. R.330-1, 4° C. com. — BLOQUANT absolu]
 BLOQUANT si absent : résultats des 2 derniers exercices clos (CA et résultat net), dates de clôture
 
 SECTION 5 — Marque et propriété intellectuelle [Réf. Art. R.330-1, 2° C. com.]
 BLOQUANT si absent : numéro de dépôt INPI de la marque principale, statut de la marque
+Si la marque est concédée par licence (et non cédée), la durée de la licence doit être précisée (R.330-1, 2°).
 
 SECTION 6 — Informations financières [Réf. Pratique du secteur + Art. R.330-1, 6° C. com. — BLOQUANT absolu]
 BLOQUANT si absent : droit d'entrée (ou mention explicite "aucun"), redevance d'exploitation, redevance publicitaire, investissement global estimé
@@ -592,12 +594,13 @@ BLOQUANT si absent : définition du périmètre territorial, mention du caractè
 
 SECTION 8 — Contrat [Réf. Art. R.330-1, 6° C. com. — BLOQUANT absolu]
 BLOQUANT si absent : durée du contrat, conditions de renouvellement, conditions et motifs de résiliation
+Si une clause de non-concurrence post-contractuelle est fournie dans les données, l'intégrer et vérifier sa cohérence (portée, durée, zone).
 
 SECTION 9 — Litiges [Réf. Art. 1112-1 Code civil — hors périmètre R.330-1, omission = dol si intentionnelle (Cass. com. 26 juin 2024, n°23-14.085) — BLOQUANT absolu]
 BLOQUANT si absent : toute mention de litiges et procédures collectives est obligatoire ; si aucun, la phrase "Aucun litige en cours à la date de remise du présent document" doit figurer explicitement
 
 SECTION 10 — Comptes prévisionnels [Réf. Jurisprudence — hors périmètre R.330-1 : Cass. com. 1er déc. 2021 (n°18-26.572) et 1er juin 2022 (n°21-16.481)]
-Non bloquant si absent, mais fortement recommandé. Si présent, DOIT inclure un avertissement explicite sur le caractère non garanti des projections.
+Non bloquant si absent, mais fortement recommandé. Si présent, DOIT inclure un avertissement explicite sur le caractère non garanti des projections, et rester cohérent avec les résultats réels des sites pilotes/franchisés comparables mentionnés en Section 3.
 
 INSTRUCTIONS :
 - Rédige un texte complet, professionnel et directement utilisable dans le DIP officiel pour chaque section

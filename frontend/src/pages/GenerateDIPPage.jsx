@@ -28,17 +28,19 @@ const STEPS = [
 
 const INITIAL_FORM = {
   raison_sociale: '', forme_juridique: 'SAS', capital_social: '', rcs_ville: '', rcs_numero: '',
-  siege_social: '', dirigeant_nom: '', dirigeant_fonction: 'Président',
+  siege_social: '', dirigeant_nom: '', dirigeant_fonction: 'Président', domiciliation_bancaire: '',
   date_creation: '', date_enseigne: '', historique_dirigeant: '', historique_enseigne: '',
+  etat_marche: '',
   nb_franchises: '', nb_succursales: '', nb_ouvertures_12m: '', nb_fermetures_12m: '',
-  details_fermetures: '',
+  details_fermetures: '', concurrent_zone_autorise: 'non', resultats_sites_pilotes: '',
   ca_n1: '', resultat_n1: '', ca_n2: '', resultat_n2: '',
   marque_nom: '', marque_inpi_numero: '', marque_depot_date: '', marque_validite: '',
-  marque_territoire: 'France',
+  marque_territoire: 'France', marque_cession_ou_licence: 'Cédée', marque_licence_duree: '',
   droit_entree: '', redevance_exploitation: '', redevance_pub: '', apport_personnel: '',
   investissement_total: '', conditions_paiement: '',
   territoire_description: '', territoire_exclusif: 'oui', criteres_zone: '',
   duree_contrat: '', renouvellement: '', conditions_resiliation: '', conditions_cession: '',
+  clause_non_concurrence: '',
   litiges_en_cours: 'non', description_litiges: '', litiges_termines: '',
   previsionnel_description: '',
 };
@@ -53,12 +55,14 @@ const FORM_FIELDS = {
     { key: 'siege_social', label: 'Siège social', placeholder: '123 rue de la Paix, 75001 Paris' },
     { key: 'dirigeant_nom', label: 'Nom du dirigeant', required: true, placeholder: 'Jean Dupont' },
     { key: 'dirigeant_fonction', label: 'Fonction du dirigeant', type: 'select', options: ['Président', 'PDG', 'Gérant', 'Directeur Général'] },
+    { key: 'domiciliation_bancaire', label: 'Domiciliation bancaire (obligatoire — R.330-1, 3°)', placeholder: 'Société Générale, agence de Paris Opéra' },
   ],
   historique: [
     { key: 'date_creation', label: 'Date de création de la société', type: 'date' },
     { key: 'date_enseigne', label: "Date de création de l'enseigne / réseau", type: 'date' },
     { key: 'historique_dirigeant', label: 'Parcours du dirigeant (5 dernières années)', type: 'textarea', placeholder: '2020-2025 : PDG de Ma Franchise SAS...' },
     { key: 'historique_enseigne', label: "Historique de l'enseigne", type: 'textarea', placeholder: "Fondée en 2018, l'enseigne compte aujourd'hui X points de vente..." },
+    { key: 'etat_marche', label: 'État du marché national ET local, perspectives (obligatoire — R.330-1, 4°)', type: 'textarea', placeholder: "Marché national en croissance de X%/an ; sur la zone de chalandise visée, présence de X concurrents directs, densité de population de X habitants..." },
   ],
   reseau: [
     { key: 'nb_franchises', label: 'Nombre de franchisés actuels', type: 'number', placeholder: '42' },
@@ -66,6 +70,8 @@ const FORM_FIELDS = {
     { key: 'nb_ouvertures_12m', label: 'Ouvertures sur 12 derniers mois', type: 'number', placeholder: '8' },
     { key: 'nb_fermetures_12m', label: 'Fermetures sur 12 derniers mois', type: 'number', placeholder: '2' },
     { key: 'details_fermetures', label: 'Détail des fermetures / résiliations', type: 'textarea', placeholder: '1 résiliation amiable, 1 non-renouvellement...' },
+    { key: 'concurrent_zone_autorise', label: 'Établissement concurrent déjà autorisé par vous dans la zone visée ?', type: 'select', options: ['non', 'oui'] },
+    { key: 'resultats_sites_pilotes', label: 'Résultats des sites pilotes / franchisés comparables (rentabilité réelle)', type: 'textarea', placeholder: "Les 3 sites pilotes affichent un CA moyen de X€ en année 1, rentabilité atteinte à Y mois..." },
   ],
   finances: [
     { key: 'ca_n1', label: "Chiffre d'affaires N-1 (€)", type: 'number', placeholder: '2 500 000' },
@@ -79,6 +85,8 @@ const FORM_FIELDS = {
     { key: 'marque_depot_date', label: 'Date de dépôt INPI', type: 'date' },
     { key: 'marque_validite', label: 'Date de validité', type: 'date' },
     { key: 'marque_territoire', label: 'Territoire de protection', type: 'select', options: ['France', 'Union Européenne', 'International (OMPI)', 'France + UE'] },
+    { key: 'marque_cession_ou_licence', label: 'La marque vous a-t-elle été cédée ou concédée par licence ?', type: 'select', options: ['Cédée', 'Concédée par licence'] },
+    { key: 'marque_licence_duree', label: 'Si licence : durée consentie', placeholder: '10 ans renouvelables' },
   ],
   contrat: [
     { key: 'droit_entree', label: "Droit d'entrée HT (€)", type: 'number', placeholder: '20 000' },
@@ -91,6 +99,7 @@ const FORM_FIELDS = {
     { key: 'renouvellement', label: 'Conditions de renouvellement', type: 'textarea', placeholder: 'Renouvellement automatique sauf dénonciation 6 mois avant échéance...' },
     { key: 'conditions_resiliation', label: 'Conditions de résiliation', type: 'textarea', placeholder: 'Résiliation possible en cas de manquement grave non corrigé sous 30 jours...' },
     { key: 'conditions_cession', label: 'Conditions de cession', type: 'textarea', placeholder: 'Cession soumise à agrément préalable du franchiseur...' },
+    { key: 'clause_non_concurrence', label: 'Clause de non-concurrence post-contractuelle (le cas échéant)', type: 'textarea', placeholder: "Interdiction d'exercer une activité similaire dans un rayon de X km pendant 1 an après la fin du contrat..." },
   ],
   territoire: [
     { key: 'territoire_exclusif', label: 'Zone exclusive accordée', type: 'select', options: ['oui', 'non', 'partielle'] },
@@ -109,7 +118,9 @@ const CHIP_OPTIONS = {
   forme_juridique: ['SAS', 'SARL', 'SA', 'SNC', 'EURL', 'SCI', 'Autre'],
   dirigeant_fonction: ['Président', 'PDG', 'Gérant', 'Directeur Général'],
   marque_territoire: ['France', 'Union Européenne', 'International (OMPI)', 'France + UE'],
+  marque_cession_ou_licence: ['Cédée', 'Concédée par licence'],
   territoire_exclusif: ['oui', 'non', 'partielle'],
+  concurrent_zone_autorise: ['non', 'oui'],
   litiges_en_cours: ['non', 'oui'],
 };
 
@@ -143,6 +154,20 @@ const GUIDED_CONFIG = {
     { q: "Quand et comment l'enseigne a-t-elle été fondée ?", ph: 'Ex : Fondée en 2018 à Paris, après 2 ans de pilote avec 3 succursales...' },
     { q: 'Quelles sont les grandes étapes de développement du réseau ?', ph: 'Ex : 2019 : 1er franchisé, 2021 : 10 points de vente, 2023 : Belgique...' },
     { q: "Quelle est la proposition de valeur unique de l'enseigne ?", ph: 'Ex : Format kiosque innovant, concept végétarien premium...' },
+  ]},
+  etat_marche: { questions: [
+    { q: 'Quel est l\'état général du marché national de votre secteur (tendances, croissance) ?', ph: 'Ex : Marché national en croissance de 4 %/an, forte demande post-covid...' },
+    { q: 'Quelle est la situation spécifique sur la zone de chalandise locale visée (concurrence, saturation, particularités) ?', ph: 'Ex : Zone de 60 000 habitants, 2 concurrents directs déjà implantés, forte fréquentation piétonne...' },
+    { q: 'Quelles sont les perspectives de développement de ce marché ?', ph: 'Ex : Croissance attendue de 6 %/an sur 3 ans, arrivée de nouveaux entrants limitée par le foncier disponible...' },
+  ]},
+  resultats_sites_pilotes: { questions: [
+    { q: 'Combien de sites pilotes ou unités comparables existent et depuis quand ?', ph: 'Ex : 3 sites pilotes ouverts depuis 2021 à Lyon, Lille et Nantes...' },
+    { q: 'Quels sont leurs résultats réels (CA, rentabilité, délai avant seuil de rentabilité) ?', ph: 'Ex : CA moyen de 450 000 €/an, seuil de rentabilité atteint entre 14 et 20 mois selon les sites...' },
+    { q: 'Y a-t-il eu des difficultés ou résultats décevants sur certains sites ? Si oui, lesquels ?', ph: "Ex : 1 site sur 3 encore en dessous du seuil de rentabilité après 24 mois, en raison d'un emplacement moins favorable..." },
+  ]},
+  clause_non_concurrence: { questions: [
+    { q: "L'ancien franchisé est-il soumis à une clause de non-concurrence après la fin du contrat ?", ph: 'Ex : Oui, interdiction d\'exercer une activité similaire...' },
+    { q: 'Quelle est la portée géographique et la durée de cette clause ?', ph: 'Ex : Rayon de 5 km autour de l\'ancien point de vente, pendant 1 an après la cessation du contrat...' },
   ]},
   details_fermetures: { questions: [
     { q: 'Combien de fermetures ont eu lieu et sur quelle période ?', ph: 'Ex : 2 fermetures entre 2023 et 2024...' },
