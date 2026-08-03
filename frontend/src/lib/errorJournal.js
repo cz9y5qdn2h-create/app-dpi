@@ -1,3 +1,5 @@
+import { isSupabaseLockStolenError, recoverFromChunkError } from './chunkRecovery';
+
 const JOURNAL_KEY = 'dippro-error-journal';
 const MAX_ENTRIES = 30;
 
@@ -86,13 +88,30 @@ export function installGlobalErrorHandlers() {
 
   window.addEventListener('unhandledrejection', (e) => {
     const reason = e.reason;
-    logError(reason instanceof Error ? reason : new Error(String(reason)), {
-      type: 'unhandledrejection',
-    });
+    const error = reason instanceof Error ? reason : new Error(String(reason));
+
+    // Course interne supabase-js (Web Locks API) entre onglets/appels
+    // concurrents — bénigne et transitoire (le rafraîchissement automatique
+    // de session retente au prochain tick), et déjà filtrée en interne par
+    // supabase-js quand elle vient de sa propre boucle de rafraîchissement.
+    // Seuls nos appels directs (getSession, MFA...) laissent parfois
+    // échapper ce rejet : on l'empêche de polluer la console et on ne la
+    // remonte pas comme un bug bloquant à chaque occurrence.
+    if (isSupabaseLockStolenError(error)) {
+      e.preventDefault();
+      console.debug('[errorJournal] Supabase lock contention ignorée (transitoire) :', error.message);
+      return;
+    }
+
+    logError(error, { type: 'unhandledrejection' });
   });
 
-  // Échec de préchargement d'un chunk lazy après un redéploiement Vercel
+  // Échec de préchargement d'un chunk lazy après un redéploiement Vercel —
+  // Vite émet cet événement AVANT que l'erreur ne se propage et fasse
+  // planter le rendu React ; le seul fait de logger ne réparait rien pour
+  // l'utilisateur, d'où l'ajout du rechargement automatique ici même.
   window.addEventListener('vite:preloadError', (e) => {
     logError(e.payload || new Error('vite:preloadError'), { type: 'chunk-load' });
+    if (recoverFromChunkError()) e.preventDefault();
   });
 }

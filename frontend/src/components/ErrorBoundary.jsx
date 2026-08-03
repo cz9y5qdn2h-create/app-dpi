@@ -2,6 +2,7 @@ import { Component } from 'react';
 import { AlertTriangle, RefreshCw, Bug, Copy, Check } from 'lucide-react';
 import BugReportModal from './BugReportModal';
 import { logError } from '../lib/errorJournal';
+import { isChunkLoadError, recoverFromChunkError } from '../lib/chunkRecovery';
 
 export default class ErrorBoundary extends Component {
   constructor(props) {
@@ -21,20 +22,13 @@ export default class ErrorBoundary extends Component {
     logError(error, { type: 'react-render', componentStack });
 
     // ChunkLoadError après un déploiement Vercel : rechargement automatique.
-    // La clé est propre à chaque route (pas un seul flag global pour toute la
-    // session) — sinon un chunk périmé rencontré sur une page consommait la
-    // seule tentative disponible, laissant toute autre page qui rencontre le
-    // même souci ensuite bloquée sans recharger (ex: /admin resté figé après
-    // qu'une autre page ait déjà déclenché le rechargement automatique).
-    const isChunkError = error?.name === 'ChunkLoadError'
-      || error?.message?.includes('Failed to fetch dynamically imported module')
-      || error?.message?.includes('Loading chunk')
-      || error?.message?.includes('Importing a module script failed')
-      || error?.message?.includes('error loading dynamically imported module');
-    const reloadKey = `chunk-reload:${window.location.pathname}`;
-    if (isChunkError && !sessionStorage.getItem(reloadKey)) {
-      sessionStorage.setItem(reloadKey, '1');
-      window.location.reload();
+    // isChunkLoadError couvre aussi la formulation propre à Safari/WebKit
+    // ("... is not a valid JavaScript MIME type for module script ..."), très
+    // différente de celle de Chromium/Firefox et longtemps oubliée ici — un
+    // utilisateur Safari heurtant un chunk périmé restait bloqué sur l'écran
+    // d'erreur sans jamais bénéficier du rechargement automatique.
+    if (isChunkLoadError(error)) {
+      recoverFromChunkError();
     }
   }
 
