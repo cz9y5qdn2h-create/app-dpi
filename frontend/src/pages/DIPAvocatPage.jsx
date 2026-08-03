@@ -1,14 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useDropzone } from 'react-dropzone';
 import api from '../lib/api';
 import { supabase } from '../lib/supabase';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import RedlineView from '../components/RedlineView';
 import {
-  ChevronLeft, ChevronRight, Edit3, Check, X, AlertCircle,
+  Edit3, Check, X, AlertCircle,
   ArrowLeft, FileText, ScrollText, Download, Paperclip, Trash2,
   ChevronDown, Building2,
 } from 'lucide-react';
@@ -155,7 +155,7 @@ export default function DIPAvocatPage() {
 
         {tab === 'dip' && (
           dip
-            ? <SlideDeck mode="dip" dip={dip} franchiseurId={franchiseurId} franchiseur={franchiseur} />
+            ? <DocumentView mode="dip" dip={dip} franchiseurId={franchiseurId} franchiseur={franchiseur} />
             : <EmptyState label="Ce franchiseur n'a pas encore de DIP actif." />
         )}
 
@@ -163,7 +163,7 @@ export default function DIPAvocatPage() {
           contractLoading
             ? <div className="flex justify-center py-16"><LoadingSpinner size="lg" /></div>
             : contract
-              ? <SlideDeck mode="contract" contract={contract} franchiseurId={franchiseurId} franchiseur={franchiseur} />
+              ? <DocumentView mode="contract" contract={contract} franchiseurId={franchiseurId} franchiseur={franchiseur} />
               : <EmptyState label="Ce franchiseur n'a pas encore de contrat actif." />
         )}
       </div>
@@ -205,19 +205,11 @@ function EmptyState({ label }) {
   );
 }
 
-const slideVariants = {
-  enter: (dir) => ({ x: dir > 0 ? 60 : -60, opacity: 0 }),
-  center: { x: 0, opacity: 1 },
-  exit: (dir) => ({ x: dir > 0 ? -60 : 60, opacity: 0 }),
-};
-
-function SlideDeck({ mode, dip, contract, franchiseurId, franchiseur }) {
-  const queryClient = useQueryClient();
-  const [index, setIndex] = useState(0);
-  const [dir, setDir] = useState(1);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editContent, setEditContent] = useState('');
-
+// Vue "document" continue (façon Word/Pages) : toutes les trames s'enchaînent
+// dans un même scroll, chacune éditable sur place. Le pastille flottante
+// (oval transparent) indique la position de lecture — mise à jour par
+// IntersectionObserver, sans dépendre d'un état d'index unique par trame.
+function DocumentView({ mode, dip, contract, franchiseurId, franchiseur }) {
   const isDip = mode === 'dip';
   const items = isDip
     ? (dip?.dip_sections || []).slice().sort((a, b) => a.section_number - b.section_number)
@@ -229,42 +221,57 @@ function SlideDeck({ mode, dip, contract, franchiseurId, franchiseur }) {
     queryFn: () => api.get(`/avocat/franchiseur/${franchiseurId}/${isDip ? 'dip' : 'contract'}`).then(r => r.data),
   });
   const proposals = data?.proposals || [];
+  const globalScore = isDip ? dip.conformity_score : contract.conformity_score;
 
-  const current = items[index];
-  const currentProposals = isDip
-    ? proposals.filter(p => p.section_id === current?.id)
-    : proposals.filter(p => p.clause_id === current?.id);
-  const pendingProposal = currentProposals.find(p => p.status === 'pending');
-  const reviewedProposals = currentProposals.filter(p => p.status !== 'pending').slice(0, 3);
+  const sectionRefs = useRef(new Map());
+  const [activeId, setActiveId] = useState(items[0]?.id);
+  const activeIndex = Math.max(0, items.findIndex(it => it.id === activeId));
+  const activeItem = items[activeIndex] || items[0];
 
-  const proposeMutation = useMutation({
-    mutationFn: ({ content }) => isDip
-      ? api.post(`/avocat/sections/${current.id}/propose`, { content, dip_id: dip.id })
-      : api.post(`/avocat/clauses/${current.id}/propose`, { content, contract_id: contract.id }),
-    onSuccess: () => {
-      toast.success('Proposition envoyée au franchiseur');
-      queryClient.invalidateQueries({ queryKey: proposalsQueryKey });
-      setIsEditing(false);
-    },
-    onError: (err) => toast.error(err.message),
-  });
+  const registerRef = useCallback((id, el) => {
+    if (el) sectionRefs.current.set(id, el);
+    else sectionRefs.current.delete(id);
+  }, []);
 
-  const goTo = useCallback((next) => {
-    if (next < 0 || next >= items.length) return;
-    setDir(next > index ? 1 : -1);
-    setIndex(next);
-    setIsEditing(false);
-  }, [index, items.length]);
+  useEffect(() => {
+    if (!items.length) return;
+    const visible = new Map();
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        const id = entry.target.getAttribute('data-section-id');
+        if (entry.isIntersecting) visible.set(id, entry.intersectionRatio);
+        else visible.delete(id);
+      });
+      let bestId = null, bestRatio = -1;
+      for (const it of items) {
+        const ratio = visible.get(it.id);
+        if (ratio !== undefined && ratio > bestRatio) { bestRatio = ratio; bestId = it.id; }
+      }
+      if (bestId) setActiveId(bestId);
+    }, { threshold: [0, 0.25, 0.5, 0.75, 1] });
+
+    items.forEach(it => {
+      const el = sectionRefs.current.get(it.id);
+      if (el) observer.observe(el);
+    });
+    return () => observer.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items.map(it => it.id).join(',')]);
+
+  const scrollToIndex = useCallback((i) => {
+    if (i < 0 || i >= items.length) return;
+    sectionRefs.current.get(items[i].id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [items]);
 
   useEffect(() => {
     const onKey = (e) => {
-      if (isEditing) return;
-      if (e.key === 'ArrowRight') goTo(index + 1);
-      if (e.key === 'ArrowLeft') goTo(index - 1);
+      if (['TEXTAREA', 'INPUT'].includes(document.activeElement?.tagName)) return;
+      if (e.key === 'ArrowRight') scrollToIndex(activeIndex + 1);
+      if (e.key === 'ArrowLeft') scrollToIndex(activeIndex - 1);
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [index, isEditing, goTo]);
+  }, [activeIndex, scrollToIndex]);
 
   const handleDownload = async () => {
     try {
@@ -276,11 +283,7 @@ function SlideDeck({ mode, dip, contract, franchiseurId, franchiseur }) {
     }
   };
 
-  if (!current) return <EmptyState label="Aucune section disponible." />;
-
-  const title = isDip ? current.section_title : current.clause_title;
-  const number = isDip ? current.section_number : current.clause_number;
-  const globalScore = isDip ? dip.conformity_score : contract.conformity_score;
+  if (!items.length) return <EmptyState label="Aucune section disponible." />;
 
   return (
     <div className="space-y-4">
@@ -288,11 +291,11 @@ function SlideDeck({ mode, dip, contract, franchiseurId, franchiseur }) {
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-1.5 gap-0.5">
-            <p className="mono-label-v2">Trame {index + 1} / {items.length}</p>
+            <p className="mono-label-v2">Document — {items.length} trames</p>
             <p className="mono-label-v2">Conformité globale — {globalScore}%</p>
           </div>
           <div className="w-full h-1 rounded-full overflow-hidden" style={{ background: 'var(--v2-border)' }}>
-            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${((index + 1) / items.length) * 100}%`, background: 'var(--v2-gold)' }} />
+            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${((activeIndex + 1) / items.length) * 100}%`, background: 'var(--v2-gold)' }} />
           </div>
         </div>
         <button onClick={handleDownload} className="btn-cta-glow text-xs py-2 px-4 flex-shrink-0 justify-center">
@@ -300,21 +303,21 @@ function SlideDeck({ mode, dip, contract, franchiseurId, franchiseur }) {
         </button>
       </div>
 
-      {/* Navigation rapide */}
+      {/* Navigation rapide — clique = scroll direct vers la trame */}
       <div className="flex gap-1.5 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
         {items.map((it, i) => {
           const status = it.status;
           return (
             <button
               key={it.id}
-              onClick={() => goTo(i)}
+              onClick={() => scrollToIndex(i)}
               title={isDip ? it.section_title : it.clause_title}
               className="flex-shrink-0 w-8 h-8 rounded-lg text-xs font-dm-mono flex items-center justify-center transition-all"
               style={{
-                background: i === index ? 'var(--v2-gold)' : 'var(--v2-surface)',
-                border: `1px solid ${i === index ? 'var(--v2-gold)' : 'var(--v2-border)'}`,
-                color: i === index ? '#0a0805' : status === 'non_conforme' ? 'rgb(241 124 124)' : status === 'a_verifier' ? 'var(--v2-gold)' : 'rgb(91 216 154)',
-                fontWeight: i === index ? 700 : 400,
+                background: i === activeIndex ? 'var(--v2-gold)' : 'var(--v2-surface)',
+                border: `1px solid ${i === activeIndex ? 'var(--v2-gold)' : 'var(--v2-border)'}`,
+                color: i === activeIndex ? '#0a0805' : status === 'non_conforme' ? 'rgb(241 124 124)' : status === 'a_verifier' ? 'var(--v2-gold)' : 'rgb(91 216 154)',
+                fontWeight: i === activeIndex ? 700 : 400,
               }}
             >
               {i + 1}
@@ -323,142 +326,189 @@ function SlideDeck({ mode, dip, contract, franchiseurId, franchiseur }) {
         })}
       </div>
 
-      {/* Trame */}
-      <AnimatePresence mode="wait" custom={dir}>
-        <motion.div
-          key={current.id}
-          custom={dir}
-          variants={slideVariants}
-          initial="enter"
-          animate="center"
-          exit="exit"
-          transition={{ duration: 0.28, ease: 'easeInOut' }}
-          className="slide-v2"
+      {/* Document continu — une trame par bloc, éditable sur place */}
+      <div className="space-y-6">
+        {items.map((item, i) => (
+          <DocumentSectionItem
+            key={item.id}
+            item={item}
+            number={i + 1}
+            isDip={isDip}
+            dip={dip}
+            contract={contract}
+            franchiseur={franchiseur}
+            proposals={proposals}
+            proposalsQueryKey={proposalsQueryKey}
+            registerRef={registerRef}
+          />
+        ))}
+      </div>
+
+      {/* Indicateur flottant de position — oval transparent, toujours visible */}
+      <button
+        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        title="Retour en haut du document"
+        style={{
+          position: 'fixed', bottom: 20, left: '50%', transform: 'translateX(-50%)', zIndex: 40,
+          display: 'flex', alignItems: 'center', gap: 10,
+          padding: '9px 18px', borderRadius: 999,
+          background: 'rgba(20,20,22,0.55)', backdropFilter: 'blur(18px) saturate(160%)', WebkitBackdropFilter: 'blur(18px) saturate(160%)',
+          border: '1px solid var(--v2-border-hot)', boxShadow: '0 14px 32px -14px rgba(0,0,0,0.65)',
+          cursor: 'pointer', maxWidth: 'calc(100vw - 32px)',
+        }}
+      >
+        <span className="font-dm-mono" style={{ fontSize: 11, color: 'var(--v2-gold)', letterSpacing: '0.05em', flexShrink: 0 }}>
+          {activeIndex + 1} / {items.length}
+        </span>
+        <span style={{ width: 1, height: 14, background: 'var(--v2-border)', flexShrink: 0 }} />
+        <span
+          className="font-dm-sans"
+          style={{ fontSize: 12, color: 'rgb(var(--text-primary))', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
         >
-          <div className="flex items-start justify-between gap-4 mb-4 flex-wrap">
-            <div>
-              <p className="mono-label-v2 mb-1">{isDip ? 'Section' : 'Clause'} {number}</p>
-              <p className="display-v2" style={{ fontSize: 'clamp(22px, 3vw, 32px)' }}>{title}</p>
+          {isDip ? activeItem?.section_title : activeItem?.clause_title}
+        </span>
+      </button>
+    </div>
+  );
+}
+
+function DocumentSectionItem({ item, number, isDip, dip, contract, franchiseur, proposals, proposalsQueryKey, registerRef }) {
+  const queryClient = useQueryClient();
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState('');
+
+  const itemProposals = isDip
+    ? proposals.filter(p => p.section_id === item.id)
+    : proposals.filter(p => p.clause_id === item.id);
+  const pendingProposal = itemProposals.find(p => p.status === 'pending');
+  const reviewedProposals = itemProposals.filter(p => p.status !== 'pending').slice(0, 3);
+
+  const proposeMutation = useMutation({
+    mutationFn: ({ content }) => isDip
+      ? api.post(`/avocat/sections/${item.id}/propose`, { content, dip_id: dip.id })
+      : api.post(`/avocat/clauses/${item.id}/propose`, { content, contract_id: contract.id }),
+    onSuccess: () => {
+      toast.success('Proposition envoyée au franchiseur');
+      queryClient.invalidateQueries({ queryKey: proposalsQueryKey });
+      setIsEditing(false);
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const title = isDip ? item.section_title : item.clause_title;
+
+  return (
+    <motion.div
+      ref={el => registerRef(item.id, el)}
+      data-section-id={item.id}
+      initial={{ opacity: 0, y: 16 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-10% 0px -10% 0px' }}
+      transition={{ duration: 0.35, ease: 'easeOut' }}
+      className="slide-v2"
+    >
+      <div className="flex items-start justify-between gap-4 mb-4 flex-wrap">
+        <div>
+          <p className="mono-label-v2 mb-1">{isDip ? 'Section' : 'Clause'} {number}</p>
+          <p className="display-v2" style={{ fontSize: 'clamp(22px, 3vw, 32px)' }}>{title}</p>
+        </div>
+        <span
+          className="section-card-v2-label px-2.5 py-1 rounded-full flex-shrink-0"
+          data-status={item.status}
+          style={{ border: '1px solid currentColor' }}
+        >
+          {STATUS_LABEL[item.status] || item.status}
+        </span>
+      </div>
+
+      {isDip && SECTION_DESCRIPTIONS[number] && (
+        <p className="font-dm-sans text-xs italic mb-4 pl-3" style={{ color: 'rgb(var(--text-muted))', borderLeft: '2px solid var(--v2-border)' }}>
+          {SECTION_DESCRIPTIONS[number]}
+        </p>
+      )}
+
+      {pendingProposal && (
+        <div className="mb-4 px-3 py-2 rounded-lg font-dm-mono text-xs" style={{ background: 'rgba(245,200,66,0.08)', border: '1px solid var(--v2-border-hot)', color: 'var(--v2-gold)' }}>
+          Proposition en attente de validation par le franchiseur — suivi des modifications ci-dessous
+        </div>
+      )}
+
+      {!isEditing ? (
+        <>
+          <div className="rounded-xl p-4 mb-4" style={{ background: 'var(--v2-surface)', minHeight: 120 }}>
+            {pendingProposal ? (
+              <RedlineView
+                before={pendingProposal.content_before ?? item.content ?? ''}
+                after={pendingProposal.content_proposed}
+                className="font-dm-sans text-sm"
+              />
+            ) : (
+              <p className="font-dm-sans text-sm whitespace-pre-wrap leading-relaxed" style={{ color: 'rgb(var(--text-primary))' }}>
+                {item.content || <span style={{ color: 'rgb(var(--text-muted))' }} className="italic">Non renseigné</span>}
+              </p>
+            )}
+          </div>
+          <button
+            onClick={() => { setIsEditing(true); setEditContent(item.content || ''); }}
+            disabled={!!pendingProposal}
+            className="btn-cta-glow text-sm"
+            style={pendingProposal ? { opacity: 0.4, cursor: 'not-allowed' } : {}}
+          >
+            <Edit3 className="w-4 h-4" /> Modifier cette trame
+          </button>
+        </>
+      ) : (
+        <div className="space-y-3 mb-4">
+          <textarea
+            value={editContent}
+            onChange={e => setEditContent(e.target.value)}
+            className="w-full rounded-xl p-4 font-dm-sans text-sm resize-y"
+            style={{ background: 'var(--v2-surface)', border: '1px solid var(--v2-border-hot)', color: 'rgb(var(--text-primary))', minHeight: 180 }}
+            autoFocus
+          />
+
+          <div>
+            <p className="mono-label-v2 mb-1.5">Suivi des modifications</p>
+            <div className="rounded-xl p-4" style={{ background: 'var(--v2-surface)', border: '1px solid var(--v2-border)', minHeight: 80 }}>
+              <RedlineView before={item.content || ''} after={editContent} className="font-dm-sans text-sm" emptyLabel="Commencez à rédiger pour voir l'aperçu." />
             </div>
-            <span
-              className="section-card-v2-label px-2.5 py-1 rounded-full flex-shrink-0"
-              data-status={current.status}
-              style={{ border: '1px solid currentColor' }}
-            >
-              {STATUS_LABEL[current.status] || current.status}
-            </span>
           </div>
 
-          {isDip && SECTION_DESCRIPTIONS[number] && (
-            <p className="font-dm-sans text-xs italic mb-4 pl-3" style={{ color: 'rgb(var(--text-muted))', borderLeft: '2px solid var(--v2-border)' }}>
-              {SECTION_DESCRIPTIONS[number]}
-            </p>
-          )}
+          <p className="font-dm-sans text-xs" style={{ color: 'rgb(var(--text-muted))' }}>
+            Le franchiseur devra valider cette modification avant qu'elle s'applique au document.
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => proposeMutation.mutate({ content: editContent })}
+              disabled={!editContent.trim() || proposeMutation.isPending}
+              className="btn-cta-glow text-sm"
+            >
+              {proposeMutation.isPending ? <LoadingSpinner size="sm" /> : <Check className="w-4 h-4" />} Envoyer la proposition
+            </button>
+            <button onClick={() => setIsEditing(false)} className="flex items-center gap-2 text-sm font-dm-sans px-4 py-2" style={{ color: 'rgb(var(--text-secondary))' }}>
+              <X className="w-4 h-4" /> Annuler
+            </button>
+          </div>
+        </div>
+      )}
 
-          {pendingProposal && (
-            <div className="mb-4 px-3 py-2 rounded-lg font-dm-mono text-xs" style={{ background: 'rgba(245,200,66,0.08)', border: '1px solid var(--v2-border-hot)', color: 'var(--v2-gold)' }}>
-              Proposition en attente de validation par le franchiseur — suivi des modifications ci-dessous
-            </div>
-          )}
+      {reviewedProposals.length > 0 && (
+        <div className="pt-3 mb-4" style={{ borderTop: '1px solid var(--v2-border)' }}>
+          <p className="mono-label-v2 mb-2">Historique</p>
+          <div className="space-y-1.5">
+            {reviewedProposals.map(p => <HistoryItem key={p.id} proposal={p} />)}
+          </div>
+        </div>
+      )}
 
-          {!isEditing ? (
-            <>
-              <div className="rounded-xl p-4 mb-4" style={{ background: 'var(--v2-surface)', minHeight: 120 }}>
-                {pendingProposal ? (
-                  <RedlineView
-                    before={pendingProposal.content_before ?? current.content ?? ''}
-                    after={pendingProposal.content_proposed}
-                    className="font-dm-sans text-sm"
-                  />
-                ) : (
-                  <p className="font-dm-sans text-sm whitespace-pre-wrap leading-relaxed" style={{ color: 'rgb(var(--text-primary))' }}>
-                    {current.content || <span style={{ color: 'rgb(var(--text-muted))' }} className="italic">Non renseigné</span>}
-                  </p>
-                )}
-              </div>
-              <button
-                onClick={() => { setIsEditing(true); setEditContent(current.content || ''); }}
-                disabled={!!pendingProposal}
-                className="btn-cta-glow text-sm"
-                style={pendingProposal ? { opacity: 0.4, cursor: 'not-allowed' } : {}}
-              >
-                <Edit3 className="w-4 h-4" /> Modifier cette trame
-              </button>
-            </>
-          ) : (
-            <div className="space-y-3 mb-4">
-              <textarea
-                value={editContent}
-                onChange={e => setEditContent(e.target.value)}
-                className="w-full rounded-xl p-4 font-dm-sans text-sm resize-y"
-                style={{ background: 'var(--v2-surface)', border: '1px solid var(--v2-border-hot)', color: 'rgb(var(--text-primary))', minHeight: 180 }}
-                autoFocus
-              />
-
-              <div>
-                <p className="mono-label-v2 mb-1.5">Suivi des modifications</p>
-                <div className="rounded-xl p-4" style={{ background: 'var(--v2-surface)', border: '1px solid var(--v2-border)', minHeight: 80 }}>
-                  <RedlineView before={current.content || ''} after={editContent} className="font-dm-sans text-sm" emptyLabel="Commencez à rédiger pour voir l'aperçu." />
-                </div>
-              </div>
-
-              <p className="font-dm-sans text-xs" style={{ color: 'rgb(var(--text-muted))' }}>
-                Le franchiseur devra valider cette modification avant qu'elle s'applique au document.
-              </p>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => proposeMutation.mutate({ content: editContent })}
-                  disabled={!editContent.trim() || proposeMutation.isPending}
-                  className="btn-cta-glow text-sm"
-                >
-                  {proposeMutation.isPending ? <LoadingSpinner size="sm" /> : <Check className="w-4 h-4" />} Envoyer la proposition
-                </button>
-                <button onClick={() => setIsEditing(false)} className="flex items-center gap-2 text-sm font-dm-sans px-4 py-2" style={{ color: 'rgb(var(--text-secondary))' }}>
-                  <X className="w-4 h-4" /> Annuler
-                </button>
-              </div>
-            </div>
-          )}
-
-          {reviewedProposals.length > 0 && (
-            <div className="pt-3 mb-4" style={{ borderTop: '1px solid var(--v2-border)' }}>
-              <p className="mono-label-v2 mb-2">Historique</p>
-              <div className="space-y-1.5">
-                {reviewedProposals.map(p => <HistoryItem key={p.id} proposal={p} />)}
-              </div>
-            </div>
-          )}
-
-          <AnnexManager
-            targetType={isDip ? 'section' : 'clause'}
-            targetId={current.id}
-            dipId={isDip ? dip.id : undefined}
-            contractId={isDip ? undefined : contract.id}
-            ownerId={franchiseur?.id}
-          />
-        </motion.div>
-      </AnimatePresence>
-
-      {/* Navigation précédent/suivant */}
-      <div className="flex items-center justify-between">
-        <button
-          onClick={() => goTo(index - 1)}
-          disabled={index === 0}
-          className="flex items-center gap-2 text-sm font-dm-sans px-4 py-2 rounded-full"
-          style={{ background: 'var(--v2-surface)', border: '1px solid var(--v2-border)', color: 'rgb(var(--text-secondary))', opacity: index === 0 ? 0.4 : 1 }}
-        >
-          <ChevronLeft className="w-4 h-4" /> Précédent
-        </button>
-        <button
-          onClick={() => goTo(index + 1)}
-          disabled={index === items.length - 1}
-          className="flex items-center gap-2 text-sm font-dm-sans px-4 py-2 rounded-full"
-          style={{ background: 'var(--v2-surface)', border: '1px solid var(--v2-border)', color: 'rgb(var(--text-secondary))', opacity: index === items.length - 1 ? 0.4 : 1 }}
-        >
-          Suivant <ChevronRight className="w-4 h-4" />
-        </button>
-      </div>
-    </div>
+      <AnnexManager
+        targetType={isDip ? 'section' : 'clause'}
+        targetId={item.id}
+        dipId={isDip ? dip.id : undefined}
+        contractId={isDip ? undefined : contract.id}
+        ownerId={franchiseur?.id}
+      />
+    </motion.div>
   );
 }
 
