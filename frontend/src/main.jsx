@@ -8,10 +8,12 @@ import './i18n';
 import App from './App';
 import ThemeProvider from './context/ThemeContext';
 import { installGlobalErrorHandlers } from './lib/errorJournal';
+import { installVersionWatch } from './lib/versionWatch';
 import './index.css';
 import './styles/liquid-glass.css';
 
 installGlobalErrorHandlers();
+installVersionWatch();
 
 const BUILD_VERSION = '2026-07-14-api-fix';
 console.info('DIPpro build', BUILD_VERSION);
