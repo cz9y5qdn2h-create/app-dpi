@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Edit3, Check, X } from 'lucide-react';
 import StatusBadge from '../ui/StatusBadge';
 import LoadingSpinner from '../ui/LoadingSpinner';
 import RedlineView from '../RedlineView';
+import RichTextView from './RichTextView';
+import FormattingToolbar from './FormattingToolbar';
 import { useAIAssist, AIAssistTrigger, AIAssistPanel } from '../AIAssistWidget';
 
 // Une trame du document continu (section de DIP ou clause de contrat) —
@@ -14,6 +16,7 @@ export default function DocumentSection({
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState('');
+  const textareaRef = useRef(null);
   const aiAssist = useAIAssist(aiAssistPath);
 
   const startEdit = () => { setIsEditing(true); setEditContent(content || ''); };
@@ -42,9 +45,7 @@ export default function DocumentSection({
       {!isEditing ? (
         <div>
           <div className="bg-bg-elevated rounded p-4 mb-4">
-            <p className="font-dm-sans text-sm text-text-primary whitespace-pre-wrap leading-relaxed">
-              {content || <span className="text-text-secondary italic">Contenu non renseigné</span>}
-            </p>
+            <RichTextView content={content} className="font-dm-sans text-sm text-text-primary leading-relaxed" />
           </div>
           <div className="flex items-center justify-between flex-wrap gap-3">
             <p className="font-dm-mono text-xs text-text-secondary">
@@ -61,19 +62,32 @@ export default function DocumentSection({
         </div>
       ) : (
         <div className="space-y-3">
-          <textarea
-            className="input-field min-h-48 resize-none font-dm-mono text-sm"
-            value={editContent}
-            onChange={e => setEditContent(e.target.value)}
-            placeholder="Contenu..."
-            autoFocus
-          />
+          <div>
+            <FormattingToolbar textareaRef={textareaRef} value={editContent} onChange={setEditContent} />
+            <textarea
+              ref={textareaRef}
+              className="input-field min-h-48 resize-none font-dm-mono text-sm"
+              value={editContent}
+              onChange={e => setEditContent(e.target.value)}
+              placeholder="Contenu... — sélectionnez du texte puis utilisez la barre d'outils pour le mettre en forme"
+              autoFocus
+            />
+          </div>
+
+          <div>
+            <p className="font-dm-mono text-[11px] text-text-muted uppercase tracking-wider mb-1.5">Aperçu</p>
+            <div className="bg-bg-elevated rounded-lg p-3 min-h-[60px]">
+              <RichTextView content={editContent} className="font-dm-sans text-sm text-text-primary" emptyLabel="Commencez à rédiger pour voir l'aperçu." />
+            </div>
+          </div>
+
           <div>
             <p className="font-dm-mono text-[11px] text-text-muted uppercase tracking-wider mb-1.5">Suivi des modifications</p>
             <div className="bg-bg-elevated rounded-lg p-3 min-h-[60px]">
               <RedlineView before={content || ''} after={editContent} className="font-dm-sans text-sm" emptyLabel="Commencez à rédiger pour voir l'aperçu." />
             </div>
           </div>
+
           <div className="flex items-center gap-3 flex-wrap">
             <button onClick={() => save('conforme')} disabled={isSaving} className="btn-primary flex items-center gap-2 text-sm py-2">
               {isSaving ? <LoadingSpinner size="sm" /> : <Check className="w-4 h-4" />} Valider comme conforme

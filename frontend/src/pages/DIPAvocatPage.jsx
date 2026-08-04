@@ -7,6 +7,8 @@ import api from '../lib/api';
 import { supabase } from '../lib/supabase';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import RedlineView from '../components/RedlineView';
+import RichTextView from '../components/document/RichTextView';
+import FormattingToolbar from '../components/document/FormattingToolbar';
 import {
   Edit3, Check, X, AlertCircle,
   ArrowLeft, FileText, ScrollText, Download, Paperclip, Trash2,
@@ -376,6 +378,7 @@ function DocumentSectionItem({ item, number, isDip, dip, contract, franchiseur, 
   const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState('');
+  const textareaRef = useRef(null);
 
   const itemProposals = isDip
     ? proposals.filter(p => p.section_id === item.id)
@@ -443,9 +446,7 @@ function DocumentSectionItem({ item, number, isDip, dip, contract, franchiseur, 
                 className="font-dm-sans text-sm"
               />
             ) : (
-              <p className="font-dm-sans text-sm whitespace-pre-wrap leading-relaxed" style={{ color: 'rgb(var(--text-primary))' }}>
-                {item.content || <span style={{ color: 'rgb(var(--text-muted))' }} className="italic">Non renseigné</span>}
-              </p>
+              <RichTextView content={item.content} className="font-dm-sans text-sm leading-relaxed" style={{ color: 'rgb(var(--text-primary))' }} />
             )}
           </div>
           <button
@@ -459,13 +460,24 @@ function DocumentSectionItem({ item, number, isDip, dip, contract, franchiseur, 
         </>
       ) : (
         <div className="space-y-3 mb-4">
-          <textarea
-            value={editContent}
-            onChange={e => setEditContent(e.target.value)}
-            className="w-full rounded-xl p-4 font-dm-sans text-sm resize-y"
-            style={{ background: 'var(--v2-surface)', border: '1px solid var(--v2-border-hot)', color: 'rgb(var(--text-primary))', minHeight: 180 }}
-            autoFocus
-          />
+          <div>
+            <FormattingToolbar textareaRef={textareaRef} value={editContent} onChange={setEditContent} />
+            <textarea
+              ref={textareaRef}
+              value={editContent}
+              onChange={e => setEditContent(e.target.value)}
+              className="w-full rounded-xl p-4 font-dm-sans text-sm resize-y"
+              style={{ background: 'var(--v2-surface)', border: '1px solid var(--v2-border-hot)', color: 'rgb(var(--text-primary))', minHeight: 180 }}
+              autoFocus
+            />
+          </div>
+
+          <div>
+            <p className="mono-label-v2 mb-1.5">Aperçu</p>
+            <div className="rounded-xl p-4" style={{ background: 'var(--v2-surface)', border: '1px solid var(--v2-border)', minHeight: 60 }}>
+              <RichTextView content={editContent} className="font-dm-sans text-sm" style={{ color: 'rgb(var(--text-primary))' }} emptyLabel="Commencez à rédiger pour voir l'aperçu." />
+            </div>
+          </div>
 
           <div>
             <p className="mono-label-v2 mb-1.5">Suivi des modifications</p>

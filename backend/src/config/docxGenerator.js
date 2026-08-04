@@ -2,6 +2,7 @@ const {
   Document, Packer, Paragraph, TextRun, HeadingLevel,
   AlignmentType, PageBreak
 } = require('docx');
+const { stripRichTextMarkers } = require('./richTextStrip');
 
 const STATUS_LABELS = {
   conforme: '✓ Conforme',
@@ -90,7 +91,7 @@ const generateDocx = async (sections, companyName = 'Franchiseur') => {
       }),
       new Paragraph({
         spacing: { after: 400 },
-        children: [new TextRun({ text: section.content || 'Non renseigné', size: 22, color: '111827' })]
+        children: [new TextRun({ text: stripRichTextMarkers(section.content) || 'Non renseigné', size: 22, color: '111827' })]
       })
     );
 

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Shield, CheckCircle, AlertTriangle, FileText, ChevronDown, ChevronUp, Award } from 'lucide-react';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import RichTextView from '../components/document/RichTextView';
 
 const API_BASE = import.meta.env.VITE_API_URL
   ? import.meta.env.VITE_API_URL.replace(/\/$/, '') + '/api'
@@ -56,9 +57,7 @@ function SectionCard({ section, onToggle, statusConfig }) {
       </button>
       {open && section.content && (
         <div className="px-5 pb-5 border-t" style={{ borderColor: cfg.border }}>
-          <p className="font-dm-sans text-sm leading-relaxed mt-3 whitespace-pre-wrap" style={{ color: '#475569' }}>
-            {section.content}
-          </p>
+          <RichTextView content={section.content} className="font-dm-sans text-sm leading-relaxed mt-3" style={{ color: '#475569' }} />
         </div>
       )}
     </div>

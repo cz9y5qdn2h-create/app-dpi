@@ -9,6 +9,7 @@ const { authMiddleware, requireFranchisor } = require('../middleware/auth');
 const { parseContractClauses, compareContractVersions, generateContractFromDIP, generateContractFromDIPStream, correctClause, correctClauseWithAnswers } = require('../config/claude');
 const { triggerCrossImpactAlerts } = require('../utils/crossImpact');
 const errMsg = require('../config/errorMessage');
+const { stripRichTextMarkers } = require('../config/richTextStrip');
 const router = express.Router();
 
 const sha256hex = (buffer) => crypto.createHash('sha256').update(buffer).digest('hex');
@@ -552,7 +553,7 @@ router.get('/:id/pdf', authMiddleware, async (req, res) => {
     doc.fillColor('#111').fontSize(14).font('Helvetica-Bold').text(c.clause_title || '');
     doc.moveDown(0.4);
     doc.fillColor('#222').fontSize(10.5).font('Helvetica')
-      .text(c.content || 'Non renseigné', { align: 'justify', lineGap: 2 });
+      .text(stripRichTextMarkers(c.content) || 'Non renseigné', { align: 'justify', lineGap: 2 });
   });
 
   const range = doc.bufferedPageRange();

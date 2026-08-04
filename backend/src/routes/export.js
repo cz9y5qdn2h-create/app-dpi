@@ -4,6 +4,7 @@ const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType, PageB
 const ExcelJS = require('exceljs');
 const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware } = require('../middleware/auth');
+const { stripRichTextMarkers } = require('../config/richTextStrip');
 const router = express.Router();
 
 const STATUS_LABEL = { conforme: 'Conforme', a_verifier: 'À vérifier', non_conforme: 'Non conforme' };
@@ -116,7 +117,7 @@ router.get('/:dipId/pdf', authMiddleware, async (req, res) => {
       .text(`Section ${s.section_number} — ${s.section_title}`, { continued: false });
     doc.fillColor(sColor).fontSize(9).font('Helvetica-Bold').text(STATUS_LABEL[s.status] || s.status);
     doc.fillColor('#333').fontSize(9).font('Helvetica')
-      .text(s.content || '— Section non renseignée —', { align: 'justify' });
+      .text(stripRichTextMarkers(s.content) || '— Section non renseignée —', { align: 'justify' });
     doc.moveDown(0.8);
   }
 
@@ -234,7 +235,7 @@ router.get('/:dipId/docx', authMiddleware, async (req, res) => {
       spacing: { before: 400, after: 200 }
     }));
 
-    const content = (s.content || '— Section non renseignée —').split('\n');
+    const content = (stripRichTextMarkers(s.content) || '— Section non renseignée —').split('\n');
     for (const line of content) {
       if (line.trim()) {
         children.push(new Paragraph({
@@ -338,7 +339,7 @@ router.get('/:dipId/xlsx', authMiddleware, async (req, res) => {
   ];
   synth.getRow(1).font = { bold: true, color: { argb: 'FFC8A96E' } };
   for (const s of sections) {
-    const row = synth.addRow({ num: s.section_number, title: s.section_title, status: STATUS_LABEL[s.status] || s.status, content: s.content || '', id: s.id });
+    const row = synth.addRow({ num: s.section_number, title: s.section_title, status: STATUS_LABEL[s.status] || s.status, content: stripRichTextMarkers(s.content) || '', id: s.id });
     row.getCell('content').alignment = { wrapText: true };
   }
 
