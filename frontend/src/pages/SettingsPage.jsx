@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import PageHeader from '../components/ui/PageHeader';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
-import { Save, Plus, Trash2, Database, Mail, Cloud, Globe, CheckCircle, Eye, EyeOff, Send, Sun, Moon, Sparkles, Lock, Key, Calendar, AlertCircle, Bell, Briefcase, RotateCcw, Copy, Link2, Link2Off } from 'lucide-react';
+import { Save, Plus, Trash2, Database, Mail, Cloud, Globe, CheckCircle, Eye, EyeOff, Send, Sun, Moon, Sparkles, Lock, Key, Calendar, AlertCircle, Bell, Briefcase, RotateCcw, Copy, Link2, Link2Off, ChevronDown } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
@@ -52,6 +52,7 @@ export default function SettingsPage() {
     notifications_sms: false, notification_frequency: 'immediate',
     renewal_alert_days: 30
   });
+  const [inviteEmail, setInviteEmail] = useState('');
   const [brevoForm, setBrevoForm] = useState({ brevo_api_key: '', brevo_sender_name: 'DIPpro', brevo_sender_email: '' });
   const [showBrevoKey, setShowBrevoKey] = useState(false);
   const [showSourceForm, setShowSourceForm] = useState(false);
@@ -234,6 +235,15 @@ export default function SettingsPage() {
     if (!avocatLinkData?.url) return;
     navigator.clipboard.writeText(avocatLinkData.url).then(() => toast.success('Lien copié dans le presse-papiers'));
   };
+
+  const inviteAvocatMutation = useMutation({
+    mutationFn: (lawyer_email) => api.post('/avocat/invite', { lawyer_email }),
+    onSuccess: () => {
+      toast.success(`Invitation envoyée à ${inviteEmail}`);
+      setInviteEmail('');
+    },
+    onError: (err) => toast.error(err.message),
+  });
 
   const testEmailMutation = useMutation({
     mutationFn: () => api.post('/notifications/test', { channel: 'email', target: data?.profile?.email }),
@@ -640,17 +650,42 @@ export default function SettingsPage() {
         )}
       </div>
 
-      {/* Partage avocat par lien */}
+      {/* Partage avocat */}
       <div className="card">
         <div className="mb-5">
           <h2 className="font-cormorant text-xl flex items-center gap-2">
             <Briefcase className="w-4 h-4 text-gold" /> Partager avec mon avocat
           </h2>
           <p className="font-dm-sans text-xs text-text-secondary mt-1">
-            Générez un lien unique à transmettre à votre avocat par le canal de votre choix (email, SMS…). En le suivant, il obtient un accès direct à votre DIP et votre contrat.
+            Indiquez son email — il reçoit un accès direct à votre DIP et votre contrat, sans compte à créer ni mot de passe à définir.
           </p>
         </div>
 
+        <div className="flex gap-2 mb-6">
+          <input
+            className="input-field text-sm flex-1 py-2"
+            type="email"
+            placeholder="avocat@cabinet.fr"
+            value={inviteEmail}
+            onChange={e => setInviteEmail(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && inviteEmail.trim() && inviteAvocatMutation.mutate(inviteEmail.trim())}
+          />
+          <button
+            onClick={() => inviteAvocatMutation.mutate(inviteEmail.trim())}
+            disabled={inviteAvocatMutation.isPending || !inviteEmail.trim()}
+            className="btn-liquid-glass-prominent flex items-center gap-2 text-sm py-2 px-3 whitespace-nowrap"
+          >
+            {inviteAvocatMutation.isPending ? <LoadingSpinner size="sm" /> : <Send className="w-3.5 h-3.5" />}
+            Inviter
+          </button>
+        </div>
+
+        <details className="group">
+          <summary className="font-dm-sans text-xs text-text-muted cursor-pointer select-none list-none flex items-center gap-1.5 hover:text-text-secondary transition-colors">
+            <ChevronDown className="w-3 h-3 group-open:rotate-180 transition-transform" />
+            Ou partager un lien générique (plusieurs avocats, autre canal)
+          </summary>
+          <div className="mt-4">
         {avocatLinkData?.url ? (
           <div className="space-y-3">
             <div className="flex items-center gap-2 bg-bg-elevated rounded-lg px-3 py-2">
@@ -684,6 +719,8 @@ export default function SettingsPage() {
             Générer le lien de partage
           </button>
         )}
+          </div>
+        </details>
       </div>
 
       {/* Niveau d'automatisation */}

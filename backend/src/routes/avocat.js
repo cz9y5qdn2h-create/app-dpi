@@ -402,10 +402,12 @@ router.put('/clause-proposals/:id/reject', authMiddleware, async (req, res) => {
   res.json({ ok: true });
 });
 
-// POST /api/avocat/invite — franchiseur envoie son lien d'invitation par email
-// Réutilise le même token que /invite-link (une seule source de vérité pour
-// l'accès avocat) : si l'avocat a déjà un compte, le lien le connecte en un
-// clic ; sinon il l'amène sur l'inscription puis le lie automatiquement.
+// POST /api/avocat/invite — le franchiseur invite son avocat par email
+// Provisionne et lie tout de suite, sans étape intermédiaire pour l'avocat :
+// c'est le franchiseur qui déclenche la création du compte (sans mot de
+// passe — accès uniquement par le lien reçu) et la liaison à son propre
+// dossier, jamais un tiers (admin) qui décide après coup qui est l'avocat
+// de qui. L'avocat n'a rien à faire d'autre que cliquer le lien reçu.
 router.post('/invite', authMiddleware, async (req, res) => {
   const { lawyer_email } = req.body;
   if (!lawyer_email?.trim()) return res.status(400).json({ error: 'Email requis' });
@@ -414,16 +416,53 @@ router.post('/invite', authMiddleware, async (req, res) => {
   const appUrl = getAppUrl();
 
   const { data: franchiseur } = await supabaseAdmin
-    .from('users').select('id, company_name, avocat_invite_token').eq('id', req.user.id).single();
+    .from('users').select('id, company_name').eq('id', req.user.id).single();
 
   await supabaseAdmin.from('users').update({ lawyer_email: email }).eq('id', req.user.id);
 
-  let token = franchiseur?.avocat_invite_token;
-  if (!token) {
-    token = uuidv4();
-    await supabaseAdmin.from('users').update({ avocat_invite_token: token }).eq('id', req.user.id);
+  const { data: existing } = await supabaseAdmin
+    .from('users').select('id, role, avocat_access_token').eq('email', email).maybeSingle();
+  if (existing && existing.role !== 'avocat') {
+    return res.status(409).json({ error: 'Un compte existe déjà avec cet email sous un autre rôle.' });
   }
-  const joinUrl = `${appUrl}/avocat/rejoindre/${token}`;
+
+  let avocatId = existing?.id;
+  if (!avocatId) {
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email, email_confirm: true,
+    });
+    if (authError) return res.status(400).json({ error: authError.message });
+    avocatId = authData.user.id;
+  }
+
+  const accessToken = existing?.avocat_access_token || uuidv4();
+  const upsertPayload = {
+    id: avocatId, email, role: 'avocat', trial_expires_at: null, avocat_access_token: accessToken,
+  };
+  if (!existing) {
+    upsertPayload.company_name = email.split('@')[0];
+    upsertPayload.created_at = new Date().toISOString();
+  }
+  const { error: profileError } = await supabaseAdmin
+    .from('users').upsert(upsertPayload, { onConflict: 'id' });
+  if (profileError) return res.status(500).json({ error: profileError.message });
+
+  const now = new Date().toISOString();
+  const { data: relExisting } = await supabaseAdmin
+    .from('avocat_franchiseurs').select('id, status')
+    .eq('avocat_id', avocatId).eq('franchiseur_id', req.user.id).maybeSingle();
+  if (relExisting) {
+    if (relExisting.status !== 'active') {
+      await supabaseAdmin.from('avocat_franchiseurs')
+        .update({ status: 'active', accepted_at: now }).eq('id', relExisting.id);
+    }
+  } else {
+    await supabaseAdmin.from('avocat_franchiseurs').insert({
+      avocat_id: avocatId, franchiseur_id: req.user.id, status: 'active', invited_at: now, accepted_at: now,
+    });
+  }
+
+  const joinUrl = `${appUrl}/api/auth/avocat-login/${accessToken}`;
 
   const brevoKey = process.env.BREVO_API_KEY;
   const companyName = franchiseur?.company_name || 'Un franchiseur';
@@ -458,7 +497,7 @@ router.post('/invite', authMiddleware, async (req, res) => {
       <li>Accompagner plusieurs réseaux de franchise depuis un seul espace</li>
     </ul>
     <a href="${joinUrl}" style="display:inline-block;background:linear-gradient(135deg,#C8A96E,#A8893E);color:#1A1826;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px">Accéder à l'espace de ${companyName} →</a>
-    <p style="margin:24px 0 0;font-size:12px;color:#94A3B8">Si vous n'avez pas encore de compte DIPpro, ce lien vous proposera d'en créer un — vous serez automatiquement connecté à ce dossier ensuite.</p>
+    <p style="margin:24px 0 0;font-size:12px;color:#94A3B8">Aucun mot de passe à créer — ce lien vous connecte directement à ce dossier. Conservez-le, il reste valable à chaque utilisation.</p>
     <hr style="border:none;border-top:1px solid #f0ece4;margin:24px 0">
     <p style="margin:0;font-size:11px;color:#94A3B8">DIPpro — Gestion des DIP franchise · Loi Doubin · <a href="${appUrl}/cgu" style="color:#C8A96E">CGU</a></p>
   </div>
