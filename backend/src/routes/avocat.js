@@ -1,4 +1,5 @@
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const { getAppUrl } = require('../config/appUrl');
 const { v4: uuidv4 } = require('uuid');
 const { supabaseAdmin } = require('../config/supabase');
@@ -6,6 +7,18 @@ const { authMiddleware } = require('../middleware/auth');
 const { createCertificate } = require('./certificates');
 const errMsg = require('../config/errorMessage');
 const router = express.Router();
+
+// Provisionne un compte Supabase (si nécessaire) et envoie un email réel à
+// chaque appel — sans limite dédiée, un compte franchiseur compromis ou un
+// script pourrait spammer une adresse email ou générer des comptes en boucle
+// via le seul rate-limit global (300 req/15min, partagé avec tout /api/*).
+const inviteLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 15,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Trop d'invitations envoyées. Réessayez dans une heure." },
+});
 
 const requireAvocat = async (req, res, next) => {
   const { data: profile } = await supabaseAdmin.from('users').select('role').eq('id', req.user.id).single();
@@ -432,7 +445,7 @@ router.put('/clause-proposals/:id/reject', authMiddleware, async (req, res) => {
 // passe — accès uniquement par le lien reçu) et la liaison à son propre
 // dossier, jamais un tiers (admin) qui décide après coup qui est l'avocat
 // de qui. L'avocat n'a rien à faire d'autre que cliquer le lien reçu.
-router.post('/invite', authMiddleware, async (req, res) => {
+router.post('/invite', authMiddleware, inviteLimiter, async (req, res) => {
   const { lawyer_email } = req.body;
   if (!lawyer_email?.trim()) return res.status(400).json({ error: 'Email requis' });
 
