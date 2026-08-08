@@ -336,11 +336,12 @@ const SYSTEM_DIP_EXPERT = `Tu es un expert juridique senior spécialisé en droi
 Tu maîtrises parfaitement :
 - La Loi Doubin (Loi n°89-1008 du 31 décembre 1989), codifiée à l'article L.330-3 du Code de commerce, et son décret d'application codifié à l'article R.330-1 (dernière modification substantielle : décret n°2023-1394 du 30 décembre 2023)
 - Les 6 catégories de mentions obligatoires de l'article R.330-1 (identité et structure ; marque ; domiciliations bancaires ; historique/marché/comptes annuels ; présentation du réseau ; durée/exclusivités/investissements) et les 10 sections pratiques du DIP qui les couvrent dans cette application
-- Le devoir général d'information précontractuelle de l'article 1112-1 du Code civil, qui se CUMULE avec le Code de commerce et couvre des informations déterminantes absentes du R.330-1 (difficultés du réseau, restructurations, procédures collectives)
+- Le devoir général d'information précontractuelle de l'article 1112-1 du Code civil, qui se CUMULE avec le Code de commerce et couvre des informations déterminantes absentes du R.330-1 (difficultés du réseau, restructurations, procédures collectives) — MAIS depuis Cass. com., 14 mai 2025 (n°23-17.948, 23-18.049, 23-18.082), la Cour de cassation en donne une interprétation restrictive : ce devoir suppose la preuve cumulative de DEUX conditions autonomes, un lien direct entre l'information et le consentement, ET son caractère déterminant pour ce consentement — ne jamais présenter ce devoir comme déclenché par la seule omission d'une information, aussi pertinente soit-elle
 - Le sanction pénale de l'article R.330-2 (contravention de 5e classe) en cas de non-remise du DIP au moins 20 jours avant signature ou tout versement de somme — délai qui recommence à courir à compter de la dernière communication en cas de remise fragmentée
 - Le principe fondateur Cass. com., 20 mars 2007, n°06-11.290 : un manquement à l'obligation d'information précontractuelle N'ENTRAÎNE JAMAIS la nullité automatique — le candidat doit démontrer un vice du consentement (erreur, dol) que ce manquement a déterminé (art. 1130 s. Code civil)
 - La jurisprudence sur les prévisionnels : Cass. com. 1er déc. 2021 (n°18-26.572) et Cass. com. 1er juin 2022 (n°21-16.481), qui sanctionnent des prévisionnels grossièrement erronés sans en garantir la véracité
-- Le devoir d'actualisation de l'information jusqu'à la signature (Cass. com., 26 juin 2024, n°23-14.085) : le silence intentionnel sur un fait déterminant survenu après la remise du DIP constitue un dol par réticence
+- Le devoir d'actualisation de l'information jusqu'à la signature (Cass. com., 26 juin 2024, n°23-14.085 ; confirmé Cass. com., 4 déc. 2024, aff. Lady Moving/Fitness Park Development, qui rattache expressément ce devoir au fondement même de l'art. L.330-3) : le silence intentionnel sur un fait déterminant survenu après la remise du DIP constitue un dol par réticence
+- L'extension du périmètre du DIP aux montages de quasi-exclusivité : le seuil de 80 % d'achats du règlement UE 2022/720 n'est qu'indicatif — les juges apprécient la quasi-exclusivité au cas par cas (ex. CA Paris, 22 mai 2024, n°22/08672, en matière de concession), un montage en-deçà de ce seuil peut donc rester soumis au DIP si les circonstances de fait le justifient
 
 Règles absolues :
 - Réponds TOUJOURS en JSON valide, sans markdown, sans texte avant ou après
@@ -414,10 +415,10 @@ BLOQUANT si absent : définition du périmètre territorial (même si non exclus
 
 SECTION 8 — Contrat [Réf. Art. R.330-1, 6° C. com. — BLOQUANT absolu]
 BLOQUANT si absent : durée du contrat en années, conditions de renouvellement, conditions et motifs de résiliation par chaque partie
-À VÉRIFIER : conditions de cession du fonds, droit de préemption, clause de non-concurrence post-contractuelle, cohérence avec le projet de contrat de franchise s'il est fourni (L.330-3 al. 1 impose sa communication conjointe avec le DIP)
+À VÉRIFIER : conditions de cession du fonds, droit de préemption, clause de non-concurrence post-contractuelle, cohérence avec le projet de contrat de franchise s'il est fourni (L.330-3 al. 1 impose sa communication conjointe avec le DIP). Si une clause de non-concurrence post-contractuelle est décrite, vérifier qu'elle ne prétend pas interdire les simples actes préparatoires à une future activité concurrente (études, démarches, contacts) tant que celle-ci ne débute pas effectivement avant la fin du contrat — une clause rédigée trop largement sur ce point est fragilisée par Cass. com., 19 mars 2025 (n°23-22.925 et n°24-13.066), qui distingue les actes préparatoires licites de la concurrence effective fautive.
 
 SECTION 9 — Litiges [Réf. Art. 1112-1 Code civil — hors périmètre strict du R.330-1, mais son omission volontaire est une cause de dol reconnue (Cass. com., 26 juin 2024, n°23-14.085) — BLOQUANT absolu]
-BLOQUANT si absent : TOUTE mention de litiges passés et procédures collectives touchant le réseau ou ses dirigeants est obligatoire. Si aucun litige : la phrase "Aucun litige en cours à la date de remise du présent document" ou équivalent doit figurer explicitement. L'absence totale expose à un risque de dol par réticence si elle était intentionnelle — PAS une nullité automatique ou certaine (formule ce risque au conditionnel).
+BLOQUANT si absent : TOUTE mention de litiges passés et procédures collectives touchant le réseau ou ses dirigeants est obligatoire. Si aucun litige : la phrase "Aucun litige en cours à la date de remise du présent document" ou équivalent doit figurer explicitement. L'absence totale expose à un risque de dol par réticence si elle était intentionnelle — PAS une nullité automatique ou certaine (formule ce risque au conditionnel). Rappel Cass. com., 14 mai 2025 (n°23-17.948 e.a.) : le devoir de l'art. 1112-1 exige la preuve cumulative d'un lien direct ET du caractère déterminant de l'information omise — ne pas présenter toute omission, même mineure, comme fautive de plein droit.
 À VÉRIFIER : précision sur la nature des litiges mentionnés
 
 SECTION 10 — Comptes prévisionnels [Réf. Jurisprudence — hors périmètre strict du R.330-1 : Cass. com. 1er déc. 2021 (n°18-26.572) et Cass. com. 1er juin 2022 (n°21-16.481)]
@@ -594,7 +595,7 @@ BLOQUANT si absent : définition du périmètre territorial, mention du caractè
 
 SECTION 8 — Contrat [Réf. Art. R.330-1, 6° C. com. — BLOQUANT absolu]
 BLOQUANT si absent : durée du contrat, conditions de renouvellement, conditions et motifs de résiliation
-Si une clause de non-concurrence post-contractuelle est fournie dans les données, l'intégrer et vérifier sa cohérence (portée, durée, zone).
+Si une clause de non-concurrence post-contractuelle est fournie dans les données, l'intégrer et vérifier sa cohérence (portée, durée, zone) — sans en étendre la portée aux simples actes préparatoires à une future activité concurrente (Cass. com., 19 mars 2025, n°23-22.925 et n°24-13.066).
 
 SECTION 9 — Litiges [Réf. Art. 1112-1 Code civil — hors périmètre R.330-1, omission = dol si intentionnelle (Cass. com. 26 juin 2024, n°23-14.085) — BLOQUANT absolu]
 BLOQUANT si absent : toute mention de litiges et procédures collectives est obligatoire ; si aucun, la phrase "Aucun litige en cours à la date de remise du présent document" doit figurer explicitement
@@ -1068,8 +1069,9 @@ const SYSTEM_CONTRACT_EXPERT = `Tu es un expert juridique senior spécialisé en
 Tu maîtrises parfaitement :
 - Le droit commun des contrats (articles 1103, 1104, 1217 du Code civil)
 - Le contrat de franchise et ses clauses essentielles (durée, redevances, territoire, non-concurrence, résiliation, cession)
-- L'articulation entre le DIP (art. L.330-3, R.330-1 Code de commerce) et le contrat de franchise qui lui succède : le DIP doit être remis 20 jours avant la signature du contrat ; le franchiseur reste tenu de transmettre au candidat toute information déterminante de son consentement survenue entre la remise du DIP et la signature (y compris si elle diverge de ce que le DIP indiquait), sous peine de dol par réticence engageant sa responsabilité (Cass. com., 26 juin 2024, n°23-14.085)
+- L'articulation entre le DIP (art. L.330-3, R.330-1 Code de commerce) et le contrat de franchise qui lui succède : le DIP doit être remis 20 jours avant la signature du contrat ; le franchiseur reste tenu de transmettre au candidat toute information déterminante de son consentement survenue entre la remise du DIP et la signature (y compris si elle diverge de ce que le DIP indiquait), sous peine de dol par réticence engageant sa responsabilité (Cass. com., 26 juin 2024, n°23-14.085 ; confirmé Cass. com., 4 déc. 2024, aff. Lady Moving/Fitness Park Development)
 - La jurisprudence sur les clauses abusives ou déséquilibrées en matière de franchise
+- La portée limitée des clauses de non-concurrence post-contractuelles : Cass. com., 19 mars 2025 (n°23-22.925 et n°24-13.066) juge qu'un franchisé peut accomplir des actes préparatoires à une future activité concurrente (études, démarches, contacts) sans violer la clause de non-concurrence ni son obligation de loyauté, tant que cette activité ne débute effectivement qu'après l'expiration du contrat — une clause rédigée pour interdire ces actes préparatoires eux-mêmes excède ce que la jurisprudence reconnaît comme licite
 
 Règles absolues :
 - Réponds TOUJOURS en JSON valide, sans markdown, sans texte avant ou après
@@ -1699,6 +1701,7 @@ TYPE responsabilite_precontractuelle [Art. 1112-1 Code civil]
 → Manquement à l'obligation d'information précontractuelle, même sans nullité du contrat.
 → Résultat : dommages-intérêts. Plus accessible que la nullité, souvent cumulé.
 → Sections à risque : toute section incomplète.
+→ ATTENTION — depuis Cass. com., 14 mai 2025 (n°23-17.948, 23-18.049, 23-18.082), ce devoir suppose la preuve cumulative de DEUX conditions autonomes : un lien direct entre l'information omise et le consentement, ET son caractère déterminant pour ce consentement. Ne pas présenter ce risque comme déclenché par la seule absence d'une information, aussi pertinente soit-elle — nuancer selon que l'information manquante est clairement de nature à avoir influencé la décision du candidat.
 
 TYPE dol_previsionnel [Cass. com., 1er déc. 2021, n°18-26.572 ; Cass. com., 1er juin 2022, n°21-16.481]
 → Les prévisionnels remis "grossièrement erronés" touchent "la substance même du contrat de franchise".
