@@ -10,6 +10,7 @@ const { parseContractClauses, compareContractVersions, generateContractFromDIP, 
 const { triggerCrossImpactAlerts } = require('../utils/crossImpact');
 const errMsg = require('../config/errorMessage');
 const { stripRichTextMarkers } = require('../config/richTextStrip');
+const { findIncompleteMarker } = require('../config/incompleteContentCheck');
 const router = express.Router();
 
 const sha256hex = (buffer) => crypto.createHash('sha256').update(buffer).digest('hex');
@@ -624,6 +625,21 @@ router.put('/:id/clauses/:clauseId', authMiddleware, requireFranchisor, async (r
   const conformeCount = (allClauses || []).filter(c => c.status === 'conforme').length;
   const score = allClauses?.length ? Math.round((conformeCount / allClauses.length) * 100) : 0;
   await supabaseAdmin.from('franchise_contracts').update({ conformity_score: score }).eq('id', req.params.id);
+
+  // Alerte "contenu à compléter" — même correctif que sur les sections DIP
+  // (dip.js) : signale un placeholder "[À COMPLÉTER : ...]" resté dans le
+  // texte sauvegardé plutôt que de le laisser passer silencieusement.
+  const incompleteMarker = findIncompleteMarker(content);
+  if (incompleteMarker) {
+    await supabaseAdmin.from('alerts').insert({
+      contract_id: req.params.id,
+      clause_id: req.params.clauseId,
+      source: 'Contenu à compléter',
+      suggestion: `La clause « ${existing.clause_title} » contient un passage non finalisé : « ${incompleteMarker} ». Complétez-le avant la signature du contrat.`,
+      urgency: 'haute',
+      status: 'pending',
+    }).catch(e => console.error('Incomplete-content alert error:', e.message));
+  }
 
   res.json({ clause: data, conformity_score: score });
 });

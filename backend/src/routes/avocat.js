@@ -3,6 +3,7 @@ const { getAppUrl } = require('../config/appUrl');
 const { v4: uuidv4 } = require('uuid');
 const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware } = require('../middleware/auth');
+const { createCertificate } = require('./certificates');
 const errMsg = require('../config/errorMessage');
 const router = express.Router();
 
@@ -247,6 +248,9 @@ router.put('/proposals/:id/accept', authMiddleware, async (req, res) => {
     .from('dip_documents').select('user_id').eq('id', proposal.dip_id).single();
   if (dip?.user_id !== req.user.id) return res.status(403).json({ error: 'Seul le franchiseur peut valider' });
 
+  const { data: section } = await supabaseAdmin
+    .from('dip_sections').select('section_title, section_number').eq('id', proposal.section_id).maybeSingle();
+
   const now = new Date().toISOString();
 
   await Promise.all([
@@ -263,6 +267,26 @@ router.put('/proposals/:id/accept', authMiddleware, async (req, res) => {
       reviewer_comment: reviewer_comment || null,
     }).eq('id', req.params.id),
   ]);
+
+  // Même correctif que pour l'édition directe (dip.js) : une proposition
+  // d'avocat acceptée est une modification du DIP comme une autre, elle doit
+  // générer une attestation et notifier les franchisés.
+  createCertificate({
+    userId: req.user.id,
+    userEmail: req.user.email,
+    dipId: proposal.dip_id,
+    certificateType: 'MISE_A_JOUR',
+    changes: [{
+      id: proposal.section_id,
+      type: 'proposition_avocat_acceptee',
+      section: section?.section_title || 'Section',
+      section_number: section?.section_number,
+      ancien: proposal.content_before || '',
+      nouveau: proposal.content_proposed || '',
+      impact_legal: 'Moderate',
+      recommandation_ia: 'Modification proposée par l\'avocat et validée par le franchiseur.',
+    }],
+  }).catch(e => console.error('Certificate auto-gen error (proposal accept):', e.message));
 
   res.json({ ok: true });
 });

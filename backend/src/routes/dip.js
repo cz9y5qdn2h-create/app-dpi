@@ -7,6 +7,8 @@ const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware, requireFranchisor } = require('../middleware/auth');
 const { parseDIPSections, compareDIPVersions, assessLitigationRisks, correctSection, correctSectionWithAnswers } = require('../config/claude');
 const { triggerCrossImpactAlerts } = require('../utils/crossImpact');
+const { createCertificate } = require('./certificates');
+const { findIncompleteMarker } = require('../config/incompleteContentCheck');
 const errMsg = require('../config/errorMessage');
 const router = express.Router();
 
@@ -473,6 +475,47 @@ router.put('/:id/sections/:sectionId', authMiddleware, requireFranchisor, async 
   const conformeCount = allSections.filter(s => s.status === 'conforme').length;
   const score = Math.round((conformeCount / allSections.length) * 100);
   await supabaseAdmin.from('dip_documents').update({ conformity_score: score }).eq('id', req.params.id);
+
+  // Attestation de mise à jour — jusqu'ici uniquement générée en réimportant
+  // un fichier, jamais pour une édition directe de section : le franchiseur
+  // n'avait donc aucune preuve horodatée de ce chemin de modification, et ses
+  // franchisés n'étaient jamais notifiés (la notification part de la même
+  // tâche de fond). Non-bloquant : une erreur ici ne doit pas faire échouer
+  // l'enregistrement de la section elle-même.
+  if (existing.content !== content) {
+    createCertificate({
+      userId: req.user.id,
+      userEmail: req.user.email,
+      dipId: req.params.id,
+      certificateType: 'MISE_A_JOUR',
+      changes: [{
+        id: req.params.sectionId,
+        type: 'modification_section',
+        section: existing.section_title,
+        section_number: existing.section_number,
+        ancien: existing.content || '',
+        nouveau: content || '',
+        impact_legal: 'Moderate',
+        recommandation_ia: 'Modification directe par le franchiseur — vérifier la cohérence avec le reste du DIP.',
+      }],
+    }).catch(e => console.error('Certificate auto-gen error (section update):', e.message));
+  }
+
+  // Alerte "contenu à compléter" — les corrections guidées par l'IA (widget
+  // "Aide à la rédaction") insèrent "[À COMPLÉTER : ...]" dans le texte
+  // quand une donnée manquante l'empêche de rédiger un passage complet ;
+  // rien ne prévenait le franchiseur si ce texte était sauvegardé tel quel.
+  const incompleteMarker = findIncompleteMarker(content);
+  if (incompleteMarker) {
+    await supabaseAdmin.from('alerts').insert({
+      dip_id: req.params.id,
+      section_id: req.params.sectionId,
+      source: 'Contenu à compléter',
+      suggestion: `La section « ${existing.section_title} » contient un passage non finalisé : « ${incompleteMarker} ». Complétez-le avant la remise du DIP.`,
+      urgency: 'haute',
+      status: 'pending',
+    }).catch(e => console.error('Incomplete-content alert error:', e.message));
+  }
 
   res.json({ section: data, conformity_score: score });
 });

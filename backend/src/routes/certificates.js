@@ -204,6 +204,128 @@ async function notifyFranchisees({ userId, certId, dipId, publicToken, cert, pdf
     .catch(() => {});
 }
 
+// Cœur de la génération de certificat — extrait de la route POST / pour être
+// appelable directement depuis les autres routes qui modifient un DIP
+// (édition directe de section, acceptation d'une proposition d'avocat) et
+// pas seulement depuis le flux de réimport de fichier. C'est cette
+// génération manquante sur ces autres chemins qui faisait qu'aucune
+// attestation — et donc aucune notification aux franchisés, qui se déclenche
+// depuis la même tâche de fond — n'était jamais créée pour une modification
+// faite autrement qu'en réimportant un fichier.
+async function createCertificate({ userId, userEmail, dipId, certificateType, changes = [], deliveries = [] }) {
+  const { data: dip, error: dipErr } = await supabaseAdmin
+    .from('dip_documents')
+    .select('id, title, sha256, compliance_level, conformity_score, created_at')
+    .eq('id', dipId)
+    .eq('user_id', userId)
+    .single();
+
+  if (dipErr || !dip) throw new Error('DIP introuvable');
+
+  const franchiseur = await fetchFranchiseur(userId, userEmail);
+  const publicToken = uuidv4();
+  const generatedAt = new Date().toISOString();
+
+  const { data: saved, error: saveErr } = await supabaseAdmin
+    .from('dip_certificates')
+    .insert({
+      dip_id: dipId,
+      user_id:           userId,
+      certificate_type:  certificateType,
+      certificate_title: '',
+      certificate_text:  '',
+      legal_summary:     '',
+      warnings:          [],
+      sha256_dip:        dip.sha256           || null,
+      compliance_level:  dip.compliance_level || null,
+      global_score:      dip.conformity_score || null,
+      changes_count:     changes.length,
+      changes_snapshot:  changes,
+      deliveries,
+      generated_at:      generatedAt,
+      public_token:      publicToken,
+      status:            'pending',
+    })
+    .select()
+    .single();
+
+  if (saveErr) throw new Error(saveErr.message);
+
+  const baseUrl = getAppUrl();
+
+  // Tâche de fond — Claude + PDF + Storage + notification franchisés
+  (async () => {
+    try {
+      const cert = await generateChangesCertificate({
+        dipVersion: {
+          version:          dip.id,
+          created_at:       dip.created_at,
+          sha256:           dip.sha256,
+          compliance_level: dip.compliance_level || 'Non évalué',
+          global_score:     dip.conformity_score || 0,
+        },
+        changes,
+        franchiseur,
+        deliveries,
+        certificateType,
+      });
+
+      const fullRecord = {
+        ...saved,
+        certificate_title: cert.certificate_title,
+        certificate_text:  cert.certificate_text,
+        legal_summary:     cert.legal_summary,
+        warnings:          cert.warnings || [],
+        changes_snapshot:  changes,
+        deliveries,
+      };
+
+      let pdfUrl = null;
+      try {
+        const pdfBuffer = await generateCertificatePDF(fullRecord, franchiseur);
+        pdfUrl = await uploadPdfToStorage(pdfBuffer, saved.id, certificateType, publicToken);
+      } catch (pdfErr) {
+        console.error('PDF gen/upload error:', pdfErr.message);
+      }
+
+      await supabaseAdmin
+        .from('dip_certificates')
+        .update({
+          certificate_title: cert.certificate_title,
+          certificate_text:  cert.certificate_text,
+          legal_summary:     cert.legal_summary,
+          warnings:          cert.warnings || [],
+          generated_at:      cert.generated_at || generatedAt,
+          pdf_url:           pdfUrl,
+          status:            'done',
+        })
+        .eq('id', saved.id);
+
+      // Notification automatique — uniquement pour les mises à jour
+      if (certificateType === 'MISE_A_JOUR' && changes.length > 0) {
+        await notifyFranchisees({
+          userId:      saved.user_id,
+          certId:      saved.id,
+          dipId,
+          publicToken,
+          cert,
+          pdfUrl,
+          changes,
+        }).catch(e => console.error('Notification error:', e.message));
+      }
+    } catch (bgErr) {
+      console.error('Background certificate error:', bgErr.message);
+      await supabaseAdmin
+        .from('dip_certificates')
+        .update({ status: 'error' })
+        .eq('id', saved.id)
+        .catch(() => {});
+    }
+  })();
+
+  return { certificate: saved, public_url: `${baseUrl}/attestation/${publicToken}` };
+}
+
 // ─── POST /api/certificates — insère immédiatement (pending), génère en tâche de fond ──
 router.post('/', authMiddleware, requireFranchisor, async (req, res) => {
   const { dip_id, certificate_type, changes = [], deliveries = [] } = req.body;
@@ -212,125 +334,14 @@ router.post('/', authMiddleware, requireFranchisor, async (req, res) => {
   if (!certificate_type) return res.status(400).json({ error: 'certificate_type requis (INITIAL|MISE_A_JOUR|REMISE)' });
 
   try {
-    const { data: dip, error: dipErr } = await supabaseAdmin
-      .from('dip_documents')
-      .select('id, title, sha256, compliance_level, conformity_score, created_at')
-      .eq('id', dip_id)
-      .eq('user_id', req.user.id)
-      .single();
-
-    if (dipErr || !dip) return res.status(404).json({ error: 'DIP introuvable' });
-
-    const franchiseur = await fetchFranchiseur(req.user.id, req.user.email);
-    const publicToken = uuidv4();
-    const generatedAt = new Date().toISOString();
-
-    const { data: saved, error: saveErr } = await supabaseAdmin
-      .from('dip_certificates')
-      .insert({
-        dip_id,
-        user_id:           req.user.id,
-        certificate_type,
-        certificate_title: '',
-        certificate_text:  '',
-        legal_summary:     '',
-        warnings:          [],
-        sha256_dip:        dip.sha256           || null,
-        compliance_level:  dip.compliance_level || null,
-        global_score:      dip.conformity_score || null,
-        changes_count:     changes.length,
-        changes_snapshot:  changes,
-        deliveries,
-        generated_at:      generatedAt,
-        public_token:      publicToken,
-        status:            'pending',
-      })
-      .select()
-      .single();
-
-    if (saveErr) throw new Error(saveErr.message);
-
-    const baseUrl = getAppUrl();
-
-    res.status(201).json({
-      certificate: saved,
-      public_url:  `${baseUrl}/attestation/${publicToken}`,
-      status:      'pending',
+    const { certificate, public_url } = await createCertificate({
+      userId: req.user.id, userEmail: req.user.email, dipId: dip_id,
+      certificateType: certificate_type, changes, deliveries,
     });
-
-    // Tâche de fond — Claude + PDF + Storage + notification franchisés
-    (async () => {
-      try {
-        const cert = await generateChangesCertificate({
-          dipVersion: {
-            version:          dip.id,
-            created_at:       dip.created_at,
-            sha256:           dip.sha256,
-            compliance_level: dip.compliance_level || 'Non évalué',
-            global_score:     dip.conformity_score || 0,
-          },
-          changes,
-          franchiseur,
-          deliveries,
-          certificateType: certificate_type,
-        });
-
-        const fullRecord = {
-          ...saved,
-          certificate_title: cert.certificate_title,
-          certificate_text:  cert.certificate_text,
-          legal_summary:     cert.legal_summary,
-          warnings:          cert.warnings || [],
-          changes_snapshot:  changes,
-          deliveries,
-        };
-
-        let pdfUrl = null;
-        try {
-          const pdfBuffer = await generateCertificatePDF(fullRecord, franchiseur);
-          pdfUrl = await uploadPdfToStorage(pdfBuffer, saved.id, certificate_type, publicToken);
-        } catch (pdfErr) {
-          console.error('PDF gen/upload error:', pdfErr.message);
-        }
-
-        await supabaseAdmin
-          .from('dip_certificates')
-          .update({
-            certificate_title: cert.certificate_title,
-            certificate_text:  cert.certificate_text,
-            legal_summary:     cert.legal_summary,
-            warnings:          cert.warnings || [],
-            generated_at:      cert.generated_at || generatedAt,
-            pdf_url:           pdfUrl,
-            status:            'done',
-          })
-          .eq('id', saved.id);
-
-        // Notification automatique — uniquement pour les mises à jour
-        if (certificate_type === 'MISE_A_JOUR' && changes.length > 0) {
-          await notifyFranchisees({
-            userId:      saved.user_id,
-            certId:      saved.id,
-            dipId:       dip_id,
-            publicToken,
-            cert,
-            pdfUrl,
-            changes,
-          }).catch(e => console.error('Notification error:', e.message));
-        }
-      } catch (bgErr) {
-        console.error('Background certificate error:', bgErr.message);
-        await supabaseAdmin
-          .from('dip_certificates')
-          .update({ status: 'error' })
-          .eq('id', saved.id)
-          .catch(() => {});
-      }
-    })();
-
+    res.status(201).json({ certificate, public_url, status: 'pending' });
   } catch (err) {
     console.error('Certificate generate error:', err.message);
-    res.status(500).json({ error: errMsg(err) });
+    res.status(err.message === 'DIP introuvable' ? 404 : 500).json({ error: errMsg(err) });
   }
 });
 
@@ -501,3 +512,4 @@ router.get('/public/:token', async (req, res) => {
 });
 
 module.exports = router;
+module.exports.createCertificate = createCertificate;
