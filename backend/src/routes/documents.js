@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware, requireFranchisor } = require('../middleware/auth');
+const { resolveScopedUserId } = require('../middleware/avocatScope');
 const { extractDocumentData, DOCUMENT_TYPES } = require('../config/claude');
 const errMsg = require('../config/errorMessage');
 const router = express.Router();
@@ -139,10 +140,13 @@ router.post('/', authMiddleware, requireFranchisor, async (req, res) => {
 
 // GET /api/documents — liste les documents + checklist de complétude
 router.get('/', authMiddleware, async (req, res) => {
+  const scopedUserId = await resolveScopedUserId(req);
+  if (!scopedUserId) return res.status(403).json({ error: 'Accès refusé' });
+
   const { data, error } = await supabaseAdmin
     .from('franchisor_documents')
     .select('id, document_type, file_name, file_url, extraction_status, extracted_summary, uploaded_at')
-    .eq('user_id', req.user.id)
+    .eq('user_id', scopedUserId)
     .order('uploaded_at', { ascending: false });
   if (error) return res.status(500).json({ error: errMsg(error) });
 

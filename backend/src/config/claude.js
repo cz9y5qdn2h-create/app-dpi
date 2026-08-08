@@ -1744,7 +1744,49 @@ INSTRUCTIONS :
   return result;
 };
 
+const SYSTEM_COMPLIANCE_SEARCH = SYSTEM_DIP_EXPERT.replace(
+  'Règles absolues :\n- Réponds TOUJOURS en JSON valide, sans markdown, sans texte avant ou après',
+  `Tu réponds ici à des questions libres posées par un avocat qui audite un DIP pour un franchiseur.
+
+Règles absolues :
+- Réponds en texte structuré (pas de JSON), en français juridique clair et directement exploitable
+- Cite systématiquement tes sources précises (article de loi, arrêt avec date et numéro) quand tu t'appuies dessus
+- Si le contexte du DIP fourni ne permet pas de répondre avec certitude, dis-le explicitement plutôt que de deviner
+- Distingue toujours ce qui relève d'une règle établie de ce qui relève d'une appréciation au cas par cas par les juges du fond`
+);
+
+const CACHED_SYSTEM_COMPLIANCE_SEARCH = [{ type: 'text', text: SYSTEM_COMPLIANCE_SEARCH, cache_control: { type: 'ephemeral' } }];
+
+/**
+ * Moteur de recherche conformité — espace avocat. Répond à une question
+ * juridique libre, avec le contexte du DIP du client actuellement consulté
+ * quand disponible (sections tronquées pour rester dans un budget de tokens
+ * raisonnable malgré le cache).
+ */
+const answerComplianceQuestion = async (question, dipContext = null) => {
+  const contextBlock = dipContext?.length
+    ? `CONTEXTE — sections du DIP actuellement consulté :\n${dipContext
+        .sort((a, b) => (a.section_number || 0) - (b.section_number || 0))
+        .map(s => `SECTION ${s.section_number} — ${s.section_title}\n${(s.content || 'Non renseigné').substring(0, 800)}`)
+        .join('\n\n---\n\n')}\n\n`
+    : '';
+
+  const msg = await callClaude({
+    model: MODEL_OPUS,
+    max_tokens: 4096,
+    thinking: { type: 'adaptive' },
+    system: CACHED_SYSTEM_COMPLIANCE_SEARCH,
+    messages: [{
+      role: 'user',
+      content: `${contextBlock}QUESTION DE L'AVOCAT :\n${question}`
+    }]
+  });
+
+  return extractText(msg);
+};
+
 module.exports = {
+  answerComplianceQuestion,
   parseDIPSections, generateDIPFromForm, formulateField, compareDIPVersions, detectChanges,
   generateUpdateSummary, correctSection, correctSectionWithAnswers,
   analyzeDocumentForDIPImpact, generateChangesCertificate, extractDocumentData, DOCUMENT_TYPES,

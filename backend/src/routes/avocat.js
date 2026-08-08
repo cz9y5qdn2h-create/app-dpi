@@ -5,8 +5,19 @@ const { v4: uuidv4 } = require('uuid');
 const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware } = require('../middleware/auth');
 const { createCertificate } = require('./certificates');
+const { answerComplianceQuestion } = require('../config/claude');
 const errMsg = require('../config/errorMessage');
 const router = express.Router();
+
+// Appel IA coûteux (Opus + thinking) — limite dédiée distincte du rate-limit
+// global, sur le modèle de agentLimiter côté serveur.
+const complianceSearchLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Trop de recherches. Réessayez dans quelques minutes.' },
+});
 
 // Provisionne un compte Supabase (si nécessaire) et envoie un email réel à
 // chaque appel — sans limite dédiée, un compte franchiseur compromis ou un
@@ -159,6 +170,35 @@ router.get('/franchiseur/:franchiseurId/dip', authMiddleware, requireAvocat, asy
   }
 
   res.json({ dip, franchiseur, proposals });
+});
+
+// POST /api/avocat/compliance-search — moteur de recherche conformité, question
+// libre avec le DIP du client actuellement consulté comme contexte optionnel.
+router.post('/compliance-search', authMiddleware, requireAvocat, complianceSearchLimiter, async (req, res) => {
+  const { question, franchiseur_id } = req.body;
+  if (!question?.trim()) return res.status(400).json({ error: 'Question requise' });
+  if (question.length > 2000) return res.status(400).json({ error: 'Question trop longue (2000 caractères max)' });
+
+  let dipContext = null;
+  if (franchiseur_id) {
+    const { data: relation } = await supabaseAdmin
+      .from('avocat_franchiseurs').select('status')
+      .eq('avocat_id', req.user.id).eq('franchiseur_id', franchiseur_id).maybeSingle();
+    if (relation?.status !== 'active') return res.status(403).json({ error: 'Relation inactive ou inexistante' });
+
+    const { data: dips } = await supabaseAdmin
+      .from('dip_documents').select('id, dip_sections(section_number, section_title, content)')
+      .eq('user_id', franchiseur_id).eq('status', 'actif').limit(1);
+    dipContext = dips?.[0]?.dip_sections || null;
+  }
+
+  try {
+    const answer = await answerComplianceQuestion(question.trim(), dipContext);
+    res.json({ answer });
+  } catch (err) {
+    console.error('Compliance search error:', err.message);
+    res.status(500).json({ error: errMsg(err) });
+  }
 });
 
 // GET /api/avocat/franchiseur/:franchiseurId/contract — contrat d'un franchiseur pour cet avocat

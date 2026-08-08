@@ -41,6 +41,11 @@ const MonitorPage        = lazy(() => import('./pages/MonitorPage'));
 const DocMonitoringPage  = lazy(() => import('./pages/DocMonitoringPage'));
 const AnalyticsPage      = lazy(() => import('./pages/AnalyticsPage'));
 const DIPAvocatPage      = lazy(() => import('./pages/DIPAvocatPage'));
+const AvocatCertificatesPage = lazy(() => import('./pages/AvocatCertificatesPage'));
+const AvocatDocumentsPage    = lazy(() => import('./pages/AvocatDocumentsPage'));
+const AvocatExportPage       = lazy(() => import('./pages/AvocatExportPage'));
+const AvocatMonitoringPage   = lazy(() => import('./pages/AvocatMonitoringPage'));
+const AvocatCompliancePage   = lazy(() => import('./pages/AvocatCompliancePage'));
 const DesignPreviewPage  = lazy(() => import('./pages/DesignPreviewPage'));
 
 const PageLoader = () => (
@@ -144,6 +149,11 @@ export default function App() {
           <Route path="integrations" element={<FranchisorOnlyRoute><S><ApiConfigPage /></S></FranchisorOnlyRoute>} />
           <Route path="analytics/dip/:dipId"          element={<FranchisorOnlyRoute><S><AnalyticsPage /></S></FranchisorOnlyRoute>} />
           <Route path="dip/avocat/:franchiseurId"      element={<S><DIPAvocatPage /></S>} />
+          <Route path="avocat/:franchiseurId/certifications" element={<S><AvocatCertificatesPage /></S>} />
+          <Route path="avocat/:franchiseurId/documents"      element={<S><AvocatDocumentsPage /></S>} />
+          <Route path="avocat/:franchiseurId/export"         element={<S><AvocatExportPage /></S>} />
+          <Route path="avocat/:franchiseurId/surveillance"   element={<S><AvocatMonitoringPage /></S>} />
+          <Route path="avocat/:franchiseurId/recherche"      element={<S><AvocatCompliancePage /></S>} />
           <Route path="design-preview" element={FEATURES.design_preview ? <S><DesignPreviewPage /></S> : <Navigate to="/dashboard" replace />} />
         </Route>
 

@@ -2,17 +2,21 @@ const express = require('express');
 const router = express.Router();
 const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware, requireFranchisor } = require('../middleware/auth');
+const { resolveScopedUserId } = require('../middleware/avocatScope');
 const Anthropic = require('@anthropic-ai/sdk');
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 // GET /api/monitoring/sources
-router.get('/sources', authMiddleware, requireFranchisor, async (req, res) => {
+router.get('/sources', authMiddleware, async (req, res) => {
   try {
+    const scopedUserId = await resolveScopedUserId(req);
+    if (!scopedUserId) return res.status(403).json({ error: 'Accès refusé' });
+
     const { data, error } = await supabaseAdmin
       .from('monitoring_sources')
       .select('*, monitoring_results(id, impact_level, change_detected, checked_at)')
-      .eq('user_id', req.user.id)
+      .eq('user_id', scopedUserId)
       .order('created_at', { ascending: false });
     if (error) throw error;
     res.json(data || []);
@@ -213,12 +217,15 @@ router.get('/news', authMiddleware, async (req, res) => {
 });
 
 // GET /api/monitoring/results
-router.get('/results', authMiddleware, requireFranchisor, async (req, res) => {
+router.get('/results', authMiddleware, async (req, res) => {
   try {
+    const scopedUserId = await resolveScopedUserId(req);
+    if (!scopedUserId) return res.status(403).json({ error: 'Accès refusé' });
+
     const { data, error } = await supabaseAdmin
       .from('monitoring_results')
       .select('*, monitoring_sources(name, url)')
-      .eq('user_id', req.user.id)
+      .eq('user_id', scopedUserId)
       .order('checked_at', { ascending: false })
       .limit(50);
     if (error) throw error;

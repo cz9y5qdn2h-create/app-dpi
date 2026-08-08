@@ -3,6 +3,7 @@ const { getAppUrl } = require('../config/appUrl');
 const { v4: uuidv4 } = require('uuid');
 const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware, requireFranchisor } = require('../middleware/auth');
+const { resolveScopedUserId } = require('../middleware/avocatScope');
 const { generateChangesCertificate } = require('../config/claude');
 const { generateCertificatePDF } = require('../config/certificatePdf');
 const { generateCertificateDocx } = require('../config/certificateDocx');
@@ -347,11 +348,14 @@ router.post('/', authMiddleware, requireFranchisor, async (req, res) => {
 
 // ─── GET /api/certificates — liste ───────────────────────────────────────────
 router.get('/', authMiddleware, async (req, res) => {
+  const scopedUserId = await resolveScopedUserId(req);
+  if (!scopedUserId) return res.status(403).json({ error: 'Accès refusé' });
+
   const limit = Math.min(parseInt(req.query.limit) || 20, 100);
   const { data, error } = await supabaseAdmin
     .from('dip_certificates')
     .select('id, dip_id, certificate_type, certificate_title, legal_summary, warnings, compliance_level, global_score, changes_count, generated_at, public_token, pdf_url, status')
-    .eq('user_id', req.user.id)
+    .eq('user_id', scopedUserId)
     .order('generated_at', { ascending: false })
     .limit(limit);
 
@@ -367,11 +371,14 @@ router.get('/', authMiddleware, async (req, res) => {
 
 // ─── GET /api/certificates/:id — détail + status (authentifié) ───────────────
 router.get('/:id', authMiddleware, async (req, res) => {
+  const scopedUserId = await resolveScopedUserId(req);
+  if (!scopedUserId) return res.status(403).json({ error: 'Accès refusé' });
+
   const { data, error } = await supabaseAdmin
     .from('dip_certificates')
     .select('*')
     .eq('id', req.params.id)
-    .eq('user_id', req.user.id)
+    .eq('user_id', scopedUserId)
     .single();
 
   if (error || !data) return res.status(404).json({ error: 'Certificat introuvable' });
@@ -386,11 +393,14 @@ router.get('/:id', authMiddleware, async (req, res) => {
 
 // ─── GET /api/certificates/:id/pdf — PDF (authentifié) ───────────────────────
 router.get('/:id/pdf', authMiddleware, async (req, res) => {
+  const scopedUserId = await resolveScopedUserId(req);
+  if (!scopedUserId) return res.status(403).json({ error: 'Accès refusé' });
+
   const { data, error } = await supabaseAdmin
     .from('dip_certificates')
     .select('*')
     .eq('id', req.params.id)
-    .eq('user_id', req.user.id)
+    .eq('user_id', scopedUserId)
     .single();
 
   if (error || !data) return res.status(404).json({ error: 'Certificat introuvable' });
@@ -419,11 +429,14 @@ router.get('/:id/pdf', authMiddleware, async (req, res) => {
 
 // ─── GET /api/certificates/:id/docx — DOCX (authentifié) ─────────────────────
 router.get('/:id/docx', authMiddleware, async (req, res) => {
+  const scopedUserId = await resolveScopedUserId(req);
+  if (!scopedUserId) return res.status(403).json({ error: 'Accès refusé' });
+
   const { data, error } = await supabaseAdmin
     .from('dip_certificates')
     .select('*')
     .eq('id', req.params.id)
-    .eq('user_id', req.user.id)
+    .eq('user_id', scopedUserId)
     .single();
 
   if (error || !data) return res.status(404).json({ error: 'Certificat introuvable' });

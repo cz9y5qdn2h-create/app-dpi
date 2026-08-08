@@ -44,6 +44,7 @@ export default function SettingsPage() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { profile, supabase, isTrialExpired, trialDaysLeft } = useAuth();
+  const isAvocat = profile?.role === 'avocat';
   const { theme, setTheme, themes } = useTheme();
   const [profileForm, setProfileForm] = useState({
     company_name: '', phone: '', address: '', lawyer_email: '',
@@ -53,6 +54,7 @@ export default function SettingsPage() {
     renewal_alert_days: 30
   });
   const [inviteEmail, setInviteEmail] = useState('');
+  const [lastInviteUrl, setLastInviteUrl] = useState(null);
   const [brevoForm, setBrevoForm] = useState({ brevo_api_key: '', brevo_sender_name: 'DIPpro', brevo_sender_email: '' });
   const [showBrevoKey, setShowBrevoKey] = useState(false);
   const [showSourceForm, setShowSourceForm] = useState(false);
@@ -238,12 +240,18 @@ export default function SettingsPage() {
 
   const inviteAvocatMutation = useMutation({
     mutationFn: (lawyer_email) => api.post('/avocat/invite', { lawyer_email }),
-    onSuccess: () => {
+    onSuccess: (res) => {
       toast.success(`Invitation envoyée à ${inviteEmail}`);
+      setLastInviteUrl(res.data?.url || null);
       setInviteEmail('');
     },
     onError: (err) => toast.error(err.message),
   });
+
+  const copyLastInviteUrl = () => {
+    if (!lastInviteUrl) return;
+    navigator.clipboard.writeText(lastInviteUrl).then(() => toast.success('Lien copié dans le presse-papiers'));
+  };
 
   const testEmailMutation = useMutation({
     mutationFn: () => api.post('/notifications/test', { channel: 'email', target: data?.profile?.email }),
@@ -313,8 +321,8 @@ export default function SettingsPage() {
     <div className="max-w-2xl space-y-8 animate-fade-in">
       <PageHeader title={t('settings.title')} subtitle={t('settings.subtitle')} />
 
-      {/* Statut d'essai */}
-      {profile && !profile.appointment_booked && (
+      {/* Statut d'essai — concept franchiseur, sans objet côté avocat */}
+      {profile && !profile.appointment_booked && !isAvocat && (
         <div className={`card border ${isTrialExpired ? 'border-danger/40 bg-danger/5' : 'border-gold/30 bg-gold/5'}`}>
           <div className="flex items-start gap-4">
             <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${isTrialExpired ? 'bg-danger/10' : 'bg-gold/10'}`}>
@@ -599,7 +607,8 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Profil */}
+      {/* Profil — champs entreprise franchiseur, sans objet pour un avocat */}
+      {!isAvocat && (
       <div className="card">
         <h2 className="font-cormorant text-xl mb-5">{t('settings.sections.profile')}</h2>
         {isLoading ? <LoadingSpinner /> : (
@@ -649,8 +658,10 @@ export default function SettingsPage() {
           </form>
         )}
       </div>
+      )}
 
-      {/* Partage avocat */}
+      {/* Partage avocat — le franchiseur invite son avocat, sans objet côté avocat */}
+      {!isAvocat && (
       <div className="card">
         <div className="mb-5">
           <h2 className="font-cormorant text-xl flex items-center gap-2">
@@ -679,6 +690,21 @@ export default function SettingsPage() {
             Inviter
           </button>
         </div>
+
+        {lastInviteUrl && (
+          <div className="mb-6 space-y-2">
+            <p className="font-dm-sans text-xs text-text-secondary">
+              Lien d'accès direct — conservez-le, il reste valable même si l'email n'arrive pas :
+            </p>
+            <div className="flex items-center gap-2 bg-bg-elevated rounded-lg px-3 py-2">
+              <Link2 className="w-3.5 h-3.5 text-text-secondary flex-shrink-0" />
+              <span className="font-dm-mono text-xs text-text-primary truncate flex-1">{lastInviteUrl}</span>
+              <button onClick={copyLastInviteUrl} className="btn-ghost p-1 flex-shrink-0" title="Copier le lien">
+                <Copy className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
 
         <details className="group">
           <summary className="font-dm-sans text-xs text-text-muted cursor-pointer select-none list-none flex items-center gap-1.5 hover:text-text-secondary transition-colors">
@@ -722,8 +748,10 @@ export default function SettingsPage() {
           </div>
         </details>
       </div>
+      )}
 
-      {/* Niveau d'automatisation */}
+      {/* Niveau d'automatisation — décision du franchiseur, sans objet côté avocat */}
+      {!isAvocat && (
       <div className="card">
         <div className="mb-5">
           <h2 className="font-cormorant text-xl">{t('settings.sections.automation')}</h2>
@@ -787,8 +815,10 @@ export default function SettingsPage() {
           </div>
         )}
       </div>
+      )}
 
-      {/* Notifications */}
+      {/* Notifications — rappel de renouvellement DIP, propre au franchiseur */}
+      {!isAvocat && (
       <div className="card">
         <div className="mb-5">
           <h2 className="font-cormorant text-xl">{t('settings.sections.notifications')}</h2>
@@ -897,8 +927,10 @@ export default function SettingsPage() {
           </div>
         )}
       </div>
+      )}
 
-      {/* Configuration email Brevo */}
+      {/* Configuration email Brevo — envoi aux franchisés, sans objet côté avocat */}
+      {!isAvocat && (
       <div className="card">
         <div className="mb-5">
           <h2 className="font-cormorant text-xl">{t('settings.sections.emailService')}</h2>
@@ -971,6 +1003,7 @@ export default function SettingsPage() {
           </div>
         )}
       </div>
+      )}
 
       {/* Aide & présentation */}
       <div className="card">
