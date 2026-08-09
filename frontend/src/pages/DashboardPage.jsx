@@ -16,7 +16,8 @@ import AvocatDashboard from '../components/dashboard/AvocatDashboard';
 import {
   Upload, RefreshCw, FileText,
   AlertTriangle, CheckCircle, History,
-  Phone, Sparkles, Users, Download, ChevronRight, Clock, ScrollText, ShieldCheck, ShieldAlert, ShieldX
+  Phone, Sparkles, Users, Download, ChevronRight, Clock, ScrollText, ShieldCheck, ShieldAlert, ShieldX,
+  ClipboardCheck, Newspaper,
 } from 'lucide-react';
 import AIDisclaimer from '../components/ui/AIDisclaimer';
 import { formatDistanceToNow } from 'date-fns';
@@ -37,6 +38,13 @@ export default function DashboardPage() {
     queryKey: ['alerts', 'pending'],
     queryFn: () => api.get('/alerts?status=pending').then(r => r.data),
     retry: false
+  });
+
+  const { data: complianceData } = useQuery({
+    queryKey: ['compliance-overview'],
+    queryFn: () => api.get('/compliance/overview').then(r => r.data),
+    enabled: profile?.role !== 'avocat',
+    retry: false,
   });
 
   const dip = dipsData?.dips?.find(d => d.status === 'actif') ?? dipsData?.dips?.[0];
@@ -270,6 +278,9 @@ export default function DashboardPage() {
             </div>
           </div>
 
+          {/* Conformité — délai 20 jours, reprises, veille à fort impact */}
+          <ComplianceSection data={complianceData} />
+
           {/* Niveau d'automatisation actif */}
           {profile?.automation_level && (
             <div className="card border-gold/15 bg-gold/3">
@@ -391,6 +402,75 @@ function LegalStatusBanner({ score, nonConforme, uploadDate }) {
   }
 
   return null;
+}
+
+function ComplianceSection({ data }) {
+  if (!data) return null;
+
+  const delays = (data.signature_delays?.items || []).filter(f => !f.signature_delay.compliant);
+  const reprises = data.reprises?.items || [];
+  const news = data.regulatory_news || [];
+  const hasContent = delays.length > 0 || reprises.length > 0 || news.length > 0;
+
+  return (
+    <div className="card">
+      <div className="lg-card-header">
+        <span className="flex items-center gap-2">
+          <ClipboardCheck className="w-4 h-4 text-gold" /> Conformité
+          {(delays.length + news.length) > 0 && (
+            <span className="lg-badge lg-badge-danger">{delays.length + news.length}</span>
+          )}
+        </span>
+        <Link to="/conformite" className="lg-card-header-pill">Voir tout</Link>
+      </div>
+
+      {!hasContent ? (
+        <div className="text-center py-8">
+          <ShieldCheck className="w-10 h-10 text-success/40 mx-auto mb-3" />
+          <p className="font-dm-sans text-sm text-text-secondary">Aucun signal de non-conformité actif</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {delays.length > 0 && (
+            <div>
+              <p className="font-dm-sans text-xs text-danger font-medium flex items-center gap-1.5 mb-2">
+                <Clock className="w-3.5 h-3.5" /> Délai 20j non respecté ({delays.length})
+              </p>
+              <div className="space-y-1.5">
+                {delays.slice(0, 3).map(f => (
+                  <p key={f.id} className="font-dm-sans text-xs text-text-secondary truncate">{f.name}</p>
+                ))}
+              </div>
+            </div>
+          )}
+          {reprises.length > 0 && (
+            <div>
+              <p className="font-dm-sans text-xs text-gold font-medium flex items-center gap-1.5 mb-2">
+                <Users className="w-3.5 h-3.5" /> Reprises en cours ({reprises.length})
+              </p>
+              <div className="space-y-1.5">
+                {reprises.slice(0, 3).map(f => (
+                  <p key={f.id} className="font-dm-sans text-xs text-text-secondary truncate">{f.name}</p>
+                ))}
+              </div>
+            </div>
+          )}
+          {news.length > 0 && (
+            <div>
+              <p className="font-dm-sans text-xs text-gold font-medium flex items-center gap-1.5 mb-2">
+                <Newspaper className="w-3.5 h-3.5" /> Veille à fort impact ({news.length})
+              </p>
+              <div className="space-y-1.5">
+                {news.slice(0, 3).map(n => (
+                  <p key={n.id} className="font-dm-sans text-xs text-text-secondary truncate">{n.title}</p>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }
 
 function SectionRow({ section }) {
