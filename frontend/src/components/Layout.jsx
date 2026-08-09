@@ -1,4 +1,4 @@
-import { Outlet, Link, useNavigate } from 'react-router-dom';
+import { Outlet, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useState, useEffect } from 'react';
 import Sidebar from './Sidebar';
@@ -12,13 +12,11 @@ import api from '../lib/api';
 import { FEATURES } from '../lib/features';
 import { useAuth } from '../context/AuthContext';
 import { Bell, Menu, Search, Bug } from 'lucide-react';
-import { PENDING_AVOCAT_TOKEN_KEY as PENDING_TOKEN_KEY } from '../lib/constants';
 
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [cmdOpen, setCmdOpen] = useState(false);
   const [bugModalOpen, setBugModalOpen] = useState(false);
-  const navigate = useNavigate();
   const { refreshProfile } = useAuth();
 
   // Le profil (dont le rôle, ex: passage à admin) n'était rechargé qu'à la
@@ -37,14 +35,6 @@ export default function Layout() {
     retry: false
   });
   const pendingCount = alertsData?.alerts?.length || 0;
-
-  // Complète l'accès avocat par lien si l'utilisateur s'est inscrit/connecté
-  // depuis un autre écran que la page de jonction (ex: via "Créer un compte").
-  useEffect(() => {
-    let pendingToken;
-    try { pendingToken = localStorage.getItem(PENDING_TOKEN_KEY); } catch { pendingToken = null; }
-    if (pendingToken) navigate(`/avocat/rejoindre/${pendingToken}`, { replace: true });
-  }, []);
 
   useEffect(() => {
     const handler = (e) => {

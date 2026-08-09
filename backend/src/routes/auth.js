@@ -202,12 +202,21 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// GET /api/auth/avocat-login/:token — accès permanent pour un compte avocat
-// créé depuis la console admin. Le token stocké (users.avocat_access_token)
-// ne change jamais tant qu'il n'est pas régénéré — mais il ne sert jamais
-// directement à authentifier : à chaque visite, on redemande à Supabase un
-// magiclink fraîchement signé (generateLink) et on redirige dessus. Résultat
-// pour l'avocat : un seul lien, permanent, qui "marche à chaque fois".
+// GET /api/auth/avocat-login/:token — accès permanent pour un compte avocat.
+// Le token stocké (users.avocat_access_token) ne change jamais tant qu'il
+// n'est pas régénéré — mais il ne sert jamais directement à authentifier : à
+// chaque visite, on redemande à Supabase un magiclink fraîchement signé
+// (generateLink) et on redirige dessus. Résultat pour l'avocat : un seul
+// lien, permanent, qui "marche à chaque fois".
+//
+// On ne redirige PAS vers l'action_link hébergé par Supabase (qui valide
+// lui-même son paramètre redirect_to contre la liste blanche "Redirect URLs"
+// du projet Supabase Auth — une config qu'on ne peut pas vérifier depuis le
+// code, et qui a été la cause probable de liens qui "ne marchaient pas").
+// À la place on redirige vers NOTRE PROPRE page (toujours autorisée, c'est
+// notre domaine), qui échange le token_hash contre une session en appelant
+// verifyOtp() directement depuis le navigateur — cet appel ne dépend
+// d'aucune liste blanche de redirection.
 router.get('/avocat-login/:token', async (req, res) => {
   const appUrl = getAppUrl();
   const { data: user } = await supabaseAdmin
@@ -220,15 +229,16 @@ router.get('/avocat-login/:token', async (req, res) => {
   const { data, error } = await supabaseAdmin.auth.admin.generateLink({
     type: 'magiclink',
     email: user.email,
-    options: { redirectTo: `${appUrl}/dashboard` },
   });
 
-  if (error || !data?.properties?.action_link) {
+  const hashedToken = data?.properties?.hashed_token;
+  if (error || !hashedToken) {
     console.error('avocat-login generateLink error:', error?.message);
     return res.redirect(303, `${appUrl}/login?error=lien_indisponible`);
   }
 
-  res.redirect(303, data.properties.action_link);
+  const params = new URLSearchParams({ email: user.email, token_hash: hashedToken });
+  res.redirect(303, `${appUrl}/avocat/session?${params.toString()}`);
 });
 
 // POST /api/auth/provision-oauth — créer/mettre à jour le profil après OAuth Google/Apple

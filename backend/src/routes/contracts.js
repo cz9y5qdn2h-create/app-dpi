@@ -10,7 +10,7 @@ const { parseContractClauses, compareContractVersions, generateContractFromDIP, 
 const { triggerCrossImpactAlerts } = require('../utils/crossImpact');
 const errMsg = require('../config/errorMessage');
 const { stripRichTextMarkers } = require('../config/richTextStrip');
-const { findIncompleteMarker } = require('../config/incompleteContentCheck');
+const { findIncompleteMarker, buildIncompleteAlerts } = require('../config/incompleteContentCheck');
 const router = express.Router();
 
 const sha256hex = (buffer) => crypto.createHash('sha256').update(buffer).digest('hex');
@@ -451,8 +451,19 @@ router.post('/create-from-agent', authMiddleware, requireFranchisor, async (req,
       last_updated: new Date().toISOString()
     }));
 
-    const { error: clauseError } = await supabaseAdmin.from('contract_clauses').insert(clausesToInsert);
+    const { data: insertedClauses, error: clauseError } = await supabaseAdmin
+      .from('contract_clauses').insert(clausesToInsert).select('id, clause_title, content');
     if (clauseError) throw new Error(clauseError.message);
+
+    // Alerte "contenu à compléter" — même correctif que sur dip.js
+    // create-from-agent : un contrat généré par l'IA peut contenir des
+    // placeholders dès sa création, pas seulement après édition manuelle.
+    const incompleteAlerts = buildIncompleteAlerts(insertedClauses || [], {
+      parentKey: 'contract_id', parentId: contractDoc.id, itemKey: 'clause_id', titleField: 'clause_title', docLabel: 'La clause',
+    });
+    if (incompleteAlerts.length > 0) {
+      await supabaseAdmin.from('alerts').insert(incompleteAlerts).catch(e => console.error('Incomplete-content alert error:', e.message));
+    }
 
     await supabaseAdmin.from('audit_log').insert({
       contract_id: contractDoc.id,

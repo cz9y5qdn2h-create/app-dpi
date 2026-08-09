@@ -13,9 +13,9 @@ router.post('/', authMiddleware, async (req, res) => {
     if (nb_franchisees !== undefined) updates.nb_franchisees = parseInt(nb_franchisees, 10) || null;
     if (has_existing_dip !== undefined) updates.has_existing_dip = Boolean(has_existing_dip);
     // lawyer_email n'est ici que pré-rempli pour Réglages > Partager avec mon
-    // avocat — le lien d'invitation (avocat_invite_token) reste la seule
-    // source de vérité pour accorder l'accès, jamais une simple correspondance
-    // d'email (qui laissait des relations "pending" bloquées à vie).
+    // avocat — l'invitation elle-même reste la seule source de vérité pour
+    // accorder l'accès, jamais une simple correspondance d'email (qui
+    // laissait des relations "pending" bloquées à vie).
     if (lawyer_email) updates.lawyer_email = lawyer_email.trim().toLowerCase();
 
     const { error } = await supabaseAdmin.from('users').update(updates).eq('id', req.user.id);

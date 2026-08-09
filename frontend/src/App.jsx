@@ -19,7 +19,7 @@ const ResetPasswordPage  = lazy(() => import('./pages/ResetPasswordPage'));
 const WaitlistPage       = lazy(() => import('./pages/WaitlistPage'));
 const SharedDIPPage      = lazy(() => import('./pages/SharedDIPPage'));
 const SharedContractPage = lazy(() => import('./pages/SharedContractPage'));
-const AvocatJoinPage     = lazy(() => import('./pages/AvocatJoinPage'));
+const AvocatSessionPage  = lazy(() => import('./pages/AvocatSessionPage'));
 const TrialExpiredPage   = lazy(() => import('./pages/TrialExpiredPage'));
 const DashboardPage      = lazy(() => import('./pages/DashboardPage'));
 const DIPPage            = lazy(() => import('./pages/DIPPage'));
@@ -124,7 +124,7 @@ export default function App() {
         <Route path="/waitlist"               element={<S><WaitlistPage /></S>} />
         <Route path="/dip/partage/:token"     element={<S><SharedDIPPage /></S>} />
         <Route path="/contrat/partage/:token" element={<S><SharedContractPage /></S>} />
-        <Route path="/avocat/rejoindre/:token" element={<S><AvocatJoinPage /></S>} />
+        <Route path="/avocat/session"          element={<S><AvocatSessionPage /></S>} />
 
         <Route path="/trial-expired" element={<ProtectedRoute><S><TrialExpiredPage /></S></ProtectedRoute>} />
 

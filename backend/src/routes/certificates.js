@@ -289,7 +289,12 @@ async function createCertificate({ userId, userEmail, dipId, certificateType, ch
         console.error('PDF gen/upload error:', pdfErr.message);
       }
 
-      await supabaseAdmin
+      // 'done' n'est pas une valeur autorisée par la contrainte CHECK de
+      // dip_certificates.status (pending/generated/ready/error) — cet update
+      // échouait silencieusement (le client Supabase ne rejette pas une
+      // erreur de requête par défaut) et le certificat restait bloqué en
+      // 'pending' pour toujours, empêchant le téléchargement du PDF/DOCX.
+      const { error: finalizeErr } = await supabaseAdmin
         .from('dip_certificates')
         .update({
           certificate_title: cert.certificate_title,
@@ -298,9 +303,10 @@ async function createCertificate({ userId, userEmail, dipId, certificateType, ch
           warnings:          cert.warnings || [],
           generated_at:      cert.generated_at || generatedAt,
           pdf_url:           pdfUrl,
-          status:            'done',
+          status:            'generated',
         })
         .eq('id', saved.id);
+      if (finalizeErr) console.error('Certificate finalize error:', finalizeErr.message);
 
       // Notification automatique — uniquement pour les mises à jour
       if (certificateType === 'MISE_A_JOUR' && changes.length > 0) {

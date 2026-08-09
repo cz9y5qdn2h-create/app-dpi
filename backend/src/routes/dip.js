@@ -8,7 +8,7 @@ const { authMiddleware, requireFranchisor } = require('../middleware/auth');
 const { parseDIPSections, compareDIPVersions, assessLitigationRisks, correctSection, correctSectionWithAnswers } = require('../config/claude');
 const { triggerCrossImpactAlerts } = require('../utils/crossImpact');
 const { createCertificate } = require('./certificates');
-const { findIncompleteMarker } = require('../config/incompleteContentCheck');
+const { findIncompleteMarker, buildIncompleteAlerts } = require('../config/incompleteContentCheck');
 const errMsg = require('../config/errorMessage');
 const router = express.Router();
 
@@ -629,8 +629,20 @@ router.post('/create-from-agent', authMiddleware, requireFranchisor, async (req,
       last_updated: new Date().toISOString()
     }));
 
-    const { error: sectError } = await supabaseAdmin.from('dip_sections').insert(sectionsToInsert);
+    const { data: insertedSections, error: sectError } = await supabaseAdmin
+      .from('dip_sections').insert(sectionsToInsert).select('id, section_title, content');
     if (sectError) throw new Error(sectError.message);
+
+    // Alerte "contenu à compléter" — un DIP généré par l'IA depuis le
+    // formulaire peut contenir des "Non renseigné — à compléter avant
+    // remise" dès sa création (voir claude.js generateDIPFromForm) ; jusqu'ici
+    // seule une édition manuelle ultérieure déclenchait cette vérification.
+    const incompleteAlerts = buildIncompleteAlerts(insertedSections || [], {
+      parentKey: 'dip_id', parentId: dipDoc.id, itemKey: 'section_id', titleField: 'section_title', docLabel: 'La section',
+    });
+    if (incompleteAlerts.length > 0) {
+      await supabaseAdmin.from('alerts').insert(incompleteAlerts).catch(e => console.error('Incomplete-content alert error:', e.message));
+    }
 
     await supabaseAdmin.from('audit_log').insert({
       dip_id: dipDoc.id,
