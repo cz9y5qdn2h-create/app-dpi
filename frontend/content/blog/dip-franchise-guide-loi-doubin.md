@@ -33,7 +33,7 @@ Le Décret 91-337 impose un contenu structuré. En pratique, un DIP conforme cou
 
 ## Que risque un franchiseur en cas de DIP non conforme ?
 
-Un DIP **absent, incomplet ou inexact** expose le franchiseur à un risque majeur : la **nullité du contrat de franchise**. La Cour de cassation l'a encore confirmé dans son arrêt du **26 juin 2024**. La nullité entraîne la restitution des droits d'entrée et des redevances, et peut ouvrir droit à des dommages-intérêts. Le coût moyen d'un contentieux DIP dépasse souvent **200 000 €**.
+Un DIP **absent, incomplet ou inexact** expose le franchiseur à un risque majeur : la **nullité du contrat de franchise**, si le manquement a vicié le consentement du franchisé (Cass. com., 20 mars 2007, n°06-11.290). La Cour de cassation a par ailleurs rappelé que cette obligation d'information ne s'arrête pas à la remise du DIP : taire volontairement une information déterminante apparue avant la signature engage aussi la responsabilité du franchiseur, même sur un DIP par ailleurs conforme (Cass. com., 26 juin 2024, n°23-14.085). La nullité entraîne la restitution des droits d'entrée et des redevances, et peut ouvrir droit à des dommages-intérêts. Le coût moyen d'un contentieux DIP dépasse souvent **200 000 €**.
 
 ## Comment sécuriser son DIP ?
 

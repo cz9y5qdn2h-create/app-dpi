@@ -51,7 +51,7 @@ const HOW_STEPS = [
 const FAQS = [
   {
     q: "Qu'est-ce que le DIP ?",
-    a: "Le Document d'Information Précontractuelle est obligatoire pour tout franchiseur (Art. L.330-3 Code de commerce). Il doit être remis au candidat franchisé 20 jours avant la signature. Son absence expose à une sanction pénale, et son inexactitude peut entraîner la nullité du contrat dès lors qu'elle a vicié le consentement du franchisé — la Cour de cassation a même étendu ce risque à la dissimulation d'informations survenues après la remise du DIP (arrêt du 26 juin 2024).",
+    a: "Le Document d'Information Précontractuelle est obligatoire pour tout franchiseur (Art. L.330-3 Code de commerce). Il doit être remis au candidat franchisé 20 jours avant la signature. Son absence expose à une sanction pénale, et son inexactitude peut entraîner la nullité du contrat si elle a vicié le consentement du franchisé (Cass. com., 20 mars 2007, n°06-11.290) — votre responsabilité est également engagée si vous taisez volontairement une information déterminante apparue entre la remise du DIP et la signature, même sur un DIP par ailleurs conforme (Cass. com., 26 juin 2024, n°23-14.085).",
   },
   {
     q: "Combien coûte DIPpro ?",
@@ -636,8 +636,9 @@ export default function LandingPage() {
                 Arrêt Cour de cassation — 26 juin 2024
               </h2>
               <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 14, color: 'rgba(244,242,238,0.50)', lineHeight: 1.7, maxWidth: 520 }}>
-                La Cour de cassation a confirmé la nullité de contrats de franchise pour DIP incomplet ou inexact.
-                Un seul article manquant suffit à exposer votre réseau entier.
+                La Cour de cassation a confirmé que votre obligation d'information ne s'arrête pas à la remise du DIP :
+                taire volontairement un fait déterminant survenu avant la signature — même avec un DIP par ailleurs
+                conforme — constitue un dol qui engage votre responsabilité (Cass. com., 26 juin 2024, n°23-14.085).
               </p>
             </div>
             <div style={{ textAlign: 'center', flexShrink: 0 }}>

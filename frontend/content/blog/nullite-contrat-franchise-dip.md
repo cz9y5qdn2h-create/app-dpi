@@ -19,7 +19,7 @@ La nullité repose sur les articles **1130 et suivants du Code civil** (erreur, 
 
 ## L'arrêt du 26 juin 2024
 
-La Cour de cassation a rappelé, dans un arrêt du **26 juin 2024**, que l'inexactitude du DIP peut suffire à caractériser le vice du consentement lorsqu'elle porte sur des données déterminantes pour l'engagement du franchisé. C'est une confirmation d'une ligne jurisprudentielle constante et de plus en plus exigeante envers les franchiseurs.
+Dans un arrêt du **26 juin 2024** (n°23-14.085), la Cour de cassation a jugé qu'un franchiseur ayant remis un DIP par ailleurs conforme engageait tout de même sa responsabilité pour avoir **sciemment tu des procédures collectives survenues dans le réseau après la remise du DIP et avant la signature** du contrat. L'apport de cet arrêt n'est donc pas que l'inexactitude du DIP suffit à elle seule à vicier le consentement, mais que **l'obligation d'information ne s'arrête pas à la remise du document** : elle court jusqu'à la signature, et son silence intentionnel sur ce point caractérise une réticence dolosive.
 
 ## Les conséquences financières
 
