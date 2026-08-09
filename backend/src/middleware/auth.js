@@ -119,14 +119,14 @@ const authMiddleware = async (req, res, next) => {
 const requireFranchisor = async (req, res, next) => {
   if (!req.user) return res.status(401).json({ error: 'Non authentifié' });
 
-  // 1. Vérifier le cache
+  // 1. Vérifier le cache — un cache qui AUTORISE peut être servi tel quel,
+  // mais un cache qui REFUSE ne doit jamais bloquer sans revérification :
+  // un rôle corrigé directement en base (support, migration) laissait sinon
+  // l'utilisateur verrouillé jusqu'à 5 minutes sur « Accès réservé aux
+  // franchiseurs ». Chemin rare, donc une lecture DB de plus est sans coût.
   const cached = getCachedRole(req.user.id);
-  if (cached) {
-    if (cached !== 'franchiseur' && cached !== 'admin') {
-      return res.status(403).json({ error: 'Accès réservé aux franchiseurs.' });
-    }
-    return next();
-  }
+  if (cached === 'franchiseur' || cached === 'admin') return next();
+  if (cached) invalidateRoleCache(req.user.id);
 
   try {
     let { data: profile, error: profileError } = await supabaseAdmin
