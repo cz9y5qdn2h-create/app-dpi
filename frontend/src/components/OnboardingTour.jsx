@@ -45,7 +45,7 @@ const STEPS = [
     selector: '[data-tour="nav-franchisees"]',
     icon: Users,
     title: '④ Franchisés',
-    body: 'Gérez votre base de franchisés, planifiez les dates de signature et envoyez des notifications groupées. La règle des 20 jours avant signature est calculée automatiquement.',
+    body: 'Gérez votre base de franchisés, suivez les dates de leurs contrats et envoyez des notifications groupées à chaque mise à jour du DIP.',
     note: 'Import CSV de tout votre réseau en une seule opération.',
   },
   {
