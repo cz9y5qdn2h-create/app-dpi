@@ -18,16 +18,16 @@ router.get('/', authMiddleware, async (req, res) => {
   const dipIds = (userDips || []).map(d => d.id);
   const contractIds = (userContracts || []).map(c => c.id);
 
-  if (dipIds.length === 0 && contractIds.length === 0) {
-    return res.json({ alerts: [], total: 0 });
-  }
-
   let query = supabaseAdmin
     .from('alerts')
     .select('*, dip_sections(section_title, section_number), contract_clauses(clause_title, clause_number)')
     .order('created_at', { ascending: false });
 
-  const orFilters = [];
+  // Une alerte peut être rattachée à un DIP/contrat précis, OU n'être liée
+  // qu'à l'utilisateur directement (délai légal 20 jours par franchisé,
+  // veille réglementaire sans DIP actif) — sans le filtre user_id, ces
+  // alertes-là n'apparaissaient jamais dans la liste.
+  const orFilters = [`user_id.eq.${req.user.id}`];
   if (dipIds.length > 0) orFilters.push(`dip_id.in.(${dipIds.join(',')})`);
   if (contractIds.length > 0) orFilters.push(`contract_id.in.(${contractIds.join(',')})`);
   query = query.or(orFilters.join(','));

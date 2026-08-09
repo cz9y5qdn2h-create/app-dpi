@@ -15,6 +15,7 @@ const express = require('express');
 const { getAppUrl } = require('../config/appUrl');
 const router = express.Router();
 const { supabaseAdmin } = require('../config/supabase');
+const { fetchNewsItems } = require('../config/newsFeeds');
 const Anthropic = require('@anthropic-ai/sdk');
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -228,7 +229,7 @@ router.get('/daily', async (req, res) => {
 
   const startedAt = Date.now();
   const appUrl = getAppUrl();
-  const report = { sourcesChecked: 0, usersNotified: 0, alertsCreated: 0, errors: 0 };
+  const report = { sourcesChecked: 0, usersNotified: 0, alertsCreated: 0, newsAnalyzed: 0, newsAlertsCreated: 0, errors: 0 };
 
   try {
     // ── 1. Récupérer toutes les sources de surveillance URL ──────────────────
@@ -238,17 +239,15 @@ router.get('/daily', async (req, res) => {
       .order('user_id');
 
     if (srcErr) throw srcErr;
-    if (!allSources?.length) {
-      return res.json({ ok: true, message: 'Aucune source à vérifier', ...report });
-    }
+    const sources = allSources || [];
 
     // ── 2. Traiter par batches parallèles ────────────────────────────────────
     const userChanges = {}; // { userId: [{ name, impactLevel, impactSummary }] }
 
-    for (let i = 0; i < allSources.length; i += BATCH_SIZE) {
+    for (let i = 0; i < sources.length; i += BATCH_SIZE) {
       if (Date.now() - startedAt > MAX_RUN_MS) break; // sécurité timeout
 
-      const batch = allSources.slice(i, i + BATCH_SIZE);
+      const batch = sources.slice(i, i + BATCH_SIZE);
       const results = await Promise.allSettled(batch.map(s => checkOneSource(s)));
 
       results.forEach((r, idx) => {
@@ -306,6 +305,87 @@ router.get('/daily', async (req, res) => {
       }
     }
     report.alertsCreated = alertsCreated;
+
+    // ── 3b. Veille réglementaire (flux RSS partagés) ─────────────────────────
+    // Contrairement aux sources personnalisées (par franchiseur), ces flux
+    // sont publics et communs à tous — l'article n'est analysé QU'UNE FOIS
+    // (mis en cache dans regulatory_news_cache), puis, s'il est jugé à impact
+    // élevé/critique sur la conformité DIP, une alerte est créée pour chaque
+    // franchiseur ayant un DIP actif.
+    try {
+      const { items: newsItems } = await fetchNewsItems();
+      const newsIds = newsItems.map(i => i.id);
+      const { data: cached } = newsIds.length
+        ? await supabaseAdmin.from('regulatory_news_cache').select('id').in('id', newsIds)
+        : { data: [] };
+      const cachedIds = new Set((cached || []).map(c => c.id));
+      const freshItems = newsItems.filter(i => !cachedIds.has(i.id));
+
+      const highImpactItems = [];
+      for (const item of freshItems) {
+        if (Date.now() - startedAt > MAX_RUN_MS) break;
+        try {
+          const aiResponse = await anthropic.messages.create({
+            model: 'claude-sonnet-4-6',
+            max_tokens: 512,
+            messages: [{
+              role: 'user',
+              content: `Tu es un expert en droit de la franchise française (Loi Doubin, art. L.330-3 et R.330-1 Code de commerce).
+
+Titre : "${item.title}"
+Source : ${item.source}
+Extrait : ${item.summary || '(pas d\'extrait disponible)'}
+
+Cet article peut-il avoir un impact sur la conformité d'un Document d'Information Précontractuelle (DIP) de franchise — évolution législative/réglementaire, nouvelle jurisprudence, tendance de marché significative, alerte sur une pratique du secteur ?
+
+Réponds en JSON strict :
+{"impact_level": "none|low|medium|high|critical", "impact_reason": "1 phrase expliquant pourquoi, ou null si none"}`
+            }]
+          });
+          const raw = aiResponse.content.find(b => b.type === 'text')?.text?.trim() || '{}';
+          const parsed = JSON.parse(raw.match(/\{[\s\S]*\}/)?.[0] || '{}');
+          const impact_level = parsed.impact_level || 'none';
+          const impact_reason = parsed.impact_reason || null;
+
+          await supabaseAdmin.from('regulatory_news_cache').insert({
+            id: item.id, title: item.title, url: item.url, source: item.source,
+            category: item.category, published_at: item.date || null,
+            summary: item.summary, impact_level, impact_reason,
+          }).catch(() => {});
+
+          report.newsAnalyzed++;
+          if (impact_level === 'high' || impact_level === 'critical') {
+            highImpactItems.push({ ...item, impact_level, impact_reason });
+          }
+        } catch (e) {
+          console.error('News analysis error:', e.message);
+        }
+      }
+
+      if (highImpactItems.length > 0) {
+        const { data: activeDips } = await supabaseAdmin
+          .from('dip_documents').select('id, user_id').eq('status', 'actif');
+
+        if (activeDips?.length) {
+          const newsAlerts = activeDips.flatMap(dip =>
+            highImpactItems.map(item => ({
+              user_id: dip.user_id,
+              dip_id: dip.id,
+              type: 'regulatory_news',
+              title: item.title,
+              source: item.source,
+              suggestion: `${item.impact_reason || 'Impact potentiel sur la conformité DIP.'} — ${item.url}`,
+              urgency: item.impact_level === 'critical' ? 'haute' : 'moyenne',
+              status: 'pending',
+            }))
+          );
+          await supabaseAdmin.from('alerts').insert(newsAlerts);
+          report.newsAlertsCreated = newsAlerts.length;
+        }
+      }
+    } catch (e) {
+      console.error('Regulatory news step error:', e.message);
+    }
 
     // ── 4. Envoyer email digests ─────────────────────────────────────────────
     const userIdsWithChanges = Object.keys(userChanges);

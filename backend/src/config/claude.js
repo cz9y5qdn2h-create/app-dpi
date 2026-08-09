@@ -991,6 +991,39 @@ Réponds uniquement avec le résumé factuel, sans préambule.`
   return extractText(message);
 };
 
+const CLASSIFY_DOCTYPE_SCHEMA = {
+  type: 'object',
+  properties: { document_type: { type: 'string', enum: DOCUMENT_TYPES.map(t => t.key) } },
+  required: ['document_type'],
+};
+
+/**
+ * Devine le type de pièce (parmi DOCUMENT_TYPES) à partir de son contenu —
+ * utilisé quand le franchiseur dépose un document dans la zone d'upload
+ * générique sans préciser lui-même le type, pour que l'upload reste à un
+ * seul geste (glisser-déposer) plutôt que d'imposer de choisir une case
+ * avant de pouvoir déposer le fichier.
+ */
+const classifyDocumentType = async (documentText, fileName) => {
+  const result = await callClaudeToolUse({
+    model: MODEL_HAIKU,
+    max_tokens: 200,
+    messages: [{
+      role: 'user',
+      content: `Nom du fichier : "${fileName}"
+
+Début du contenu :
+${documentText.substring(0, 3000)}
+
+Parmi les types de pièces suivants, lequel correspond le mieux à ce document ?
+${DOCUMENT_TYPES.map(t => `- ${t.key} : ${t.label}`).join('\n')}
+
+Si aucun ne correspond clairement, réponds "autre".`
+    }]
+  }, 'classify_document', CLASSIFY_DOCTYPE_SCHEMA, 1);
+  return result?.document_type && DOCUMENT_TYPES.some(t => t.key === result.document_type) ? result.document_type : 'autre';
+};
+
 /**
  * Générer un certificat de conformité et de remise pour un DIP ou une modification.
  * Ce certificat constitue une pièce de traçabilité opposable en cas de litige.
@@ -1789,7 +1822,7 @@ module.exports = {
   answerComplianceQuestion,
   parseDIPSections, generateDIPFromForm, formulateField, compareDIPVersions, detectChanges,
   generateUpdateSummary, correctSection, correctSectionWithAnswers,
-  analyzeDocumentForDIPImpact, generateChangesCertificate, extractDocumentData, DOCUMENT_TYPES,
+  analyzeDocumentForDIPImpact, generateChangesCertificate, extractDocumentData, classifyDocumentType, DOCUMENT_TYPES,
   parseContractClauses, compareContractVersions, generateContractFromDIP,
   generateContractFromDIPStream, analyzeCrossImpact, assessLitigationRisks,
   correctClause, correctClauseWithAnswers,

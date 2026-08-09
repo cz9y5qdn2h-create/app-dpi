@@ -3,6 +3,7 @@ const router = express.Router();
 const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware, requireFranchisor } = require('../middleware/auth');
 const { resolveScopedUserId } = require('../middleware/avocatScope');
+const { fetchNewsItems } = require('../config/newsFeeds');
 const Anthropic = require('@anthropic-ai/sdk');
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -176,44 +177,26 @@ Réponds en JSON avec exactement ce format :
   }
 });
 
-// GET /api/monitoring/news — flux d'actualités franchise/juridique
+// GET /api/monitoring/news — flux d'actualités franchise/juridique, enrichi
+// du niveau d'impact DIP déjà analysé par le cron (regulatory_news_cache) —
+// l'analyse elle-même ne se fait jamais à la demande (coût IA), seulement en
+// tâche de fond périodique.
 router.get('/news', authMiddleware, async (req, res) => {
-  const Parser = require('rss-parser');
-  const parser = new Parser({ timeout: 8000, headers: { 'User-Agent': 'DIPpro-Monitor/1.0' } });
+  const { items, feedsOk, feedsTotal } = await fetchNewsItems();
 
-  const FEEDS = [
-    { id: 'fff', name: 'Fédération Française de la Franchise', url: 'https://www.franchise-fff.com/feed/', category: 'franchise', color: '#F5C842' },
-    { id: 'village_justice', name: 'Village de la Justice', url: 'https://www.village-justice.com/rss.php', category: 'juridique', color: '#60a5fa' },
-    { id: 'legifrance', name: 'Légifrance — JORF', url: 'https://www.legifrance.gouv.fr/rss/jorf.xml', category: 'réglementaire', color: '#f87171' },
-    { id: 'entreprendre', name: 'Entreprendre.fr', url: 'https://www.entreprendre.fr/feed/', category: 'franchise', color: '#34d399' },
-    { id: 'toute_franchise', name: 'Toute la Franchise', url: 'https://www.toute-la-franchise.com/feed/', category: 'franchise', color: '#a78bfa' },
-  ];
+  const ids = items.map(i => i.id);
+  const { data: analyzed } = ids.length
+    ? await supabaseAdmin.from('regulatory_news_cache').select('id, impact_level, impact_reason').in('id', ids)
+    : { data: [] };
+  const impactById = Object.fromEntries((analyzed || []).map(a => [a.id, a]));
 
-  const results = await Promise.allSettled(
-    FEEDS.map(async (feed) => {
-      const parsed = await parser.parseURL(feed.url);
-      return parsed.items.slice(0, 5).map(item => ({
-        id: `${feed.id}-${Buffer.from(item.link || item.title || '').toString('base64').slice(0, 12)}`,
-        title: item.title?.trim() || 'Sans titre',
-        url: item.link || '',
-        date: item.pubDate || item.isoDate || null,
-        summary: (item.contentSnippet || item.content || '').replace(/<[^>]+>/g, '').trim().slice(0, 200) || null,
-        source: feed.name,
-        sourceId: feed.id,
-        category: feed.category,
-        color: feed.color,
-      }));
-    })
-  );
+  const enriched = items.map(i => ({
+    ...i,
+    impact_level: impactById[i.id]?.impact_level || null,
+    impact_reason: impactById[i.id]?.impact_reason || null,
+  }));
 
-  const items = results
-    .filter(r => r.status === 'fulfilled')
-    .flatMap(r => r.value)
-    .sort((a, b) => (b.date ? new Date(b.date) : 0) - (a.date ? new Date(a.date) : 0))
-    .slice(0, 30);
-
-  const successCount = results.filter(r => r.status === 'fulfilled').length;
-  res.json({ items, feedsOk: successCount, feedsTotal: FEEDS.length });
+  res.json({ items: enriched, feedsOk, feedsTotal });
 });
 
 // GET /api/monitoring/results

@@ -9,14 +9,15 @@ import LoadingSpinner from '../components/ui/LoadingSpinner';
 import {
   Plus, Users, Edit3, Trash2, Send, X, Check,
   AlertCircle, MessageCircle, Mail, Copy, ExternalLink, Upload, FileText,
-  Search, Download, Filter
+  Search, Download, Filter, Clock, ShieldAlert
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const EMPTY_FORM = {
   name: '', email: '', territory: '',
   contract_start: '', contract_end: '', status: 'actif',
-  whatsapp_number: '', phone: ''
+  whatsapp_number: '', phone: '',
+  candidate_type: 'creation', dip_delivered_at: '', planned_signature_date: ''
 };
 
 function waLink(number, message) {
@@ -176,7 +177,10 @@ export default function FranchiseesPage() {
       contract_end: f.contract_end ? f.contract_end.split('T')[0] : '',
       status: f.status || 'actif',
       whatsapp_number: f.whatsapp_number || '',
-      phone: f.phone || ''
+      phone: f.phone || '',
+      candidate_type: f.candidate_type || 'creation',
+      dip_delivered_at: f.dip_delivered_at ? f.dip_delivered_at.split('T')[0] : '',
+      planned_signature_date: f.planned_signature_date ? f.planned_signature_date.split('T')[0] : ''
     });
     setShowForm(false);
     setFormError('');
@@ -322,6 +326,37 @@ export default function FranchiseesPage() {
               <label className="label">{t('franchisees.fields.notifEmail')}</label>
               <input className="input-field" value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="+33612345678 (optionnel)" />
             </div>
+            <div>
+              <label className="label">Type de candidature</label>
+              <select className="input-field" value={form.candidate_type} onChange={e => setForm(f => ({ ...f, candidate_type: e.target.value }))}>
+                <option value="creation">Création — nouveau point de vente</option>
+                <option value="reprise">Reprise — fonds de commerce existant</option>
+              </select>
+            </div>
+            {form.status === 'en_cours' && (
+              <>
+                <div>
+                  <label className="label flex items-center gap-1.5"><Clock className="w-3.5 h-3.5 text-gold" /> DIP remis le</label>
+                  <input type="date" className="input-field" value={form.dip_delivered_at} onChange={e => setForm(f => ({ ...f, dip_delivered_at: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="label">Signature prévue le</label>
+                  <input type="date" className="input-field" value={form.planned_signature_date} min={form.dip_delivered_at || undefined} onChange={e => setForm(f => ({ ...f, planned_signature_date: e.target.value }))} />
+                </div>
+                {form.dip_delivered_at && form.planned_signature_date && (
+                  (() => {
+                    const days = Math.round((new Date(form.planned_signature_date) - new Date(form.dip_delivered_at)) / 86400000);
+                    const ok = days >= 20;
+                    return (
+                      <div className={`sm:col-span-2 flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-dm-sans ${ok ? 'bg-success/10 text-success border border-success/20' : 'bg-danger/10 text-danger border border-danger/20'}`}>
+                        {ok ? <Check className="w-3.5 h-3.5" /> : <ShieldAlert className="w-3.5 h-3.5" />}
+                        {days} jour(s) entre la remise et la signature — {ok ? 'délai légal de 20 jours respecté' : 'en-dessous du délai légal de 20 jours (art. R.330-2)'}
+                      </div>
+                    );
+                  })()
+                )}
+              </>
+            )}
             <div className="sm:col-span-2 flex gap-3">
               <button type="submit" disabled={createMutation.isPending || updateMutation.isPending} className="btn-primary flex items-center gap-2">
                 {(createMutation.isPending || updateMutation.isPending) ? <LoadingSpinner size="sm" /> : <Check className="w-4 h-4" />}
@@ -362,7 +397,7 @@ export default function FranchiseesPage() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border-subtle">
-                  {[t('franchisees.table.name'), t('franchisees.table.email'), t('franchisees.table.territory'), t('franchisees.table.contract'), t('franchisees.table.status'), t('franchisees.table.notify'), ''].map((h, i) => (
+                  {[t('franchisees.table.name'), t('franchisees.table.email'), t('franchisees.table.territory'), t('franchisees.table.contract'), t('franchisees.table.status'), 'Délai 20j', t('franchisees.table.notify'), ''].map((h, i) => (
                     <th key={i} className="text-left px-4 py-3 font-dm-mono text-xs text-text-secondary whitespace-nowrap">{h}</th>
                   ))}
                 </tr>
@@ -382,6 +417,20 @@ export default function FranchiseesPage() {
                         {f.contract_end ? ' → ' + new Date(f.contract_end).toLocaleDateString('fr-FR', { year: 'numeric', month: 'short' }) : ''}
                       </td>
                       <td className="px-4 py-3"><StatusBadge status={f.status} /></td>
+                      <td className="px-4 py-3">
+                        {f.signature_delay ? (
+                          <span className={`inline-flex items-center gap-1 font-dm-mono text-xs px-2 py-0.5 rounded border ${
+                            f.signature_delay.compliant
+                              ? 'bg-success/10 text-success border-success/20'
+                              : 'bg-danger/10 text-danger border-danger/20'
+                          }`}>
+                            {f.signature_delay.compliant ? <Check className="w-3 h-3" /> : <ShieldAlert className="w-3 h-3" />}
+                            {f.signature_delay.days_between}j
+                          </span>
+                        ) : f.status === 'en_cours' ? (
+                          <span className="font-dm-mono text-xs text-text-muted">—</span>
+                        ) : null}
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1.5">
                           {FEATURES.whatsapp && wa && (

@@ -3,12 +3,13 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import api from '../../lib/api';
 import LoadingSpinner from '../ui/LoadingSpinner';
 import {
-  FileText, ShieldCheck, FolderOpen, Download, Search, FolderSync,
+  FileText, ShieldCheck, FolderOpen, Download, Search, FolderSync, ClipboardCheck,
   ChevronLeft, ChevronDown, Building2, AlertCircle,
 } from 'lucide-react';
 
 const TABS = [
   { key: 'dip',          label: 'DIP / Contrat', icon: FileText,   to: (id) => `/dip/avocat/${id}` },
+  { key: 'conformite',   label: 'Conformité',     icon: ClipboardCheck, to: (id) => `/avocat/${id}/conformite` },
   { key: 'certifications', label: 'Certificats',  icon: ShieldCheck, to: (id) => `/avocat/${id}/certifications` },
   { key: 'documents',    label: 'Documents',       icon: FolderOpen, to: (id) => `/avocat/${id}/documents` },
   { key: 'export',       label: 'Export',          icon: Download,   to: (id) => `/avocat/${id}/export` },

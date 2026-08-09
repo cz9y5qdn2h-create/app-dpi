@@ -1,20 +1,23 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
+import { useDropzone } from 'react-dropzone';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '../lib/supabase';
 import api from '../lib/api';
 import PageHeader from '../components/ui/PageHeader';
 import LoadingSpinner from '../components/ui/LoadingSpinner';
 import {
-  Upload, CheckCircle, Circle, Trash2, FileText, Clock, AlertTriangle, ChevronDown, ChevronUp,
+  Upload, CheckCircle, Circle, Trash2, FileText, Clock, AlertTriangle, ChevronDown, ChevronUp, Sparkles,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const BUCKET = 'franchisor-documents';
+const ACCEPTED_TYPES = { 'application/pdf': ['.pdf'], 'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'], 'application/msword': ['.doc'], 'image/png': ['.png'], 'image/jpeg': ['.jpg', '.jpeg'] };
 
 export default function DocumentsPage() {
   const queryClient = useQueryClient();
   const [uploadingType, setUploadingType] = useState(null);
   const [expandedType, setExpandedType] = useState(null);
+  const [dropQueue, setDropQueue] = useState([]); // fichiers déposés dans la zone générale, en cours de traitement
 
   const { data, isLoading } = useQuery({
     queryKey: ['documents'],
@@ -35,14 +38,33 @@ export default function DocumentsPage() {
         .upload(storage_path, file, { cacheControl: '3600', upsert: false, contentType: file.type || 'application/octet-stream' });
       if (uploadError) throw new Error("Upload impossible : " + uploadError.message);
 
-      return api.post('/documents', { document_type: documentType, file_name: file.name, storage_path });
+      // documentType omis (zone de dépôt générale) : le backend le devine
+      // depuis le contenu du document, un simple glisser-déposer suffit.
+      return api.post('/documents', { document_type: documentType || undefined, file_name: file.name, storage_path });
     },
     onSuccess: () => {
-      toast.success('Document ajouté — extraction en cours…');
       queryClient.invalidateQueries({ queryKey: ['documents'] });
     },
     onError: (err) => toast.error(err.message),
     onSettled: () => setUploadingType(null),
+  });
+
+  const onDropGeneral = useCallback((accepted, rejected) => {
+    if (rejected?.length) toast.error(`${rejected.length} fichier(s) refusé(s) — format non supporté (PDF, DOCX, DOC, PNG, JPG)`);
+    if (!accepted?.length) return;
+    setDropQueue(q => [...q, ...accepted.map(f => f.name)]);
+    Promise.allSettled(accepted.map(file => uploadMutation.mutateAsync({ file, documentType: null }))).then((results) => {
+      const ok = results.filter(r => r.status === 'fulfilled').length;
+      if (ok > 0) toast.success(`${ok} document${ok > 1 ? 's' : ''} déposé${ok > 1 ? 's' : ''} — classement automatique en cours…`);
+      setDropQueue(q => q.filter(name => !accepted.some(f => f.name === name)));
+    });
+  }, [uploadMutation]);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop: onDropGeneral,
+    accept: ACCEPTED_TYPES,
+    multiple: true,
+    maxSize: 25 * 1024 * 1024,
   });
 
   const deleteMutation = useMutation({
@@ -71,6 +93,36 @@ export default function DocumentsPage() {
         subtitle="Bibliothèque de pièces sources — réutilisées automatiquement à chaque génération de DIP"
       />
 
+      <div
+        {...getRootProps()}
+        className={`card border-2 border-dashed text-center py-10 cursor-pointer transition-all ${
+          isDragActive ? 'border-gold bg-gold/5' : 'border-border-default hover:border-gold/40'
+        }`}
+      >
+        <input {...getInputProps()} />
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl bg-gold/10 border border-gold/20 mb-4">
+          <Upload className="w-6 h-6 text-gold" />
+        </div>
+        <p className="font-cormorant text-2xl text-text-primary mb-1">
+          {isDragActive ? 'Déposez vos fichiers ici' : 'Glissez vos documents ici'}
+        </p>
+        <p className="font-dm-sans text-sm text-text-secondary mb-1">
+          ou cliquez pour parcourir — plusieurs fichiers à la fois, aucun tri à faire au préalable
+        </p>
+        <p className="font-dm-sans text-xs text-text-muted flex items-center justify-center gap-1.5 mt-2">
+          <Sparkles className="w-3.5 h-3.5 text-gold" /> L'IA reconnaît le type de chaque document et le classe automatiquement
+        </p>
+        {dropQueue.length > 0 && (
+          <div className="mt-4 flex flex-col items-center gap-1.5">
+            {dropQueue.map(name => (
+              <span key={name} className="font-dm-mono text-xs text-gold flex items-center gap-2">
+                <LoadingSpinner size="sm" /> {name}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div className="card border-gold/15">
         <div className="flex items-center justify-between mb-2">
           <span className="font-dm-sans text-sm text-text-secondary">Pièces obligatoires fournies</span>
@@ -86,6 +138,10 @@ export default function DocumentsPage() {
           Chaque document est analysé par IA pour en extraire les données utiles (chiffres, dates, numéros) — cela réduit la saisie manuelle lors de la génération de votre DIP.
         </p>
       </div>
+
+      <p className="font-dm-mono text-xs text-text-muted uppercase tracking-wide">
+        Détail par pièce — classement automatique, ou ajout ciblé ici
+      </p>
 
       <div className="space-y-3">
         {checklist.map(type => (

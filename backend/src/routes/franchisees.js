@@ -6,6 +6,54 @@ const { generateUpdateSummary } = require('../config/claude');
 const router = express.Router();
 
 const MAX_CSV_ROWS = 500;
+const LEGAL_DELAY_DAYS = 20;
+
+// Délai légal Art. L.330-3 / R.330-2 C. com. — le DIP (et le projet de
+// contrat) doit être remis au moins 20 jours pleins avant la signature ou
+// tout versement de somme. Calcule un statut exploitable côté UI pour
+// chaque candidat dont les deux dates sont renseignées.
+function computeSignatureDelay(dip_delivered_at, planned_signature_date) {
+  if (!dip_delivered_at || !planned_signature_date) return null;
+  const delivered = new Date(dip_delivered_at);
+  const planned = new Date(planned_signature_date);
+  const daysBetween = Math.round((planned - delivered) / 86400000);
+  return {
+    days_between: daysBetween,
+    days_remaining: LEGAL_DELAY_DAYS - Math.round((new Date() - delivered) / 86400000),
+    compliant: daysBetween >= LEGAL_DELAY_DAYS,
+  };
+}
+
+// Crée/retire l'alerte "délai 20 jours" pour un franchisé selon la
+// conformité calculée — appelé après chaque création/modification pour que
+// l'alerte reflète toujours l'état courant des deux dates.
+async function syncSignatureDelayAlert(franchiseurId, franchisee) {
+  const delay = computeSignatureDelay(franchisee.dip_delivered_at, franchisee.planned_signature_date);
+  const nonCompliant = delay && !delay.compliant;
+
+  const { data: existing } = await supabaseAdmin
+    .from('alerts')
+    .select('id')
+    .eq('franchisee_id', franchisee.id)
+    .eq('source', 'Délai légal 20 jours')
+    .eq('status', 'pending')
+    .maybeSingle();
+
+  if (nonCompliant && !existing) {
+    await supabaseAdmin.from('alerts').insert({
+      user_id: franchiseurId,
+      franchisee_id: franchisee.id,
+      type: 'delai_20_jours',
+      title: `Délai légal non respecté — ${franchisee.name}`,
+      source: 'Délai légal 20 jours',
+      suggestion: `Le DIP a été remis le ${franchisee.dip_delivered_at} pour une signature prévue le ${franchisee.planned_signature_date}, soit ${delay.days_between} jour(s) — l'article R.330-2 du Code de commerce exige un délai minimum de ${LEGAL_DELAY_DAYS} jours pleins avant signature ou tout versement de somme. Reportez la date de signature ou re-remettez le DIP.`,
+      urgency: 'haute',
+      status: 'pending',
+    }).catch(e => console.error('Signature delay alert error:', e.message));
+  } else if (!nonCompliant && existing) {
+    await supabaseAdmin.from('alerts').update({ status: 'validated', resolved_at: new Date().toISOString() }).eq('id', existing.id).catch(() => {});
+  }
+}
 
 // POST /api/franchisees/import-csv — import CSV bulk
 router.post('/import-csv', authMiddleware, requireFranchisor, async (req, res) => {
@@ -53,39 +101,52 @@ router.get('/', authMiddleware, requireFranchisor, async (req, res) => {
 
   const { data, error, count } = await supabaseAdmin
     .from('franchisees')
-    .select('id,franchiseur_id,name,email,phone,whatsapp_number,territory,contract_start,contract_end,status,created_at', { count: 'exact' })
+    .select('id,franchiseur_id,name,email,phone,whatsapp_number,territory,contract_start,contract_end,status,candidate_type,dip_delivered_at,planned_signature_date,created_at', { count: 'exact' })
     .eq('franchiseur_id', req.user.id)
     .order('created_at', { ascending: false })
     .range(from, from + limit - 1);
 
   if (error) return res.status(500).json({ error: error.message });
+
+  const enriched = (data || []).map(f => ({
+    ...f,
+    signature_delay: computeSignatureDelay(f.dip_delivered_at, f.planned_signature_date),
+  }));
   res.set('Cache-Control', 'private, max-age=15');
-  res.json({ franchisees: data, total: count, page, limit });
+  res.json({ franchisees: enriched, total: count, page, limit });
 });
 
 // POST /api/franchisees
 router.post('/', authMiddleware, requireFranchisor, async (req, res) => {
-  const { name, email, territory, contract_start, contract_end, whatsapp_number, phone } = req.body;
+  const { name, email, territory, contract_start, contract_end, whatsapp_number, phone, candidate_type, dip_delivered_at, planned_signature_date } = req.body;
   if (!name || !email) return res.status(400).json({ error: 'Nom et email requis' });
 
   const { data, error } = await supabaseAdmin.from('franchisees').insert({
     franchiseur_id: req.user.id, name, email, territory, contract_start, contract_end,
-    whatsapp_number: whatsapp_number || null, phone: phone || null
+    whatsapp_number: whatsapp_number || null, phone: phone || null,
+    candidate_type: candidate_type || 'creation',
+    dip_delivered_at: dip_delivered_at || null,
+    planned_signature_date: planned_signature_date || null,
   }).select().single();
 
   if (error) return res.status(500).json({ error: error.message });
-  res.status(201).json({ franchisee: data });
+  await syncSignatureDelayAlert(req.user.id, data);
+  res.status(201).json({ franchisee: { ...data, signature_delay: computeSignatureDelay(data.dip_delivered_at, data.planned_signature_date) } });
 });
 
 // PUT /api/franchisees/:id
 router.put('/:id', authMiddleware, requireFranchisor, async (req, res) => {
-  const { name, email, territory, contract_start, contract_end, status, whatsapp_number, phone } = req.body;
+  const { name, email, territory, contract_start, contract_end, status, whatsapp_number, phone, candidate_type, dip_delivered_at, planned_signature_date } = req.body;
   const { data, error } = await supabaseAdmin.from('franchisees')
     .update({ name, email, territory, contract_start, contract_end, status,
-              whatsapp_number: whatsapp_number || null, phone: phone || null })
+              whatsapp_number: whatsapp_number || null, phone: phone || null,
+              candidate_type: candidate_type || 'creation',
+              dip_delivered_at: dip_delivered_at || null,
+              planned_signature_date: planned_signature_date || null })
     .eq('id', req.params.id).eq('franchiseur_id', req.user.id).select().single();
   if (error) return res.status(500).json({ error: error.message });
-  res.json({ franchisee: data });
+  await syncSignatureDelayAlert(req.user.id, data);
+  res.json({ franchisee: { ...data, signature_delay: computeSignatureDelay(data.dip_delivered_at, data.planned_signature_date) } });
 });
 
 // DELETE /api/franchisees/:id

@@ -3,7 +3,7 @@ const path = require('path');
 const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware, requireFranchisor } = require('../middleware/auth');
 const { resolveScopedUserId } = require('../middleware/avocatScope');
-const { extractDocumentData, DOCUMENT_TYPES } = require('../config/claude');
+const { extractDocumentData, classifyDocumentType, DOCUMENT_TYPES } = require('../config/claude');
 const errMsg = require('../config/errorMessage');
 const router = express.Router();
 
@@ -76,11 +76,16 @@ router.get('/upload-url', authMiddleware, requireFranchisor, async (req, res) =>
 
 // POST /api/documents — enregistre un document après upload, lance l'extraction IA
 router.post('/', authMiddleware, requireFranchisor, async (req, res) => {
-  const { document_type, file_name, storage_path } = req.body;
-  if (!document_type || !file_name || !storage_path) {
-    return res.status(400).json({ error: 'document_type, file_name et storage_path requis' });
+  const { file_name, storage_path } = req.body;
+  let { document_type } = req.body;
+  if (!file_name || !storage_path) {
+    return res.status(400).json({ error: 'file_name et storage_path requis' });
   }
-  if (!VALID_TYPES.has(document_type)) {
+  // document_type reste optionnel — glisser un fichier dans la zone de dépôt
+  // générale ne l'indique pas, l'IA le devine depuis le contenu (voir tâche
+  // de fond ci-dessous). VALID_TYPES ne s'applique donc qu'en présence d'une
+  // valeur explicite (choisie via un slot précis de la checklist).
+  if (document_type && !VALID_TYPES.has(document_type)) {
     return res.status(400).json({ error: 'document_type invalide' });
   }
   // Le chemin doit appartenir au dossier de l'utilisateur (évite qu'un utilisateur enregistre un fichier d'un autre)
@@ -95,7 +100,7 @@ router.post('/', authMiddleware, requireFranchisor, async (req, res) => {
       .from('franchisor_documents')
       .insert({
         user_id: req.user.id,
-        document_type,
+        document_type: document_type || 'autre',
         file_name: file_name.substring(0, 255),
         storage_path,
         file_url: signedUrlData?.signedUrl || null,
@@ -120,7 +125,13 @@ router.post('/', authMiddleware, requireFranchisor, async (req, res) => {
           return;
         }
 
-        const summary = await extractDocumentData(text, document_type, file_name);
+        let resolvedType = document_type;
+        if (!resolvedType) {
+          resolvedType = await classifyDocumentType(text, file_name);
+          await supabaseAdmin.from('franchisor_documents').update({ document_type: resolvedType }).eq('id', inserted.id);
+        }
+
+        const summary = await extractDocumentData(text, resolvedType, file_name);
         await supabaseAdmin.from('franchisor_documents')
           .update({ extraction_status: 'done', extracted_summary: summary })
           .eq('id', inserted.id);

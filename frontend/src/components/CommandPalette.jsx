@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import {
   LayoutDashboard, FileText, Upload, Bell, History,
-  Users, Settings, Download, Zap, FolderSync, Sparkles,
+  Users, Settings, Download, FolderSync, Sparkles, ClipboardCheck,
   Search, ArrowRight, ArrowUp, ArrowDown, CornerDownLeft
 } from 'lucide-react';
 
@@ -12,12 +12,12 @@ const NAV_ITEMS = [
   { label: 'Mon DIP',          to: '/dip',          icon: FileText,        group: 'Navigation' },
   { label: 'Nouvelle version', to: '/dip/upload',   icon: Upload,          group: 'Actions' },
   { label: 'Générer un DIP',   to: '/dip/generate', icon: Sparkles,        group: 'Actions' },
+  { label: 'Conformité',       to: '/conformite',   icon: ClipboardCheck,  group: 'Navigation' },
   { label: 'Alertes',          to: '/alerts',       icon: Bell,            group: 'Navigation' },
   { label: 'Historique',       to: '/history',      icon: History,         group: 'Navigation' },
   { label: 'Franchisés',       to: '/franchisees',  icon: Users,           group: 'Navigation' },
   { label: 'Export',           to: '/export',       icon: Download,        group: 'Navigation' },
   { label: 'Surveillance docs',to: '/monitoring',    icon: FolderSync,      group: 'Navigation' },
-  { label: 'Intégrations',     to: '/integrations', icon: Zap,             group: 'Navigation' },
   { label: 'Paramètres',       to: '/settings',     icon: Settings,        group: 'Navigation' },
 ];
 

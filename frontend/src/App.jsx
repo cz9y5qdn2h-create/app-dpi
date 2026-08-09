@@ -34,14 +34,15 @@ const FranchiseesPage    = lazy(() => import('./pages/FranchiseesPage'));
 const SettingsPage       = lazy(() => import('./pages/SettingsPage'));
 const ExportPage         = lazy(() => import('./pages/ExportPage'));
 const CertificatesPage   = lazy(() => import('./pages/CertificatesPage'));
+const CompliancePage     = lazy(() => import('./pages/CompliancePage'));
 const DocumentsPage      = lazy(() => import('./pages/DocumentsPage'));
 const AdminPage          = lazy(() => import('./pages/AdminPage'));
-const ApiConfigPage      = lazy(() => import('./pages/ApiConfigPage'));
 const MonitorPage        = lazy(() => import('./pages/MonitorPage'));
 const DocMonitoringPage  = lazy(() => import('./pages/DocMonitoringPage'));
 const AnalyticsPage      = lazy(() => import('./pages/AnalyticsPage'));
 const DIPAvocatPage      = lazy(() => import('./pages/DIPAvocatPage'));
 const AvocatCertificatesPage = lazy(() => import('./pages/AvocatCertificatesPage'));
+const AvocatConformitePage   = lazy(() => import('./pages/AvocatConformitePage'));
 const AvocatDocumentsPage    = lazy(() => import('./pages/AvocatDocumentsPage'));
 const AvocatExportPage       = lazy(() => import('./pages/AvocatExportPage'));
 const AvocatMonitoringPage   = lazy(() => import('./pages/AvocatMonitoringPage'));
@@ -142,14 +143,15 @@ export default function App() {
           <Route path="settings"    element={<S><SettingsPage /></S>} />
           <Route path="export"      element={<FranchisorOnlyRoute><S><ExportPage /></S></FranchisorOnlyRoute>} />
           <Route path="certifications" element={<FranchisorOnlyRoute><S><CertificatesPage /></S></FranchisorOnlyRoute>} />
+          <Route path="conformite"     element={<FranchisorOnlyRoute><S><CompliancePage /></S></FranchisorOnlyRoute>} />
           <Route path="documents"      element={<FranchisorOnlyRoute><S><DocumentsPage /></S></FranchisorOnlyRoute>} />
           <Route path="admin"       element={<S><AdminPage /></S>} />
           <Route path="monitor"     element={FEATURES.monitor ? <FranchisorOnlyRoute><S><MonitorPage /></S></FranchisorOnlyRoute> : <Navigate to="/dashboard" replace />} />
           <Route path="monitoring"  element={<FranchisorOnlyRoute><S><DocMonitoringPage /></S></FranchisorOnlyRoute>} />
-          <Route path="integrations" element={<FranchisorOnlyRoute><S><ApiConfigPage /></S></FranchisorOnlyRoute>} />
           <Route path="analytics/dip/:dipId"          element={<FranchisorOnlyRoute><S><AnalyticsPage /></S></FranchisorOnlyRoute>} />
           <Route path="dip/avocat/:franchiseurId"      element={<S><DIPAvocatPage /></S>} />
           <Route path="avocat/:franchiseurId/certifications" element={<S><AvocatCertificatesPage /></S>} />
+          <Route path="avocat/:franchiseurId/conformite"     element={<S><AvocatConformitePage /></S>} />
           <Route path="avocat/:franchiseurId/documents"      element={<S><AvocatDocumentsPage /></S>} />
           <Route path="avocat/:franchiseurId/export"         element={<S><AvocatExportPage /></S>} />
           <Route path="avocat/:franchiseurId/surveillance"   element={<S><AvocatMonitoringPage /></S>} />

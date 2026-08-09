@@ -97,9 +97,28 @@ export default function AvocatMonitoringPage() {
                   rel="noreferrer"
                   className="flex items-start justify-between gap-3 px-2 py-2.5 rounded-lg transition-colors"
                 >
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                      <p className="font-dm-mono text-xs" style={{ color: 'rgb(var(--text-muted))' }}>{item.source}</p>
+                      {item.impact_level && item.impact_level !== 'none' && (
+                        <span
+                          className="font-dm-mono text-xs px-2 py-0.5 rounded-full"
+                          style={{
+                            color: item.impact_level === 'critical' || item.impact_level === 'high' ? 'rgb(241 124 124)' : 'var(--v2-gold)',
+                            border: `1px solid ${item.impact_level === 'critical' || item.impact_level === 'high' ? 'rgba(241,124,124,0.35)' : 'var(--v2-border-hot)'}`,
+                          }}
+                        >
+                          {item.impact_level === 'critical' ? 'Critique' : item.impact_level === 'high' ? 'Élevé' : item.impact_level === 'medium' ? 'Modéré' : 'Faible'}
+                        </span>
+                      )}
+                    </div>
                     <p className="font-dm-sans text-sm truncate" style={{ color: 'rgb(var(--text-primary))' }}>{item.title}</p>
-                    <p className="font-dm-mono text-xs mt-0.5" style={{ color: 'rgb(var(--text-muted))' }}>{item.source}</p>
+                    {item.summary && (
+                      <p className="font-dm-sans text-xs mt-0.5 line-clamp-2" style={{ color: 'rgb(var(--text-secondary))' }}>{item.summary}</p>
+                    )}
+                    {item.impact_reason && (
+                      <p className="font-dm-sans text-xs mt-1" style={{ color: 'var(--v2-gold)' }}>{item.impact_reason}</p>
+                    )}
                   </div>
                   <ExternalLink className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" style={{ color: 'rgb(var(--text-muted))' }} />
                 </a>

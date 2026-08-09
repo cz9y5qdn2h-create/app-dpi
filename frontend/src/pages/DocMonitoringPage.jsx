@@ -98,6 +98,9 @@ function NewsWidget() {
                         {formatDistanceToNow(new Date(item.date), { addSuffix: true, locale: fr })}
                       </span>
                     )}
+                    {item.impact_level && item.impact_level !== 'none' && (
+                      <ImpactBadge level={item.impact_level} pulse />
+                    )}
                   </div>
                   <p className="font-dm-sans text-sm text-text-primary group-hover:text-gold transition-colors leading-snug">
                     {item.title}
@@ -105,6 +108,11 @@ function NewsWidget() {
                   {item.summary && (
                     <p className="font-dm-sans text-xs text-text-secondary mt-0.5 line-clamp-2 leading-relaxed">
                       {item.summary}
+                    </p>
+                  )}
+                  {item.impact_reason && (
+                    <p className="font-dm-sans text-xs mt-1 leading-relaxed" style={{ color: IMPACT_CONFIG[item.impact_level]?.textColor }}>
+                      {item.impact_reason}
                     </p>
                   )}
                 </div>

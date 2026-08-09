@@ -248,7 +248,7 @@ export default function AlertsPage() {
                     )}
                   </div>
                   <h3 className="font-dm-sans text-base text-text-primary">
-                    {alert.dip_sections?.section_title || alert.contract_clauses?.clause_title || 'Élément inconnu'}
+                    {alert.dip_sections?.section_title || alert.contract_clauses?.clause_title || alert.title || 'Élément inconnu'}
                   </h3>
                   <p className="font-dm-mono text-xs text-text-secondary mt-1">
                     {alert.source} {alert.created_at && '\u00b7 ' + formatDistanceToNow(new Date(alert.created_at), { addSuffix: true, locale: fr })}

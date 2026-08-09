@@ -10,8 +10,8 @@ import OnboardingModal from './OnboardingModal';
 import LiquidGlassBtn from './ui/LiquidGlassBtn';
 import {
   LayoutDashboard, FileText, Upload, Bell, History,
-  Users, Settings, Download, LogOut, Phone, Zap, ShieldAlert, Sparkles,
-  Sun, Moon, FolderSync, ScrollText, ChevronDown, Play, X, ShieldCheck, FolderOpen,
+  Users, Settings, Download, LogOut, Phone, ShieldAlert, Sparkles,
+  Sun, Moon, FolderSync, ScrollText, ChevronDown, Play, X, ShieldCheck, FolderOpen, ClipboardCheck,
 } from 'lucide-react';
 
 const THEME_ICONS = { moon: Moon, sparkle: Sparkles, sun: Sun };
@@ -165,12 +165,19 @@ export default function Sidebar({ open, onClose }) {
       ],
     },
     {
-      key: 'ops',
+      key: 'conformite',
       flat: true,
       items: [
+        { to: '/conformite', icon: ClipboardCheck, label: 'Conformité', tourId: 'nav-conformite' },
         { to: '/alerts', icon: Bell, label: t('nav.alerts'), count: pendingCount, tourId: 'nav-alerts' },
-        { to: '/history', icon: History, label: t('nav.history'), tourId: 'nav-history' },
         { to: '/franchisees', icon: Users, label: t('nav.franchisees'), tourId: 'nav-franchisees' },
+        { to: '/history', icon: History, label: t('nav.history'), tourId: 'nav-history' },
+      ],
+    },
+    {
+      key: 'documents',
+      flat: true,
+      items: [
         { to: '/documents', icon: FolderOpen, label: 'Documents' },
         { to: '/certifications', icon: ShieldCheck, label: 'Certifications' },
         { to: '/export', icon: Download, label: t('nav.export') },
@@ -181,7 +188,6 @@ export default function Sidebar({ open, onClose }) {
       flat: true,
       items: [
         { to: '/monitoring', icon: FolderSync, label: t('nav.docMonitoring') },
-        { to: '/integrations', icon: Zap, label: t('nav.integrations') },
         { to: '/settings', icon: Settings, label: t('nav.settings') },
         ...(isAdmin ? [{ to: '/admin', icon: ShieldAlert, label: t('nav.admin'), adminOnly: true }] : []),
       ],
@@ -225,9 +231,6 @@ export default function Sidebar({ open, onClose }) {
           <div className="space-y-0.5">
             {navGroups.map((group, gi) => (
               <div key={group.key}>
-                {gi > 0 && group.flat && gi !== navGroups.findIndex(g => g.key === 'ops') + 1 && (
-                  <div className="my-2 mx-1" style={{ height: '1px', background: 'rgba(200,169,110,0.08)' }} />
-                )}
                 {gi > 0 && (
                   <div className="my-2 mx-1" style={{ height: '1px', background: 'rgba(200,169,110,0.08)' }} />
                 )}
