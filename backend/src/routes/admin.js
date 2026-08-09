@@ -1,7 +1,7 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
 const { supabaseAdmin } = require('../config/supabase');
-const { authMiddleware } = require('../middleware/auth');
+const { authMiddleware, invalidateRoleCache } = require('../middleware/auth');
 const { isPasswordPwned } = require('../utils/passwordSecurity');
 const { getAppUrl } = require('../config/appUrl');
 const router = express.Router();
@@ -98,12 +98,24 @@ router.put('/users/:id', authMiddleware, requireAdmin, async (req, res) => {
     if (!ALLOWED_ROLES.includes(role)) {
       return res.status(400).json({ error: 'Rôle invalide' });
     }
+    // Changer son propre rôle (ex: admin → avocat pour "tester") bascule
+    // instantanément tout le compte sur l'autre visage du SaaS : données
+    // franchiseur invisibles, accès admin perdu — vécu comme une perte de
+    // données. Un admin ne peut modifier que le rôle des AUTRES comptes.
+    if (req.params.id === req.user.id) {
+      return res.status(400).json({ error: 'Impossible de modifier le rôle de votre propre compte. Créez un compte de test séparé (ex: theo+avocat@...) pour essayer un autre rôle.' });
+    }
     updates.role = role;
   }
 
   const { data, error } = await supabaseAdmin
     .from('users').update(updates).eq('id', req.params.id).select().single();
   if (error) return res.status(500).json({ error: error.message });
+
+  // Sans invalidation, l'ancien rôle reste servi par le cache backend
+  // jusqu'à 5 minutes après un changement — source de comportements
+  // "incohérents" difficiles à diagnostiquer juste après une modification.
+  if (updates.role) invalidateRoleCache(req.params.id);
 
   // Changer l'email si fourni
   if (email) {
