@@ -367,8 +367,11 @@ router.put('/clause-proposals/:id/accept', authMiddleware, async (req, res) => {
   if (proposal.status !== 'pending') return res.status(400).json({ error: 'Proposition déjà traitée' });
 
   const { data: contract } = await supabaseAdmin
-    .from('franchise_contracts').select('user_id').eq('id', proposal.contract_id).single();
+    .from('franchise_contracts').select('user_id, linked_dip_id').eq('id', proposal.contract_id).single();
   if (contract?.user_id !== req.user.id) return res.status(403).json({ error: 'Seul le franchiseur peut valider' });
+
+  const { data: clauseBefore } = await supabaseAdmin
+    .from('contract_clauses').select('clause_title, clause_number, content').eq('id', proposal.clause_id).single();
 
   const now = new Date().toISOString();
 
@@ -386,6 +389,25 @@ router.put('/clause-proposals/:id/accept', authMiddleware, async (req, res) => {
       reviewer_comment: reviewer_comment || null,
     }).eq('id', req.params.id),
   ]);
+
+  // Attestation de mise à jour — même traçabilité que l'acceptation d'une
+  // proposition de section DIP, sur le DIP lié au contrat. Non-bloquant.
+  if (contract.linked_dip_id) {
+    createCertificate({
+      userId: req.user.id, userEmail: req.user.email, dipId: contract.linked_dip_id,
+      certificateType: 'MISE_A_JOUR',
+      changes: [{
+        id: proposal.clause_id,
+        type: 'proposition_avocat_acceptee_contrat',
+        section: clauseBefore?.clause_title || 'Clause',
+        section_number: clauseBefore?.clause_number || null,
+        ancien: clauseBefore?.content || '',
+        nouveau: proposal.content_proposed || '',
+        impact_legal: 'Moderate',
+        recommandation_ia: 'Modification de clause proposée par l\'avocat et acceptée par le franchiseur.',
+      }],
+    }).catch(e => console.error('Certificate auto-gen error (clause proposal accept):', e.message));
+  }
 
   res.json({ ok: true });
 });

@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import api from '../lib/api';
 
 const AuthContext = createContext(null);
 
@@ -59,6 +60,14 @@ function clearCachedProfile() {
   localStorage.removeItem(PROFILE_CACHE_KEY);
 }
 
+// Le profil pilote tout l'affichage (rôle admin/avocat/franchiseur, essai).
+// La lecture directe passe par le client anon et donc par RLS : si elle
+// échoue ou dépasse le délai, on retombait silencieusement sur le profil en
+// cache — potentiellement périmé pour toujours, ce qui fait « perdre »
+// l'accès admin alors que le rôle est correct en base. Le backend
+// (`/auth/me`, service role, sans RLS) est la source de vérité utilisée par
+// les contrôles d'accès : on s'y replie systématiquement en cas d'échec,
+// pour que l'interface ne diverge jamais de ce que le serveur autorise.
 async function fetchProfile(userId) {
   try {
     const result = await withTimeout(
@@ -67,11 +76,22 @@ async function fetchProfile(userId) {
       { data: null }
     );
     const profile = result?.data || null;
-    if (profile) setCachedProfile(userId, profile);
-    return profile;
-  } catch {
-    return null;
-  }
+    if (profile) {
+      setCachedProfile(userId, profile);
+      return profile;
+    }
+  } catch { /* on tente le repli backend ci-dessous */ }
+
+  try {
+    const { data } = await api.get('/auth/me');
+    const profile = data?.user || null;
+    if (profile?.id) {
+      setCachedProfile(userId, profile);
+      return profile;
+    }
+  } catch { /* hors ligne ou session expirée — le cache reste le dernier recours */ }
+
+  return null;
 }
 
 function isTrialExpiredFn(profile) {
@@ -159,7 +179,10 @@ export default function AuthProvider({ children }) {
             setUser(session.user);
             localStorage.setItem('access_token', session.access_token);
             const p = await fetchProfile(session.user.id);
-            if (mounted) setProfile(p);
+            // Une panne réseau ponctuelle ne doit pas effacer le rôle affiché
+            // (l'utilisateur se retrouverait sans aucun accès) — on conserve
+            // le dernier profil connu tant que la session reste valide.
+            if (mounted && p) setProfile(p);
           } else {
             setUser(null);
             setProfile(null);

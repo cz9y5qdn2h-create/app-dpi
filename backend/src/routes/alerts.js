@@ -2,6 +2,7 @@ const express = require('express');
 const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware, requireFranchisor } = require('../middleware/auth');
 const { detectChanges, correctSection, correctSectionWithAnswers } = require('../config/claude');
+const { createCertificate } = require('./certificates');
 const errMsg = require('../config/errorMessage');
 const router = express.Router();
 
@@ -151,6 +152,55 @@ router.patch('/:id/validate', authMiddleware, requireFranchisor, async (req, res
     user_id: req.user.id,
     timestamp: new Date().toISOString()
   });
+
+  // Attestation de mise à jour — valider une alerte modifie réellement le
+  // document (section ou clause via contrat lié à un DIP) ; sans certificat
+  // sur ce chemin, une correction IA validée ne laissait aucune preuve
+  // horodatée. Non-bloquant : une erreur ici ne doit pas faire échouer la
+  // validation elle-même.
+  (async () => {
+    try {
+      let certDipId = null;
+      let changeLabel = null;
+      if (alert.section_id && newContent && alert.dip_id) {
+        certDipId = alert.dip_id;
+        changeLabel = {
+          id: alert.section_id,
+          type: 'validation_alerte',
+          section: alert.dip_sections?.section_title || 'Section',
+          section_number: alert.dip_sections?.section_number || null,
+          ancien: alert.dip_sections?.content || alert.old_value || '',
+          nouveau: newContent,
+          impact_legal: alert.urgency === 'haute' ? 'High' : 'Moderate',
+          recommandation_ia: alert.suggestion || 'Correction validée depuis les alertes.',
+        };
+      } else if (alert.clause_id && newContent && alert.contract_id) {
+        const { data: contract } = await supabaseAdmin
+          .from('franchise_contracts').select('linked_dip_id').eq('id', alert.contract_id).single();
+        if (contract?.linked_dip_id) {
+          certDipId = contract.linked_dip_id;
+          changeLabel = {
+            id: alert.clause_id,
+            type: 'validation_alerte_contrat',
+            section: alert.contract_clauses?.clause_title || 'Clause',
+            section_number: alert.contract_clauses?.clause_number || null,
+            ancien: alert.contract_clauses?.content || alert.old_value || '',
+            nouveau: newContent,
+            impact_legal: alert.urgency === 'haute' ? 'High' : 'Moderate',
+            recommandation_ia: alert.suggestion || 'Correction de clause validée depuis les alertes.',
+          };
+        }
+      }
+      if (certDipId && changeLabel) {
+        await createCertificate({
+          userId: req.user.id, userEmail: req.user.email, dipId: certDipId,
+          certificateType: 'MISE_A_JOUR', changes: [changeLabel],
+        });
+      }
+    } catch (e) {
+      console.error('Certificate auto-gen error (alert validate):', e.message);
+    }
+  })();
 
   res.json({ message: 'Alerte validée, document mis à jour' });
 });

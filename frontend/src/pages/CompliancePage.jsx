@@ -71,9 +71,11 @@ export default function CompliancePage() {
               <p className={`font-cormorant text-2xl ${COMPLIANCE_LABEL[dip.compliance_level]?.color || 'text-text-primary'}`}>
                 {COMPLIANCE_LABEL[dip.compliance_level]?.label || 'Non évalué'}
               </p>
-              <p className="font-dm-mono text-xs text-text-secondary mt-1">Score {dip.conformity_score ?? 0}%</p>
-              {(dip.blocking_issues || []).length > 0 && (
-                <p className="font-dm-sans text-xs text-danger mt-2">{dip.blocking_issues.length} point(s) bloquant(s)</p>
+              <p className="font-dm-mono text-xs text-text-secondary mt-1">
+                Score {dip.conformity_score ?? 0}% · {dip.conforme ?? 0} conforme(s) · {dip.a_verifier ?? 0} à vérifier · {dip.non_conforme ?? 0} non conforme(s)
+              </p>
+              {(dip.blocking_count ?? 0) > 0 && (
+                <p className="font-dm-sans text-xs text-danger mt-2">{dip.blocking_count} section(s) légalement bloquante(s) non résolue(s)</p>
               )}
               <Link to="/dip" className="font-dm-sans text-xs text-gold hover:underline mt-3 inline-flex items-center gap-1">
                 Voir le DIP <ChevronRight className="w-3 h-3" />

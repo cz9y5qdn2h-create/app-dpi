@@ -8,6 +8,7 @@ const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware, requireFranchisor } = require('../middleware/auth');
 const { parseContractClauses, compareContractVersions, generateContractFromDIP, generateContractFromDIPStream, correctClause, correctClauseWithAnswers } = require('../config/claude');
 const { triggerCrossImpactAlerts } = require('../utils/crossImpact');
+const { createCertificate } = require('./certificates');
 const errMsg = require('../config/errorMessage');
 const { stripRichTextMarkers } = require('../config/richTextStrip');
 const { findIncompleteMarker, buildIncompleteAlerts } = require('../config/incompleteContentCheck');
@@ -594,7 +595,7 @@ router.put('/:id/clauses/:clauseId', authMiddleware, requireFranchisor, async (r
   const { content, status } = req.body;
 
   const { data: ownerContract } = await supabaseAdmin
-    .from('franchise_contracts').select('id').eq('id', req.params.id).eq('user_id', req.user.id).single();
+    .from('franchise_contracts').select('id, linked_dip_id').eq('id', req.params.id).eq('user_id', req.user.id).single();
   if (!ownerContract) return res.status(404).json({ error: 'Contrat introuvable' });
 
   const { data: existing } = await supabaseAdmin
@@ -624,6 +625,26 @@ router.put('/:id/clauses/:clauseId', authMiddleware, requireFranchisor, async (r
   const conformeCount = (allClauses || []).filter(c => c.status === 'conforme').length;
   const score = allClauses?.length ? Math.round((conformeCount / allClauses.length) * 100) : 0;
   await supabaseAdmin.from('franchise_contracts').update({ conformity_score: score }).eq('id', req.params.id);
+
+  // Attestation de mise à jour — l'édition directe d'une clause modifie le
+  // contrat lié au DIP ; quand un DIP est lié, on trace la modification par
+  // un certificat comme pour les sections DIP. Non-bloquant.
+  if (existing.content !== content && ownerContract.linked_dip_id) {
+    createCertificate({
+      userId: req.user.id, userEmail: req.user.email, dipId: ownerContract.linked_dip_id,
+      certificateType: 'MISE_A_JOUR',
+      changes: [{
+        id: req.params.clauseId,
+        type: 'modification_clause',
+        section: existing.clause_title,
+        section_number: existing.clause_number,
+        ancien: existing.content || '',
+        nouveau: content || '',
+        impact_legal: 'Moderate',
+        recommandation_ia: 'Modification directe d\'une clause du contrat par le franchiseur — vérifier la cohérence avec le DIP lié.',
+      }],
+    }).catch(e => console.error('Certificate auto-gen error (clause update):', e.message));
+  }
 
   // Alerte "contenu à compléter" — même correctif que sur les sections DIP
   // (dip.js) : signale un placeholder "[À COMPLÉTER : ...]" resté dans le

@@ -12,6 +12,32 @@ function computeSignatureDelay(dip_delivered_at, planned_signature_date) {
   return { days_between: daysBetween, compliant: daysBetween >= LEGAL_DELAY_DAYS };
 }
 
+// Conformité RÉELLE, recalculée en direct depuis les statuts des
+// sections/clauses — les colonnes stockées (compliance_level,
+// conformity_score) peuvent être nulles (DIP générés par create-from-agent)
+// ou périmées (éditions manuelles postérieures à l'analyse). Même formule
+// que le moteur d'analyse : -20 par non_conforme, -8 par a_verifier.
+function computeLiveCompliance(items) {
+  if (!items?.length) return { compliance_level: null, conformity_score: null, blocking_count: 0, non_conforme: 0, a_verifier: 0, conforme: 0 };
+  const nonConforme = items.filter(s => s.status === 'non_conforme').length;
+  const aVerifier = items.filter(s => s.status === 'a_verifier').length;
+  const blocking = items.filter(s => s.legal_blocking && s.status !== 'conforme').length;
+  const score = Math.max(0, 100 - nonConforme * 20 - aVerifier * 8);
+  let level;
+  if (blocking > 0) level = 'BLOQUANT_NON_ENVOYABLE';
+  else if (nonConforme > 0) level = 'RÉVISIONS_MAJEURES';
+  else if (aVerifier > 0) level = 'RÉVISIONS_MINEURES';
+  else level = 'CONFORME';
+  return {
+    compliance_level: level,
+    conformity_score: score,
+    blocking_count: blocking,
+    non_conforme: nonConforme,
+    a_verifier: aVerifier,
+    conforme: items.length - nonConforme - aVerifier,
+  };
+}
+
 // GET /api/compliance/overview — un seul endroit qui rassemble tous les
 // signaux de conformité DIP, quelle que soit leur origine (contenu
 // incomplet, délai légal de 20 jours, risques de litige, veille
@@ -28,14 +54,20 @@ router.get('/overview', authMiddleware, async (req, res) => {
     { data: alerts },
     { data: franchisees },
   ] = await Promise.all([
-    supabaseAdmin.from('dip_documents').select('id, title, compliance_level, conformity_score, blocking_issues').eq('user_id', scopedUserId).eq('status', 'actif').limit(1),
-    supabaseAdmin.from('franchise_contracts').select('id, title, compliance_level, conformity_score').eq('user_id', scopedUserId).eq('status', 'actif').limit(1),
+    supabaseAdmin.from('dip_documents').select('id, title, blocking_issues, dip_sections(status, legal_blocking)').eq('user_id', scopedUserId).eq('status', 'actif').limit(1),
+    supabaseAdmin.from('franchise_contracts').select('id, title, contract_clauses(status, legal_blocking)').eq('user_id', scopedUserId).eq('status', 'actif').limit(1),
     supabaseAdmin.from('alerts').select('id, type, title, source, suggestion, urgency, created_at, dip_id, franchisee_id').eq('user_id', scopedUserId).eq('status', 'pending').order('created_at', { ascending: false }),
     supabaseAdmin.from('franchisees').select('id, name, status, candidate_type, dip_delivered_at, planned_signature_date').eq('franchiseur_id', scopedUserId),
   ]);
 
-  const dip = dips?.[0] || null;
-  const contract = contracts?.[0] || null;
+  const dipRaw = dips?.[0] || null;
+  const contractRaw = contracts?.[0] || null;
+  const dip = dipRaw
+    ? { id: dipRaw.id, title: dipRaw.title, blocking_issues: dipRaw.blocking_issues, ...computeLiveCompliance(dipRaw.dip_sections) }
+    : null;
+  const contract = contractRaw
+    ? { id: contractRaw.id, title: contractRaw.title, ...computeLiveCompliance(contractRaw.contract_clauses) }
+    : null;
   const allAlerts = alerts || [];
 
   const signatureDelays = (franchisees || [])

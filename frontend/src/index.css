@@ -11,15 +11,15 @@
 :root,
 [data-theme="glass"] {
   --page-bg:        radial-gradient(140% 120% at 12% -10%, #15110c 0%, #0a0a0d 46%, #060609 100%);
-  --glass-bg:        linear-gradient(158deg, rgba(255,255,255,.082), rgba(255,255,255,.026));
-  --glass-brd:       rgba(255,255,255,.12);
-  --glass-brd-top:   rgba(255,255,255,.30);
-  --blur:            28px;
-  --sat:             180%;
-  --shadow:          0 28px 64px -24px rgba(0,0,0,.78);
-  --inset:           inset 0 1px 0 rgba(255,255,255,.20), inset 0 -1px 0 rgba(0,0,0,.20);
-  --radius:          20px;
-  --radius-sm:       13px;
+  --glass-bg:        linear-gradient(158deg, rgba(255,255,255,.060), rgba(255,255,255,.022));
+  --glass-brd:       rgba(255,255,255,.11);
+  --glass-brd-top:   rgba(255,255,255,.20);
+  --blur:            14px;
+  --sat:             130%;
+  --shadow:          0 18px 44px -20px rgba(0,0,0,.65);
+  --inset:           inset 0 1px 0 rgba(255,255,255,.12), inset 0 -1px 0 rgba(0,0,0,.16);
+  --radius:          14px;
+  --radius-sm:       10px;
   --sidebar-bg-raw:  rgba(255,255,255,.035);
   --row-bg:          rgba(255,255,255,.020);
   --row-hover:       rgba(255,255,255,.055);
@@ -139,15 +139,15 @@
 /* ── Lumière — variante claire, crème/ivoire ── */
 [data-theme="lumiere"] {
   --page-bg:        radial-gradient(130% 120% at 0% 0%, #FAF6EE 0%, #F0ECE4 52%, #EBE9F0 100%);
-  --glass-bg:        linear-gradient(162deg, rgba(255,255,255,.75), rgba(255,255,255,.52));
-  --glass-brd:       rgba(255,255,255,.92);
-  --glass-brd-top:   #ffffff;
-  --blur:            22px;
-  --sat:             145%;
-  --shadow:          0 20px 44px -20px rgba(60,50,20,.26);
-  --inset:           inset 0 1px 0 rgba(255,255,255,.95), inset 0 -1px 0 rgba(0,0,0,.04);
-  --radius:          18px;
-  --radius-sm:       13px;
+  --glass-bg:        linear-gradient(162deg, rgba(255,255,255,.80), rgba(255,255,255,.60));
+  --glass-brd:       rgba(30,26,18,.10);
+  --glass-brd-top:   rgba(255,255,255,.95);
+  --blur:            12px;
+  --sat:             125%;
+  --shadow:          0 14px 32px -18px rgba(60,50,20,.22);
+  --inset:           inset 0 1px 0 rgba(255,255,255,.90), inset 0 -1px 0 rgba(0,0,0,.03);
+  --radius:          14px;
+  --radius-sm:       10px;
   --sidebar-bg-raw:  rgba(255,255,255,.58);
   --row-bg:          rgba(255,255,255,.48);
   --row-hover:       rgba(255,255,255,.80);
@@ -373,14 +373,14 @@
     border-radius: var(--radius);
     padding: 1.5rem;
     position: relative;
-    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
   }
   .card-hover:hover {
     box-shadow: var(--glass-hover);
     border-color: var(--glass-brd-top);
   }
   .card:hover {
-    transform: translateY(-3px);
+    transform: translateY(-1px);
     box-shadow: var(--glass-hover);
     border-color: var(--glass-brd-top);
   }
@@ -524,17 +524,13 @@
    ═══════════════════════════════════════════════════════════════ */
 
 .btn-primary, .btn-secondary, .btn-ghost, .btn-liquid-glass, .btn-liquid-glass-prominent {
-  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, filter 0.2s ease;
+  transition: transform 0.12s ease, background 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease, filter 0.18s ease;
 }
-.btn-primary:hover       { transform: translateY(-2px); }
-.btn-primary:active      { transform: scale(0.96) translateY(0); }
-.btn-secondary:hover     { transform: translateY(-1px); }
-.btn-secondary:active    { transform: scale(0.97); }
-.btn-ghost:active        { transform: scale(0.97); }
-.btn-liquid-glass:hover  { transform: translateY(-1px); }
-.btn-liquid-glass:active { transform: scale(0.97); }
-.btn-liquid-glass-prominent:hover  { transform: translateY(-1px); }
-.btn-liquid-glass-prominent:active { transform: scale(0.97); }
+.btn-primary:active      { transform: scale(0.985); }
+.btn-secondary:active    { transform: scale(0.985); }
+.btn-ghost:active        { transform: scale(0.985); }
+.btn-liquid-glass:active { transform: scale(0.985); }
+.btn-liquid-glass-prominent:active { transform: scale(0.985); }
 
 /* Stagger children animation — mettre stagger-children sur le parent */
 .stagger-children > * {
@@ -625,7 +621,7 @@ button:active svg, a:active svg { transform: scale(0.9); }
   --v2-border:     rgba(255,255,255,0.09);
   --v2-border-hot: rgba(245,200,66,0.22);
   --v2-glow:       rgba(245,200,66,0.18);
-  --v2-radius:     16px;
+  --v2-radius:     12px;
 }
 
 /* ── Card V2 — fort contraste, sans frosted glass ── */
@@ -636,20 +632,11 @@ button:active svg, a:active svg { transform: scale(0.9); }
   padding: 1.25rem;
   position: relative;
   overflow: hidden;
-  transition: border-color 0.2s ease, transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.2s ease;
-}
-.card-v2::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(135deg, rgba(245,200,66,0.045) 0%, transparent 55%);
-  pointer-events: none;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
 }
 .card-v2:hover {
   border-color: var(--v2-border-hot);
-  transform: translateY(-2px);
-  box-shadow: 0 12px 32px -12px rgba(0,0,0,0.5), 0 0 0 1px rgba(245,200,66,0.08);
+  box-shadow: 0 8px 24px -14px rgba(0,0,0,0.5);
 }
 
 /* ── Section conformity card V2 — accent coloré sur le bord gauche ── */

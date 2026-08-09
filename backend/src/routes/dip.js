@@ -639,6 +639,14 @@ router.post('/create-from-agent', authMiddleware, requireFranchisor, async (req,
       timestamp: new Date().toISOString()
     });
 
+    // Attestation INITIALE — l'upload d'un DIP en génère une (déclenchée par
+    // le frontend), mais la génération par IA n'en produisait aucune : un DIP
+    // créé de zéro n'avait pas de preuve horodatée de son état d'origine.
+    createCertificate({
+      userId: req.user.id, userEmail: req.user.email, dipId: dipDoc.id,
+      certificateType: 'INITIAL', changes: [],
+    }).catch(e => console.error('Certificate auto-gen error (create-from-agent):', e.message));
+
     res.status(201).json({
       dip: dipDoc,
       sections_count: sectionsToInsert.length,
