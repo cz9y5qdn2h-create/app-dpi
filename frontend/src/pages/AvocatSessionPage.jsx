@@ -16,15 +16,19 @@ export default function AvocatSessionPage() {
   const [status, setStatus] = useState('verifying');
 
   useEffect(() => {
-    const email = searchParams.get('email');
     const tokenHash = searchParams.get('token_hash');
 
-    if (!email || !tokenHash) {
+    if (!tokenHash) {
       setStatus('error');
       return;
     }
 
-    supabase.auth.verifyOtp({ type: 'magiclink', email, token_hash: tokenHash })
+    // Ne JAMAIS passer `email` ici avec `token_hash` — le SDK Supabase
+    // choisit la branche de vérification selon la présence de la clé
+    // `email` (prioritaire sur `token_hash`), et attend alors un code OTP
+    // court dans `token` plutôt que le hash. Résultat : le token_hash est
+    // silencieusement ignoré et la vérification échoue à chaque fois.
+    supabase.auth.verifyOtp({ type: 'magiclink', token_hash: tokenHash })
       .then(({ error }) => {
         setStatus(error ? 'error' : 'success');
       })

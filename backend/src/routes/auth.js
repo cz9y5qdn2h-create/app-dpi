@@ -237,7 +237,7 @@ router.get('/avocat-login/:token', async (req, res) => {
     return res.redirect(303, `${appUrl}/login?error=lien_indisponible`);
   }
 
-  const params = new URLSearchParams({ email: user.email, token_hash: hashedToken });
+  const params = new URLSearchParams({ token_hash: hashedToken });
   res.redirect(303, `${appUrl}/avocat/session?${params.toString()}`);
 });
 
