@@ -42,6 +42,12 @@ sur tout code touchant à ces zones :
 | 2026-07-13, 2026-07-22, 2026-08-03, 2026-08-04 | `ChunkLoadError` / page blanche après un déploiement, formulé différemment selon le navigateur (Chromium vs **Safari**, formulation totalement différente : `"'text/html' is not a valid JavaScript MIME type..."`) | Après chaque déploiement Vite les hash de fichiers JS changent ; un onglet resté ouvert référence un chunk qui n'existe plus. Le rechargement auto existait mais (a) utilisait un seul flag de session pour tout l'onglet, bloquant les pages suivantes, (b) ne reconnaissait pas la formulation Safari, (c) `vite:preloadError` ne faisait que logger sans jamais recharger, (d) **aucune page publique** (landing, login, liens de partage) n'avait d'`ErrorBoundary` du tout | `lib/chunkRecovery.js` partagé, garde par route (pas par session), détection Safari ajoutée, `vite:preloadError` recharge réellement, `ErrorBoundary` intégré au wrapper `S()` de **toutes** les routes | 958663b, 85c8b0f, b282461, ccd8389 |
 | 2026-08-04 | Rapports de crash arrivant après un déploiement mais concernant un hash déjà remplacé | Aucun mécanisme ne prévenait qu'un onglet tournait sur une version périmée avant qu'il ne plante | `lib/versionWatch.jsx` : vérifie toutes les 5 min / au retour de focus si le hash servi par `/` a changé, propose un rechargement avant même de heurter une route cassée | 38d336c |
 
+## 1b. Dépendances cassées par une montée de runtime
+
+| Date | Symptôme | Cause racine | Correctif | Commit |
+|---|---|---|---|---|
+| 2026-08-09 | « bad XRef entry » sur **toute** analyse de PDF (DIP, contrat, documents, monitoring) — y compris des fichiers parfaitement valides | Les 4 moteurs pdf.js embarqués par `pdf-parse` (builds 2017-2018) plantent tous sous **Node 22** ; la montée de runtime des fonctions Vercel a tué silencieusement l'extraction PDF de tout le SaaS. Reproduit localement avec un PDF fraîchement généré par pdfkit | Module partagé `config/textExtract.js` sur `pdfjs-dist` v4 (maintenu, récupération xref intégrée), remplaçant 5 implémentations dupliquées ; message d'erreur actionnable pour les PDF réellement endommagés. **Règle : après toute montée de version Node (locale ou Vercel), re-tester l'upload PDF — c'est la dépendance la plus fragile du projet** | 85648c3 |
+
 ## 2. Authentification & sessions
 
 | Date | Symptôme | Cause racine | Correctif | Commit |
