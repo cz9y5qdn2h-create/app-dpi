@@ -6,13 +6,9 @@ import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { ShieldCheck, AlertTriangle, Clock, Users, Newspaper, Bell } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { COMPLIANCE_LEVEL_LABEL, SCORE_DISCLAIMER } from '../lib/legalCopy';
 
-const COMPLIANCE_LABEL = {
-  CONFORME: 'Conforme',
-  RÉVISIONS_MINEURES: 'Révisions mineures',
-  RÉVISIONS_MAJEURES: 'Révisions majeures',
-  BLOQUANT_NON_ENVOYABLE: 'Bloquant — non envoyable',
-};
+const COMPLIANCE_LABEL = COMPLIANCE_LEVEL_LABEL;
 
 function Stat({ icon: Icon, label, value, alert }) {
   return (
@@ -58,6 +54,7 @@ export default function AvocatConformitePage() {
                   {COMPLIANCE_LABEL[dip.compliance_level] || 'Non évalué'}
                 </p>
                 <p className="font-dm-mono text-xs" style={{ color: 'var(--v2-gold)' }}>Score {dip.conformity_score ?? 0}%</p>
+                <p className="font-dm-sans text-xs mt-2 italic" style={{ color: 'rgb(var(--text-muted))' }}>{SCORE_DISCLAIMER}</p>
               </div>
             )}
 

@@ -8,12 +8,13 @@ import {
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { COMPLIANCE_LEVEL_LABEL, SCORE_DISCLAIMER } from '../lib/legalCopy';
 
 const COMPLIANCE_LABEL = {
-  CONFORME: { label: 'Conforme', color: 'text-success' },
-  RÉVISIONS_MINEURES: { label: 'Révisions mineures', color: 'text-gold' },
-  RÉVISIONS_MAJEURES: { label: 'Révisions majeures', color: 'text-danger' },
-  BLOQUANT_NON_ENVOYABLE: { label: 'Bloquant — non envoyable', color: 'text-danger' },
+  CONFORME: { label: COMPLIANCE_LEVEL_LABEL.CONFORME, color: 'text-success' },
+  RÉVISIONS_MINEURES: { label: COMPLIANCE_LEVEL_LABEL.RÉVISIONS_MINEURES, color: 'text-gold' },
+  RÉVISIONS_MAJEURES: { label: COMPLIANCE_LEVEL_LABEL.RÉVISIONS_MAJEURES, color: 'text-danger' },
+  BLOQUANT_NON_ENVOYABLE: { label: COMPLIANCE_LEVEL_LABEL.BLOQUANT_NON_ENVOYABLE, color: 'text-danger' },
 };
 
 function StatCard({ icon: Icon, label, value, tone = 'default', to }) {
@@ -103,6 +104,8 @@ export default function CompliancePage() {
           )}
         </div>
       </div>
+
+      <p className="font-dm-sans text-xs text-text-muted italic">{SCORE_DISCLAIMER}</p>
 
       {/* Compteurs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">

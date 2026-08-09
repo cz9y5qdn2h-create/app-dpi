@@ -93,6 +93,11 @@ router.get('/:dipId/pdf', authMiddleware, async (req, res) => {
   doc.fillColor('#000').fontSize(14).font('Helvetica-Bold').text('Score de conformité global', { underline: false });
   doc.moveDown(0.4);
   doc.fillColor(scoreColor).fontSize(48).font('Helvetica-Bold').text(score + '%', { align: 'center' });
+  doc.moveDown(0.3);
+  // Miroir de SCORE_DISCLAIMER (frontend/src/lib/legalCopy.js) — le score mesure
+  // la complétude face à la grille R.330-1, pas une garantie d'issue contentieuse.
+  doc.fillColor('#999').fontSize(8).font('Helvetica-Oblique')
+    .text("Score indicatif d'aide à la préparation — ne constitue pas un avis juridique et ne remplace pas la validation par votre avocat.", { align: 'center' });
   doc.moveDown(1);
 
   // Stats

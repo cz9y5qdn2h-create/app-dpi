@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import api from '../lib/api';
+import { AVOCAT_DISCLAIMER } from '../lib/legalCopy';
 
 const GOLD = '#C8A96E';
 
@@ -59,7 +60,7 @@ const FAQS = [
   },
   {
     q: "DIPpro remplace-t-il un avocat ?",
-    a: "Non — DIPpro prépare et structure le travail. Votre avocat valide. Notre rapport de conformité divise généralement par 3 le temps de révision juridique et évite les oublis de sections critiques.",
+    a: `Non — ${AVOCAT_DISCLAIMER} Notre rapport de conformité divise généralement par 3 le temps de révision juridique et évite les oublis de sections critiques.`,
   },
   {
     q: "Mes données sont-elles sécurisées ?",
@@ -568,8 +569,9 @@ export default function LandingPage() {
               </h1>
 
               <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 16, color: 'rgba(244,242,238,0.52)', lineHeight: 1.7, maxWidth: 460, marginBottom: 36 }}>
-                L&apos;IA qui analyse, génère et certifie votre Document d&apos;Information Précontractuelle
-                en conformité avec la Loi Doubin — Art. L.330-3 du Code de commerce.
+                L&apos;IA qui analyse et structure votre Document d&apos;Information Précontractuelle
+                selon la Loi Doubin — Art. L.330-3 du Code de commerce, avec attestation de remise
+                horodatée SHA-256.
               </p>
 
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 40 }}>
