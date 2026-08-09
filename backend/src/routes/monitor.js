@@ -5,7 +5,7 @@ const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware, requireFranchisor } = require('../middleware/auth');
 const { encrypt, decrypt } = require('../config/encryption');
 const { analyzeDocumentForDIPImpact } = require('../config/claude');
-const pdfParse = require('pdf-parse');
+const { pdfToText } = require('../config/textExtract');
 const mammoth = require('mammoth');
 const router = express.Router();
 
@@ -48,8 +48,8 @@ async function extractText(buffer, mimeType, fileName) {
   const isPdf = mimeType?.includes('pdf') || fileName?.toLowerCase().endsWith('.pdf');
   try {
     if (isPdf) {
-      const parsed = await pdfParse(buffer);
-      return (parsed.text || '').substring(0, MAX_TEXT_CHARS);
+      const text = await pdfToText(buffer);
+      return (text || '').substring(0, MAX_TEXT_CHARS);
     } else {
       const result = await mammoth.extractRawText({ buffer });
       return (result.value || '').substring(0, MAX_TEXT_CHARS);

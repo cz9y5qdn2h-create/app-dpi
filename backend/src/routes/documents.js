@@ -31,19 +31,12 @@ const ensureBucket = async () => {
   bucketReady = true;
 };
 
-const extractText = async (buffer, filename) => {
-  const ext = path.extname(filename).toLowerCase();
-  if (ext === '.pdf') {
-    const pdfParse = require('pdf-parse/lib/pdf-parse.js');
-    const data = await pdfParse(buffer);
-    return data.text;
-  } else if (ext === '.docx' || ext === '.doc') {
-    const mammoth = require('mammoth');
-    const result = await mammoth.extractRawText({ buffer });
-    return result.value;
-  }
-  return null; // images : pas d'extraction texte, stockage seul
-};
+const { extractText: sharedExtractText } = require('../config/textExtract');
+
+// strict:false — les images sont acceptées sans extraction de texte
+// (stockage seul), contrairement aux uploads de DIP/contrat qui exigent
+// un document lisible.
+const extractText = (buffer, filename) => sharedExtractText(buffer, filename, { strict: false });
 
 // GET /api/documents/types — checklist de référence (types + section DIP associée)
 router.get('/types', authMiddleware, (req, res) => {

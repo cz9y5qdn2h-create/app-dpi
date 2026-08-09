@@ -14,19 +14,7 @@ const MAX_FILE_BYTES = 50 * 1024 * 1024;
 const sanitizeFilename = (name) =>
   String(name || 'document.pdf').replace(/[^a-zA-Z0-9._-]/g, '_').substring(0, 255);
 
-const extractText = async (buffer, filename) => {
-  const ext = path.extname(filename).toLowerCase();
-  if (ext === '.pdf') {
-    const pdfParse = require('pdf-parse/lib/pdf-parse.js');
-    const data = await pdfParse(buffer);
-    return data.text;
-  } else if (ext === '.docx' || ext === '.doc') {
-    const mammoth = require('mammoth');
-    const result = await mammoth.extractRawText({ buffer });
-    return result.value;
-  }
-  throw new Error('Format non supporté (PDF ou DOCX requis)');
-};
+const { extractText } = require('../config/textExtract');
 
 // POST /api/agent/analyze — analyse un DIP existant (texte ou fichier)
 router.post('/analyze', authMiddleware, requireFranchisor, async (req, res) => {
