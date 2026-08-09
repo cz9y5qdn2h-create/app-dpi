@@ -89,7 +89,13 @@ function TrialGuard({ children }) {
 }
 
 function FranchisorOnlyRoute({ children }) {
-  const { profile } = useAuth();
+  const { profile, loading } = useAuth();
+  // Tant que le profil charge encore, profile?.role est undefined — sans ce
+  // garde, un avocat rafraîchissant une page franchiseur (ex: /dip/upload)
+  // la voyait s'afficher et pouvait déclencher une action avant que la
+  // redirection n'arrive, provoquant un 403 confus côté backend au lieu
+  // d'une redirection propre.
+  if (loading) return <PageLoader />;
   if (profile?.role === 'avocat') return <Navigate to="/dashboard" replace />;
   return children;
 }
