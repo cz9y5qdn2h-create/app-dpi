@@ -63,6 +63,11 @@ export default function AvocatCertificatesPage() {
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
+                        {cert.certificate_number != null && (
+                          <span className="font-dm-mono text-xs px-2 py-0.5 rounded" style={{ background: 'var(--v2-surface)', border: '1px solid var(--v2-border-hot)', color: 'var(--v2-gold)' }}>
+                            N° {String(cert.certificate_number).padStart(4, '0')}
+                          </span>
+                        )}
                         <span className="font-dm-sans text-sm" style={{ color: 'rgb(var(--text-primary))' }}>
                           {cert.certificate_title || TYPE_LABELS[cert.certificate_type] || 'Attestation'}
                         </span>

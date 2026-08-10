@@ -95,6 +95,11 @@ export default function CertificatesPage() {
                   </div>
                   <div className="min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
+                      {cert.certificate_number != null && (
+                        <span className="font-dm-mono text-xs px-2 py-0.5 rounded bg-bg-elevated text-gold border border-gold/25">
+                          N° {String(cert.certificate_number).padStart(4, '0')}
+                        </span>
+                      )}
                       <span className="font-dm-sans text-sm font-medium text-text-primary">
                         {cert.certificate_title || TYPE_LABELS[cert.certificate_type] || 'Attestation'}
                       </span>

@@ -360,7 +360,7 @@ router.get('/', authMiddleware, async (req, res) => {
   const limit = Math.min(parseInt(req.query.limit) || 20, 100);
   const { data, error } = await supabaseAdmin
     .from('dip_certificates')
-    .select('id, dip_id, certificate_type, certificate_title, legal_summary, warnings, compliance_level, global_score, changes_count, generated_at, public_token, pdf_url, status')
+    .select('id, dip_id, certificate_number, certificate_type, certificate_title, legal_summary, warnings, compliance_level, global_score, changes_count, generated_at, public_token, pdf_url, status')
     .eq('user_id', scopedUserId)
     .order('generated_at', { ascending: false })
     .limit(limit);
@@ -481,12 +481,12 @@ router.get('/public/:token', async (req, res) => {
     // modifications) restent confidentiels — un franchisé consultant sa
     // propre attestation ne doit pas voir les coordonnées des autres.
     const {
-      id, certificate_type, certificate_title, legal_summary, warnings,
+      id, certificate_number, certificate_type, certificate_title, legal_summary, warnings,
       compliance_level, global_score, changes_count, generated_at, status, sha256_dip,
     } = data;
     return res.json({
       certificate: {
-        id, certificate_type, certificate_title, legal_summary, warnings,
+        id, certificate_number, certificate_type, certificate_title, legal_summary, warnings,
         compliance_level, global_score, changes_count, generated_at, status, sha256_dip,
       },
     });

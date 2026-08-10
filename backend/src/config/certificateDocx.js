@@ -47,6 +47,14 @@ const generateCertificateDocx = async (cert, franchiseur = {}) => {
     children: [new TextRun({ text: 'DIPpro — Attestation de modification', bold: true, size: 32, color: 'C8A96E' })],
     spacing: { after: 120 },
   }));
+  // Numéro de série — identique au PDF, pour que les deux formats d'une même
+  // attestation soient rattachables à la même série.
+  if (cert.certificate_number) {
+    children.push(new Paragraph({
+      children: [new TextRun({ text: `ATTESTATION N° ${String(cert.certificate_number).padStart(4, '0')}`, bold: true, size: 20, color: '2563EB' })],
+      spacing: { after: 120 },
+    }));
+  }
   children.push(hr());
 
   children.push(label('Effectué le'));

@@ -1,4 +1,5 @@
 const PDFDocument = require('pdfkit');
+const { getAppUrl } = require('./appUrl');
 
 const C = {
   black:    '#0F172A',
@@ -62,6 +63,15 @@ const generateCertificatePDF = (cert, franchiseur = {}) => new Promise((resolve,
   // ─── TITRE ──────────────────────────────────────────────────────────────────
   doc.font('Helvetica').fontSize(28).fillColor(C.black)
      .text('DIPpro - attestation de modification', ML, 52, { width: CW });
+
+  // Numéro de série — une attestation isolée prouve un état à une date ;
+  // une série numérotée sans trou prouve en plus qu'aucune modification n'a
+  // été dissimulée, ce qui est bien plus difficile à contester.
+  if (cert.certificate_number) {
+    const numLabel = `ATTESTATION N° ${String(cert.certificate_number).padStart(4, '0')}`;
+    doc.font('Helvetica-Bold').fontSize(9).fillColor(C.blueHead)
+       .text(numLabel, ML, doc.y + 4, { width: CW });
+  }
 
   // ligne de séparation fine sous le titre
   const titleBottom = doc.y + 6;
@@ -223,9 +233,17 @@ function renderChangeBlock(doc, change, idx, x, startY, width) {
 function addFooter(doc, cert) {
   const pageCount = doc.bufferedPageRange().count;
   const W = doc.page.width;
+  // L'URL de vérification était figée sur « dippro.fr », un domaine qui
+  // n'est pas celui de l'application : un juge suivant le lien imprimé
+  // n'aurait rien trouvé, ruinant la valeur probatoire du document.
+  const baseUrl = getAppUrl().replace(/^https?:\/\//, '');
+  const numLabel = cert.certificate_number
+    ? `Attestation n° ${String(cert.certificate_number).padStart(4, '0')}`
+    : null;
+
   for (let i = 0; i < pageCount; i++) {
     doc.switchToPage(i);
-    const fy = doc.page.height - 36;
+    const fy = doc.page.height - 42;
 
     doc.save().strokeColor('#CBD5E1').lineWidth(0.5)
        .moveTo(56, fy).lineTo(W - 48, fy).stroke().restore();
@@ -233,14 +251,30 @@ function addFooter(doc, cert) {
     doc.font('Helvetica').fontSize(7.5).fillColor('#94A3B8')
        .text(
          'Certificat de modifications réalisé par Iralink-Agency grâce à l\'outil DIPpro - 2026',
-         56, fy + 8, { width: W - 104 }
+         56, fy + 7, { width: W - 200 }
+       );
+
+    // Numéro de série + pagination sur chaque page : une page isolée d'une
+    // attestation reste rattachable à sa série et son document complet.
+    doc.font('Helvetica').fontSize(7.5).fillColor('#94A3B8')
+       .text(
+         `${numLabel ? numLabel + ' — ' : ''}Page ${i + 1} / ${pageCount}`,
+         W - 244, fy + 7, { width: 196, align: 'right' }
        );
 
     if (cert.public_token) {
-      doc.font('Helvetica').fontSize(7).fillColor('#CBD5E1')
+      doc.font('Helvetica').fontSize(7).fillColor('#94A3B8')
          .text(
-           `Vérification : dippro.fr/attestation/${cert.public_token}`,
-           56, fy + 20, { width: W - 104 }
+           `Vérification en ligne : ${baseUrl}/attestation/${cert.public_token}`,
+           56, fy + 18, { width: W - 104 }
+         );
+    }
+
+    if (cert.sha256_dip) {
+      doc.font('Helvetica').fontSize(6.5).fillColor('#CBD5E1')
+         .text(
+           `Empreinte SHA-256 du DIP attesté : ${cert.sha256_dip}`,
+           56, fy + 28, { width: W - 104 }
          );
     }
   }
