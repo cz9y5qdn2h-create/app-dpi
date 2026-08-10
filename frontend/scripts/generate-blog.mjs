@@ -28,6 +28,19 @@ function mdToHtml(md) {
     if (/^###\s+/.test(line)) { html += `<h3>${inline(line.replace(/^###\s+/, ''))}</h3>`; i++; continue; }
     if (/^##\s+/.test(line))  { html += `<h2>${inline(line.replace(/^##\s+/, ''))}</h2>`;  i++; continue; }
     if (/^>\s?/.test(line))   { html += `<blockquote>${inline(line.replace(/^>\s?/, ''))}</blockquote>`; i++; continue; }
+    // Tableaux Markdown — sans ce cas, une ligne « | a | b | » tombait dans
+    // le traitement paragraphe et s'affichait avec ses barres verticales
+    // brutes, illisible pour un lecteur comme pour un moteur de recherche.
+    if (/^\|.*\|\s*$/.test(line) && /^\|[\s:|-]+\|\s*$/.test(lines[i + 1] || '')) {
+      const cells = (l) => l.trim().replace(/^\||\|$/g, '').split('|').map(c => inline(c.trim()));
+      const head = cells(line);
+      i += 2;
+      const rows = [];
+      while (i < lines.length && /^\|.*\|\s*$/.test(lines[i])) { rows.push(cells(lines[i])); i++; }
+      html += `<table><thead><tr>${head.map(c => `<th>${c}</th>`).join('')}</tr></thead>`
+            + `<tbody>${rows.map(r => `<tr>${r.map(c => `<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+      continue;
+    }
     if (/^\d+\.\s+/.test(line)) {
       const items = [];
       while (i < lines.length && /^\d+\.\s+/.test(lines[i])) { items.push(`<li>${inline(lines[i].replace(/^\d+\.\s+/, ''))}</li>`); i++; }
@@ -76,6 +89,10 @@ article h3{font-size:1.12rem;margin:1.6rem 0 .3rem;color:#f4f2ee;font-weight:500
 article p{color:rgba(244,242,238,.82)}
 article li{color:rgba(244,242,238,.82);margin:4px 0}
 blockquote{border-left:2px solid #C8A96E;margin:1.5rem 0;padding:.4rem 0 .4rem 1rem;color:rgba(244,242,238,.72);font-style:italic}
+table{width:100%;border-collapse:collapse;margin:1.6rem 0;font-size:.94rem;display:block;overflow-x:auto}
+th{text-align:left;padding:.6rem .7rem;border-bottom:1px solid rgba(200,169,110,.3);color:#C8A96E;font-weight:500;white-space:nowrap}
+td{padding:.6rem .7rem;border-bottom:1px solid rgba(255,255,255,.07);vertical-align:top}
+tbody tr:last-child td{border-bottom:none}
 .endcta{border:.5px solid rgba(200,169,110,.28);background:rgba(200,169,110,.06);border-radius:14px;padding:24px;margin:36px 0 12px;text-align:center}
 .endcta h3{margin:0 0 8px;color:#f4f2ee}
 footer.site{border-top:.5px solid rgba(200,169,110,.14);padding:28px 0;color:rgba(244,242,238,.4);font-size:13px}
