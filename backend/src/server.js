@@ -152,6 +152,18 @@ app.get('/api/health', async (req, res) => {
     checks.anthropic_ping = { ok: false, error: e.message, status: e.status || null };
   }
 
+  // Détecte une migration présente dans le repo mais jamais appliquée en
+  // production — dérive qui fait échouer des écritures silencieusement.
+  try {
+    const { checkSchema } = require('./config/schemaCheck');
+    const schema = await checkSchema();
+    checks.database_schema = schema.ok
+      ? { ok: true }
+      : { ok: false, error: 'Colonnes manquantes — migration non appliquée', missing: schema.missing };
+  } catch (e) {
+    checks.database_schema = { ok: false, error: e.message };
+  }
+
   const allOk = Object.values(checks).every(c => c.ok);
   res.status(allOk ? 200 : 500).json({
     status: allOk ? 'ok' : 'degraded',
