@@ -43,6 +43,7 @@ const AnalyticsPage      = lazy(() => import('./pages/AnalyticsPage'));
 const DIPAvocatPage      = lazy(() => import('./pages/DIPAvocatPage'));
 const AvocatCertificatesPage = lazy(() => import('./pages/AvocatCertificatesPage'));
 const AvocatConformitePage   = lazy(() => import('./pages/AvocatConformitePage'));
+const AvocatBibliothequePage = lazy(() => import('./pages/AvocatBibliothequePage'));
 const AvocatDocumentsPage    = lazy(() => import('./pages/AvocatDocumentsPage'));
 const AvocatExportPage       = lazy(() => import('./pages/AvocatExportPage'));
 const AvocatMonitoringPage   = lazy(() => import('./pages/AvocatMonitoringPage'));
@@ -158,6 +159,7 @@ export default function App() {
           <Route path="dip/avocat/:franchiseurId"      element={<S><DIPAvocatPage /></S>} />
           <Route path="avocat/:franchiseurId/certifications" element={<S><AvocatCertificatesPage /></S>} />
           <Route path="avocat/:franchiseurId/conformite"     element={<S><AvocatConformitePage /></S>} />
+          <Route path="avocat/:franchiseurId/bibliotheque"   element={<S><AvocatBibliothequePage /></S>} />
           <Route path="avocat/:franchiseurId/documents"      element={<S><AvocatDocumentsPage /></S>} />
           <Route path="avocat/:franchiseurId/export"         element={<S><AvocatExportPage /></S>} />
           <Route path="avocat/:franchiseurId/surveillance"   element={<S><AvocatMonitoringPage /></S>} />

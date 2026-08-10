@@ -28,8 +28,11 @@
   background: linear-gradient(90deg, transparent, rgb(var(--gold) / .55), transparent);
   pointer-events: none;
 }
+/* Aucun déplacement au survol : une carte qui se soulève fait glisser son
+   reflet supérieur et son ombre hors de son cadre, ce qui donne l'impression
+   que le contenu « sort » de sa case. Le retour visuel passe uniquement par
+   la bordure et l'ombre, sans bouger la mise en page. */
 .lg-card:hover {
-  transform: translateY(-2px);
   box-shadow: var(--glass-hover);
   border-color: var(--glass-brd-top);
 }
@@ -72,7 +75,6 @@
 .lg-nav-link:hover {
   color: rgb(var(--text-primary));
   background: var(--row-hover);
-  transform: translateX(2px);
 }
 
 /* ── lg-nav-active ──────────────────────────────────────────── */
@@ -186,7 +188,6 @@
 }
 .lg-btn-primary:hover {
   background: rgb(var(--gold) / .22);
-  transform: translateY(-1px);
   box-shadow: 0 4px 16px rgb(var(--gold) / .18);
 }
 .lg-btn-primary:active {
@@ -359,7 +360,6 @@
 .lg-pill-btn:hover {
   background: var(--row-hover);
   color: rgb(var(--text-primary));
-  transform: translateY(-1px);
 }
 .lg-pill-btn-gold {
   background: rgb(var(--gold) / .12);

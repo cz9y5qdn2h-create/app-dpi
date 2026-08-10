@@ -6,6 +6,10 @@ Objectif : que chaque nouvelle session (humaine ou IA) qui touche à ce code
 sache déjà ce qui a cassé, pourquoi, et ce qui protège contre une rechute —
 plutôt que de redécouvrir le même bug sous une autre forme.
 
+**Documents liés** : [INVARIANTS.md](INVARIANTS.md) (règles à ne jamais casser) ·
+[CHANGELOG.md](CHANGELOG.md) (journal des modifications) ·
+[LEGAL_COPY.md](LEGAL_COPY.md) (libellés juridiques validés).
+
 **Comment l'utiliser** :
 - Avant de toucher à une zone du code, chercher son nom ici (`Ctrl+F`).
 - Après avoir corrigé un nouveau bug, ajouter une ligne dans la bonne
@@ -29,7 +33,8 @@ sur tout code touchant à ces zones :
 | **Erreurs masquées par des messages génériques** | 3 (9fcb314, 91f98f5, 10b29ee) | L'intercepteur axios (`lib/api.js`) ne réécrit plus jamais un message d'erreur backend réel par un texte générique — toujours vérifier `err.message` avant d'écrire un fallback statique |
 | **RLS/sécurité DB découverte en retard sur un rapport de santé** | 5 (c865690, 3e8356d, 64a8119, 0c18478, 57500e9/041) | Chaque migration de sécurité doit être **appliquée** (pas seulement écrite) et **revérifiée** via `get_advisors` avant de la considérer close — plusieurs correctifs ont dû être réappliqués car `CREATE OR REPLACE FUNCTION` réinitialise les grants, ou parce que la migration n'avait jamais tourné en prod |
 | **URLs générées pointant vers un mauvais domaine** | 2 (6770809, a7757bc) | `backend/src/config/appUrl.js` — `getAppUrl()` unique, filtre tout hostname `*.vercel.app` avant de faire confiance à une variable d'env, fallback fixe sur le domaine de prod |
-| **Migration écrite mais jamais appliquée** | 3 (avocat_access_token, signature_image, RLS 040/041) | Toujours vérifier `list_migrations` (ou demander à l'utilisateur d'exécuter le SQL fourni) après avoir écrit une migration — l'écrire dans le repo ne suffit pas |
+| **Migration écrite mais jamais appliquée** | 4 (avocat_access_token, signature_image, RLS 040/041, **022 → 11 h d'échecs silencieux**) | `/api/health` → `database_schema` vérifie désormais que toutes les colonnes dont le code dépend existent réellement (`backend/src/config/schemaCheck.js`) — une migration oubliée devient un health check dégradé immédiat au lieu d'heures de pertes invisibles. **Toute nouvelle colonne critique doit être ajoutée à ce fichier** |
+| **Échec d'écriture avalé par le client Supabase** | 3 (status `done`, alertes sans colonne, notifications) | Le client Supabase renvoie l'erreur dans `{ error }` au lieu de lever : un `await` sans vérification passe pour un succès. Toujours tester `error` sur les écritures critiques, ou journaliser explicitement (voir `createCertificate`, `syncSignatureDelayAlert`) |
 
 ---
 
@@ -72,6 +77,9 @@ sur tout code touchant à ces zones :
 | 2026-08-03 | Contradiction : le franchiseur devait *deviner* comment donner accès, ou passer par l'admin | Aucun flux de provisioning automatique n'existait — seulement un lien générique nécessitant une inscription manuelle avec mot de passe | Lien d'accès permanent sans mot de passe, géré depuis la console admin (première itération) | 2b18fca |
 | 2026-08-06 | *Correction du choix ci-dessus, sur retour explicite* : l'attribution ne doit **jamais** dépendre d'un arbitrage admin | Le modèle admin-décide-qui-est-l'avocat-de-qui ne correspond pas à la façon dont un franchiseur travaille réellement | `POST /avocat/invite` provisionne et lie **automatiquement** dès que le franchiseur saisit un email — zéro étape intermédiaire, zéro mot de passe, zéro admin | d3f1430 |
 | 2026-08-09 | « Toute ma data a disparu » sur le compte principal + « Accès réservé aux franchiseurs » sur l'analyse DIP | Le compte principal a été basculé en rôle `avocat` (dropdown de rôle de la console admin, seul chemin non protégé — les flux d'invitation refusent déjà les comptes existants d'un autre rôle). Rien n'était supprimé : les données étaient juste invisibles pour ce rôle. Aggravé par le cache de rôle backend (5 min) jamais invalidé | Interdiction de modifier le rôle de **son propre** compte via l'admin + `invalidateRoleCache()` appelé après tout changement de rôle. Pour tester un rôle : compte séparé (`theo+avocat@...`) | (ce commit) |
+
+| 2026-08-09 | Lien d'accès avocat toujours refusé (« Lien expiré ou déjà utilisé ») | `verifyOtp` appelé avec `email` ET `token_hash` : le SDK Supabase teste `email` en priorité et bascule sur la vérification par code court, ignorant silencieusement le hash | `token_hash` seul ; suppression du flux générique redondant (`avocat_invite_token`, page de jonction) | 1529d10 |
+| 2026-08-09 | Espace avocat entièrement vide (Certificats, Documents, Surveillance, Conformité) | `resolveScopedUserId` testait `req.user.role`, que le middleware n'y place jamais → comparaison à `undefined`, branche avocat jamais empruntée, l'avocat recevait ses propres lignes | Rôle relu en base ; vérifié sur 5 cas (franchiseur, admin, relation active, relation révoquée, aucun client) | 68d75bb |
 
 ## 4. Sécurité — contrôle d'accès (IDOR / autorisation)
 
@@ -125,6 +133,10 @@ sur tout code touchant à ces zones :
 |---|---|---|---|---|
 | 2026-08-08 | "Les certifications de modification ne marchent toujours pas", "les notifications non plus" | `POST /certificates` (seul point de création d'une attestation) n'était appelé que par le flux de **réimport de fichier** — jamais par l'édition directe d'une section (page Mon DIP) ni par l'acceptation d'une proposition d'avocat. La notification aux franchisés partant de la même tâche de fond que la génération de certificat, elle ne se déclenchait jamais non plus pour ces deux chemins | Logique extraite en fonction réutilisable `createCertificate()`, appelée aussi depuis `PUT /dip/:id/sections/:sectionId` et `PUT /avocat/proposals/:id/accept` | 45b2d26 |
 | 2026-08-08 | Un texte `[À COMPLÉTER : ...]` généré par l'IA pouvait être enregistré tel quel sans aucune alerte | Rien ne vérifiait la présence de ce marqueur après sauvegarde | Détection automatique (`config/incompleteContentCheck.js`) + alerte haute urgence à la sauvegarde, sur sections DIP et clauses de contrat | 45b2d26 |
+
+| 2026-08-09 | Toutes les attestations bloquées en « En génération », PDF/DOCX impossibles à télécharger | L'étape de finalisation écrivait `status: 'done'`, valeur refusée par la contrainte CHECK de `dip_certificates` (`pending/generated/ready/error`) ; le client Supabase ne lève pas sur erreur de requête → l'`UPDATE` échouait **silencieusement** et le certificat restait « pending » à vie | `'generated'` + journalisation explicite de l'erreur de finalisation | 6074673 |
+| 2026-08-09 | Quatre chemins de modification ne laissaient aucune preuve horodatée | Audit de toutes les routes mutant un DIP/contrat : validation d'alerte, édition directe de clause, acceptation d'une proposition d'avocat sur clause, et DIP généré par IA (pas d'attestation INITIALE) n'appelaient pas `createCertificate` | Les quatre chemins certifient désormais ; liste de référence maintenue dans [INVARIANTS.md](INVARIANTS.md) §4 | 85ed8ce |
+| 2026-08-10 | Lien de vérification imprimé sur les attestations menant nulle part | URL figée sur `dippro.fr`, domaine qui n'est pas celui de l'application — un tiers suivant le lien n'aurait rien trouvé, annulant la valeur probatoire du document | Passage par `getAppUrl()` ; ajout du numéro de série, de « Page X / Y » et de l'empreinte SHA-256 en pied de page | 2a8eded |
 
 ## 9. Responsive mobile
 
