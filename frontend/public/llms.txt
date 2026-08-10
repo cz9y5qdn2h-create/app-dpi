@@ -18,12 +18,13 @@ DIPpro est une plateforme de conformité franchise qui :
 - **Loi Doubin** (Loi n° 89-1008 du 31 décembre 1989) — Art. L.330-3 Code de commerce
 - **Décret n°91-337 du 4 avril 1991** — contenu obligatoire du DIP (10 sections)
 - **Obligation de délai** : le DIP doit être remis 20 jours minimum avant signature du contrat de franchise
-- **Jurisprudence** : Cour de cassation, arrêt du 26 juin 2024 — nullité du contrat en cas de DIP absent ou inexact
+- **Jurisprudence — pas de nullité automatique** : Cass. com., 20 mars 2007 (n°06-11.290) — un DIP absent ou inexact n'entraîne PAS mécaniquement la nullité ; le franchisé doit démontrer que le manquement a vicié son consentement
+- **Jurisprudence — obligation continue** : Cass. com., 26 juin 2024 (n°23-14.085) — l'obligation d'information court jusqu'à la signature. Un franchiseur dont le DIP était par ailleurs conforme a été condamné pour avoir tu des procédures collectives survenues entre la remise du DIP et la signature (réticence dolosive). Cet arrêt ne pose pas une règle « DIP inexact = nullité »
 - **RGPD** — hébergement Europe, audit log immuable, chiffrement TLS
 
 ## À qui s'adresse DIPpro ?
 
-Aux **franchiseurs français** qui doivent obligatoirement remettre un DIP à chaque candidat franchisé au moins 20 jours avant la signature du contrat. Le non-respect peut entraîner la nullité du contrat de franchise.
+Aux **franchiseurs français** qui doivent obligatoirement remettre un DIP à chaque candidat franchisé au moins 20 jours avant la signature du contrat. Le non-respect du délai est puni d'une amende contraventionnelle de 5e classe (art. R.330-2 C. com.) et peut, si le franchisé démontre un vice du consentement, entraîner la nullité du contrat de franchise.
 
 Secteurs cibles : restauration, immobilier, beauté/coiffure, fitness, services B2B, retail.
 
