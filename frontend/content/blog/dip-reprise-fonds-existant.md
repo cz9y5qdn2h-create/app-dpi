@@ -136,6 +136,12 @@ contraint par la cession du fonds elle-même.
 > par un avocat. Cet article est une analyse de vulgarisation juridique et ne constitue
 > pas un avis juridique.
 
+## Pour aller plus loin
+
+- [DIP incomplet : non, la nullité n'est pas automatique](/blog/dip-incomplet-nullite-automatique-mythe) — ce que la Cour de cassation exige réellement
+- [Modèle de DIP franchise : les mentions obligatoires](/blog/modele-dip-franchise-sections-obligatoires) — la base commune à toute remise, création ou reprise
+- [Délai de 20 jours : comment le calculer sans se tromper](/blog/delai-20-jours-dip-calcul) — d'autant plus sensible quand la cession impose son calendrier
+
 ## Sources
 
 - [Article L.330-3 du Code de commerce](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006231936)

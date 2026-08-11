@@ -76,8 +76,8 @@ préjudice, aucune plainte du franchisé. Le simple constat du non-respect du d�
 
 À distinguer soigneusement de la nullité du contrat, qui, elle, **n'est jamais
 automatique** : elle suppose que le franchisé démontre que le manquement a vicié son
-consentement (Cass. com., 20 mars 2007, n°06-11.290). Nous avons consacré un article
-entier à cette confusion.
+consentement (Cass. com., 20 mars 2007, n°06-11.290). Nous avons consacré
+[un article entier à cette confusion](/blog/dip-incomplet-nullite-automatique-mythe).
 
 ## Le piège n°4, le plus récent : le délai ne suffit plus
 
@@ -122,6 +122,12 @@ un contentieux survient trois ans après les faits.
 
 > DIPpro prépare et structure le travail de conformité ; il ne remplace pas la validation
 > par un avocat.
+
+## Pour aller plus loin
+
+- [DIP incomplet : non, la nullité n'est pas automatique](/blog/dip-incomplet-nullite-automatique-mythe) — la distinction entre l'amende automatique et la nullité
+- [Modèle de DIP franchise : les mentions obligatoires](/blog/modele-dip-franchise-sections-obligatoires) — ce qu'il faut avoir réuni avant de lancer le délai
+- [DIP et reprise d'un point de vente existant](/blog/dip-reprise-fonds-existant) — un calendrier souvent contraint par la cession du fonds
 
 ## Sources
 

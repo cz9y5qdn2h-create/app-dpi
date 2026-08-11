@@ -124,7 +124,14 @@ personne ne relaie.
 **La preuve de la remise est décisive.** En cas de litige, votre capacité à démontrer
 *ce qui* a été remis, *quand*, et *à qui*, pèse souvent plus lourd que le contenu
 lui-même. Le délai de 20 jours recommence d'ailleurs à courir à compter de la dernière
-communication en cas de remise fragmentée.
+communication en cas de remise fragmentée — un piège détaillé dans notre
+[mode d'emploi du délai de 20 jours](/blog/delai-20-jours-dip-calcul).
+
+## Pour aller plus loin
+
+- [Modèle de DIP franchise : les mentions obligatoires, article par article](/blog/modele-dip-franchise-sections-obligatoires) — ce que l'article R.330-1 exige réellement, alinéa par alinéa
+- [Délai de 20 jours : comment le calculer sans se tromper](/blog/delai-20-jours-dip-calcul) — la sanction qui, elle, est bien automatique
+- [DIP et reprise d'un point de vente existant](/blog/dip-reprise-fonds-existant) — le cas où le risque de dol est le plus élevé
 
 ## Comment DIPpro traite ce sujet
 

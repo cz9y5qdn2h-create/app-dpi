@@ -151,6 +151,12 @@ que comblées : un DIP généré ne contient jamais de chiffre inventé.
 > DIPpro prépare et structure le travail de conformité ; il ne remplace pas la validation
 > par un avocat.
 
+## Pour aller plus loin
+
+- [DIP incomplet : non, la nullité n'est pas automatique](/blog/dip-incomplet-nullite-automatique-mythe) — ce que vous risquez vraiment si une mention manque
+- [Délai de 20 jours : comment le calculer sans se tromper](/blog/delai-20-jours-dip-calcul) — remise fragmentée, versements interdits, preuve de la remise
+- [DIP et reprise d'un point de vente existant](/blog/dip-reprise-fonds-existant) — les mentions qui changent de portée
+
 ## Sources
 
 - [Article L.330-3 du Code de commerce](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006231936)
