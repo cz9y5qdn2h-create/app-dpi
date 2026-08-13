@@ -4,6 +4,10 @@ import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import { HelmetProvider } from 'react-helmet-async';
+// Import `/react` et non `/next` : DIPpro est une application Vite + React
+// Router, pas Next.js — l'entrée `/next` référence des modules absents ici et
+// ferait échouer le build.
+import { Analytics } from '@vercel/analytics/react';
 import './i18n';
 import App from './App';
 import ThemeProvider from './context/ThemeContext';
@@ -59,6 +63,10 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <BrowserRouter>
             <App />
             <ThemedToaster />
+            {/* À l'intérieur du Router : c'est ce qui permet de compter chaque
+                changement de route de cette application monopage, et pas
+                uniquement le premier chargement. */}
+            <Analytics />
           </BrowserRouter>
         </ThemeProvider>
       </QueryClientProvider>
