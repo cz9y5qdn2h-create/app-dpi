@@ -90,7 +90,22 @@ chaîne de preuve.**
 
 ---
 
-## 6. URLs générées
+## 6. DNS du domaine de production
+
+`iralink-agency.dippro.business` est servi par un **CNAME** vers Vercel. La norme DNS
+interdit qu'un CNAME coexiste avec **tout autre enregistrement du même nom**.
+
+- **Ne jamais ajouter de TXT, A, MX ou autre sur le nom `iralink-agency`.** Le 10/08/2026,
+  un TXT de vérification Google posé à cet endroit a écrasé le CNAME et **mis le site
+  entièrement hors ligne** (résolution DNS en échec, HTTP 000).
+- **Vérification Google Search Console** : utiliser la **balise HTML** dans `index.html`
+  (`<meta name="google-site-verification">`), jamais la méthode par enregistrement DNS.
+- Enregistrement correct : `CNAME iralink-agency → d0e3e4d5e9f7f4a2.vercel-dns-017.com.`
+- Domaine de secours toujours valide en cas de panne DNS : `app-dpi.vercel.app`.
+
+---
+
+## 7. URLs générées
 
 - **Toujours passer par `getAppUrl()`** (`backend/src/config/appUrl.js`), qui
   filtre les hostnames `*.vercel.app`. Une URL en dur a déjà envoyé des liens
@@ -99,7 +114,7 @@ chaîne de preuve.**
 
 ---
 
-## 7. Frontend
+## 8. Frontend
 
 - **Pas de déplacement au survol** (`translateY`/`translateX`) sur les cartes,
   lignes et boutons : le reflet supérieur et l'ombre glissent hors du cadre,
@@ -114,7 +129,7 @@ chaîne de preuve.**
 
 ---
 
-## 8. Conformité affichée
+## 9. Conformité affichée
 
 - **Ne jamais afficher `compliance_level` / `conformity_score` stockés** : ils
   sont nuls pour les DIP générés par IA et périmés après toute édition

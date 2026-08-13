@@ -14,6 +14,14 @@
       #seo-prerender h3 { font-size: 1.05rem; margin: 1.2rem 0 .3rem; }
     </style>
 
+    <!-- Vérification Google Search Console par balise HTML.
+         La méthode par enregistrement TXT est IMPOSSIBLE sur ce domaine :
+         iralink-agency.dippro.business est servi par un CNAME, et la norme
+         DNS interdit qu'un CNAME coexiste avec tout autre enregistrement du
+         même nom. Un TXT posé à cet endroit écrase le CNAME et met le site
+         hors ligne — c'est arrivé le 10/08/2026. Vérifier ici, jamais par DNS. -->
+    <meta name="google-site-verification" content="4RgX4yudAfeHamow0r9L_uATfq9aaMNWKUyLFGeBR9Q" />
+
     <!-- Primary SEO -->
     <title>DIPpro — Gestion légale du DIP pour franchiseurs</title>
     <meta name="description" content="DIPpro automatise la gestion légale de votre Document d'Information Précontractuelle. Score de conformité Loi Doubin en 30 secondes, attestation PDF certifiée SHA-256, alertes réglementaires automatiques. Pour franchiseurs français." />
