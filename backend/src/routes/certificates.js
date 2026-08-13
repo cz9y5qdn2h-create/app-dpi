@@ -194,7 +194,7 @@ async function notifyFranchisees({ userId, certId, dipId, publicToken, cert, pdf
     status:        'sent',
   }));
   if (notifRows.length > 0) {
-    await supabaseAdmin.from('notifications').insert(notifRows).catch(() => {});
+    await supabaseAdmin.from('notifications').insert(notifRows);
   }
 
   // Mettre à jour le champ deliveries du certificat
@@ -202,7 +202,7 @@ async function notifyFranchisees({ userId, certId, dipId, publicToken, cert, pdf
     .from('dip_certificates')
     .update({ deliveries })
     .eq('id', certId)
-    .catch(() => {});
+    ;
 }
 
 // Cœur de la génération de certificat — extrait de la route POST / pour être
@@ -326,7 +326,7 @@ async function createCertificate({ userId, userEmail, dipId, certificateType, ch
         .from('dip_certificates')
         .update({ status: 'error' })
         .eq('id', saved.id)
-        .catch(() => {});
+        ;
     }
   })();
 

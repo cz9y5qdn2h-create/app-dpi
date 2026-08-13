@@ -351,7 +351,7 @@ Réponds en JSON strict :
             id: item.id, title: item.title, url: item.url, source: item.source,
             category: item.category, published_at: item.date || null,
             summary: item.summary, impact_level, impact_reason,
-          }).catch(() => {});
+          });
 
           report.newsAnalyzed++;
           if (impact_level === 'high' || impact_level === 'critical') {

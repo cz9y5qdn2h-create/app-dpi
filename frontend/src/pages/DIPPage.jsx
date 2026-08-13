@@ -94,9 +94,14 @@ export default function DIPPage() {
   const updateMutation = useMutation({
     mutationFn: ({ dipId, sectionId, content, status }) =>
       api.put(`/dip/${dipId}/sections/${sectionId}`, { content, status }),
+    // Le `return` est indispensable : sans lui, react-query résout la
+    // mutation avant la fin du rechargement, l'éditeur se referme et
+    // réaffiche l'ANCIEN contenu le temps que les données arrivent. Sur un
+    // texte long produit par l'assistant IA, ce clignotement se lit comme une
+    // sauvegarde qui n'a pas fonctionné — et pousse à ressaisir le texte.
     onSuccess: () => {
       toast.success('Section mise à jour');
-      queryClient.invalidateQueries({ queryKey: ['dips'] });
+      return queryClient.invalidateQueries({ queryKey: ['dips'] });
     },
     onError: (err) => toast.error(err.message)
   });

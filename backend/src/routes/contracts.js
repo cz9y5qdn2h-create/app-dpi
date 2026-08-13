@@ -451,7 +451,7 @@ router.post('/create-from-agent', authMiddleware, requireFranchisor, async (req,
       parentKey: 'contract_id', parentId: contractDoc.id, itemKey: 'clause_id', titleField: 'clause_title', docLabel: 'La clause',
     });
     if (incompleteAlerts.length > 0) {
-      await supabaseAdmin.from('alerts').insert(incompleteAlerts).catch(e => console.error('Incomplete-content alert error:', e.message));
+      await supabaseAdmin.from('alerts').insert(incompleteAlerts).then(({ error }) => { if (error) console.error('Incomplete-content alert error:', error.message); });
     }
 
     await supabaseAdmin.from('audit_log').insert({
@@ -658,7 +658,7 @@ router.put('/:id/clauses/:clauseId', authMiddleware, requireFranchisor, async (r
       suggestion: `La clause « ${existing.clause_title} » contient un passage non finalisé : « ${incompleteMarker} ». Complétez-le avant la signature du contrat.`,
       urgency: 'haute',
       status: 'pending',
-    }).catch(e => console.error('Incomplete-content alert error:', e.message));
+    }).then(({ error }) => { if (error) console.error('Incomplete-content alert error:', error.message); });
   }
 
   res.json({ clause: data, conformity_score: score });

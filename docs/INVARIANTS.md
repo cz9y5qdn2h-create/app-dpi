@@ -38,6 +38,14 @@ les autres crée une divergence entre ce que l'outil applique et ce qu'il affich
   n'accepte que `pending | generated | ready | error`. Écrire une valeur hors
   liste fait échouer l'`UPDATE` **silencieusement** (le client Supabase ne lève
   pas) — les certificats restaient bloqués en « pending » pour toujours.
+- **JAMAIS `.catch()` sur une requête Supabase.** Le query builder n'implémente
+  que `.then()` — `.catch` vaut `undefined`, donc l'appeler lève une
+  `TypeError` qui fait planter toute la route en 500. C'est ce qui cassait la
+  sauvegarde d'une section corrigée par l'assistant IA (le texte généré
+  contient des `[À COMPLÉTER]`, ce qui déclenchait le chemin fautif).
+  Écrire `.then(({ error }) => { if (error) console.error(...) })`, ou tester
+  `error` sur le résultat awaité. `.catch()` reste valide sur une **fonction
+  async** (`createCertificate(...).catch(...)` est correct).
 - **Numérotation des attestations** : jamais de `MAX(numero)+1`. Le trigger
   `assign_certificate_number` utilise un compteur atomique — un `MAX+1` sous
   insertions concurrentes attribue deux fois le même numéro ou crée un trou,

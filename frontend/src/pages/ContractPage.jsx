@@ -35,9 +35,12 @@ export default function ContractPage() {
   const updateMutation = useMutation({
     mutationFn: ({ contractId, clauseId, content, status }) =>
       api.put(`/contracts/${contractId}/clauses/${clauseId}`, { content, status }),
+    // `return` obligatoire — voir le commentaire équivalent dans DIPPage :
+    // sans lui l'éditeur se referme sur l'ancien contenu avant l'arrivée des
+    // données fraîches, ce qui donne l'illusion d'une sauvegarde perdue.
     onSuccess: () => {
       toast.success('Clause mise à jour');
-      queryClient.invalidateQueries({ queryKey: ['contracts'] });
+      return queryClient.invalidateQueries({ queryKey: ['contracts'] });
     },
     onError: (err) => toast.error(err.message)
   });

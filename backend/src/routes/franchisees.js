@@ -49,9 +49,9 @@ async function syncSignatureDelayAlert(franchiseurId, franchisee) {
       suggestion: `Le DIP a été remis le ${franchisee.dip_delivered_at} pour une signature prévue le ${franchisee.planned_signature_date}, soit ${delay.days_between} jour(s) — l'article R.330-2 du Code de commerce exige un délai minimum de ${LEGAL_DELAY_DAYS} jours pleins avant signature ou tout versement de somme. Reportez la date de signature ou re-remettez le DIP.`,
       urgency: 'haute',
       status: 'pending',
-    }).catch(e => console.error('Signature delay alert error:', e.message));
+    }).then(({ error }) => { if (error) console.error('Signature delay alert error:', error.message); });
   } else if (!nonCompliant && existing) {
-    await supabaseAdmin.from('alerts').update({ status: 'validated', resolved_at: new Date().toISOString() }).eq('id', existing.id).catch(() => {});
+    await supabaseAdmin.from('alerts').update({ status: 'validated', resolved_at: new Date().toISOString() }).eq('id', existing.id);
   }
 }
 

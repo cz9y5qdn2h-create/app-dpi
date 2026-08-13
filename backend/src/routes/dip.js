@@ -501,7 +501,7 @@ router.put('/:id/sections/:sectionId', authMiddleware, requireFranchisor, async 
       suggestion: `La section « ${existing.section_title} » contient un passage non finalisé : « ${incompleteMarker} ». Complétez-le avant la remise du DIP.`,
       urgency: 'haute',
       status: 'pending',
-    }).catch(e => console.error('Incomplete-content alert error:', e.message));
+    }).then(({ error }) => { if (error) console.error('Incomplete-content alert error:', error.message); });
   }
 
   res.json({ section: data, conformity_score: score });
@@ -628,7 +628,7 @@ router.post('/create-from-agent', authMiddleware, requireFranchisor, async (req,
       parentKey: 'dip_id', parentId: dipDoc.id, itemKey: 'section_id', titleField: 'section_title', docLabel: 'La section',
     });
     if (incompleteAlerts.length > 0) {
-      await supabaseAdmin.from('alerts').insert(incompleteAlerts).catch(e => console.error('Incomplete-content alert error:', e.message));
+      await supabaseAdmin.from('alerts').insert(incompleteAlerts).then(({ error }) => { if (error) console.error('Incomplete-content alert error:', error.message); });
     }
 
     await supabaseAdmin.from('audit_log').insert({
