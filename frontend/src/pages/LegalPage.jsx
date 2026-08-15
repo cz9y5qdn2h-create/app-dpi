@@ -2,7 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Shield, ArrowLeft, AlertTriangle } from 'lucide-react';
 import SEOHead from '../components/SEOHead';
 
-const TODAY = '14 juin 2026';
+const TODAY = '15 août 2026';
 const IRALINK_EMAIL = 'theo@iralink-agency.com';
 const PRIVACY_EMAIL = 'privacy@iralink-agency.com';
 
@@ -130,11 +130,7 @@ Iralink ne saurait être tenu responsable de :
 • Tout bug, anomalie logicielle, comportement inattendu ou résultat erroné inhérent à tout logiciel en exploitation
 • Toute décision commerciale, juridique ou stratégique prise par l'Utilisateur sur la base des analyses produites par le service
 
-PROTECTION CONTRE LES RÉCLAMATIONS ABUSIVES — DIPpro est un logiciel SaaS (Software as a Service). Comme tout logiciel en exploitation, il peut présenter des anomalies techniques ponctuelles. La survenance d'un bug, d'une erreur d'affichage, d'une indisponibilité temporaire, d'un résultat d'analyse IA imprécis ou d'un comportement inattendu ne constitue pas un manquement contractuel susceptible de fonder :
-• Une demande d'indemnisation au-delà du plafond fixé ci-dessous
-• Une plainte ou signalement auprès de la Chambre de Commerce et d'Industrie (CCI)
-• Une saisine du Médiateur des entreprises ou de tout autre organisme arbitral ou de médiation
-• Une mise en demeure extra-judiciaire portant sur des montants supérieurs au plafond ci-dessous
+INCIDENTS TECHNIQUES ISOLÉS — DIPpro est un logiciel SaaS (Software as a Service). Comme tout logiciel en exploitation, il peut présenter des anomalies techniques ponctuelles. La seule survenance d'un bug, d'une erreur d'affichage, d'une indisponibilité temporaire de moins de 48 heures consécutives ou d'un résultat d'analyse IA imprécis ne constitue pas, à elle seule, un manquement contractuel grave — sans préjudice du droit de l'Utilisateur de signaler l'incident, de saisir la Chambre de Commerce et d'Industrie, le Médiateur des entreprises ou tout autre organisme de médiation ou d'arbitrage compétent, ces voies de recours restant ouvertes en toutes circonstances.
 
 PLAFOND ABSOLU DE RESPONSABILITÉ — En tout état de cause, la responsabilité totale d'Iralink, toutes causes confondues, est expressément limitée au montant des sommes effectivement perçues par Iralink au titre de l'abonnement de l'Utilisateur durant les 12 mois précédant l'événement générateur du dommage allégué.
 
@@ -181,6 +177,7 @@ En cas de résiliation, les données sont conservées 30 jours avant suppression
 • Anthropic, Inc. (San Francisco, USA) — moteur d'intelligence artificielle (Claude). Les textes des DIP sont transmis à l'API Anthropic pour analyse. Les données ne sont pas conservées au-delà du traitement selon la politique d'Anthropic.
 • Supabase, Inc. — base de données et authentification (hébergée AWS eu-west-1, France)
 • Vercel, Inc. (San Francisco, USA) — hébergement frontend et API serverless
+• Vercel, Inc. — mesure d'audience (Vercel Analytics), sans cookie, données agrégées et anonymisées
 • Brevo (Sendinblue SA, Paris) — envoi d'emails transactionnels
 • Cal.com, Inc. — prise de rendez-vous commerciaux
 
@@ -263,6 +260,7 @@ Intérêt légitime (art. 6.1.f RGPD)
 • Amélioration de la qualité du service (données anonymisées)
 • Sécurisation de la plateforme (logs, détection de fraudes)
 • Preuve de l'acceptation des CGU (protection juridique d'Iralink)
+• Mesure d'audience du site (Vercel Analytics — pages consultées, sans cookie ni identifiant individuel, données agrégées)
 
 Consentement (art. 6.1.a RGPD)
 • Envoi de communications commerciales et newsletters
@@ -277,6 +275,7 @@ Elles peuvent être transmises aux sous-traitants suivants dans la stricte mesur
 • Supabase, Inc. — stockage base de données (AWS eu-west-1 / Europe) — hébergement des données
 • Anthropic, Inc. (USA) — analyse IA des textes DIP — encadrée par clauses contractuelles types (CCT)
 • Vercel, Inc. (USA) — hébergement applicatif — encadré par CCT
+• Vercel, Inc. (USA) — mesure d'audience (Vercel Analytics) — sans cookie, sans identifiant individuel, données agrégées uniquement — encadrée par CCT
 • Brevo / Sendinblue (France) — envoi d'emails — hébergé en Europe
 • Cal.com, Inc. (USA) — prise de rendez-vous — encadrée par CCT
 
@@ -453,7 +452,13 @@ Préférence de thème (localStorage)
 • Finalité : mémoriser votre préférence d'affichage (clair/sombre)
 • Durée : persistant (localStorage, pas un cookie HTTP)
 • Émetteur : DIPpro (stockage local uniquement, jamais transmis)
-• Obligatoire : NON — fonctionnalité de confort uniquement`
+• Obligatoire : NON — fonctionnalité de confort uniquement
+
+Mesure d'audience (Vercel Analytics)
+• Finalité : statistiques de fréquentation agrégées (pages vues)
+• Fonctionnement : ne dépose aucun cookie, ne crée aucun identifiant individuel, données agrégées et anonymisées
+• Émetteur : Vercel, Inc.
+• Consentement : non requis — cet outil ne procède à aucun suivi individuel ni traçage entre sites, conformément aux critères d'exemption de la CNIL pour les outils de mesure d'audience respectueux de la vie privée`
       },
       {
         title: '3. Cookies que nous N\'utilisons PAS',

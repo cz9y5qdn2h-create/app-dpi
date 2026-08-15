@@ -9,6 +9,30 @@ Voir aussi : [INVARIANTS.md](INVARIANTS.md) · [BUG_JOURNAL.md](BUG_JOURNAL.md) 
 
 ---
 
+## 2026-08-15
+
+### 🟡 Audit juridique CGU / mentions légales / cookies
+*Demande* : minimiser le risque de sanction lié aux pages légales.
+*Trouvé et corrigé* :
+- CGU §9 : la clause « protection contre les réclamations abusives » tentait
+  d'interdire par contrat la saisine de la CCI ou du Médiateur des
+  entreprises — un vrai risque de déséquilibre significatif (art. L.442-1
+  C. com., applicable en B2B). Réécrite pour ne plus fermer ces voies de
+  recours.
+- Vercel Analytics (ajouté le 08-14) n'apparaissait dans aucun sous-traitant
+  déclaré ni dans la politique de cookies. Ajouté partout (CGU §14, privacy
+  §3/§4, cookies §2) avec la mention « sans cookie, données agrégées ».
+*Non corrigé — nécessite une donnée que je n'ai pas* : les mentions légales
+restent incomplètes (nom de famille, adresse, SIRET) tant qu'Iralink Agency
+n'est pas immatriculée. C'est le vrai risque de sanction LCEN (jusqu'à 1 an
+d'emprisonnement / 75 000 € pour une personne physique) — l'obligation
+s'applique dès que le site est public, pas seulement à l'ouverture
+commerciale. Recommandation : publier en nom propre (auto-entrepreneur,
+SIRET obtenu en quelques jours) en attendant l'immatriculation RCS.
+`frontend/src/pages/LegalPage.jsx`
+
+---
+
 ## 2026-08-10
 
 ### 🟢 Bibliothèque juridique avocat
