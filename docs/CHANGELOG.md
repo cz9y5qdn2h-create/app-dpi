@@ -9,6 +9,22 @@ Voir aussi : [INVARIANTS.md](INVARIANTS.md) · [BUG_JOURNAL.md](BUG_JOURNAL.md) 
 
 ---
 
+## 2026-08-16
+
+### 🟢 Formulaire de contact public (Resend)
+Nouvelle route `POST /api/contact` (`backend/src/routes/contact.js`, montée dans
+`server.js` avec un rate limiter dédié — 10/h/IP) : envoie un email via l'API
+Resend (`RESEND_API_KEY`) vers `RESEND_CONTACT_TO_EMAIL`, `reply_to` réglé sur
+l'email du visiteur. Aucune donnée persistée en base — le message transite
+uniquement par Resend.
+Frontend : le bouton « Contacter l'équipe » de la landing page ouvre désormais
+un formulaire inline (`ContactFormDark`) au lieu d'un lien `mailto:`.
+Déclaré comme sous-traitant dans les CGU (§14), la politique de confidentialité
+(§2 données collectées, §3 bases légales, §4 sous-traitants).
+`backend/src/routes/contact.js`, `backend/src/server.js`, `frontend/src/pages/LandingPage.jsx`
+
+---
+
 ## 2026-08-15
 
 ### 🟡 Audit juridique CGU / mentions légales / cookies

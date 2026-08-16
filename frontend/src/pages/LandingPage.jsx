@@ -382,6 +382,106 @@ function WaitlistFormDark({ onSuccess }) {
   );
 }
 
+// ─── Formulaire de contact (dark) ──────────────────────────────────────────────
+
+function ContactFormDark({ onSuccess }) {
+  const [form, setForm] = useState({ name: '', email: '', company: '', message: '' });
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [error, setError] = useState('');
+
+  const set = (k, v) => { setForm(f => ({ ...f, [k]: v })); setError(''); };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.name || !form.email || !form.message) { setError('Nom, email et message sont requis.'); return; }
+    setLoading(true);
+    try {
+      await api.post('/contact', form);
+      setSuccess(true);
+      onSuccess?.();
+    } catch (err) {
+      setError(err.response?.data?.error || err.message || 'Une erreur est survenue. Réessayez.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const inputS = {
+    background: 'rgba(244,242,238,0.04)',
+    border: '0.5px solid rgba(244,242,238,0.12)',
+    color: '#F4F2EE',
+    width: '100%',
+    padding: '12px 16px',
+    borderRadius: 10,
+    fontFamily: 'DM Sans, sans-serif',
+    fontSize: 14,
+    outline: 'none',
+    transition: 'border 0.2s',
+    boxSizing: 'border-box',
+  };
+
+  if (success) {
+    return (
+      <div style={{ textAlign: 'center', padding: '24px 0' }}>
+        <div style={{ width: 56, height: 56, borderRadius: 18, background: 'rgba(200,169,110,0.10)', border: '0.5px solid rgba(200,169,110,0.28)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px' }}>
+          <CheckCircle style={{ width: 26, height: 26, color: GOLD }} />
+        </div>
+        <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 14, color: 'rgba(244,242,238,0.65)' }}>
+          Message envoyé — nous vous répondrons rapidement.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12, textAlign: 'left' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <input type="text" value={form.name} onChange={e => set('name', e.target.value)}
+          placeholder="Votre nom *" required style={inputS}
+          onFocus={e => (e.target.style.border = '0.5px solid rgba(200,169,110,0.55)')}
+          onBlur={e => (e.target.style.border = '0.5px solid rgba(244,242,238,0.12)')} />
+        <input type="text" value={form.company} onChange={e => set('company', e.target.value)}
+          placeholder="Société (optionnel)" style={inputS}
+          onFocus={e => (e.target.style.border = '0.5px solid rgba(200,169,110,0.55)')}
+          onBlur={e => (e.target.style.border = '0.5px solid rgba(244,242,238,0.12)')} />
+      </div>
+      <input type="email" value={form.email} onChange={e => set('email', e.target.value)}
+        placeholder="vous@entreprise.fr *" required autoComplete="email" style={inputS}
+        onFocus={e => (e.target.style.border = '0.5px solid rgba(200,169,110,0.55)')}
+        onBlur={e => (e.target.style.border = '0.5px solid rgba(244,242,238,0.12)')} />
+      <textarea value={form.message} onChange={e => set('message', e.target.value)} rows={3}
+        placeholder="Votre message *" required style={{ ...inputS, resize: 'none' }}
+        onFocus={e => (e.target.style.border = '0.5px solid rgba(200,169,110,0.55)')}
+        onBlur={e => (e.target.style.border = '0.5px solid rgba(244,242,238,0.12)')} />
+
+      {error && (
+        <div style={{ borderRadius: 8, padding: '10px 14px', background: 'rgba(239,68,68,0.08)', border: '0.5px solid rgba(239,68,68,0.22)', color: '#F87171', fontFamily: 'DM Sans, sans-serif', fontSize: 13 }}>
+          {error}
+        </div>
+      )}
+
+      <button
+        type="submit"
+        disabled={loading || !form.name || !form.email || !form.message}
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+          padding: '14px 24px', borderRadius: 12, border: 'none',
+          cursor: loading || !form.name || !form.email || !form.message ? 'not-allowed' : 'pointer',
+          background: form.name && form.email && form.message ? GOLD : 'rgba(200,169,110,0.25)',
+          color: form.name && form.email && form.message ? '#080808' : 'rgba(200,169,110,0.55)',
+          fontFamily: 'DM Sans, sans-serif', fontSize: 14, fontWeight: 600,
+          transition: 'all 0.2s',
+        }}
+      >
+        {loading
+          ? <><span style={{ width: 16, height: 16, border: '2px solid rgba(8,8,8,0.4)', borderTopColor: '#080808', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.8s linear infinite' }} /> Envoi…</>
+          : <><Send style={{ width: 16, height: 16 }} /> Envoyer le message</>}
+      </button>
+    </form>
+  );
+}
+
 // ─── Page principale ──────────────────────────────────────────────────────────
 
 export default function LandingPage() {
@@ -389,6 +489,7 @@ export default function LandingPage() {
   const [waitlistCount, setWaitlistCount] = useState(null);
   const [formDone, setFormDone] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
 
   const NAV_LINKS = [['#comment', 'Comment ça marche'], ['#fonctionnalites', 'Fonctionnalités'], ['#faq', 'FAQ']];
 
@@ -950,15 +1051,21 @@ export default function LandingPage() {
             <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 14, color: 'rgba(244,242,238,0.42)', lineHeight: 1.7, maxWidth: 440, margin: '0 auto 32px' }}>
               Première analyse offerte. Aucune carte bancaire. Onboarding personnalisé inclus.
             </p>
-            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 12 }}>
-              <button onClick={scrollToForm} style={{ ...btnGold, fontSize: 15, padding: '16px 36px' }}>
-                Rejoindre la liste d&apos;attente
-                <ArrowRight style={{ width: 18, height: 18 }} />
-              </button>
-              <a href="mailto:theo@iralink-agency.com" style={{ ...btnGhost, fontSize: 13 }}>
-                Contacter l&apos;équipe
-              </a>
-            </div>
+            {!contactOpen ? (
+              <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 12 }}>
+                <button onClick={scrollToForm} style={{ ...btnGold, fontSize: 15, padding: '16px 36px' }}>
+                  Rejoindre la liste d&apos;attente
+                  <ArrowRight style={{ width: 18, height: 18 }} />
+                </button>
+                <button onClick={() => setContactOpen(true)} style={{ ...btnGhost, fontSize: 13, cursor: 'pointer' }}>
+                  Contacter l&apos;équipe
+                </button>
+              </div>
+            ) : (
+              <div style={{ maxWidth: 440, margin: '0 auto', textAlign: 'left' }}>
+                <ContactFormDark onSuccess={() => {}} />
+              </div>
+            )}
           </div>
         </FadeIn>
       </section>

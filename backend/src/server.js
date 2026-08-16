@@ -29,6 +29,7 @@ const cronRoutes          = require('./routes/cron');
 const feedbackRoutes      = require('./routes/feedback');
 const bugRoutes           = require('./routes/bugs');
 const documentRoutes      = require('./routes/documents');
+const contactRoutes       = require('./routes/contact');
 
 const app = express();
 
@@ -85,6 +86,14 @@ const authLimiter = rateLimit({
   message: { error: 'Trop de tentatives. Réessayez dans 15 minutes.' }
 });
 
+const contactLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Trop de messages envoyés. Réessayez dans une heure.' }
+});
+
 // Rate limiting global en production
 if (process.env.NODE_ENV === 'production') {
   const limiter = rateLimit({
@@ -125,6 +134,7 @@ app.use('/api/cron',          cronRoutes);
 app.use('/api/feedback',      feedbackRoutes);
 app.use('/api/bugs',          bugRoutes);
 app.use('/api/documents',     documentRoutes);
+app.use('/api/contact',       contactLimiter, contactRoutes);
 
 // Health check — ne retourne jamais les clés en clair
 app.get('/api/health', async (req, res) => {

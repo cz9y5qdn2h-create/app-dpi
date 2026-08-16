@@ -179,6 +179,7 @@ En cas de résiliation, les données sont conservées 30 jours avant suppression
 • Vercel, Inc. (San Francisco, USA) — hébergement frontend et API serverless
 • Vercel, Inc. — mesure d'audience (Vercel Analytics), sans cookie, données agrégées et anonymisées
 • Brevo (Sendinblue SA, Paris) — envoi d'emails transactionnels
+• Resend, Inc. (San Francisco, USA) — envoi des messages soumis via le formulaire de contact public, encadré par CCT
 • Cal.com, Inc. — prise de rendez-vous commerciaux
 
 Ces sous-traitants traitent les données selon leurs propres politiques. Les transferts hors UE (Anthropic, Vercel) sont encadrés par des clauses contractuelles types (CCT) conformes au RGPD.`
@@ -235,6 +236,10 @@ Données de contenu professionnel
 Données de gestion des franchisés
 • Nom, email, téléphone des franchisés renseignés par l'Utilisateur
 
+Données du formulaire de contact public
+• Nom, email, société (optionnelle) et message soumis via /formulaire de contact
+• Transmises à Resend, Inc. pour l'envoi de l'email vers l'équipe Iralink — non conservées en base de données par DIPpro
+
 Données techniques et de navigation
 • Adresse IP (logs de connexion, conservée 90 jours)
 • Navigateur et système d'exploitation
@@ -261,6 +266,7 @@ Intérêt légitime (art. 6.1.f RGPD)
 • Sécurisation de la plateforme (logs, détection de fraudes)
 • Preuve de l'acceptation des CGU (protection juridique d'Iralink)
 • Mesure d'audience du site (Vercel Analytics — pages consultées, sans cookie ni identifiant individuel, données agrégées)
+• Réponse aux demandes soumises via le formulaire de contact public
 
 Consentement (art. 6.1.a RGPD)
 • Envoi de communications commerciales et newsletters
@@ -277,6 +283,7 @@ Elles peuvent être transmises aux sous-traitants suivants dans la stricte mesur
 • Vercel, Inc. (USA) — hébergement applicatif — encadré par CCT
 • Vercel, Inc. (USA) — mesure d'audience (Vercel Analytics) — sans cookie, sans identifiant individuel, données agrégées uniquement — encadrée par CCT
 • Brevo / Sendinblue (France) — envoi d'emails — hébergé en Europe
+• Resend, Inc. (USA) — envoi des messages du formulaire de contact (nom, email, société, message) — encadrée par CCT
 • Cal.com, Inc. (USA) — prise de rendez-vous — encadrée par CCT
 
 Tous les transferts hors Union européenne sont encadrés par des clauses contractuelles types (CCT) adoptées par la Commission européenne (décision 2021/914), garantissant un niveau de protection adéquat.
