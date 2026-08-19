@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../lib/api';
 import LoadingSpinner from '../ui/LoadingSpinner';
-import { Building2, FileText, Clock, AlertCircle, ChevronRight, ShieldCheck, Flag, Gauge } from 'lucide-react';
+import { Building2, FileText, Clock, AlertCircle, ChevronRight, ShieldCheck, Flag, Gauge, Zap, Mail, Bell } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import toast from 'react-hot-toast';
@@ -35,12 +35,33 @@ export default function AvocatDashboard() {
     onError: (err) => toast.error(err.response?.data?.error || 'Échec de la validation'),
   });
 
+  const { data: automationData } = useQuery({
+    queryKey: ['avocat', 'automation-settings'],
+    queryFn: () => api.get('/avocat/automation-settings').then(r => r.data),
+  });
+
+  const { data: digestsData } = useQuery({
+    queryKey: ['avocat', 'digests'],
+    queryFn: () => api.get('/avocat/digests').then(r => r.data),
+  });
+
+  const automationMutation = useMutation({
+    mutationFn: ({ frequency, channel }) => api.patch('/avocat/automation-settings', { frequency, channel }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['avocat', 'automation-settings'] });
+      toast.success('Automatisation mise à jour');
+    },
+    onError: (err) => toast.error(err.response?.data?.error || 'Échec de la mise à jour'),
+  });
+
   const franchiseurs = data?.franchiseurs || [];
   const pending = data?.pending || [];
   const averageScore = data?.average_compliance_score;
   const pendingSections = pendingValidations?.sections || [];
   const pendingClauses = pendingValidations?.clauses || [];
   const totalPendingValidations = pendingSections.length + pendingClauses.length;
+  const settings = automationData?.settings;
+  const digests = digestsData?.digests || [];
 
   if (isLoading) {
     return (
@@ -108,6 +129,9 @@ export default function AvocatDashboard() {
             </div>
           </div>
         )}
+
+        {/* Automatisation — analyse programmée de tous les clients */}
+        <AutomationCard settings={settings} digests={digests} onSave={(f, c) => automationMutation.mutate({ frequency: f, channel: c })} saving={automationMutation.isPending} />
 
         {/* Invitations en attente */}
         {pending.length > 0 && (
@@ -298,6 +322,104 @@ function PendingValidationRow({ label, clientLabel, onValidate, loading }) {
           >
             Confirmer le signalement
           </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const FREQUENCIES = [
+  { value: 'off', label: 'Désactivée' },
+  { value: 'weekly', label: 'Hebdomadaire' },
+  { value: 'daily', label: 'Quotidienne' },
+];
+const CHANNELS = [
+  { value: 'inapp', label: 'Historique uniquement', icon: Bell },
+  { value: 'email', label: 'Email', icon: Mail },
+  { value: 'both', label: 'Email + historique', icon: Zap },
+];
+
+function AutomationCard({ settings, digests, onSave, saving }) {
+  const [expanded, setExpanded] = useState(false);
+  const frequency = settings?.avocat_digest_frequency || 'off';
+  const channel = settings?.avocat_digest_channel || 'inapp';
+  const lastDigest = digests?.[0];
+
+  return (
+    <div className="card-v2">
+      <button onClick={() => setExpanded(v => !v)} className="w-full flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <Zap className="w-4 h-4" style={{ color: 'var(--v2-gold)' }} />
+          <div className="text-left">
+            <p className="mono-label-v2" style={{ marginBottom: 2 }}>Automatisation</p>
+            <p className="font-dm-sans text-sm" style={{ color: 'rgb(var(--text-primary))' }}>
+              Analyse programmée : {FREQUENCIES.find(f => f.value === frequency)?.label}
+              {lastDigest && ` · dernier compte-rendu ${formatDistanceToNow(new Date(lastDigest.generated_at), { addSuffix: true, locale: fr })}`}
+            </p>
+          </div>
+        </div>
+        <ChevronRight className="w-4 h-4 transition-transform" style={{ color: 'rgb(var(--text-muted))', transform: expanded ? 'rotate(90deg)' : 'none' }} />
+      </button>
+
+      {expanded && (
+        <div className="mt-4 pt-4 space-y-4" style={{ borderTop: '1px solid var(--v2-border)' }}>
+          <div>
+            <p className="font-dm-mono text-xs mb-2" style={{ color: 'rgb(var(--text-muted))' }}>Fréquence</p>
+            <div className="flex gap-2 flex-wrap">
+              {FREQUENCIES.map(f => (
+                <button key={f.value} onClick={() => onSave(f.value, channel)} disabled={saving}
+                  className="font-dm-sans text-xs px-3 py-1.5 rounded-lg transition-colors"
+                  style={{
+                    background: frequency === f.value ? 'var(--v2-gold)' : 'var(--v2-surface)',
+                    color: frequency === f.value ? 'rgb(var(--bg-primary))' : 'rgb(var(--text-secondary))',
+                    border: '1px solid var(--v2-border)',
+                  }}>
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {frequency !== 'off' && (
+            <div>
+              <p className="font-dm-mono text-xs mb-2" style={{ color: 'rgb(var(--text-muted))' }}>Canal</p>
+              <div className="flex gap-2 flex-wrap">
+                {CHANNELS.map(c => (
+                  <button key={c.value} onClick={() => onSave(frequency, c.value)} disabled={saving}
+                    className="font-dm-sans text-xs px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors"
+                    style={{
+                      background: channel === c.value ? 'var(--v2-gold)' : 'var(--v2-surface)',
+                      color: channel === c.value ? 'rgb(var(--bg-primary))' : 'rgb(var(--text-secondary))',
+                      border: '1px solid var(--v2-border)',
+                    }}>
+                    <c.icon className="w-3 h-3" /> {c.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {digests.length > 0 && (
+            <div>
+              <p className="font-dm-mono text-xs mb-2" style={{ color: 'rgb(var(--text-muted))' }}>Historique</p>
+              <div className="space-y-1.5">
+                {digests.slice(0, 5).map(d => (
+                  <div key={d.id} className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg" style={{ background: 'var(--v2-surface)' }}>
+                    <span className="font-dm-sans text-xs" style={{ color: 'rgb(var(--text-secondary))' }}>
+                      {new Date(d.generated_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                    <span className="font-dm-mono text-xs" style={{ color: 'rgb(var(--text-muted))' }}>
+                      {d.franchiseur_count} client{d.franchiseur_count > 1 ? 's' : ''}{d.average_score != null ? ` · ${d.average_score}%` : ''}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <p className="font-dm-sans text-xs leading-relaxed" style={{ color: 'rgb(var(--text-muted))' }}>
+            Recalcule le score de conformité de chaque client à partir des statuts réels de section — aucun appel IA supplémentaire, donc aucun coût ni écart avec le score affiché sur leur fiche.
+          </p>
         </div>
       )}
     </div>

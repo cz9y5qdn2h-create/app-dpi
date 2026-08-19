@@ -1,4 +1,5 @@
 const Anthropic = require('@anthropic-ai/sdk');
+const { SECTIONS_DEFAULT, LEGAL_REFS } = require('./dipSections');
 
 if (!process.env.ANTHROPIC_API_KEY) {
   console.error('FATAL: ANTHROPIC_API_KEY manquante dans les variables d\'environnement.');
@@ -456,38 +457,6 @@ global_score : 0-100. Pénalités : -20 par section non_conforme, -8 par a_verif
     }]
   }, 'analyze_dip', DIP_ANALYSIS_SCHEMA, 2);
   if (!result) throw new Error('L\'IA n\'a pas retourné de JSON valide. Réessayez.');
-
-  const SECTIONS_DEFAULT = [
-    'Identité du franchiseur',
-    'Historique de l\'enseigne et du dirigeant',
-    'État du réseau de franchisés',
-    'Comptes annuels',
-    'Marque et propriété intellectuelle',
-    'Informations financières',
-    'Territoire exclusif',
-    'Contrat (durée, renouvellement, résiliation)',
-    'Litiges en cours et passés',
-    'Comptes prévisionnels'
-  ];
-
-  // Chaque section pratique du DIP ne correspond pas à un point R.330-1 du même
-  // numéro — la table exacte, avec sous-dispositions précises (vérifiée contre
-  // le texte en vigueur au 01/01/2024, décret n°2023-1394 du 30/12/2023) :
-  // 1→1°+2°+3°, 2→4° al.1-2, 3→5° a-d, 4→4° al.3, 5→2°, 6→dernier alinéa,
-  // 7→6° (champ des exclusivités), 8→6° (durée/renouvellement/résiliation/
-  // cession), 9→hors R.330-1 (art. 1112-1 C.civ.), 10→hors R.330-1 (jurisprudence).
-  const LEGAL_REFS = [
-    'Art. R.330-1, 1° + 2° + 3° C. com.',
-    'Art. R.330-1, 4° al. 1-2 C. com.',
-    'Art. R.330-1, 5° a) à d) C. com.',
-    'Art. R.330-1, 4° al. 3 C. com.',
-    'Art. R.330-1, 2° C. com.',
-    'Art. R.330-1, dernier alinéa C. com.',
-    'Art. R.330-1, 6° C. com. (champ des exclusivités)',
-    'Art. R.330-1, 6° C. com. (durée, renouvellement, résiliation, cession)',
-    'Art. 1112-1 Code civil (hors périmètre R.330-1)',
-    'Jurisprudence — Cass. com. 1er déc. 2021 et 1er juin 2022 (hors périmètre R.330-1)'
-  ];
 
   // Compléter les sections manquantes
   if (!result.sections || result.sections.length < 10) {

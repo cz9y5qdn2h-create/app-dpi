@@ -110,6 +110,46 @@ router.patch('/franchiseur/:franchiseurId/validation-mode', authMiddleware, requ
   res.json({ relation: data });
 });
 
+// GET /api/avocat/automation-settings — fréquence et canal du compte-rendu programmé
+router.get('/automation-settings', authMiddleware, requireAvocat, async (req, res) => {
+  const { data, error } = await supabaseAdmin
+    .from('users')
+    .select('avocat_digest_frequency, avocat_digest_channel, avocat_digest_last_sent_at')
+    .eq('id', req.user.id).single();
+  if (error) return res.status(500).json({ error: errMsg(error) });
+  res.json({ settings: data });
+});
+
+// PATCH /api/avocat/automation-settings
+router.patch('/automation-settings', authMiddleware, requireAvocat, async (req, res) => {
+  const { frequency, channel } = req.body;
+  if (!['off', 'weekly', 'daily'].includes(frequency)) {
+    return res.status(400).json({ error: 'frequency doit être "off", "weekly" ou "daily"' });
+  }
+  if (!['email', 'inapp', 'both'].includes(channel)) {
+    return res.status(400).json({ error: 'channel doit être "email", "inapp" ou "both"' });
+  }
+  const { data, error } = await supabaseAdmin
+    .from('users')
+    .update({ avocat_digest_frequency: frequency, avocat_digest_channel: channel })
+    .eq('id', req.user.id)
+    .select('avocat_digest_frequency, avocat_digest_channel, avocat_digest_last_sent_at').single();
+  if (error) return res.status(500).json({ error: errMsg(error) });
+  res.json({ settings: data });
+});
+
+// GET /api/avocat/digests — historique des comptes-rendus déjà générés
+router.get('/digests', authMiddleware, requireAvocat, async (req, res) => {
+  const { data, error } = await supabaseAdmin
+    .from('avocat_digests')
+    .select('id, generated_at, franchiseur_count, average_score, summary')
+    .eq('avocat_id', req.user.id)
+    .order('generated_at', { ascending: false })
+    .limit(20);
+  if (error) return res.status(500).json({ error: errMsg(error) });
+  res.json({ digests: data || [] });
+});
+
 // GET /api/avocat/franchiseur/:franchiseurId/dip — DIP d'un franchiseur pour cet avocat
 router.get('/franchiseur/:franchiseurId/dip', authMiddleware, requireAvocat, async (req, res) => {
   const { franchiseurId } = req.params;

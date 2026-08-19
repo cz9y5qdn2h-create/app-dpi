@@ -16,6 +16,8 @@ const { getAppUrl } = require('../config/appUrl');
 const router = express.Router();
 const { supabaseAdmin } = require('../config/supabase');
 const { fetchNewsItems } = require('../config/newsFeeds');
+const { computeLiveCompliance } = require('./compliance');
+const { LEGAL_REFS } = require('../config/dipSections');
 const Anthropic = require('@anthropic-ai/sdk');
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -221,6 +223,148 @@ function buildDigestHtml(companyName, changes, appUrl) {
 </body></html>`;
 }
 
+function buildAvocatDigestHtml(avocatName, summary, averageScore, appUrl) {
+  const levelColor = { CONFORME: '#34d399', RÉVISIONS_MINEURES: '#eab308', RÉVISIONS_MAJEURES: '#f97316', BLOQUANT_NON_ENVOYABLE: '#ef4444' };
+
+  const clientBlocks = summary.map(c => {
+    const col = c.score == null ? '#6b7280' : (levelColor[c.level] || '#6b7280');
+    const issueRows = (c.issues || []).slice(0, 5).map(i => `
+      <tr>
+        <td style="padding:6px 16px;border-bottom:1px solid #1e1a16;font-size:12px;color:#e8e4dc">Section ${i.section_number} — ${i.section_title}</td>
+        <td style="padding:6px 16px;border-bottom:1px solid #1e1a16;font-size:11px;color:#a09890">${i.status}</td>
+        <td style="padding:6px 16px;border-bottom:1px solid #1e1a16;font-size:11px;color:#a09890;font-family:monospace">${i.legal_reference || '—'}</td>
+      </tr>`).join('');
+
+    return `<div style="background:#0f0d0b;border-radius:12px;border:1px solid #2a2520;padding:20px;margin-bottom:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span style="font-size:14px;font-weight:600;color:#f0ede7">${c.company_name || 'Client'}</span>
+        <span style="background:${col}22;color:${col};padding:2px 10px;border-radius:99px;font-size:11px;font-weight:700;font-family:monospace">${c.score == null ? 'AUCUN DIP' : c.score + '%'}</span>
+      </div>
+      ${issueRows ? `<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse"><tbody>${issueRows}</tbody></table>` : `<p style="margin:0;font-size:12px;color:#5e9d78">Toutes les sections analysées sont conformes.</p>`}
+    </div>`;
+  }).join('');
+
+  const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+  return `<!DOCTYPE html>
+<html lang="fr"><head><meta charset="UTF-8"><title>DIPpro — Compte-rendu de conformité</title></head>
+<body style="margin:0;padding:0;background:#060608;font-family:system-ui,-apple-system,sans-serif">
+  <div style="max-width:600px;margin:0 auto;padding:32px 16px">
+    <div style="background:linear-gradient(135deg,#f5c842 0%,#d4a532 100%);border-radius:16px;padding:28px 32px;margin-bottom:24px;text-align:center">
+      <p style="margin:0 0 4px;font-size:11px;font-weight:700;letter-spacing:.12em;font-family:monospace;color:#3d2a00;text-transform:uppercase">Compte-rendu de conformité</p>
+      <h1 style="margin:0 0 6px;color:#0a0805;font-size:28px;font-weight:700;letter-spacing:-1px">DIPpro</h1>
+      <p style="margin:0;color:#5a3e00;font-size:13px">${today}${averageScore != null ? ` · Score moyen du portefeuille : ${averageScore}%` : ''}</p>
+    </div>
+    <div style="margin-bottom:8px">
+      <h2 style="margin:0 0 16px;color:#f0ede7;font-size:17px;font-weight:600">
+        Bonjour${avocatName ? ', ' + avocatName : ''}
+      </h2>
+    </div>
+    ${clientBlocks}
+    <p style="margin:20px 0 0;color:#5e5a54;font-size:11px;line-height:1.5;text-align:center">
+      ⚠️ Ce compte-rendu est une aide à la priorisation, pas un avis juridique — il ne remplace pas votre analyse du dossier.
+    </p>
+    <div style="text-align:center;padding:20px 0 8px">
+      <a href="${appUrl}/fichiers"
+        style="background:linear-gradient(135deg,#f5c842,#d4a532);color:#0a0805;text-decoration:none;
+               padding:13px 32px;border-radius:12px;font-size:14px;font-weight:700;display:inline-block">
+        Voir le détail par client →
+      </a>
+    </div>
+    <p style="text-align:center;margin:8px 0 0;color:#3a3630;font-size:11px">
+      DIPpro · <a href="${appUrl}/settings" style="color:#6a5f4a">Paramètres de l'automatisation</a>
+    </p>
+  </div>
+</body></html>`;
+}
+
+// Compte-rendu de conformité programmé pour les avocats (fréquence et canal
+// configurables par avocat, cf. PATCH /api/avocat/automation-settings).
+// Réutilise computeLiveCompliance — pas de nouvel appel IA, donc pas de coût
+// supplémentaire ni de dérive possible avec le score affiché sur le dashboard.
+async function runAvocatDigests(appUrl, sendEmailFn) {
+  const digestReport = { avocatsProcessed: 0, emailsSent: 0, errors: 0 };
+
+  const { data: avocats } = await supabaseAdmin
+    .from('users')
+    .select('id, email, company_name, avocat_digest_frequency, avocat_digest_channel, avocat_digest_last_sent_at, brevo_api_key, brevo_sender_name, brevo_sender_email')
+    .eq('role', 'avocat')
+    .neq('avocat_digest_frequency', 'off');
+
+  const now = Date.now();
+
+  for (const avocat of avocats || []) {
+    try {
+      const lastSent = avocat.avocat_digest_last_sent_at ? new Date(avocat.avocat_digest_last_sent_at).getTime() : 0;
+      const elapsedHours = (now - lastSent) / 3_600_000;
+      const due = avocat.avocat_digest_frequency === 'daily' ? elapsedHours >= 20 : elapsedHours >= 156; // ~6.5j pour weekly
+      if (!due) continue;
+
+      const { data: relations } = await supabaseAdmin
+        .from('avocat_franchiseurs').select('franchiseur_id')
+        .eq('avocat_id', avocat.id).eq('status', 'active');
+      const franchiseurIds = (relations || []).map(r => r.franchiseur_id);
+      if (!franchiseurIds.length) continue;
+
+      const { data: franchiseurUsers } = await supabaseAdmin
+        .from('users').select('id, company_name').in('id', franchiseurIds);
+      const nameById = Object.fromEntries((franchiseurUsers || []).map(u => [u.id, u.company_name]));
+
+      const { data: dips } = await supabaseAdmin
+        .from('dip_documents')
+        .select('id, user_id, dip_sections(section_number, section_title, status, legal_blocking)')
+        .in('user_id', franchiseurIds).eq('status', 'actif');
+
+      const dipByUser = {};
+      (dips || []).forEach(d => { if (!dipByUser[d.user_id]) dipByUser[d.user_id] = d; });
+
+      const summary = franchiseurIds.map(fid => {
+        const dip = dipByUser[fid];
+        if (!dip) return { franchiseur_id: fid, company_name: nameById[fid], score: null, level: null, issues: [] };
+        const compliance = computeLiveCompliance(dip.dip_sections);
+        const issues = (dip.dip_sections || [])
+          .filter(s => s.status !== 'conforme')
+          .sort((a, b) => a.section_number - b.section_number)
+          .map(s => ({
+            section_number: s.section_number,
+            section_title: s.section_title,
+            status: s.status,
+            legal_reference: LEGAL_REFS[s.section_number - 1] || null,
+          }));
+        return { franchiseur_id: fid, company_name: nameById[fid], score: compliance.conformity_score, level: compliance.compliance_level, issues };
+      });
+
+      const scored = summary.map(s => s.score).filter(s => typeof s === 'number');
+      const averageScore = scored.length ? Math.round(scored.reduce((a, b) => a + b, 0) / scored.length) : null;
+
+      await supabaseAdmin.from('avocat_digests').insert({
+        avocat_id: avocat.id,
+        franchiseur_count: franchiseurIds.length,
+        average_score: averageScore,
+        summary,
+      });
+
+      if (avocat.avocat_digest_channel === 'email' || avocat.avocat_digest_channel === 'both') {
+        const html = buildAvocatDigestHtml(avocat.company_name || '', summary, averageScore, appUrl);
+        const sent = await sendEmailFn(
+          avocat.email, avocat.company_name || '',
+          `DIPpro — Compte-rendu de conformité du ${new Date().toLocaleDateString('fr-FR')}`,
+          html, avocat
+        );
+        if (sent) digestReport.emailsSent++;
+      }
+
+      await supabaseAdmin.from('users').update({ avocat_digest_last_sent_at: new Date().toISOString() }).eq('id', avocat.id);
+      digestReport.avocatsProcessed++;
+    } catch (e) {
+      console.error('[CRON DAILY] avocat digest error:', avocat.id, e.message);
+      digestReport.errors++;
+    }
+  }
+
+  return digestReport;
+}
+
 // GET /api/cron/daily — déclenché par Vercel Cron à 00h00 UTC
 router.get('/daily', async (req, res) => {
   if (!isAuthorized(req)) {
@@ -408,6 +552,13 @@ Réponds en JSON strict :
         );
         if (sent) report.usersNotified++;
       }
+    }
+
+    // ── 5. Comptes-rendus programmés des avocats ─────────────────────────────
+    try {
+      report.avocatDigests = await runAvocatDigests(appUrl, sendEmail);
+    } catch (e) {
+      console.error('Avocat digest step error:', e.message);
     }
 
     const elapsed = Math.round((Date.now() - startedAt) / 1000);

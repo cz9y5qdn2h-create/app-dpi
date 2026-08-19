@@ -9,6 +9,23 @@ Voir aussi : [INVARIANTS.md](INVARIANTS.md) · [BUG_JOURNAL.md](BUG_JOURNAL.md) 
 
 ---
 
+## 2026-08-17 (4)
+
+### 🟢 Analyse programmée avocat (compte-rendu automatique)
+Migration 046 : `avocat_digest_frequency` (off/weekly/daily) et
+`avocat_digest_channel` (email/inapp/both) sur `users`, table `avocat_digests`
+(historique, deny-all RLS — écrit uniquement par le service role). Le cron
+quotidien existant (`cron.js` étape 5) recalcule le score de conformité live
+de chaque client via `computeLiveCompliance` — **aucun appel IA
+supplémentaire** — et génère un compte-rendu par section/loi (référence
+`LEGAL_REFS`, extrait de `claude.js` vers `config/dipSections.js` partagé
+pour rester synchronisé). Envoi email via Brevo si canal `email`/`both`.
+Carte « Automatisation » dans le dashboard avocat : fréquence, canal,
+historique des 5 derniers comptes-rendus.
+`supabase/migrations/046_avocat_digest.sql`, `backend/src/routes/{cron,avocat}.js`, `backend/src/config/dipSections.js`, `frontend/src/components/dashboard/AvocatDashboard.jsx`
+
+---
+
 ## 2026-08-17 (3)
 
 ### 🟢 Explorateur de fichiers avocat
