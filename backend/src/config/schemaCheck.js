@@ -7,15 +7,17 @@ const { supabaseAdmin } = require('./supabase');
 // cassé les alertes pendant 11 heures sans qu'aucun signal ne remonte.
 // Ce contrôle transforme cette dérive invisible en diagnostic immédiat.
 const REQUIRED_COLUMNS = {
-  users:              ['id', 'email', 'role', 'avocat_access_token', 'lawyer_email'],
+  users:              ['id', 'email', 'role', 'avocat_access_token', 'franchiseur_access_token', 'lawyer_email', 'avocat_digest_frequency', 'avocat_digest_channel', 'avocat_digest_last_sent_at'],
   alerts:             ['id', 'user_id', 'type', 'title', 'contract_id', 'clause_id', 'franchisee_id'],
   dip_documents:      ['id', 'user_id', 'status', 'sha256', 'compliance_level', 'signature_image'],
-  dip_sections:       ['id', 'dip_id', 'content', 'legal_blocking', 'last_edited_by'],
+  dip_sections:       ['id', 'dip_id', 'content', 'legal_blocking', 'last_edited_by', 'avocat_validation_status'],
   franchise_contracts:['id', 'user_id', 'linked_dip_id', 'signature_image'],
-  contract_clauses:   ['id', 'contract_id', 'content', 'last_edited_by'],
+  contract_clauses:   ['id', 'contract_id', 'content', 'last_edited_by', 'avocat_validation_status'],
   franchisees:        ['id', 'franchiseur_id', 'candidate_type', 'dip_delivered_at', 'planned_signature_date'],
   dip_certificates:   ['id', 'user_id', 'certificate_number', 'public_token', 'status'],
-  avocat_franchiseurs:['id', 'avocat_id', 'franchiseur_id', 'status'],
+  avocat_franchiseurs:['id', 'avocat_id', 'franchiseur_id', 'status', 'validation_mode'],
+  avocat_digests:     ['id', 'avocat_id', 'generated_at', 'average_score', 'summary'],
+  dip_section_annexes:['id', 'dip_id', 'contract_id', 'position', 'storage_path'],
   regulatory_news_cache: ['id', 'impact_level', 'impact_reason'],
 };
 
