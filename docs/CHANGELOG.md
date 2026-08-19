@@ -9,6 +9,25 @@ Voir aussi : [INVARIANTS.md](INVARIANTS.md) · [BUG_JOURNAL.md](BUG_JOURNAL.md) 
 
 ---
 
+## 2026-08-17 (6)
+
+### 🟢 Landing page repensée pour un acheteur avocat
+Hero, mockup, fonctionnalités mises en avant, étapes, FAQ, tarification et
+footer réécrits autour du portefeuille multi-clients plutôt que d'un DIP
+unique : score moyen, contrôle de validation, explorateur de fichiers,
+compte-rendu automatique — les fonctionnalités livrées dans ce pivot,
+pas des promesses. Prix inchangé (1 300 € + 850 €/mois) mais reframé
+« par cabinet, clients illimités » plutôt qu'inventé. Toute occurrence
+« Hébergé en France » / « vos franchisés » corrigée en cohérence avec
+l'audit légal du jour. Formulaire liste d'attente : « Société » → « Cabinet ».
+*Décision non prise à ma place, à trancher par le fondateur* : le prix
+affiché est celui hérité du modèle franchiseur — aucune donnée sur la
+disposition à payer des avocats n'existe dans ce projet, donc aucun nouveau
+chiffre n'a été inventé.
+`frontend/src/pages/LandingPage.jsx`
+
+---
+
 ## 2026-08-17 (5)
 
 ### 🟢 L'avocat invite ses clients franchiseurs (inversion du sens d'inscription)

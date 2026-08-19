@@ -3,11 +3,11 @@ import { Link } from 'react-router-dom';
 import {
   Shield, CheckCircle, Bell, Users, Download, Zap, ArrowRight,
   ChevronDown, Sparkles, AlertTriangle, FileText, Send, Lock,
-  FileCheck, Clock, TrendingUp, Star, GitBranch, Menu, X, BookOpen
+  FileCheck, Clock, TrendingUp, Star, GitBranch, Menu, X, BookOpen,
+  FolderOpen, ShieldCheck, Gauge, UserPlus,
 } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import api from '../lib/api';
-import { AVOCAT_DISCLAIMER } from '../lib/legalCopy';
 
 const GOLD = '#C8A96E';
 
@@ -20,47 +20,47 @@ const DARK_BG = {
 };
 
 const FEATURES = [
-  { icon: Sparkles,   title: 'Analyse IA en 30 s',         desc: 'Score de conformité Loi Doubin instantané. Les 10 sections réglementaires évaluées par Claude Opus.' },
-  { icon: Shield,     title: 'Génération guidée',           desc: 'Formulaire en 8 étapes + assistant IA qui rédige les sections complexes conformément à l\'art. R.330-1 C. com. (décret n°2023-1394 du 30 décembre 2023).' },
-  { icon: Zap,        title: 'Détection des changements',   desc: 'Chaque modification significative du DIP est identifiée, qualifiée par impact et tracée automatiquement — pour rester exact jusqu\'à la signature, pas seulement à la remise.' },
-  { icon: FileCheck,  title: 'Attestation certifiée',       desc: 'PDF horodaté, empreinte SHA-256, lien public vérifiable — preuve de remise incontestable en cas de litige.' },
-  { icon: Bell,       title: 'Rappels de réexamen',         desc: 'Rappels automatiques configurables pour réexaminer périodiquement votre DIP — bonne pratique recommandée, la Loi Doubin n\'impose pas de renouvellement annuel formel.' },
-  { icon: Users,      title: 'Portail franchisé',           desc: 'Notification email + WhatsApp automatique à tous vos franchisés dès approbation d\'une modification.' },
+  { icon: Gauge,      title: 'Vue portefeuille',            desc: 'Le score de conformité de chaque client, et la moyenne de tout votre portefeuille, recalculés en direct — jamais une valeur stockée qui traîne.' },
+  { icon: ShieldCheck, title: 'Vous gardez la main',         desc: 'Chaque édition d\'un client repasse par votre confirmation avant de compter comme conforme — blocage strict ou simple alerte, configurable par client.' },
+  { icon: FolderOpen, title: 'Un dossier par client',        desc: 'DIP, sections, annexes et certificats de tous vos clients rangés dans une arborescence unique — plus besoin de fouiller les emails.' },
+  { icon: Bell,       title: 'Compte-rendu automatique',     desc: 'Analyse programmée de tous vos clients, section par section, envoyée par email ou consultable dans votre historique — aucun appel IA supplémentaire, donc aucun coût caché.' },
+  { icon: FileCheck,  title: 'Attestation certifiée',        desc: 'PDF horodaté, empreinte SHA-256, numérotation séquentielle sans trou — preuve de remise et de validation incontestable en cas de contentieux.' },
+  { icon: Sparkles,   title: 'Base légale exacte',           desc: 'Chaque statut relié à la sous-disposition R.330-1 précise (jamais « R.330-1 » seul) et à la jurisprudence vérifiée — pas d\'approximation.' },
 ];
 
 const HOW_STEPS = [
   {
     num: '01',
-    icon: FileText,
-    title: 'Importez votre DIP',
-    desc: 'Glissez votre PDF ou DOCX. L\'IA extrait les 10 sections réglementaires Loi Doubin en moins de 30 secondes.',
+    icon: UserPlus,
+    title: 'Invitez vos clients',
+    desc: 'Un espace est créé pour chaque franchiseur, sans mot de passe à définir — il accède directement par le lien reçu.',
   },
   {
     num: '02',
-    icon: Sparkles,
-    title: 'Analysez & corrigez',
-    desc: 'Score par section, recommandations ciblées, corrections proposées par l\'IA. Vous validez en un clic.',
+    icon: Gauge,
+    title: 'Suivez, en direct',
+    desc: 'Score de conformité recalculé à chaque édition, alerte dès qu\'une section attend votre confirmation.',
   },
   {
     num: '03',
-    icon: FileCheck,
-    title: 'Certifiez & notifiez',
-    desc: 'Attestation PDF horodatée générée automatiquement + notification email à tous vos franchisés actifs.',
+    icon: ShieldCheck,
+    title: 'Validez, ils avancent',
+    desc: 'Vous confirmez la conformité ou signalez un point à corriger — l\'attestation se génère automatiquement.',
   },
 ];
 
 const FAQS = [
   {
     q: "Qu'est-ce que le DIP ?",
-    a: "Le Document d'Information Précontractuelle est obligatoire pour tout franchiseur (Art. L.330-3 Code de commerce). Il doit être remis au candidat franchisé 20 jours avant la signature. Son absence expose à une sanction pénale, et son inexactitude peut entraîner la nullité du contrat si elle a vicié le consentement du franchisé (Cass. com., 20 mars 2007, n°06-11.290) — votre responsabilité est également engagée si vous taisez volontairement une information déterminante apparue entre la remise du DIP et la signature, même sur un DIP par ailleurs conforme (Cass. com., 26 juin 2024, n°23-14.085).",
+    a: "Le Document d'Information Précontractuelle est obligatoire pour tout franchiseur (Art. L.330-3 Code de commerce). Il doit être remis au candidat franchisé 20 jours avant la signature. Son absence expose à une sanction pénale, et son inexactitude peut entraîner la nullité du contrat si elle a vicié le consentement du franchisé (Cass. com., 20 mars 2007, n°06-11.290) — la responsabilité de votre client est également engagée s'il tait volontairement une information déterminante apparue entre la remise du DIP et la signature, même sur un DIP par ailleurs conforme (Cass. com., 26 juin 2024, n°23-14.085).",
   },
   {
     q: "Combien coûte DIPpro ?",
-    a: "1 300 € de mise en place (onboarding personnalisé 1h, import et analyse de votre DIP existant, configuration complète) + 850 €/mois. Soit 11 500 € la première année. Première analyse offerte, aucune carte bancaire requise.",
+    a: "1 300 € de mise en place (onboarding personnalisé 1h, configuration de votre espace) + 850 €/mois, par cabinet — tous vos clients franchiseurs inclus, sans coût supplémentaire par dossier. Première analyse offerte, aucune carte bancaire requise.",
   },
   {
-    q: "DIPpro remplace-t-il un avocat ?",
-    a: `Non — ${AVOCAT_DISCLAIMER} Notre rapport de conformité accélère la révision juridique en signalant automatiquement les sections à examiner en priorité.`,
+    q: "Que voient mes clients franchiseurs ?",
+    a: "Un espace simplifié pour importer ou générer leur DIP et voir leur score de conformité. Toute édition qu'ils font repasse par votre confirmation avant de compter comme conforme (selon le mode que vous choisissez, client par client) — c'est vous qui gardez la vue d'ensemble.",
   },
   {
     q: "Mes données sont-elles sécurisées ?",
@@ -68,7 +68,7 @@ const FAQS = [
   },
   {
     q: "Qu'est-ce que l'accès anticipé ?",
-    a: "Le MVP est fonctionnel et déployé. Les premiers franchiseurs accèdent à toutes les fonctionnalités dès aujourd'hui. En échange de votre retour, vous bénéficiez d'un onboarding personnalisé 1h avec l'équipe et d'un support prioritaire à vie.",
+    a: "Le MVP est fonctionnel et déployé. Les premiers avocats accèdent à toutes les fonctionnalités dès aujourd'hui. En échange de votre retour, vous bénéficiez d'un onboarding personnalisé 1h avec l'équipe et d'un support prioritaire à vie.",
   },
 ];
 
@@ -131,61 +131,43 @@ function DashboardMockup() {
       </div>
 
       {/* Greeting */}
-      <div style={{ marginBottom: 14 }}>
-        <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 18, fontWeight: 300, color: '#F4F2EE', lineHeight: 1 }}>
-          Bonjour, Réseau Lumière
+      <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 14 }}>
+        <div>
+          <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 18, fontWeight: 300, color: '#F4F2EE', lineHeight: 1 }}>
+            Bonjour, Maître
+          </div>
+          <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 9, color: 'rgba(200,169,110,0.50)', marginTop: 3, letterSpacing: '0.02em' }}>
+            4 réseaux suivis
+          </div>
         </div>
-        <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 9, color: 'rgba(200,169,110,0.50)', marginTop: 3, letterSpacing: '0.02em' }}>
-          Vue d'ensemble · conformité DIP
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 20, fontWeight: 500, color: '#C8A96E', lineHeight: 1 }}>78%</div>
+          <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 8, color: 'rgba(244,242,238,0.30)', marginTop: 2 }}>score moyen</div>
         </div>
       </div>
 
-      {/* Stats 4 cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 6, marginBottom: 14 }}>
+      {/* Liste des clients */}
+      <div style={{ marginBottom: 12 }}>
         {[
-          { l: 'SECTIONS', v: '10', c: 'rgba(200,169,110,0.85)' },
-          { l: 'CONFORMES', v: '7',  c: 'rgba(52,211,153,0.85)' },
-          { l: 'À VÉRIF.',  v: '2',  c: 'rgba(251,191,36,0.85)' },
-          { l: 'CRITIQUES', v: '1',  c: 'rgba(248,113,113,0.85)' },
-        ].map(({ l, v, c }) => (
-          <div key={l} style={{ background: 'rgba(244,242,238,0.02)', border: '0.5px solid rgba(244,242,238,0.06)', borderRadius: 10, padding: '8px 6px' }}>
-            <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 8, color: 'rgba(244,242,238,0.28)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>{l}</div>
-            <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 16, fontWeight: 500, color: c, lineHeight: 1 }}>{v}</div>
+          { name: 'Réseau Lumière',   score: 94, c: '#34D399' },
+          { name: 'Café des Halles',  score: 81, c: '#34D399' },
+          { name: 'Fitness Park+',    score: 58, c: '#FBBF24' },
+          { name: 'Atelier Bois SAS', score: 39, c: '#F87171' },
+        ].map(({ name, score, c }) => (
+          <div key={name} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 8, background: 'rgba(244,242,238,0.02)', marginBottom: 4 }}>
+            <div style={{ width: 5, height: 5, borderRadius: '50%', background: c, flexShrink: 0 }} />
+            <div style={{ flex: 1, fontFamily: 'DM Sans, sans-serif', fontSize: 10, color: 'rgba(244,242,238,0.68)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
+            <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 10, color: c, flexShrink: 0 }}>{score}%</div>
           </div>
         ))}
       </div>
 
-      {/* Score gauge + section list */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
-        <div style={{ background: 'rgba(244,242,238,0.02)', border: '0.5px solid rgba(200,169,110,0.10)', borderRadius: 14, padding: '12px 10px', textAlign: 'center', minWidth: 88 }}>
-          <svg width="64" height="38" viewBox="0 0 64 38">
-            <path d="M 4 34 A 28 28 0 0 1 60 34" stroke="rgba(200,169,110,0.12)" strokeWidth="5" fill="none" strokeLinecap="round" />
-            <path d="M 4 34 A 28 28 0 0 1 60 34" stroke="#C8A96E" strokeWidth="5" fill="none" strokeLinecap="round" strokeDasharray="88" strokeDashoffset="26" />
-          </svg>
-          <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 15, fontWeight: 500, color: '#C8A96E', marginTop: -4 }}>70%</div>
-          <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 8, color: 'rgba(244,242,238,0.28)', marginTop: 2 }}>Conformité</div>
-        </div>
-        <div style={{ flex: 1 }}>
-          {[
-            { title: 'Présentation franchiseur', c: '#34D399' },
-            { title: 'Situation financière',     c: '#34D399' },
-            { title: 'État du marché',            c: '#FBBF24' },
-            { title: 'Réseaux franchisés',        c: '#F87171' },
-          ].map(({ title, c }) => (
-            <div key={title} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '5px 8px', borderRadius: 7, background: 'rgba(244,242,238,0.015)', marginBottom: 3 }}>
-              <div style={{ width: 4, height: 4, borderRadius: '50%', background: c, flexShrink: 0 }} />
-              <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 9, color: 'rgba(244,242,238,0.58)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* AI alert */}
+      {/* Alerte validation */}
       <div style={{ background: 'rgba(200,169,110,0.05)', border: '0.5px solid rgba(200,169,110,0.18)', borderRadius: 10, padding: '9px 12px', display: 'flex', alignItems: 'center', gap: 9 }}>
         <div style={{ width: 24, height: 24, borderRadius: 7, background: 'rgba(200,169,110,0.10)', border: '0.5px solid rgba(200,169,110,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 11 }}>✦</div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 9, fontWeight: 500, color: 'rgba(244,242,238,0.85)' }}>1 correction IA disponible</div>
-          <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 8, color: 'rgba(244,242,238,0.36)', marginTop: 1 }}>Section 4 — Réseaux franchisés</div>
+          <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 9, fontWeight: 500, color: 'rgba(244,242,238,0.85)' }}>1 section en attente de votre validation</div>
+          <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 8, color: 'rgba(244,242,238,0.36)', marginTop: 1 }}>Fitness Park+ — Section 4</div>
         </div>
         <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 8, color: '#C8A96E', background: 'rgba(200,169,110,0.10)', border: '0.5px solid rgba(200,169,110,0.22)', borderRadius: 20, padding: '3px 9px', whiteSpace: 'nowrap', flexShrink: 0 }}>Voir →</div>
       </div>
@@ -246,7 +228,7 @@ function WaitlistFormDark({ onSuccess }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.email || !form.company_name) { setError('Email et nom de société sont requis.'); return; }
+    if (!form.email || !form.company_name) { setError('Email et nom de cabinet sont requis.'); return; }
     if (!rgpd) { setError('Veuillez accepter la politique de confidentialité.'); return; }
     setLoading(true);
     try {
@@ -300,10 +282,10 @@ function WaitlistFormDark({ onSuccess }) {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <div>
           <label style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: 'rgba(244,242,238,0.45)', display: 'block', marginBottom: 6 }}>
-            Société / Enseigne <span style={{ color: '#F87171' }}>*</span>
+            Cabinet <span style={{ color: '#F87171' }}>*</span>
           </label>
           <input type="text" value={form.company_name} onChange={e => set('company_name', e.target.value)}
-            placeholder="Ma Franchise SAS" required style={inputS}
+            placeholder="Dupont & Associés" required style={inputS}
             onFocus={e => (e.target.style.border = '0.5px solid rgba(200,169,110,0.55)')}
             onBlur={e => (e.target.style.border = '0.5px solid rgba(244,242,238,0.12)')} />
         </div>
@@ -333,7 +315,7 @@ function WaitlistFormDark({ onSuccess }) {
           Message <span style={{ color: 'rgba(244,242,238,0.25)' }}>(optionnel)</span>
         </label>
         <textarea value={form.message} onChange={e => set('message', e.target.value)} rows={3}
-          placeholder="Parlez-nous de votre réseau, de vos besoins DIP..."
+          placeholder="Parlez-nous de vos clients franchiseurs, de vos besoins DIP..."
           style={{ ...inputS, resize: 'none' }}
           onFocus={e => (e.target.style.border = '0.5px solid rgba(200,169,110,0.55)')}
           onBlur={e => (e.target.style.border = '0.5px solid rgba(244,242,238,0.12)')} />
@@ -531,8 +513,8 @@ export default function LandingPage() {
   const howToSchema = {
     '@context': 'https://schema.org',
     '@type': 'HowTo',
-    name: 'Comment utiliser DIPpro pour gérer son DIP franchise',
-    description: 'Gérez la conformité de votre DIP franchise en 3 étapes grâce à DIPpro.',
+    name: 'Comment utiliser DIPpro pour suivre la conformité DIP de ses clients franchiseurs',
+    description: 'Suivez la conformité DIP de tous vos clients franchiseurs en 3 étapes grâce à DIPpro.',
     step: HOW_STEPS.map(({ num, title, desc }) => ({
       '@type': 'HowToStep',
       position: parseInt(num),
@@ -544,8 +526,8 @@ export default function LandingPage() {
   return (
     <>
       <Helmet>
-        <title>DIPpro — Gestion légale du DIP pour franchiseurs</title>
-        <meta name="description" content="DIPpro automatise la gestion légale du Document d'Information Précontractuelle. Score de conformité Loi Doubin en 30 secondes, attestation PDF certifiée SHA-256, alertes réglementaires automatiques. Pour franchiseurs français." />
+        <title>DIPpro — Conformité DIP pour cabinets d'avocats en droit de la franchise</title>
+        <meta name="description" content="DIPpro centralise la conformité DIP de tous vos clients franchiseurs : score en direct par client, validation de chaque modification, attestation PDF certifiée SHA-256. Pour avocats en droit de la franchise." />
         <link rel="canonical" href="https://iralink-agency.dippro.business/" />
         <meta property="og:url" content="https://iralink-agency.dippro.business/" />
         <script type="application/ld+json">{JSON.stringify(faqSchema)}</script>
@@ -665,14 +647,14 @@ export default function LandingPage() {
               </div>
 
               <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontWeight: 300, fontSize: 'clamp(2.5rem, 5.5vw, 4rem)', color: '#F4F2EE', lineHeight: 1.07, marginBottom: 22 }}>
-                Votre DIP toujours conforme.<br />
-                <span style={{ color: GOLD }}>Automatiquement.</span>
+                Tous vos clients franchiseurs.<br />
+                <span style={{ color: GOLD }}>Une seule vue de conformité.</span>
               </h1>
 
               <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 16, color: 'rgba(244,242,238,0.52)', lineHeight: 1.7, maxWidth: 460, marginBottom: 36 }}>
-                L&apos;IA qui analyse et structure votre Document d&apos;Information Précontractuelle
-                selon la Loi Doubin — Art. L.330-3 du Code de commerce, avec attestation de remise
-                horodatée SHA-256.
+                L&apos;outil qui centralise la conformité DIP de votre portefeuille de clients
+                franchiseurs selon la Loi Doubin — Art. L.330-3 du Code de commerce. Vous gardez
+                la main sur chaque modification, avec attestation horodatée SHA-256 à l&apos;appui.
               </p>
 
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 40 }}>
@@ -739,9 +721,10 @@ export default function LandingPage() {
                 Arrêt Cour de cassation — 26 juin 2024
               </h2>
               <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 14, color: 'rgba(244,242,238,0.50)', lineHeight: 1.7, maxWidth: 520 }}>
-                La Cour de cassation a confirmé que votre obligation d'information ne s'arrête pas à la remise du DIP :
-                taire volontairement un fait déterminant survenu avant la signature — même avec un DIP par ailleurs
-                conforme — constitue un dol qui engage votre responsabilité (Cass. com., 26 juin 2024, n°23-14.085).
+                La Cour de cassation a confirmé que l'obligation d'information de vos clients ne s'arrête pas à la
+                remise du DIP : taire volontairement un fait déterminant survenu avant la signature — même avec un
+                DIP par ailleurs conforme — constitue un dol qui engage leur responsabilité (Cass. com., 26 juin
+                2024, n°23-14.085).
               </p>
             </div>
             <div style={{ textAlign: 'center', flexShrink: 0 }}>
@@ -752,7 +735,7 @@ export default function LandingPage() {
                 durée réelle de l&apos;obligation d&apos;information
               </div>
               <button onClick={scrollToForm} style={{ ...btnGold, marginTop: 20, padding: '12px 22px', fontSize: 13 }}>
-                Protégez votre réseau
+                Protégez vos clients
               </button>
             </div>
           </div>
@@ -767,7 +750,7 @@ export default function LandingPage() {
               Comment ça marche
             </h2>
             <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 15, color: 'rgba(244,242,238,0.42)' }}>
-              De l&apos;import à la certification — sans intervention manuelle.
+              De l&apos;invitation du client à l&apos;attestation certifiée.
             </p>
           </div>
         </FadeIn>
@@ -831,15 +814,15 @@ export default function LandingPage() {
                 Preuve de remise incontestable
               </h2>
               <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 14, color: 'rgba(244,242,238,0.50)', lineHeight: 1.75, marginBottom: 24 }}>
-                Chaque modification de votre DIP génère automatiquement un certificat PDF horodaté
-                avec empreinte SHA-256. Un lien public vérifiable — par vos franchisés, leurs avocats
-                ou le tribunal — sans authentification.
+                Chaque modification validée par vous génère automatiquement un certificat PDF horodaté
+                avec empreinte SHA-256, numéroté sans trou dans une série continue. Un lien public
+                vérifiable — par le franchisé, le tribunal ou toute partie au litige — sans authentification.
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {[
                   'Certificat PDF horodaté et signé cryptographiquement',
                   'Lien public accessible sans compte',
-                  'Notification email automatique à tous vos franchisés',
+                  'Numérotation séquentielle — aucun trou possible dans la série',
                   'Archivage permanent — preuve légale en cas de litige',
                 ].map(item => (
                   <div key={item} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
@@ -880,9 +863,10 @@ export default function LandingPage() {
               <div style={{ marginBottom: 24 }}>
                 <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: 'rgba(200,169,110,0.6)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Abonnement mensuel</div>
                 <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 42, fontWeight: 300, color: GOLD, lineHeight: 1 }}>850 €<span style={{ fontSize: 18, opacity: 0.6 }}>/mois</span></div>
+                <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: 'rgba(244,242,238,0.38)', marginTop: 4 }}>par cabinet — tous vos clients franchiseurs inclus</div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
-                {['Onboarding personnalisé 1h avec l\'équipe', 'Import et analyse de votre DIP existant', 'Configuration complète de votre espace', 'Support prioritaire à vie'].map(f => (
+                {['Onboarding personnalisé 1h avec l\'équipe', 'Clients franchiseurs illimités', 'Configuration complète de votre espace', 'Support prioritaire à vie'].map(f => (
                   <div key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
                     <CheckCircle style={{ width: 14, height: 14, color: GOLD, flexShrink: 0, marginTop: 1 }} />
                     <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12.5, color: 'rgba(244,242,238,0.55)', lineHeight: 1.5 }}>{f}</span>
@@ -905,13 +889,13 @@ export default function LandingPage() {
                 </div>
                 <div style={{ height: '0.5px', background: 'rgba(200,169,110,0.15)', margin: '4px 0 14px' }} />
                 <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12.5, color: 'rgba(244,242,238,0.50)', lineHeight: 1.6, margin: 0 }}>
-                  Un contentieux DIP peut entraîner la restitution des droits d&apos;entrée et redevances perçus, ainsi que des dommages-intérêts — sans qu&apos;un montant moyen ne soit publiquement établi. La grille R.330-1 sert à réduire ce risque en amont, pas à le chiffrer.
+                  Un contentieux DIP peut exposer votre client à la restitution des droits d&apos;entrée et redevances perçus, ainsi qu&apos;à des dommages-intérêts — sans qu&apos;un montant moyen ne soit publiquement établi. La grille R.330-1 sert à réduire ce risque en amont, pas à le chiffrer.
                 </p>
               </div>
               <div style={{ borderRadius: 16, padding: '24px 28px', background: 'rgba(244,242,238,0.025)', border: '0.5px solid rgba(244,242,238,0.07)' }}>
                 <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 10, color: 'rgba(244,242,238,0.30)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Garantie</div>
                 <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 13, color: 'rgba(244,242,238,0.50)', lineHeight: 1.65, margin: 0 }}>
-                  Première analyse de votre DIP actuel offerte — vous recevez le rapport complet avant de prendre toute décision. Aucun engagement, aucune carte bancaire.
+                  Première analyse offerte sur le DIP d&apos;un de vos clients — vous recevez le rapport complet avant de prendre toute décision. Aucun engagement, aucune carte bancaire.
                 </p>
               </div>
             </div>
@@ -969,7 +953,7 @@ export default function LandingPage() {
               Comprendre le DIP et la Loi Doubin
             </h2>
             <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 14, color: 'rgba(244,242,238,0.42)', marginTop: 12, maxWidth: 480, marginLeft: 'auto', marginRight: 'auto' }}>
-              Nos guides juridiques de référence, rédigés et vérifiés pour les franchiseurs.
+              Nos guides juridiques de référence, sourcés et vérifiés — pour votre veille comme pour celle de vos clients.
             </p>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20 }}>
@@ -1038,7 +1022,7 @@ export default function LandingPage() {
         <FadeIn>
           <div style={{ borderRadius: 28, padding: '60px 48px', textAlign: 'center', background: 'rgba(200,169,110,0.05)', border: '0.5px solid rgba(200,169,110,0.20)' }}>
             <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontWeight: 300, fontSize: 'clamp(2rem, 4vw, 2.8rem)', color: '#F4F2EE', lineHeight: 1.1, marginBottom: 16 }}>
-              Votre réseau mérite<br />mieux que l&apos;approximation.
+              Vos clients méritent<br />mieux que l&apos;approximation.
             </h2>
             <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 14, color: 'rgba(244,242,238,0.42)', lineHeight: 1.7, maxWidth: 440, margin: '0 auto 32px' }}>
               Première analyse offerte. Aucune carte bancaire. Onboarding personnalisé inclus.
@@ -1074,7 +1058,7 @@ export default function LandingPage() {
                 <span style={{ fontFamily: 'DM Mono, monospace', fontSize: 10, color: 'rgba(244,242,238,0.25)' }}>by Iralink-Agency</span>
               </div>
               <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: 'rgba(244,242,238,0.28)', lineHeight: 1.6, maxWidth: 260 }}>
-                Outil SaaS de conformité DIP pour les franchiseurs.
+                Outil de conformité DIP pour cabinets d&apos;avocats en droit de la franchise.
                 Développé par Iralink-Agency — société en cours de création.
               </p>
             </div>
