@@ -136,6 +136,20 @@ router.get('/franchiseur/:franchiseurId/dip', authMiddleware, requireAvocat, asy
       .eq('dip_id', dip.id).eq('proposed_by', req.user.id)
       .order('created_at', { ascending: false });
     proposals = data || [];
+
+    // Annexes de toutes les sections en un aller — alimente l'explorateur de
+    // fichiers sans un appel par section.
+    const sectionIds = (dip.dip_sections || []).map(s => s.id);
+    if (sectionIds.length) {
+      const { data: annexes } = await supabaseAdmin
+        .from('dip_section_annexes').select('id, section_id, file_name, size_bytes, created_at')
+        .in('section_id', sectionIds);
+      const annexesBySection = {};
+      (annexes || []).forEach(a => {
+        (annexesBySection[a.section_id] ||= []).push(a);
+      });
+      dip.dip_sections = (dip.dip_sections || []).map(s => ({ ...s, annexes: annexesBySection[s.id] || [] }));
+    }
   }
 
   res.json({ dip, franchiseur, proposals });

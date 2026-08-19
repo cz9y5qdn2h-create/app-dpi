@@ -48,6 +48,7 @@ const AvocatDocumentsPage    = lazy(() => import('./pages/AvocatDocumentsPage'))
 const AvocatExportPage       = lazy(() => import('./pages/AvocatExportPage'));
 const AvocatMonitoringPage   = lazy(() => import('./pages/AvocatMonitoringPage'));
 const AvocatCompliancePage   = lazy(() => import('./pages/AvocatCompliancePage'));
+const AvocatFilesPage        = lazy(() => import('./pages/AvocatFilesPage'));
 const DesignPreviewPage  = lazy(() => import('./pages/DesignPreviewPage'));
 
 const PageLoader = () => (
@@ -138,6 +139,7 @@ export default function App() {
 
         <Route path="/" element={<TrialGuard><Layout /></TrialGuard>}>
           <Route path="dashboard"   element={<S><DashboardPage /></S>} />
+          <Route path="fichiers"    element={<S><AvocatFilesPage /></S>} />
           <Route path="dip"         element={<FranchisorOnlyRoute><S><DIPPage /></S></FranchisorOnlyRoute>} />
           <Route path="dip/upload"  element={<FranchisorOnlyRoute><S><UploadDIPPage /></S></FranchisorOnlyRoute>} />
           <Route path="dip/generate" element={<FranchisorOnlyRoute><S><GenerateDIPPage /></S></FranchisorOnlyRoute>} />

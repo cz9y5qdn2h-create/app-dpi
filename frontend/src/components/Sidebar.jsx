@@ -126,6 +126,7 @@ export default function Sidebar({ open, onClose }) {
       flat: true,
       items: [
         { to: '/dashboard', icon: LayoutDashboard, label: 'Mes clients' },
+        { to: '/fichiers', icon: FolderOpen, label: 'Fichiers' },
       ],
     },
     {

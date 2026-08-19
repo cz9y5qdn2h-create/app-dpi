@@ -9,6 +9,20 @@ Voir aussi : [INVARIANTS.md](INVARIANTS.md) · [BUG_JOURNAL.md](BUG_JOURNAL.md) 
 
 ---
 
+## 2026-08-17 (3)
+
+### 🟢 Explorateur de fichiers avocat
+Nouvel onglet « Fichiers » (`/fichiers`) : arborescence Mes franchiseurs > [client] >
+DIP > Section 1..N (+ annexes jointes) et Certificats, par client, en chargement
+différé au dépli (pas de gros appel agrégé au chargement de la page). Les sections en
+attente de validation avocat (`avocat_validation_status = 'pending'`) sont mises en
+évidence en rouge directement dans l'arbre.
+`GET /avocat/franchiseur/:id/dip` étendu pour inclure les annexes de chaque section
+en un seul aller-retour.
+`frontend/src/pages/AvocatFilesPage.jsx`, `backend/src/routes/avocat.js`, `frontend/src/components/Sidebar.jsx`
+
+---
+
 ## 2026-08-17 (2)
 
 ### 🔴 Audit légal pré-pivot avocat (skill garde-fou-legal)
