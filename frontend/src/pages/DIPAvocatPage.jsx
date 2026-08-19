@@ -12,7 +12,7 @@ import FormattingToolbar from '../components/document/FormattingToolbar';
 import {
   Edit3, Check, X, AlertCircle,
   ArrowLeft, FileText, ScrollText, Download, Paperclip, Trash2,
-  ChevronDown, Building2,
+  ChevronDown, Building2, Send, Mail,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
@@ -285,6 +285,8 @@ function DocumentView({ mode, dip, contract, franchiseurId, franchiseur }) {
     }
   };
 
+  const [sendModalOpen, setSendModalOpen] = useState(false);
+
   if (!items.length) return <EmptyState label="Aucune section disponible." />;
 
   return (
@@ -300,10 +302,25 @@ function DocumentView({ mode, dip, contract, franchiseurId, franchiseur }) {
             <div className="h-full rounded-full transition-all duration-500" style={{ width: `${((activeIndex + 1) / items.length) * 100}%`, background: 'var(--v2-gold)' }} />
           </div>
         </div>
-        <button onClick={handleDownload} className="btn-cta-glow text-xs py-2 px-4 flex-shrink-0 justify-center">
-          <Download className="w-3.5 h-3.5" /> Export PDF
-        </button>
+        <div className="flex gap-2 flex-shrink-0">
+          <button onClick={handleDownload} className="btn-cta-glow text-xs py-2 px-4 justify-center">
+            <Download className="w-3.5 h-3.5" /> Export PDF
+          </button>
+          <button onClick={() => setSendModalOpen(true)} className="btn-cta-glow text-xs py-2 px-4 justify-center">
+            <Send className="w-3.5 h-3.5" /> Envoyer au client
+          </button>
+        </div>
       </div>
+
+      {sendModalOpen && (
+        <SendToClientModal
+          isDip={isDip}
+          documentId={isDip ? dip.id : contract.id}
+          defaultEmail={franchiseur?.email}
+          defaultName={franchiseur?.company_name}
+          onClose={() => setSendModalOpen(false)}
+        />
+      )}
 
       {/* Navigation rapide — clique = scroll direct vers la trame */}
       <div className="flex gap-1.5 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
@@ -346,6 +363,16 @@ function DocumentView({ mode, dip, contract, franchiseurId, franchiseur }) {
         ))}
       </div>
 
+      {/* Annexes du document entier — comme sur un acte juridique, énumérées
+          à la fin, jamais éparpillées section par section. */}
+      <div className="card-v2">
+        <AnnexManager
+          dipId={isDip ? dip.id : undefined}
+          contractId={isDip ? undefined : contract.id}
+          ownerId={franchiseur?.id}
+        />
+      </div>
+
       {/* Indicateur flottant de position — oval transparent, toujours visible */}
       <button
         onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
@@ -370,6 +397,82 @@ function DocumentView({ mode, dip, contract, franchiseurId, franchiseur }) {
           {isDip ? activeItem?.section_title : activeItem?.clause_title}
         </span>
       </button>
+    </div>
+  );
+}
+
+function SendToClientModal({ isDip, documentId, defaultEmail, defaultName, onClose }) {
+  const [email, setEmail] = useState(defaultEmail || '');
+  const [name, setName] = useState(defaultName || '');
+  const [subject, setSubject] = useState('');
+  const [message, setMessage] = useState('');
+
+  const sendPath = isDip ? `/avocat/dip/${documentId}/send-to-client` : `/avocat/contract/${documentId}/send-to-client`;
+
+  const sendMutation = useMutation({
+    mutationFn: () => api.post(sendPath, {
+      recipient_email: email,
+      recipient_name: name,
+      subject: subject.trim() || undefined,
+      message: message.trim() || undefined,
+    }),
+    onSuccess: () => {
+      toast.success('Document envoyé');
+      onClose();
+    },
+    onError: (err) => toast.error(err.response?.data?.error || 'Échec de l\'envoi'),
+  });
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.6)' }} onClick={onClose}>
+      <div className="w-full max-w-md rounded-2xl p-6" style={{ background: 'rgb(var(--bg-primary))', border: '1px solid var(--v2-border-hot)' }} onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <p className="display-v2 flex items-center gap-2" style={{ fontSize: 18 }}>
+            <Mail className="w-4 h-4" style={{ color: 'var(--v2-gold)' }} /> Envoyer au client
+          </p>
+          <button onClick={onClose}><X className="w-4 h-4" style={{ color: 'rgb(var(--text-muted))' }} /></button>
+        </div>
+
+        <div className="space-y-3">
+          <div>
+            <label className="mono-label-v2 mb-1 block">Destinataire</label>
+            <input type="email" required value={email} onChange={e => setEmail(e.target.value)}
+              placeholder="destinataire@exemple.fr"
+              className="w-full font-dm-sans text-sm px-3 py-2 rounded-lg outline-none"
+              style={{ background: 'var(--v2-surface)', border: '1px solid var(--v2-border)', color: 'rgb(var(--text-primary))' }} />
+          </div>
+          <div>
+            <label className="mono-label-v2 mb-1 block">Nom <span style={{ opacity: 0.5 }}>(optionnel)</span></label>
+            <input type="text" value={name} onChange={e => setName(e.target.value)}
+              className="w-full font-dm-sans text-sm px-3 py-2 rounded-lg outline-none"
+              style={{ background: 'var(--v2-surface)', border: '1px solid var(--v2-border)', color: 'rgb(var(--text-primary))' }} />
+          </div>
+          <div>
+            <label className="mono-label-v2 mb-1 block">Objet <span style={{ opacity: 0.5 }}>(optionnel)</span></label>
+            <input type="text" value={subject} onChange={e => setSubject(e.target.value)}
+              placeholder={isDip ? "Document d'Information Précontractuelle" : 'Contrat de franchise'}
+              className="w-full font-dm-sans text-sm px-3 py-2 rounded-lg outline-none"
+              style={{ background: 'var(--v2-surface)', border: '1px solid var(--v2-border)', color: 'rgb(var(--text-primary))' }} />
+          </div>
+          <div>
+            <label className="mono-label-v2 mb-1 block">Message <span style={{ opacity: 0.5 }}>(optionnel)</span></label>
+            <textarea value={message} onChange={e => setMessage(e.target.value)} rows={4}
+              placeholder="Bonjour, veuillez trouver ci-joint..."
+              className="w-full font-dm-sans text-sm px-3 py-2 rounded-lg outline-none resize-none"
+              style={{ background: 'var(--v2-surface)', border: '1px solid var(--v2-border)', color: 'rgb(var(--text-primary))' }} />
+          </div>
+          <p className="font-dm-sans text-xs" style={{ color: 'rgb(var(--text-muted))' }}>
+            Le PDF à jour est généré et joint automatiquement à l&apos;envoi.
+          </p>
+          <button
+            onClick={() => sendMutation.mutate()}
+            disabled={!email.trim() || sendMutation.isPending}
+            className="btn-cta-glow text-sm w-full justify-center"
+          >
+            {sendMutation.isPending ? <LoadingSpinner size="sm" /> : <Send className="w-4 h-4" />} Envoyer
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -513,21 +616,14 @@ function DocumentSectionItem({ item, number, isDip, dip, contract, franchiseur, 
         </div>
       )}
 
-      <AnnexManager
-        targetType={isDip ? 'section' : 'clause'}
-        targetId={item.id}
-        dipId={isDip ? dip.id : undefined}
-        contractId={isDip ? undefined : contract.id}
-        ownerId={franchiseur?.id}
-      />
     </motion.div>
   );
 }
 
-function AnnexManager({ targetType, targetId, dipId, contractId, ownerId }) {
+function AnnexManager({ dipId, contractId, ownerId }) {
   const queryClient = useQueryClient();
-  const annexPath = `/avocat/${targetType === 'section' ? 'sections' : 'clauses'}/${targetId}/annexes`;
-  const queryKey = ['annexes', targetType, targetId];
+  const annexPath = dipId ? `/avocat/dip/${dipId}/annexes` : `/avocat/contract/${contractId}/annexes`;
+  const queryKey = ['annexes', dipId || contractId];
 
   const { data } = useQuery({
     queryKey,
@@ -545,8 +641,6 @@ function AnnexManager({ targetType, targetId, dipId, contractId, ownerId }) {
       if (uploadError) throw new Error('Upload impossible : ' + uploadError.message);
 
       return api.post(annexPath, {
-        dip_id: dipId,
-        contract_id: contractId,
         file_name: file.name,
         storage_path,
         size_bytes: file.size,
@@ -601,13 +695,17 @@ function AnnexManager({ targetType, targetId, dipId, contractId, ownerId }) {
   };
 
   return (
-    <div className="pt-3" style={{ borderTop: '1px solid var(--v2-border)' }}>
-      <p className="mono-label-v2 mb-2 flex items-center gap-1.5"><Paperclip className="w-3 h-3" /> Annexes</p>
+    <div>
+      <p className="mono-label-v2 mb-1 flex items-center gap-1.5"><Paperclip className="w-3 h-3" /> Annexes du document</p>
+      <p className="font-dm-sans text-xs mb-3" style={{ color: 'rgb(var(--text-muted))' }}>
+        Énumérées à la fin, dans l&apos;ordre d&apos;ajout — comme sur un acte juridique.
+      </p>
 
       {annexes.length > 0 && (
         <div className="space-y-1.5 mb-3">
-          {annexes.map(a => (
+          {annexes.map((a, i) => (
             <div key={a.id} className="flex items-center justify-between gap-2 text-xs font-dm-sans px-3 py-2 rounded-lg" style={{ background: 'var(--v2-surface)' }}>
+              <span className="font-dm-mono flex-shrink-0" style={{ color: 'var(--v2-gold)' }}>Annexe {i + 1}</span>
               <button onClick={() => handleAnnexDownload(a)} className="truncate flex-1 text-left hover:underline" style={{ color: 'rgb(var(--text-primary))' }}>
                 {a.file_name}
               </button>

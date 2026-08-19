@@ -120,6 +120,19 @@ chaîne de preuve.**
 
 ---
 
+## 4bis. Annexes — niveau document, jamais par section
+
+Depuis la migration 048, une annexe se rattache au **DIP ou au contrat entier**
+(`dip_id`/`contract_id`), jamais à une section ou une clause précise — comme
+sur un acte juridique réel, où les annexes s'énumèrent à la fin, dans l'ordre
+d'ajout (`position`). Les routes `POST /avocat/sections/:id/annexes` et
+`/avocat/clauses/:id/annexes` n'existent plus ; utiliser
+`POST /avocat/dip/:dipId/annexes` et `/avocat/contract/:contractId/annexes`.
+**Ne pas réintroduire de rattachement par section** — c'est un choix
+délibéré, pas un oubli.
+
+---
+
 ## 5. Extraction de documents
 
 - **Ne jamais revenir à `pdf-parse`** : ses quatre moteurs pdf.js (2017-2018)

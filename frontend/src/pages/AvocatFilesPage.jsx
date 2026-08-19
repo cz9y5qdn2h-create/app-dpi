@@ -37,12 +37,12 @@ function FranchiseurNode({ relation }) {
   const franchiseurId = relation.franchiseur_id;
   const [openDip, setOpenDip] = useState(false);
   const [openCerts, setOpenCerts] = useState(false);
-  const [openSection, setOpenSection] = useState(null);
+  const [openAnnexes, setOpenAnnexes] = useState(false);
 
   const { data: dipData, isLoading: dipLoading } = useQuery({
     queryKey: ['avocat', 'files-dip', franchiseurId],
     queryFn: () => api.get(`/avocat/franchiseur/${franchiseurId}/dip`).then(r => r.data),
-    enabled: openDip,
+    enabled: openDip || openAnnexes,
   });
 
   const { data: certsData, isLoading: certsLoading } = useQuery({
@@ -52,6 +52,7 @@ function FranchiseurNode({ relation }) {
   });
 
   const sections = dipData?.dip?.dip_sections?.slice().sort((a, b) => a.section_number - b.section_number) || [];
+  const annexes = dipData?.dip?.annexes || [];
   const certs = certsData?.certificates || [];
 
   return (
@@ -61,7 +62,7 @@ function FranchiseurNode({ relation }) {
         icon={Building2}
         label={relation.franchiseur?.company_name || relation.franchiseur_id}
         hasChildren
-        expanded={openDip || openCerts}
+        expanded={openDip || openCerts || openAnnexes}
       />
       <div style={{ marginLeft: 0 }}>
         {/* DIP */}
@@ -81,31 +82,43 @@ function FranchiseurNode({ relation }) {
               <p className="font-dm-sans text-xs py-2" style={{ paddingLeft: 90, color: 'rgb(var(--text-muted))' }}>Aucun DIP actif</p>
             ) : (
               sections.map(section => (
-                <div key={section.id}>
-                  <TreeRow
-                    depth={3}
-                    icon={FileText}
-                    label={`Section ${section.section_number} — ${section.section_title}`}
-                    sub={section.avocat_validation_status === 'pending' ? 'en attente' : section.status}
-                    hasChildren={section.annexes?.length > 0}
-                    expanded={openSection === section.id}
-                    onClick={section.annexes?.length > 0 ? () => setOpenSection(v => v === section.id ? null : section.id) : undefined}
-                    iconColor={section.avocat_validation_status === 'pending' ? 'rgb(241 124 124)' : undefined}
-                  />
-                  {openSection === section.id && (
-                    <div>
-                      {section.annexes.map(a => (
-                        <TreeRow
-                          key={a.id}
-                          depth={4}
-                          icon={Paperclip}
-                          label={a.file_name}
-                          sub={a.size_bytes ? `${Math.round(a.size_bytes / 1024)} Ko` : null}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <TreeRow
+                  key={section.id}
+                  depth={3}
+                  icon={FileText}
+                  label={`Section ${section.section_number} — ${section.section_title}`}
+                  sub={section.avocat_validation_status === 'pending' ? 'en attente' : section.status}
+                  iconColor={section.avocat_validation_status === 'pending' ? 'rgb(241 124 124)' : undefined}
+                />
+              ))
+            )}
+          </div>
+        )}
+
+        {/* Annexes — au niveau du document entier, énumérées dans l'ordre d'ajout */}
+        <TreeRow
+          depth={2}
+          icon={openAnnexes ? FolderOpen : Folder}
+          label="Annexes"
+          hasChildren
+          expanded={openAnnexes}
+          onClick={() => setOpenAnnexes(v => !v)}
+        />
+        {openAnnexes && (
+          <div>
+            {dipLoading ? (
+              <div className="py-3" style={{ paddingLeft: 90 }}><LoadingSpinner size="sm" /></div>
+            ) : annexes.length === 0 ? (
+              <p className="font-dm-sans text-xs py-2" style={{ paddingLeft: 90, color: 'rgb(var(--text-muted))' }}>Aucune annexe</p>
+            ) : (
+              annexes.map((a, i) => (
+                <TreeRow
+                  key={a.id}
+                  depth={3}
+                  icon={Paperclip}
+                  label={`Annexe ${i + 1} — ${a.file_name}`}
+                  sub={a.size_bytes ? `${Math.round(a.size_bytes / 1024)} Ko` : null}
+                />
               ))
             )}
           </div>

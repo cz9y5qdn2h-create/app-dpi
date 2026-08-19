@@ -9,6 +9,36 @@ Voir aussi : [INVARIANTS.md](INVARIANTS.md) · [BUG_JOURNAL.md](BUG_JOURNAL.md) 
 
 ---
 
+## 2026-08-17 (7)
+
+### 🟢 Annexes au niveau du document (plus par section)
+Migration 048 : `position` ajouté à `dip_section_annexes`, contrainte CHECK
+remplacée pour exiger `dip_id` ou `contract_id` (recherche dynamique des noms
+de contraintes anonymes — pas de nom deviné). Routes remplacées :
+`POST/GET /avocat/dip/:dipId/annexes` et `/avocat/contract/:contractId/annexes`.
+`DIPAvocatPage.jsx` : la zone d'annexes n'apparaît plus par trame mais une
+seule fois, à la fin du document (« Annexe 1 », « Annexe 2 »... dans l'ordre
+d'ajout) — conforme à la structure d'un acte juridique réel.
+`AvocatFilesPage.jsx` : dossier « Annexes » désormais au même niveau que
+« DIP » et « Certificats », plus imbriqué par section.
+Voir INVARIANTS.md §4bis.
+
+### 🟢 « Envoyer au client » — document + email en un geste
+Nouvelles routes `POST /avocat/dip/:dipId/send-to-client` et
+`/avocat/contract/:contractId/send-to-client` : génèrent le PDF à jour et
+l'envoient en pièce jointe réelle via Resend (pas un `mailto:`, qui ne peut
+pas joindre de fichier) à un destinataire **entièrement choisi par
+l'avocat** — client franchiseur, candidat-franchisé ou toute autre adresse.
+Objet et message ont des valeurs par défaut sensées, modifiables.
+Génération PDF extraite de `export.js`/`contracts.js` vers
+`backend/src/config/documentPdf.js`, réutilisée par les routes d'export
+existantes (comportement inchangé, vérifié par génération réelle de PDF)
+pour ne pas maintenir deux versions divergentes du même document.
+Bouton "Envoyer au client" à côté d'"Export PDF" dans `DIPAvocatPage.jsx`.
+`backend/src/config/documentPdf.js`, `backend/src/routes/{avocat,export,contracts}.js`, `frontend/src/pages/DIPAvocatPage.jsx`
+
+---
+
 ## 2026-08-17 (6)
 
 ### 🟢 Landing page repensée pour un acheteur avocat

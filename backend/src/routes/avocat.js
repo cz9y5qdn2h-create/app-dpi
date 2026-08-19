@@ -7,8 +7,25 @@ const { authMiddleware } = require('../middleware/auth');
 const { createCertificate } = require('./certificates');
 const { computeLiveCompliance } = require('./compliance');
 const { answerComplianceQuestion } = require('../config/claude');
+const { buildDipDocumentPdf, buildContractPdf, pdfDocToBuffer } = require('../config/documentPdf');
 const errMsg = require('../config/errorMessage');
 const router = express.Router();
+
+const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{2,}$/;
+const escapeHtml = (str) => String(str)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+// Envoi du document fini à un destinataire choisi par l'avocat — distinct du
+// rate-limit global, un envoi joint un PDF généré à la volée (coûteux) et
+// part vers une adresse externe.
+const sendDocLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Trop d'envois. Réessayez dans une heure." },
+});
 
 // Appel IA coûteux (Opus + thinking) — limite dédiée distincte du rate-limit
 // global, sur le modèle de agentLimiter côté serveur.
@@ -177,19 +194,12 @@ router.get('/franchiseur/:franchiseurId/dip', authMiddleware, requireAvocat, asy
       .order('created_at', { ascending: false });
     proposals = data || [];
 
-    // Annexes de toutes les sections en un aller — alimente l'explorateur de
-    // fichiers sans un appel par section.
-    const sectionIds = (dip.dip_sections || []).map(s => s.id);
-    if (sectionIds.length) {
-      const { data: annexes } = await supabaseAdmin
-        .from('dip_section_annexes').select('id, section_id, file_name, size_bytes, created_at')
-        .in('section_id', sectionIds);
-      const annexesBySection = {};
-      (annexes || []).forEach(a => {
-        (annexesBySection[a.section_id] ||= []).push(a);
-      });
-      dip.dip_sections = (dip.dip_sections || []).map(s => ({ ...s, annexes: annexesBySection[s.id] || [] }));
-    }
+    // Annexes du DIP entier — énumérées à la fin du document, dans l'ordre
+    // d'ajout (migration 048 : plus de rattachement par section).
+    const { data: annexes } = await supabaseAdmin
+      .from('dip_section_annexes').select('id, file_name, size_bytes, position, created_at')
+      .eq('dip_id', dip.id).order('position', { ascending: true });
+    dip.annexes = annexes || [];
   }
 
   res.json({ dip, franchiseur, proposals });
@@ -913,82 +923,86 @@ router.get('/pending-validations', authMiddleware, requireAvocat, async (req, re
   });
 });
 
-// POST /api/avocat/sections/:sectionId/annexes
-router.post('/sections/:sectionId/annexes', authMiddleware, async (req, res) => {
-  const { dip_id, file_name, storage_path, size_bytes } = req.body;
-  if (!dip_id || !file_name || !storage_path) {
-    return res.status(400).json({ error: 'dip_id, file_name et storage_path requis' });
+// POST /api/avocat/dip/:dipId/annexes — annexe rattachée au DIP entier
+// (comme sur un acte juridique : énumérées à la fin, dans l'ordre d'ajout —
+// jamais éparpillées section par section, cf. migration 048).
+router.post('/dip/:dipId/annexes', authMiddleware, async (req, res) => {
+  const { file_name, storage_path, size_bytes } = req.body;
+  if (!file_name || !storage_path) {
+    return res.status(400).json({ error: 'file_name et storage_path requis' });
   }
-  const ownerId = await resolveDipOwner(dip_id, req.user.id);
+  const ownerId = await resolveDipOwner(req.params.dipId, req.user.id);
   if (!ownerId) return res.status(403).json({ error: 'Accès refusé' });
   if (!storage_path.startsWith(`${ownerId}/`)) return res.status(403).json({ error: 'Chemin de stockage invalide' });
+
+  const { count } = await supabaseAdmin
+    .from('dip_section_annexes').select('id', { count: 'exact', head: true }).eq('dip_id', req.params.dipId);
 
   const { data: signedUrlData } = await supabaseAdmin.storage.from(ANNEX_BUCKET).createSignedUrl(storage_path, 3600);
   const { data: inserted, error } = await supabaseAdmin
     .from('dip_section_annexes')
     .insert({
-      section_id: req.params.sectionId,
-      dip_id,
+      dip_id: req.params.dipId,
       uploaded_by: req.user.id,
       file_name: file_name.substring(0, 255),
       storage_path,
       file_url: signedUrlData?.signedUrl || null,
       size_bytes: size_bytes || null,
+      position: (count || 0) + 1,
     })
     .select().single();
   if (error) return res.status(500).json({ error: error.message });
   res.status(201).json({ annexe: inserted });
 });
 
-// GET /api/avocat/sections/:sectionId/annexes
-router.get('/sections/:sectionId/annexes', authMiddleware, async (req, res) => {
-  const { data: section } = await supabaseAdmin.from('dip_sections').select('dip_id').eq('id', req.params.sectionId).maybeSingle();
-  if (!section) return res.status(404).json({ error: 'Section introuvable' });
-  const ownerId = await resolveDipOwner(section.dip_id, req.user.id);
+// GET /api/avocat/dip/:dipId/annexes
+router.get('/dip/:dipId/annexes', authMiddleware, async (req, res) => {
+  const ownerId = await resolveDipOwner(req.params.dipId, req.user.id);
   if (!ownerId) return res.status(403).json({ error: 'Accès refusé' });
 
   const { data, error } = await supabaseAdmin
-    .from('dip_section_annexes').select('*').eq('section_id', req.params.sectionId).order('created_at', { ascending: false });
+    .from('dip_section_annexes').select('*').eq('dip_id', req.params.dipId).order('position', { ascending: true });
   if (error) return res.status(500).json({ error: error.message });
   res.json({ annexes: data || [] });
 });
 
-// POST /api/avocat/clauses/:clauseId/annexes
-router.post('/clauses/:clauseId/annexes', authMiddleware, async (req, res) => {
-  const { contract_id, file_name, storage_path, size_bytes } = req.body;
-  if (!contract_id || !file_name || !storage_path) {
-    return res.status(400).json({ error: 'contract_id, file_name et storage_path requis' });
+// POST /api/avocat/contract/:contractId/annexes — annexe rattachée au contrat entier
+router.post('/contract/:contractId/annexes', authMiddleware, async (req, res) => {
+  const { file_name, storage_path, size_bytes } = req.body;
+  if (!file_name || !storage_path) {
+    return res.status(400).json({ error: 'file_name et storage_path requis' });
   }
-  const ownerId = await resolveContractOwner(contract_id, req.user.id);
+  const ownerId = await resolveContractOwner(req.params.contractId, req.user.id);
   if (!ownerId) return res.status(403).json({ error: 'Accès refusé' });
   if (!storage_path.startsWith(`${ownerId}/`)) return res.status(403).json({ error: 'Chemin de stockage invalide' });
+
+  const { count } = await supabaseAdmin
+    .from('dip_section_annexes').select('id', { count: 'exact', head: true }).eq('contract_id', req.params.contractId);
 
   const { data: signedUrlData } = await supabaseAdmin.storage.from(ANNEX_BUCKET).createSignedUrl(storage_path, 3600);
   const { data: inserted, error } = await supabaseAdmin
     .from('dip_section_annexes')
     .insert({
-      clause_id: req.params.clauseId,
-      contract_id,
+      contract_id: req.params.contractId,
       uploaded_by: req.user.id,
       file_name: file_name.substring(0, 255),
       storage_path,
       file_url: signedUrlData?.signedUrl || null,
       size_bytes: size_bytes || null,
+      position: (count || 0) + 1,
     })
     .select().single();
   if (error) return res.status(500).json({ error: error.message });
   res.status(201).json({ annexe: inserted });
 });
 
-// GET /api/avocat/clauses/:clauseId/annexes
-router.get('/clauses/:clauseId/annexes', authMiddleware, async (req, res) => {
-  const { data: clause } = await supabaseAdmin.from('contract_clauses').select('contract_id').eq('id', req.params.clauseId).maybeSingle();
-  if (!clause) return res.status(404).json({ error: 'Clause introuvable' });
-  const ownerId = await resolveContractOwner(clause.contract_id, req.user.id);
+// GET /api/avocat/contract/:contractId/annexes
+router.get('/contract/:contractId/annexes', authMiddleware, async (req, res) => {
+  const ownerId = await resolveContractOwner(req.params.contractId, req.user.id);
   if (!ownerId) return res.status(403).json({ error: 'Accès refusé' });
 
   const { data, error } = await supabaseAdmin
-    .from('dip_section_annexes').select('*').eq('clause_id', req.params.clauseId).order('created_at', { ascending: false });
+    .from('dip_section_annexes').select('*').eq('contract_id', req.params.contractId).order('position', { ascending: true });
   if (error) return res.status(500).json({ error: error.message });
   res.json({ annexes: data || [] });
 });
@@ -1007,6 +1021,125 @@ router.delete('/annexes/:id', authMiddleware, async (req, res) => {
   await supabaseAdmin.storage.from(ANNEX_BUCKET).remove([annexe.storage_path]);
   const { error } = await supabaseAdmin.from('dip_section_annexes').delete().eq('id', req.params.id);
   if (error) return res.status(500).json({ error: error.message });
+  res.json({ success: true });
+});
+
+// POST /api/avocat/dip/:dipId/send-to-client — "Envoyer au client" : génère
+// le PDF du DIP à la volée et le joint à un email. L'avocat choisit
+// librement le destinataire (son client franchiseur, un candidat-franchisé,
+// ou toute autre adresse) — rien n'est présupposé.
+router.post('/dip/:dipId/send-to-client', authMiddleware, requireAvocat, sendDocLimiter, async (req, res) => {
+  const { recipient_email, recipient_name, subject, message } = req.body;
+  if (!recipient_email?.trim()) return res.status(400).json({ error: 'Email destinataire requis' });
+  const cleanEmail = recipient_email.trim().toLowerCase();
+  if (!EMAIL_RE.test(cleanEmail)) return res.status(400).json({ error: 'Format d\'email invalide' });
+
+  const ownerId = await resolveDipOwner(req.params.dipId, req.user.id);
+  if (!ownerId) return res.status(403).json({ error: 'Accès refusé' });
+
+  const { data: dip } = await supabaseAdmin
+    .from('dip_documents').select('*, dip_sections(*)').eq('id', req.params.dipId).maybeSingle();
+  if (!dip) return res.status(404).json({ error: 'DIP introuvable' });
+
+  const { data: franchiseurUser } = await supabaseAdmin
+    .from('users').select('company_name, siret').eq('id', ownerId).maybeSingle();
+
+  const key = process.env.RESEND_API_KEY;
+  if (!key) return res.status(503).json({ error: 'Envoi indisponible pour le moment.' });
+
+  let pdfBuffer;
+  try {
+    pdfBuffer = await pdfDocToBuffer(buildDipDocumentPdf(dip, franchiseurUser || {}));
+  } catch (err) {
+    console.error('send-to-client PDF error:', err.message);
+    return res.status(500).json({ error: 'Échec de la génération du PDF.' });
+  }
+
+  const cleanSubject = (subject?.trim() || `Document d'Information Précontractuelle — ${franchiseurUser?.company_name || ''}`).substring(0, 200);
+  const cleanMessage = (message?.trim() || `Bonjour${recipient_name ? ' ' + recipient_name.trim() : ''},\n\nVeuillez trouver ci-joint le Document d'Information Précontractuelle.\n\nCordialement,`).substring(0, 4000);
+  const safeFileName = (franchiseurUser?.company_name || 'DIP').replace(/[^a-z0-9]/gi, '_').substring(0, 40);
+
+  try {
+    const resendRes = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: process.env.RESEND_FROM_EMAIL || 'DIPpro <contact@dippro.business>',
+        to: [cleanEmail],
+        reply_to: req.user.email,
+        subject: cleanSubject,
+        html: `<p>${escapeHtml(cleanMessage).replace(/\n/g, '<br/>')}</p>`,
+        attachments: [{ filename: `DIP-${safeFileName}.pdf`, content: pdfBuffer.toString('base64') }],
+      }),
+    });
+    if (!resendRes.ok) {
+      const errBody = await resendRes.text().catch(() => '');
+      console.error('send-to-client Resend error:', resendRes.status, errBody);
+      return res.status(502).json({ error: "Échec de l'envoi." });
+    }
+  } catch (err) {
+    console.error('send-to-client Resend error:', err.message);
+    return res.status(502).json({ error: "Échec de l'envoi." });
+  }
+
+  res.json({ success: true });
+});
+
+// POST /api/avocat/contract/:contractId/send-to-client — équivalent pour un contrat.
+router.post('/contract/:contractId/send-to-client', authMiddleware, requireAvocat, sendDocLimiter, async (req, res) => {
+  const { recipient_email, recipient_name, subject, message } = req.body;
+  if (!recipient_email?.trim()) return res.status(400).json({ error: 'Email destinataire requis' });
+  const cleanEmail = recipient_email.trim().toLowerCase();
+  if (!EMAIL_RE.test(cleanEmail)) return res.status(400).json({ error: 'Format d\'email invalide' });
+
+  const ownerId = await resolveContractOwner(req.params.contractId, req.user.id);
+  if (!ownerId) return res.status(403).json({ error: 'Accès refusé' });
+
+  const { data: contract } = await supabaseAdmin
+    .from('franchise_contracts').select('*, contract_clauses(*)').eq('id', req.params.contractId).maybeSingle();
+  if (!contract) return res.status(404).json({ error: 'Contrat introuvable' });
+
+  const { data: franchiseurUser } = await supabaseAdmin
+    .from('users').select('company_name, siret').eq('id', ownerId).maybeSingle();
+
+  const key = process.env.RESEND_API_KEY;
+  if (!key) return res.status(503).json({ error: 'Envoi indisponible pour le moment.' });
+
+  let pdfBuffer;
+  try {
+    pdfBuffer = await pdfDocToBuffer(buildContractPdf(contract, franchiseurUser || {}));
+  } catch (err) {
+    console.error('send-to-client PDF error:', err.message);
+    return res.status(500).json({ error: 'Échec de la génération du PDF.' });
+  }
+
+  const cleanSubject = (subject?.trim() || `Contrat de franchise — ${franchiseurUser?.company_name || ''}`).substring(0, 200);
+  const cleanMessage = (message?.trim() || `Bonjour${recipient_name ? ' ' + recipient_name.trim() : ''},\n\nVeuillez trouver ci-joint le contrat de franchise.\n\nCordialement,`).substring(0, 4000);
+  const safeFileName = (franchiseurUser?.company_name || 'contrat').replace(/[^a-z0-9]/gi, '_').substring(0, 40);
+
+  try {
+    const resendRes = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        from: process.env.RESEND_FROM_EMAIL || 'DIPpro <contact@dippro.business>',
+        to: [cleanEmail],
+        reply_to: req.user.email,
+        subject: cleanSubject,
+        html: `<p>${escapeHtml(cleanMessage).replace(/\n/g, '<br/>')}</p>`,
+        attachments: [{ filename: `Contrat-franchise-${safeFileName}.pdf`, content: pdfBuffer.toString('base64') }],
+      }),
+    });
+    if (!resendRes.ok) {
+      const errBody = await resendRes.text().catch(() => '');
+      console.error('send-to-client Resend error:', resendRes.status, errBody);
+      return res.status(502).json({ error: "Échec de l'envoi." });
+    }
+  } catch (err) {
+    console.error('send-to-client Resend error:', err.message);
+    return res.status(502).json({ error: "Échec de l'envoi." });
+  }
+
   res.json({ success: true });
 });
 
