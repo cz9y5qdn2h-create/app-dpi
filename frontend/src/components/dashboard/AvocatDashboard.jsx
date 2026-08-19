@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../lib/api';
 import LoadingSpinner from '../ui/LoadingSpinner';
-import { Building2, FileText, Clock, AlertCircle, ChevronRight, ShieldCheck, Flag, Gauge, Zap, Mail, Bell } from 'lucide-react';
+import { Building2, FileText, Clock, AlertCircle, ChevronRight, ShieldCheck, Flag, Gauge, Zap, Mail, Bell, UserPlus, Send } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import toast from 'react-hot-toast';
@@ -52,6 +52,15 @@ export default function AvocatDashboard() {
       toast.success('Automatisation mise à jour');
     },
     onError: (err) => toast.error(err.response?.data?.error || 'Échec de la mise à jour'),
+  });
+
+  const inviteMutation = useMutation({
+    mutationFn: ({ email, companyName }) => api.post('/avocat/invite-franchiseur', { franchiseur_email: email, company_name: companyName }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['avocat', 'dashboard'] });
+      toast.success('Invitation envoyée');
+    },
+    onError: (err) => toast.error(err.response?.data?.error || 'Échec de l\'invitation'),
   });
 
   const franchiseurs = data?.franchiseurs || [];
@@ -133,6 +142,9 @@ export default function AvocatDashboard() {
         {/* Automatisation — analyse programmée de tous les clients */}
         <AutomationCard settings={settings} digests={digests} onSave={(f, c) => automationMutation.mutate({ frequency: f, channel: c })} saving={automationMutation.isPending} />
 
+        {/* Inviter un client franchiseur */}
+        <InviteFranchiseurCard onInvite={(email, companyName) => inviteMutation.mutate({ email, companyName })} loading={inviteMutation.isPending} />
+
         {/* Invitations en attente */}
         {pending.length > 0 && (
           <div className="card-v2">
@@ -165,11 +177,8 @@ export default function AvocatDashboard() {
               <Building2 className="w-8 h-8" style={{ color: 'var(--v2-gold)' }} />
             </div>
             <p className="display-v2 mb-3" style={{ fontSize: 26 }}>Aucun réseau suivi</p>
-            <p className="font-dm-sans text-sm mb-8 max-w-sm mx-auto" style={{ color: 'rgb(var(--text-secondary))' }}>
-              Vos clients franchiseurs doivent vous inviter depuis leurs paramètres ou vous pouvez leur envoyer votre profil.
-            </p>
-            <p className="font-dm-mono text-xs" style={{ color: 'rgb(var(--text-muted))' }}>
-              Partagez votre email ({profile?.email}) à vos clients pour qu'ils vous invitent.
+            <p className="font-dm-sans text-sm max-w-sm mx-auto" style={{ color: 'rgb(var(--text-secondary))' }}>
+              Invitez votre premier client franchiseur ci-dessus pour créer son espace et commencer le suivi de son DIP.
             </p>
           </div>
         ) : (
@@ -421,6 +430,65 @@ function AutomationCard({ settings, digests, onSave, saving }) {
             Recalcule le score de conformité de chaque client à partir des statuts réels de section — aucun appel IA supplémentaire, donc aucun coût ni écart avec le score affiché sur leur fiche.
           </p>
         </div>
+      )}
+    </div>
+  );
+}
+
+function InviteFranchiseurCard({ onInvite, loading }) {
+  const [expanded, setExpanded] = useState(false);
+  const [email, setEmail] = useState('');
+  const [companyName, setCompanyName] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+    onInvite(email.trim(), companyName.trim());
+    setEmail('');
+    setCompanyName('');
+  };
+
+  return (
+    <div className="card-v2">
+      <button onClick={() => setExpanded(v => !v)} className="w-full flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <UserPlus className="w-4 h-4" style={{ color: 'var(--v2-gold)' }} />
+          <p className="font-dm-sans text-sm" style={{ color: 'rgb(var(--text-primary))' }}>Inviter un client franchiseur</p>
+        </div>
+        <ChevronRight className="w-4 h-4 transition-transform" style={{ color: 'rgb(var(--text-muted))', transform: expanded ? 'rotate(90deg)' : 'none' }} />
+      </button>
+
+      {expanded && (
+        <form onSubmit={handleSubmit} className="mt-4 pt-4 space-y-3" style={{ borderTop: '1px solid var(--v2-border)' }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <input
+              type="email" required autoFocus value={email} onChange={e => setEmail(e.target.value)}
+              placeholder="client@franchise.fr"
+              className="font-dm-sans text-sm px-3 py-2 rounded-lg outline-none"
+              style={{ background: 'var(--v2-surface)', border: '1px solid var(--v2-border)', color: 'rgb(var(--text-primary))' }}
+            />
+            <input
+              type="text" value={companyName} onChange={e => setCompanyName(e.target.value)}
+              placeholder="Nom du réseau (optionnel)"
+              className="font-dm-sans text-sm px-3 py-2 rounded-lg outline-none"
+              style={{ background: 'var(--v2-surface)', border: '1px solid var(--v2-border)', color: 'rgb(var(--text-primary))' }}
+            />
+          </div>
+          <button
+            type="submit" disabled={loading || !email.trim()}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg font-dm-sans text-sm transition-colors"
+            style={{
+              background: !email.trim() ? 'var(--v2-surface)' : 'var(--v2-gold)',
+              color: !email.trim() ? 'rgb(var(--text-muted))' : 'rgb(var(--bg-primary))',
+              cursor: !email.trim() ? 'not-allowed' : 'pointer',
+            }}
+          >
+            <Send className="w-3.5 h-3.5" /> {loading ? 'Envoi…' : 'Envoyer l\'invitation'}
+          </button>
+          <p className="font-dm-sans text-xs" style={{ color: 'rgb(var(--text-muted))' }}>
+            Un espace est créé pour votre client, sans mot de passe à définir — il accède directement via le lien reçu par email.
+          </p>
+        </form>
       )}
     </div>
   );

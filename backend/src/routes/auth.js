@@ -241,6 +241,34 @@ router.get('/avocat-login/:token', async (req, res) => {
   res.redirect(303, `${appUrl}/avocat/session?${params.toString()}`);
 });
 
+// GET /api/auth/franchiseur-login/:token — miroir exact de /avocat-login pour
+// un compte franchiseur invité par son avocat (sens inverse du pivot
+// avocat-payeur). Même mécanique : token permanent, magiclink régénéré à
+// chaque visite, échange fait par AvocatSessionPage (role-agnostique).
+router.get('/franchiseur-login/:token', async (req, res) => {
+  const appUrl = getAppUrl();
+  const { data: user } = await supabaseAdmin
+    .from('users').select('id, email, role').eq('franchiseur_access_token', req.params.token).maybeSingle();
+
+  if (!user || user.role !== 'franchiseur') {
+    return res.redirect(303, `${appUrl}/login?error=lien_invalide`);
+  }
+
+  const { data, error } = await supabaseAdmin.auth.admin.generateLink({
+    type: 'magiclink',
+    email: user.email,
+  });
+
+  const hashedToken = data?.properties?.hashed_token;
+  if (error || !hashedToken) {
+    console.error('franchiseur-login generateLink error:', error?.message);
+    return res.redirect(303, `${appUrl}/login?error=lien_indisponible`);
+  }
+
+  const params = new URLSearchParams({ token_hash: hashedToken });
+  res.redirect(303, `${appUrl}/avocat/session?${params.toString()}`);
+});
+
 // POST /api/auth/provision-oauth — créer/mettre à jour le profil après OAuth Google/Apple
 // Appelé par le frontend après un sign-in OAuth réussi
 router.post('/provision-oauth', authMiddleware, async (req, res) => {

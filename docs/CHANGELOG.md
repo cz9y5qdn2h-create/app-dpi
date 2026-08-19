@@ -9,6 +9,27 @@ Voir aussi : [INVARIANTS.md](INVARIANTS.md) · [BUG_JOURNAL.md](BUG_JOURNAL.md) 
 
 ---
 
+## 2026-08-17 (5)
+
+### 🟢 L'avocat invite ses clients franchiseurs (inversion du sens d'inscription)
+Migration 047 : `franchiseur_access_token` sur `users`, miroir exact de
+`avocat_access_token` (038). Nouvelle route `POST /avocat/invite-franchiseur`
+et `GET /auth/franchiseur-login/:token`, copies conformes de
+`POST /avocat/invite` / `GET /auth/avocat-login/:token` avec les rôles
+inversés — accès sans mot de passe, magiclink régénéré à chaque visite via
+`AvocatSessionPage` (déjà générique, réutilisée telle quelle).
+Carte « Inviter un client franchiseur » dans le dashboard avocat.
+`RegisterPage.jsx` : l'écran de sélection de profil est retiré — l'inscription
+publique va désormais directement au formulaire avocat (`?role=franchiseur`
+reste accepté pour un lien d'invitation existant, mais n'est plus un point
+d'entrée public). Panneau gauche (accroche, bénéfices) adapté au profil avocat.
+*Volontairement conservé sans modification* : `POST /avocat/invite`
+(franchiseur invite son avocat) reste fonctionnel pour les comptes existants —
+aucun retrait de fonctionnalité, seulement plus mis en avant.
+`supabase/migrations/047_franchiseur_invite.sql`, `backend/src/routes/{avocat,auth}.js`, `frontend/src/pages/RegisterPage.jsx`, `frontend/src/components/dashboard/AvocatDashboard.jsx`
+
+---
+
 ## 2026-08-17 (4)
 
 ### 🟢 Analyse programmée avocat (compte-rendu automatique)

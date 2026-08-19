@@ -634,6 +634,113 @@ router.post('/invite', authMiddleware, inviteLimiter, async (req, res) => {
   res.json({ success: true, message: 'Invitation envoyée', url: joinUrl });
 });
 
+// POST /api/avocat/invite-franchiseur — l'avocat invite un client franchiseur.
+// Miroir exact de POST /invite (rôles inversés) : c'est désormais l'avocat,
+// client payeur, qui provisionne et lie le compte franchiseur — sans mot de
+// passe, accès uniquement par le lien reçu. Le franchiseur n'a rien à faire
+// d'autre que cliquer le lien.
+router.post('/invite-franchiseur', authMiddleware, requireAvocat, inviteLimiter, async (req, res) => {
+  const { franchiseur_email, company_name } = req.body;
+  if (!franchiseur_email?.trim()) return res.status(400).json({ error: 'Email requis' });
+
+  const email = franchiseur_email.trim().toLowerCase();
+  const appUrl = getAppUrl();
+
+  const { data: avocat } = await supabaseAdmin
+    .from('users').select('id, company_name, email').eq('id', req.user.id).single();
+
+  const { data: existing } = await supabaseAdmin
+    .from('users').select('id, role, franchiseur_access_token').eq('email', email).maybeSingle();
+  if (existing && existing.role !== 'franchiseur') {
+    return res.status(409).json({ error: 'Un compte existe déjà avec cet email sous un autre rôle.' });
+  }
+
+  let franchiseurId = existing?.id;
+  if (!franchiseurId) {
+    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email, email_confirm: true,
+    });
+    if (authError) return res.status(400).json({ error: authError.message });
+    franchiseurId = authData.user.id;
+  }
+
+  const accessToken = existing?.franchiseur_access_token || uuidv4();
+  const upsertPayload = {
+    id: franchiseurId, email, role: 'franchiseur', franchiseur_access_token: accessToken,
+  };
+  if (!existing) {
+    upsertPayload.company_name = (company_name || email.split('@')[0]).trim().substring(0, 200);
+    upsertPayload.created_at = new Date().toISOString();
+    upsertPayload.lawyer_email = avocat?.email || null;
+  }
+  const { error: profileError } = await supabaseAdmin
+    .from('users').upsert(upsertPayload, { onConflict: 'id' });
+  if (profileError) return res.status(500).json({ error: profileError.message });
+
+  const now = new Date().toISOString();
+  const { data: relExisting } = await supabaseAdmin
+    .from('avocat_franchiseurs').select('id, status')
+    .eq('avocat_id', req.user.id).eq('franchiseur_id', franchiseurId).maybeSingle();
+  if (relExisting) {
+    if (relExisting.status !== 'active') {
+      await supabaseAdmin.from('avocat_franchiseurs')
+        .update({ status: 'active', accepted_at: now }).eq('id', relExisting.id);
+    }
+  } else {
+    await supabaseAdmin.from('avocat_franchiseurs').insert({
+      avocat_id: req.user.id, franchiseur_id: franchiseurId, status: 'active', invited_at: now, accepted_at: now,
+    });
+  }
+
+  const joinUrl = `${appUrl}/api/auth/franchiseur-login/${accessToken}`;
+
+  const brevoKey = process.env.BREVO_API_KEY;
+  const avocatName = avocat?.company_name || 'Votre avocat';
+
+  if (brevoKey) {
+    try {
+      await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'accept': 'application/json',
+          'api-key': brevoKey,
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          sender: { name: 'DIPpro', email: 'noreply@dippro.business' },
+          to: [{ email }],
+          subject: `${avocatName} vous invite à gérer votre DIP sur DIPpro`,
+          htmlContent: `
+<div style="font-family:'DM Sans',Arial,sans-serif;max-width:540px;margin:auto;color:#1A1826">
+  <div style="background:linear-gradient(135deg,#C8A96E,#A8893E);border-radius:12px 12px 0 0;padding:24px 32px">
+    <p style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:26px;color:#fff;font-weight:600">DIPpro</p>
+    <p style="margin:6px 0 0;font-size:12px;color:rgba(255,255,255,0.75);font-family:monospace">by Iralink Agency</p>
+  </div>
+  <div style="background:#fff;border-radius:0 0 12px 12px;padding:32px;border:1px solid #f0ece4;border-top:none">
+    <p style="margin:0 0 16px;font-size:15px">Bonjour,</p>
+    <p style="margin:0 0 16px;font-size:15px"><strong>${avocatName}</strong> vous a créé un espace sur <strong>DIPpro</strong> pour gérer la conformité de votre Document d'Information Précontractuelle (DIP).</p>
+    <p style="margin:0 0 16px;font-size:14px;color:#475569">En cliquant sur le lien ci-dessous, vous pourrez :</p>
+    <ul style="margin:0 0 24px;padding-left:20px;color:#475569;font-size:14px;line-height:2">
+      <li>Importer ou générer votre DIP</li>
+      <li>Voir en direct ce qui est conforme, à vérifier ou non conforme</li>
+      <li>Éditer vos sections — votre avocat en est notifié et confirme la conformité</li>
+    </ul>
+    <a href="${joinUrl}" style="display:inline-block;background:linear-gradient(135deg,#C8A96E,#A8893E);color:#1A1826;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px">Accéder à mon espace →</a>
+    <p style="margin:24px 0 0;font-size:12px;color:#94A3B8">Aucun mot de passe à créer — ce lien vous connecte directement à votre dossier. Conservez-le, il reste valable à chaque utilisation.</p>
+    <hr style="border:none;border-top:1px solid #f0ece4;margin:24px 0">
+    <p style="margin:0;font-size:11px;color:#94A3B8">DIPpro — Gestion des DIP franchise · Loi Doubin · <a href="${appUrl}/cgu" style="color:#C8A96E">CGU</a></p>
+  </div>
+</div>`,
+        }),
+      });
+    } catch {
+      // Non-bloquant : l'invite est sauvegardée même si l'email échoue
+    }
+  }
+
+  res.json({ success: true, message: 'Invitation envoyée', url: joinUrl });
+});
+
 // ─── Annexes de section DIP / clause de contrat ───────────────────────────
 // Bucket privé 'dip-annexes' (créé par la migration 037) — chemin toujours
 // préfixé par l'id du franchiseur PROPRIÉTAIRE (jamais l'auteur de

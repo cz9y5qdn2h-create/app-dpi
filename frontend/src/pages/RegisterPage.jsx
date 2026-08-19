@@ -16,10 +16,12 @@ export default function RegisterPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  // null = sélection profil, 'franchiseur' | 'avocat' = profil choisi
-  // pré-rempli si on arrive via un lien d'invitation avocat (?role=avocat)
+  // DIPpro se vend désormais aux avocats — un compte franchiseur ne se crée
+  // plus en libre-service, uniquement par invitation de son avocat (espace
+  // avocat > "Inviter un client franchiseur", sans mot de passe à définir).
+  // ?role=franchiseur reste accepté pour un lien d'invitation existant.
   const [selectedRole, setSelectedRole] = useState(
-    searchParams.get('role') === 'avocat' ? 'avocat' : null
+    searchParams.get('role') === 'franchiseur' ? 'franchiseur' : 'avocat'
   );
   const [step, setStep] = useState(0);
   const [form, setForm] = useState({
@@ -89,67 +91,11 @@ export default function RegisterPage() {
     navigate('/dashboard');
   };
 
-  // Écran de sélection de profil
-  if (!selectedRole) {
-    return (
-      <>
-        <SEOHead title="Créer un compte" description="Créez votre compte DIPpro." canonical="/register" />
-        <div className="min-h-screen flex items-center justify-center p-6" style={{
-          background: `
-            radial-gradient(ellipse 55% 50% at 15% 70%, rgba(200,169,110,0.20) 0%, transparent 60%),
-            radial-gradient(ellipse 40% 60% at 80% 20%, rgba(180,140,70,0.14) 0%, transparent 55%),
-            linear-gradient(160deg, #0a0805 0%, #0f0d08 25%, #080808 55%, #060606 100%)
-          `
-        }}>
-          <div className="w-full max-w-lg">
-            <div className="flex items-center justify-center gap-3 mb-10">
-              <div className="lg-avatar">
-                <Shield className="w-4 h-4" style={{ color: '#C8A96E' }} />
-              </div>
-              <p className="font-cormorant text-2xl" style={{ color: '#F4F2EE' }}>DIPpro</p>
-            </div>
-
-            <div className="text-center mb-8">
-              <h1 className="font-cormorant text-4xl mb-2" style={{ color: '#F4F2EE', fontWeight: 300 }}>
-                Quel est votre profil ?
-              </h1>
-              <p className="font-dm-sans text-sm" style={{ color: 'rgba(244,242,238,0.44)' }}>
-                Votre espace sera adapté à vos besoins
-              </p>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-4">
-              <ProfileCard
-                icon={Building2}
-                title="Franchiseur"
-                desc="Je gère mon réseau et dois tenir mon DIP conforme à la Loi Doubin."
-                features={['Analyse IA de votre DIP', 'Partage aux candidats', 'Alertes de renouvellement']}
-                onClick={() => setSelectedRole('franchiseur')}
-              />
-              <ProfileCard
-                icon={Scale}
-                title="Avocat"
-                desc="J'accompagne des franchiseurs et veux centraliser leurs DIP."
-                features={['Vue multi-réseaux', 'Annotations et édition', 'Suivi des validations']}
-                onClick={() => setSelectedRole('avocat')}
-              />
-            </div>
-
-            <p className="font-dm-sans text-xs text-center mt-8" style={{ color: 'rgba(244,242,238,0.30)' }}>
-              Déjà un compte ?{' '}
-              <Link to="/login" style={{ color: '#C8A96E' }}>Se connecter</Link>
-            </p>
-          </div>
-        </div>
-      </>
-    );
-  }
-
   return (
     <>
       <SEOHead
         title="Créer un compte"
-        description="Créez votre compte DIPpro et gérez la conformité de votre DIP franchise. Analyse IA Loi Doubin, attestation PDF certifiée SHA-256. Pour franchiseurs français."
+        description="Créez votre compte avocat DIPpro et centralisez la conformité DIP de tous vos clients franchiseurs. Analyse Loi Doubin, attestations horodatées SHA-256."
         canonical="/register"
       />
       <div className="min-h-screen flex" style={{
@@ -189,10 +135,13 @@ export default function RegisterPage() {
                 </p>
               </div>
               <p className="font-cormorant text-4xl leading-snug mb-4" style={{ color: '#F4F2EE', fontWeight: 300 }}>
-                {t('auth.register.tagline')}
+                {selectedRole === 'avocat' ? 'Tous vos clients franchiseurs, une seule vue de conformité.' : t('auth.register.tagline')}
               </p>
             </div>
-            {t('auth.register.benefits', { returnObjects: true }).map((item, i) => (
+            {(selectedRole === 'avocat'
+              ? ['Score de conformité en direct par client', 'Vous confirmez chaque modification du franchiseur', 'Compte-rendu automatique par email']
+              : t('auth.register.benefits', { returnObjects: true })
+            ).map((item, i) => (
               <div key={i} className="flex items-center gap-3">
                 <CheckCircle className="w-4 h-4 flex-shrink-0" style={{ color: '#34D399' }} />
                 <span className="font-dm-sans text-sm" style={{ color: 'rgba(244,242,238,0.60)' }}>{item}</span>
@@ -218,15 +167,11 @@ export default function RegisterPage() {
             </div>
 
             <div className="mb-7">
-              <div className="flex items-center gap-2 mb-1">
-                <button
-                  onClick={() => { setSelectedRole(null); setStep(0); setError(''); }}
-                  className="font-dm-mono text-xs"
-                  style={{ color: 'rgba(244,242,238,0.35)', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
-                >
-                  ← Changer de profil
-                </button>
-              </div>
+              {selectedRole === 'avocat' && (
+                <p className="font-dm-mono text-xs mb-2" style={{ color: 'rgba(244,242,238,0.35)' }}>
+                  Vous êtes franchiseur ? Demandez à votre avocat de vous inviter depuis son espace DIPpro.
+                </p>
+              )}
               <h1 className="font-cormorant text-3xl mb-1" style={{ color: '#F4F2EE', fontWeight: 300 }}>
                 {selectedRole === 'avocat' ? 'Compte avocat' : t('auth.register.title')}
               </h1>
@@ -476,39 +421,6 @@ export default function RegisterPage() {
         <OnboardingAvocat profile={onboardingProfile} onComplete={handleOnboardingComplete} />
       )}
     </>
-  );
-}
-
-function ProfileCard({ icon: Icon, title, desc, features, onClick }) {
-  return (
-    <button
-      onClick={onClick}
-      className="flex-1 text-left rounded-2xl p-6 transition-all hover:scale-[1.02] active:scale-[0.98]"
-      style={{
-        background: 'rgba(244,242,238,0.04)',
-        border: '0.5px solid rgba(200,169,110,0.25)',
-        backdropFilter: 'blur(12px)',
-        cursor: 'pointer',
-      }}
-    >
-      <div className="w-10 h-10 rounded-xl flex items-center justify-center mb-4" style={{ background: 'rgba(200,169,110,0.12)', border: '1px solid rgba(200,169,110,0.25)' }}>
-        <Icon className="w-5 h-5" style={{ color: '#C8A96E' }} />
-      </div>
-      <p className="font-cormorant text-xl mb-2" style={{ color: '#F4F2EE', fontWeight: 600 }}>{title}</p>
-      <p className="font-dm-sans text-xs mb-4" style={{ color: 'rgba(244,242,238,0.50)', lineHeight: 1.6 }}>{desc}</p>
-      <div className="space-y-1.5">
-        {features.map(f => (
-          <div key={f} className="flex items-center gap-2">
-            <div className="w-1 h-1 rounded-full" style={{ background: '#C8A96E' }} />
-            <span className="font-dm-sans text-xs" style={{ color: 'rgba(244,242,238,0.45)' }}>{f}</span>
-          </div>
-        ))}
-      </div>
-      <div className="flex items-center gap-1 mt-5" style={{ color: '#C8A96E' }}>
-        <span className="font-dm-sans text-xs font-medium">Choisir ce profil</span>
-        <span style={{ fontSize: 14 }}>→</span>
-      </div>
-    </button>
   );
 }
 
