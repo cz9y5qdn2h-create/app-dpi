@@ -32,4 +32,18 @@ async function resolveScopedUserId(req) {
   return relation?.status === 'active' ? franchiseurId : null;
 }
 
-module.exports = { resolveScopedUserId };
+// Relation avocat active pour un franchiseur donné, avec son validation_mode
+// ('strict' | 'alerte') — utilisé par les routes d'édition directe (dip.js,
+// contracts.js) pour savoir si une modification du franchiseur doit repasser
+// par une confirmation de conformité de son avocat avant d'être certifiée.
+async function getActiveAvocatRelation(franchiseurId) {
+  const { data } = await supabaseAdmin
+    .from('avocat_franchiseurs')
+    .select('avocat_id, validation_mode')
+    .eq('franchiseur_id', franchiseurId)
+    .eq('status', 'active')
+    .maybeSingle();
+  return data || null;
+}
+
+module.exports = { resolveScopedUserId, getActiveAvocatRelation };

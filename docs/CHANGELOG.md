@@ -9,6 +9,23 @@ Voir aussi : [INVARIANTS.md](INVARIANTS.md) · [BUG_JOURNAL.md](BUG_JOURNAL.md) 
 
 ---
 
+## 2026-08-17
+
+### 🟢 Pivot avocat-payeur — validation avocat des éditions franchiseur
+Migration 045 : `avocat_validation_status` sur `dip_sections`/`contract_clauses`
+(`n/a`/`pending`/`validated`/`flagged`) + `avocat_franchiseurs.validation_mode`
+(`strict`/`alerte`, choisi par l'avocat). Toute édition directe du franchiseur
+repasse en `pending` ; en mode strict, `computeLiveCompliance` ne compte plus
+une section « conforme » comme telle tant que l'avocat n'a pas validé. Nouvelles
+routes `PATCH /avocat/sections/:id/validate`, `/avocat/clauses/:id/validate`,
+`GET /avocat/pending-validations`, `PATCH /avocat/franchiseur/:id/validation-mode`.
+Dashboard avocat : score de conformité moyen du portefeuille, liste des
+validations en attente avec actions Valider/Signaler, sélecteur de mode par
+client. Voir INVARIANTS.md §3bis.
+`supabase/migrations/045_avocat_validation_gate.sql`, `backend/src/routes/{dip,contracts,avocat,compliance}.js`, `backend/src/middleware/avocatScope.js`, `frontend/src/components/dashboard/AvocatDashboard.jsx`
+
+---
+
 ## 2026-08-16
 
 ### 🟢 Formulaire de contact public (Resend)

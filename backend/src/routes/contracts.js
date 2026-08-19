@@ -6,6 +6,7 @@ const PDFDocument = require('pdfkit');
 const { v4: uuidv4 } = require('uuid');
 const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware, requireFranchisor } = require('../middleware/auth');
+const { getActiveAvocatRelation } = require('../middleware/avocatScope');
 const { parseContractClauses, compareContractVersions, generateContractFromDIP, generateContractFromDIPStream, correctClause, correctClauseWithAnswers } = require('../config/claude');
 const { triggerCrossImpactAlerts } = require('../utils/crossImpact');
 const { createCertificate } = require('./certificates');
@@ -612,9 +613,20 @@ router.put('/:id/clauses/:clauseId', authMiddleware, requireFranchisor, async (r
     timestamp: new Date().toISOString()
   });
 
+  const contentChanged = existing.content !== content;
+  const avocatRelation = contentChanged ? await getActiveAvocatRelation(req.user.id) : null;
+
   const { data, error } = await supabaseAdmin
     .from('contract_clauses')
-    .update({ content, status, last_updated: new Date().toISOString() })
+    .update({
+      content, status, last_updated: new Date().toISOString(),
+      ...(avocatRelation ? {
+        avocat_validation_status: 'pending',
+        avocat_validated_by: null,
+        avocat_validated_at: null,
+        avocat_validation_comment: null,
+      } : {}),
+    })
     .eq('id', req.params.clauseId)
     .select().single();
 

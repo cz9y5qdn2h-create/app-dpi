@@ -71,6 +71,32 @@ les autres crée une divergence entre ce que l'outil applique et ce qu'il affich
 
 ---
 
+## 3bis. Validation avocat des éditions franchiseur (pivot avocat-payeur)
+
+Le modèle économique s'est inversé : l'avocat est le client payeur et l'autorité
+de conformité, plus le franchiseur. Deux sens de confirmation coexistent :
+
+- **Avocat propose → franchiseur valide** (`dip_section_proposals` /
+  `contract_clause_proposals`, migration 017/030) — inchangé, pour quand
+  l'avocat rédige lui-même une reformulation.
+- **Franchiseur édite → avocat valide** (`avocat_validation_status` sur
+  `dip_sections`/`contract_clauses`, migration 045) — chaque édition directe du
+  franchiseur repasse en `pending` ; configurable par relation
+  (`avocat_franchiseurs.validation_mode`) :
+  - `strict` : le score de conformité live (`computeLiveCompliance`) ne compte
+    plus une section « conforme mais non confirmée » comme conforme tant que
+    l'avocat n'a pas validé.
+  - `alerte` (défaut) : la modification s'applique et compte immédiatement ;
+    l'avocat est simplement notifié via `GET /avocat/pending-validations`.
+- **Toute édition change de contenu remet le statut à `pending`** — un contenu
+  déjà validé qui change à nouveau redevient non confirmé, jamais validé par
+  défaut.
+- C'est l'**avocat** qui choisit le mode par client (`PATCH
+  /avocat/franchiseur/:id/validation-mode`), pas le franchiseur — cohérent
+  avec le contrôle total désormais du côté avocat.
+
+---
+
 ## 4. Certificats — chemins à couvrir
 
 Toute route qui **modifie le contenu** d'un DIP ou d'un contrat doit appeler

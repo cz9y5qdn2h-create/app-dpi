@@ -17,16 +17,24 @@ function computeSignatureDelay(dip_delivered_at, planned_signature_date) {
 // conformity_score) peuvent être nulles (DIP générés par create-from-agent)
 // ou périmées (éditions manuelles postérieures à l'analyse). Même formule
 // que le moteur d'analyse : -20 par non_conforme, -8 par a_verifier.
-function computeLiveCompliance(items) {
-  if (!items?.length) return { compliance_level: null, conformity_score: null, blocking_count: 0, non_conforme: 0, a_verifier: 0, conforme: 0 };
+// strictPending : passé à true quand la relation avocat active du franchiseur
+// est en validation_mode 'strict'. Une section/clause "conforme" mais dont
+// avocat_validation_status vaut 'pending' n'est alors pas encore comptée
+// conforme — l'avocat n'a pas confirmé cette version du contenu.
+function computeLiveCompliance(items, { strictPending = false } = {}) {
+  if (!items?.length) return { compliance_level: null, conformity_score: null, blocking_count: 0, non_conforme: 0, a_verifier: 0, conforme: 0, pending_validation: 0 };
   const nonConforme = items.filter(s => s.status === 'non_conforme').length;
   const aVerifier = items.filter(s => s.status === 'a_verifier').length;
   const blocking = items.filter(s => s.legal_blocking && s.status !== 'conforme').length;
-  const score = Math.max(0, 100 - nonConforme * 20 - aVerifier * 8);
+  const pendingValidation = items.filter(s => s.avocat_validation_status === 'pending').length;
+  const pendingUnconfirmed = strictPending
+    ? items.filter(s => s.avocat_validation_status === 'pending' && s.status === 'conforme').length
+    : 0;
+  const score = Math.max(0, 100 - nonConforme * 20 - aVerifier * 8 - pendingUnconfirmed * 8);
   let level;
   if (blocking > 0) level = 'BLOQUANT_NON_ENVOYABLE';
   else if (nonConforme > 0) level = 'RÉVISIONS_MAJEURES';
-  else if (aVerifier > 0) level = 'RÉVISIONS_MINEURES';
+  else if (aVerifier > 0 || pendingUnconfirmed > 0) level = 'RÉVISIONS_MINEURES';
   else level = 'CONFORME';
   return {
     compliance_level: level,
@@ -34,7 +42,8 @@ function computeLiveCompliance(items) {
     blocking_count: blocking,
     non_conforme: nonConforme,
     a_verifier: aVerifier,
-    conforme: items.length - nonConforme - aVerifier,
+    conforme: items.length - nonConforme - aVerifier - pendingUnconfirmed,
+    pending_validation: pendingValidation,
   };
 }
 
@@ -53,20 +62,23 @@ router.get('/overview', authMiddleware, async (req, res) => {
     { data: contracts },
     { data: alerts },
     { data: franchisees },
+    { data: avocatRelation },
   ] = await Promise.all([
-    supabaseAdmin.from('dip_documents').select('id, title, blocking_issues, dip_sections(status, legal_blocking)').eq('user_id', scopedUserId).eq('status', 'actif').limit(1),
-    supabaseAdmin.from('franchise_contracts').select('id, title, contract_clauses(status, legal_blocking)').eq('user_id', scopedUserId).eq('status', 'actif').limit(1),
+    supabaseAdmin.from('dip_documents').select('id, title, blocking_issues, dip_sections(status, legal_blocking, avocat_validation_status)').eq('user_id', scopedUserId).eq('status', 'actif').limit(1),
+    supabaseAdmin.from('franchise_contracts').select('id, title, contract_clauses(status, legal_blocking, avocat_validation_status)').eq('user_id', scopedUserId).eq('status', 'actif').limit(1),
     supabaseAdmin.from('alerts').select('id, type, title, source, suggestion, urgency, created_at, dip_id, franchisee_id').eq('user_id', scopedUserId).eq('status', 'pending').order('created_at', { ascending: false }),
     supabaseAdmin.from('franchisees').select('id, name, status, candidate_type, dip_delivered_at, planned_signature_date').eq('franchiseur_id', scopedUserId),
+    supabaseAdmin.from('avocat_franchiseurs').select('validation_mode').eq('franchiseur_id', scopedUserId).eq('status', 'active').maybeSingle(),
   ]);
 
+  const strictPending = avocatRelation?.validation_mode === 'strict';
   const dipRaw = dips?.[0] || null;
   const contractRaw = contracts?.[0] || null;
   const dip = dipRaw
-    ? { id: dipRaw.id, title: dipRaw.title, blocking_issues: dipRaw.blocking_issues, ...computeLiveCompliance(dipRaw.dip_sections) }
+    ? { id: dipRaw.id, title: dipRaw.title, blocking_issues: dipRaw.blocking_issues, ...computeLiveCompliance(dipRaw.dip_sections, { strictPending }) }
     : null;
   const contract = contractRaw
-    ? { id: contractRaw.id, title: contractRaw.title, ...computeLiveCompliance(contractRaw.contract_clauses) }
+    ? { id: contractRaw.id, title: contractRaw.title, ...computeLiveCompliance(contractRaw.contract_clauses, { strictPending }) }
     : null;
   const allAlerts = alerts || [];
 
@@ -107,3 +119,4 @@ router.get('/overview', authMiddleware, async (req, res) => {
 });
 
 module.exports = router;
+module.exports.computeLiveCompliance = computeLiveCompliance;

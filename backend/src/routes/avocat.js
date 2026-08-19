@@ -5,6 +5,7 @@ const { v4: uuidv4 } = require('uuid');
 const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware } = require('../middleware/auth');
 const { createCertificate } = require('./certificates');
+const { computeLiveCompliance } = require('./compliance');
 const { answerComplianceQuestion } = require('../config/claude');
 const errMsg = require('../config/errorMessage');
 const router = express.Router();
@@ -41,18 +42,18 @@ const requireAvocat = async (req, res, next) => {
 router.get('/dashboard', authMiddleware, requireAvocat, async (req, res) => {
   const { data: relations } = await supabaseAdmin
     .from('avocat_franchiseurs')
-    .select('id, status, invited_at, accepted_at, franchiseur_id')
+    .select('id, status, invited_at, accepted_at, franchiseur_id, validation_mode')
     .eq('avocat_id', req.user.id)
     .order('invited_at', { ascending: false });
 
-  if (!relations?.length) return res.json({ franchiseurs: [], pending: [] });
+  if (!relations?.length) return res.json({ franchiseurs: [], pending: [], average_compliance_score: null });
 
   const franchiseurIds = relations.map(r => r.franchiseur_id);
 
   const [{ data: users }, { data: dips }] = await Promise.all([
     supabaseAdmin.from('users').select('id, company_name, email, siret').in('id', franchiseurIds),
     supabaseAdmin.from('dip_documents')
-      .select('id, title, conformity_score, status, upload_date, user_id')
+      .select('id, title, status, upload_date, user_id, dip_sections(status, legal_blocking, avocat_validation_status)')
       .in('user_id', franchiseurIds).eq('status', 'actif')
       .order('upload_date', { ascending: false }),
   ]);
@@ -63,16 +64,50 @@ router.get('/dashboard', authMiddleware, requireAvocat, async (req, res) => {
   const userById = {};
   (users || []).forEach(u => { userById[u.id] = u; });
 
-  const enriched = relations.map(r => ({
-    ...r,
-    franchiseur: userById[r.franchiseur_id] || { id: r.franchiseur_id },
-    latestDip: dipByUser[r.franchiseur_id] || null,
-  }));
+  const modeByFranchiseur = {};
+  relations.forEach(r => { modeByFranchiseur[r.franchiseur_id] = r.validation_mode; });
+
+  const enriched = relations.map(r => {
+    const latestDip = dipByUser[r.franchiseur_id] || null;
+    const compliance = latestDip
+      ? computeLiveCompliance(latestDip.dip_sections, { strictPending: r.validation_mode === 'strict' })
+      : null;
+    return {
+      ...r,
+      franchiseur: userById[r.franchiseur_id] || { id: r.franchiseur_id },
+      latestDip: latestDip ? { id: latestDip.id, title: latestDip.title, status: latestDip.status, upload_date: latestDip.upload_date, ...compliance } : null,
+    };
+  });
+
+  const active = enriched.filter(r => r.status === 'active');
+  const scored = active.map(r => r.latestDip?.conformity_score).filter(s => typeof s === 'number');
+  const averageScore = scored.length ? Math.round(scored.reduce((a, b) => a + b, 0) / scored.length) : null;
 
   res.json({
-    franchiseurs: enriched.filter(r => r.status === 'active'),
+    franchiseurs: active,
     pending: enriched.filter(r => r.status === 'pending'),
+    average_compliance_score: averageScore,
   });
+});
+
+// PATCH /api/avocat/franchiseur/:franchiseurId/validation-mode — l'avocat
+// choisit, par client, si ses modifications directes doivent rester en
+// attente de sa confirmation ('strict') ou juste le notifier ('alerte').
+router.patch('/franchiseur/:franchiseurId/validation-mode', authMiddleware, requireAvocat, async (req, res) => {
+  const { validation_mode } = req.body;
+  if (!['strict', 'alerte'].includes(validation_mode)) {
+    return res.status(400).json({ error: 'validation_mode doit être "strict" ou "alerte"' });
+  }
+  const { data, error } = await supabaseAdmin
+    .from('avocat_franchiseurs')
+    .update({ validation_mode })
+    .eq('avocat_id', req.user.id)
+    .eq('franchiseur_id', req.params.franchiseurId)
+    .eq('status', 'active')
+    .select('id, franchiseur_id, validation_mode').maybeSingle();
+  if (error) return res.status(500).json({ error: errMsg(error) });
+  if (!data) return res.status(404).json({ error: 'Relation introuvable' });
+  res.json({ relation: data });
 });
 
 // GET /api/avocat/franchiseur/:franchiseurId/dip — DIP d'un franchiseur pour cet avocat
@@ -574,6 +609,148 @@ async function resolveContractOwner(contractId, userId) {
     .eq('avocat_id', userId).eq('franchiseur_id', contract.user_id).maybeSingle();
   return rel?.status === 'active' ? contract.user_id : null;
 }
+
+// PATCH /api/avocat/sections/:sectionId/validate — l'avocat confirme (ou signale)
+// la conformité d'une section modifiée directement par le franchiseur.
+router.patch('/sections/:sectionId/validate', authMiddleware, requireAvocat, async (req, res) => {
+  const { decision, comment } = req.body;
+  if (!['validated', 'flagged'].includes(decision)) {
+    return res.status(400).json({ error: 'decision doit être "validated" ou "flagged"' });
+  }
+
+  const { data: section } = await supabaseAdmin.from('dip_sections').select('*').eq('id', req.params.sectionId).maybeSingle();
+  if (!section) return res.status(404).json({ error: 'Section introuvable' });
+
+  const { data: dip } = await supabaseAdmin.from('dip_documents').select('id, user_id').eq('id', section.dip_id).maybeSingle();
+  if (!dip) return res.status(404).json({ error: 'DIP introuvable' });
+
+  const { data: relation } = await supabaseAdmin
+    .from('avocat_franchiseurs').select('status')
+    .eq('avocat_id', req.user.id).eq('franchiseur_id', dip.user_id).maybeSingle();
+  if (relation?.status !== 'active') return res.status(403).json({ error: 'Accès refusé' });
+
+  const cleanComment = comment ? String(comment).trim().substring(0, 2000) : null;
+
+  const { data, error } = await supabaseAdmin
+    .from('dip_sections')
+    .update({
+      avocat_validation_status: decision,
+      avocat_validated_by: req.user.id,
+      avocat_validated_at: new Date().toISOString(),
+      avocat_validation_comment: cleanComment,
+    })
+    .eq('id', req.params.sectionId)
+    .select().single();
+  if (error) return res.status(500).json({ error: errMsg(error) });
+
+  if (decision === 'validated') {
+    const { data: franchiseur } = await supabaseAdmin.from('users').select('email').eq('id', dip.user_id).maybeSingle();
+    createCertificate({
+      userId: dip.user_id, userEmail: franchiseur?.email, dipId: dip.id,
+      certificateType: 'MISE_A_JOUR',
+      changes: [{
+        id: req.params.sectionId, type: 'validation_avocat_section',
+        section: section.section_title, section_number: section.section_number,
+        ancien: section.content || '', nouveau: section.content || '',
+        impact_legal: 'Faible',
+        recommandation_ia: `Conformité confirmée par l'avocat.${cleanComment ? ' Commentaire : ' + cleanComment : ''}`,
+      }],
+    }).catch(e => console.error('Certificate auto-gen error (avocat validation section):', e.message));
+  }
+
+  res.json({ section: data });
+});
+
+// PATCH /api/avocat/clauses/:clauseId/validate — équivalent pour les clauses de contrat.
+router.patch('/clauses/:clauseId/validate', authMiddleware, requireAvocat, async (req, res) => {
+  const { decision, comment } = req.body;
+  if (!['validated', 'flagged'].includes(decision)) {
+    return res.status(400).json({ error: 'decision doit être "validated" ou "flagged"' });
+  }
+
+  const { data: clause } = await supabaseAdmin.from('contract_clauses').select('*').eq('id', req.params.clauseId).maybeSingle();
+  if (!clause) return res.status(404).json({ error: 'Clause introuvable' });
+
+  const { data: contract } = await supabaseAdmin
+    .from('franchise_contracts').select('id, user_id, linked_dip_id').eq('id', clause.contract_id).maybeSingle();
+  if (!contract) return res.status(404).json({ error: 'Contrat introuvable' });
+
+  const { data: relation } = await supabaseAdmin
+    .from('avocat_franchiseurs').select('status')
+    .eq('avocat_id', req.user.id).eq('franchiseur_id', contract.user_id).maybeSingle();
+  if (relation?.status !== 'active') return res.status(403).json({ error: 'Accès refusé' });
+
+  const cleanComment = comment ? String(comment).trim().substring(0, 2000) : null;
+
+  const { data, error } = await supabaseAdmin
+    .from('contract_clauses')
+    .update({
+      avocat_validation_status: decision,
+      avocat_validated_by: req.user.id,
+      avocat_validated_at: new Date().toISOString(),
+      avocat_validation_comment: cleanComment,
+    })
+    .eq('id', req.params.clauseId)
+    .select().single();
+  if (error) return res.status(500).json({ error: errMsg(error) });
+
+  if (decision === 'validated' && contract.linked_dip_id) {
+    const { data: franchiseur } = await supabaseAdmin.from('users').select('email').eq('id', contract.user_id).maybeSingle();
+    createCertificate({
+      userId: contract.user_id, userEmail: franchiseur?.email, dipId: contract.linked_dip_id,
+      certificateType: 'MISE_A_JOUR',
+      changes: [{
+        id: req.params.clauseId, type: 'validation_avocat_clause',
+        section: clause.clause_title, section_number: clause.clause_number,
+        ancien: clause.content || '', nouveau: clause.content || '',
+        impact_legal: 'Faible',
+        recommandation_ia: `Conformité confirmée par l'avocat.${cleanComment ? ' Commentaire : ' + cleanComment : ''}`,
+      }],
+    }).catch(e => console.error('Certificate auto-gen error (avocat validation clause):', e.message));
+  }
+
+  res.json({ clause: data });
+});
+
+// GET /api/avocat/pending-validations — vue agrégée de tout ce qui attend une
+// confirmation avocat, tous franchiseurs actifs confondus (alimente le
+// dashboard avocat et l'explorateur de fichiers).
+router.get('/pending-validations', authMiddleware, requireAvocat, async (req, res) => {
+  const { data: relations } = await supabaseAdmin
+    .from('avocat_franchiseurs').select('franchiseur_id, validation_mode')
+    .eq('avocat_id', req.user.id).eq('status', 'active');
+
+  const franchiseurIds = (relations || []).map(r => r.franchiseur_id);
+  if (!franchiseurIds.length) return res.json({ sections: [], clauses: [] });
+
+  const { data: franchiseurUsers } = await supabaseAdmin
+    .from('users').select('id, company_name').in('id', franchiseurIds);
+  const companyNameByFranchiseur = Object.fromEntries((franchiseurUsers || []).map(u => [u.id, u.company_name]));
+
+  const { data: dips } = await supabaseAdmin
+    .from('dip_documents').select('id, title, user_id').in('user_id', franchiseurIds);
+  const dipIds = (dips || []).map(d => d.id);
+  const dipById = Object.fromEntries((dips || []).map(d => [d.id, { ...d, company_name: companyNameByFranchiseur[d.user_id] }]));
+
+  const { data: contracts } = await supabaseAdmin
+    .from('franchise_contracts').select('id, title, user_id').in('user_id', franchiseurIds);
+  const contractIds = (contracts || []).map(c => c.id);
+  const contractById = Object.fromEntries((contracts || []).map(c => [c.id, { ...c, company_name: companyNameByFranchiseur[c.user_id] }]));
+
+  const [{ data: sections }, { data: clauses }] = await Promise.all([
+    dipIds.length
+      ? supabaseAdmin.from('dip_sections').select('*').in('dip_id', dipIds).eq('avocat_validation_status', 'pending')
+      : Promise.resolve({ data: [] }),
+    contractIds.length
+      ? supabaseAdmin.from('contract_clauses').select('*').in('contract_id', contractIds).eq('avocat_validation_status', 'pending')
+      : Promise.resolve({ data: [] }),
+  ]);
+
+  res.json({
+    sections: (sections || []).map(s => ({ ...s, dip: dipById[s.dip_id] })),
+    clauses: (clauses || []).map(c => ({ ...c, contract: contractById[c.contract_id] })),
+  });
+});
 
 // POST /api/avocat/sections/:sectionId/annexes
 router.post('/sections/:sectionId/annexes', authMiddleware, async (req, res) => {

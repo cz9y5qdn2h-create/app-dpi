@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware, requireFranchisor } = require('../middleware/auth');
+const { getActiveAvocatRelation } = require('../middleware/avocatScope');
 const { parseDIPSections, compareDIPVersions, assessLitigationRisks, correctSection, correctSectionWithAnswers } = require('../config/claude');
 const { triggerCrossImpactAlerts } = require('../utils/crossImpact');
 const { createCertificate } = require('./certificates');
@@ -449,9 +450,23 @@ router.put('/:id/sections/:sectionId', authMiddleware, requireFranchisor, async 
     timestamp: new Date().toISOString()
   });
 
+  // Toute édition directe par le franchiseur remet la validation avocat à
+  // zéro : un contenu déjà validé qui change de nouveau redevient "pending"
+  // — l'avocat n'a jamais confirmé cette version-là.
+  const contentChanged = existing.content !== content;
+  const avocatRelation = contentChanged ? await getActiveAvocatRelation(req.user.id) : null;
+
   const { data, error } = await supabaseAdmin
     .from('dip_sections')
-    .update({ content, status, last_updated: new Date().toISOString() })
+    .update({
+      content, status, last_updated: new Date().toISOString(),
+      ...(avocatRelation ? {
+        avocat_validation_status: 'pending',
+        avocat_validated_by: null,
+        avocat_validated_at: null,
+        avocat_validation_comment: null,
+      } : {}),
+    })
     .eq('id', req.params.sectionId)
     .select().single();
 
