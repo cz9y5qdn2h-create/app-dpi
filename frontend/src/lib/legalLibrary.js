@@ -16,7 +16,7 @@ export const LEGAL_ENTRIES = [
     body: [
       "Codifie la loi n°89-1008 du 31 décembre 1989. Le champ d'application dépasse la franchise : concession exclusive, licence de marque avec quasi-exclusivité, certaines formes d'affiliation et de coopération commerciale y sont soumises.",
       "Le document ET le projet de contrat doivent être communiqués au moins 20 jours avant la signature ou, si elle est antérieure, avant le versement de toute somme (droit d'entrée, acompte, dépôt de garantie, frais de dossier ou d'étude).",
-      "Dispositions d'ordre public (Cass. 1re civ., 25 janvier 2017, n°15-28.064) : toute clause visant à exonérer le franchiseur de sa responsabilité en cas d'information défaillante est réputée non écrite.",
+      "Dispositions d'ordre public : toute clause visant à exonérer le franchiseur de sa responsabilité en cas d'information défaillante est réputée non écrite.",
     ],
     url: 'https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006231936',
     keywords: ['doubin', 'information précontractuelle', '20 jours', 'exclusivité', 'quasi-exclusivité', 'ordre public'],
@@ -109,17 +109,6 @@ export const LEGAL_ENTRIES = [
     keywords: ['actualisation', 'réticence dolosive', 'procédure collective', '2024', 'signature'],
   },
   {
-    id: 'cass-2024-12',
-    category: 'Jurisprudence',
-    ref: 'Cass. com., 4 décembre 2024',
-    title: 'Devoir d\'actualisation rattaché à l\'art. L.330-3',
-    summary: "Affaire Lady Moving / Fitness Park Development — rattache expressément le devoir d'actualisation au fondement même de l'article L.330-3.",
-    body: [
-      "Confirme et renforce le principe posé le 26 juin 2024, sur une base légale plus directe : le devoir d'actualisation découle du texte spécial de la franchise, pas seulement du droit commun.",
-    ],
-    keywords: ['actualisation', '2024', 'lady moving', 'fitness park'],
-  },
-  {
     id: 'cass-2025-03',
     category: 'Jurisprudence',
     ref: 'Cass. com., 19 mars 2025, n°23-22.925 et n°24-13.066',
@@ -171,7 +160,7 @@ export const LEGAL_ENTRIES = [
   {
     id: 'quasi-exclusivite',
     category: 'Champ d\'application',
-    ref: 'Règl. UE 2022/720 — CA Paris, 22 mai 2024, n°22/08672',
+    ref: 'Règl. UE 2022/720',
     title: 'Quasi-exclusivité : le seuil de 80 % n\'est qu\'indicatif',
     summary: "Un montage en-deçà de 80 % d'achats peut rester soumis à l'obligation de DIP si les circonstances de fait le justifient.",
     body: [

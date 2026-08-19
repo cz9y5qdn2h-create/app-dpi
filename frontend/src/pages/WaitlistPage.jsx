@@ -562,7 +562,7 @@ export default function WaitlistPage() {
               Tout pour votre conformité DIP
             </h2>
             <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 15, color: '#64748B', maxWidth: 500, margin: '0 auto' }}>
-              Développé avec des juristes spécialisés en droit de la franchise française.
+              Analyse fondée sur la grille R.330-1 et la jurisprudence de la Cour de cassation, avec citation systématique de la sous-disposition exacte.
             </p>
           </div>
         </FadeIn>
@@ -617,7 +617,7 @@ export default function WaitlistPage() {
 
           {/* Guarantee row */}
           <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 20, marginTop: 20 }}>
-            {[['🔒', 'Données confidentielles'], ['🇫🇷', 'Hébergé en France'], ['✉️', 'Zéro spam']].map(([icon, label]) => (
+            {[['🔒', 'Données confidentielles'], ['🇪🇺', 'Base de données en Europe'], ['✉️', 'Zéro spam']].map(([icon, label]) => (
               <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: '#94A3B8' }}>
                 <span>{icon}</span> {label}
               </div>

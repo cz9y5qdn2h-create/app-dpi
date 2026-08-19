@@ -83,7 +83,7 @@ const buildDipUpdateEmail = (franchiseeName, companyName, summary, attestationUr
             <p style="margin:0 0 16px;font-size:15px;font-weight:600;color:#F4F2EE">Madame, Monsieur ${escapeHtml(franchiseeName)},</p>
             <p style="margin:0 0 20px;font-size:13px;color:#CBD5E1;line-height:1.7">
               Conformément à l'article <strong style="color:#C8A96E">L.330-3 du Code de commerce (Loi Doubin)</strong>
-              et au Décret n° 91-337, votre franchiseur vous informe d'une mise à jour du Document d'Information
+              et à l'art. R.330-1 C. com. (décret n°2023-1394 du 30 décembre 2023), votre franchiseur vous informe d'une mise à jour du Document d'Information
               Précontractuelle (DIP). Cette mise à jour comporte
               <strong style="color:#C8A96E">${changesCount} modification(s)</strong>.
             </p>
@@ -117,7 +117,7 @@ const buildDipUpdateEmail = (franchiseeName, companyName, summary, attestationUr
         </tr>
         <tr>
           <td style="padding:16px 32px;border-top:1px solid #1A1A1A;font-family:sans-serif;font-size:10px;color:#3A3A3A;line-height:1.6">
-            Ce document constitue une preuve de remise conforme au sens de l'art. L.330-3 C.com. &amp; Décret 91-337.<br>
+            Ce document constitue une preuve de remise conforme au sens de l'art. L.330-3 C.com. &amp; R.330-1 C. com.<br>
             Attestation générée et certifiée par DIPpro by Iralink-Agency · ${new Date().getFullYear()}
           </td>
         </tr>

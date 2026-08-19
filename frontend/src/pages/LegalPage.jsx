@@ -84,13 +84,13 @@ Les données créées durant l'essai sont conservées pendant 30 jours après ex
       },
       {
         title: "7. Prix, conditions tarifaires et politique de non-remboursement",
-        content: `Les tarifs en vigueur sont communiqués lors de la prise de rendez-vous commerciale et formalisés par devis accepté.
+        content: `Le tarif standard affiché sur le site (mise en place + abonnement mensuel) est confirmé par devis accepté lors de la prise de rendez-vous commerciale, qui peut également prévoir des conditions spécifiques pour un réseau ou un cabinet aux besoins particuliers.
 
 Toute modification tarifaire fait l'objet d'une notification par email avec un préavis de 30 jours.
 
 Les factures sont émises mensuellement ou annuellement selon la formule choisie. Le paiement s'effectue par prélèvement bancaire ou carte. Tout retard de paiement entraîne la suspension du service après mise en demeure restée sans effet sous 15 jours.
 
-POLITIQUE DE NON-REMBOURSEMENT — L'Utilisateur reconnaît expressément, en acceptant les présentes CGU, que DIPpro est un service numérique à consommation immédiate. Conformément à l'article L.221-28 13° du Code de la consommation (applicable en référence) et dans le cadre exclusif d'un contrat entre professionnels (B2B), aucun remboursement ne sera accordé dans les cas suivants, sans que cette liste soit limitative :
+POLITIQUE DE NON-REMBOURSEMENT — L'Utilisateur reconnaît expressément, en acceptant les présentes CGU, que DIPpro est un service numérique à consommation immédiate, dans le cadre exclusif d'un contrat entre professionnels (B2B). Aucun remboursement ne sera accordé dans les cas suivants, sans que cette liste soit limitative :
 
 • Toute période d'abonnement déjà entamée, même partiellement
 • Insatisfaction concernant les analyses, scores ou recommandations générés par l'intelligence artificielle, celle-ci étant un outil d'aide à la décision fourni à titre indicatif (voir §3)

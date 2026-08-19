@@ -9,6 +9,50 @@ Voir aussi : [INVARIANTS.md](INVARIANTS.md) · [BUG_JOURNAL.md](BUG_JOURNAL.md) 
 
 ---
 
+## 2026-08-17 (2)
+
+### 🔴 Audit légal pré-pivot avocat (skill garde-fou-legal)
+*Demande* : avant de vendre à des avocats (audience zéro tolérance à l'approximation),
+auditer chaque affirmation du site. Verdict : le site ne pouvait pas être montré
+en l'état.
+*Trouvé et corrigé, par gravité* :
+- **Citation de jurisprudence très probablement fabriquée** — « Cass. com., 4 déc. 2024,
+  Lady Moving/Fitness Park Development » — présente jusque dans le **prompt système de
+  l'IA** (`claude.js`, 2 occurrences), dans `legalLibrary.js` (bibliothèque avocat) et
+  2 articles de blog. Seule citation du corpus sans lien Légifrance vérifiable. Supprimée
+  partout ; on s'appuie uniquement sur Cass. com., 26 juin 2024, n°23-14.085 (vérifié).
+- **Deux obligations légales inventées**, citées avec un article de loi précis :
+  « notification sous 20 jours » de toute modification (n'existe pas, absent aussi de la
+  logique backend) et « expiration annuelle obligatoire » du DIP (Loi Doubin n'impose
+  aucun renouvellement annuel — `alerts.js` générait littéralement cette fausse
+  obligation avec citation d'article). Reformulées en bonnes pratiques recommandées,
+  jamais en obligations légales.
+- **Contradiction RGPD interne** : « aucune donnée partagée avec des tiers » / « Hébergé
+  en France » contredits par les CGU elles-mêmes (Anthropic, Vercel — USA). Corrigé
+  partout (landing, waitlist, index.html ×2, llms.txt).
+- **Chiffre commercial non sourcé** (200 000 €/litige, ×17 ROI) répété ~10 fois pour
+  justifier le prix. Retiré ; le panneau ROI de la landing page est reformulé sans
+  statistique inventée.
+- **Base légale obsolète incohérente** : Décret n°91-337 (1991) cité seul sur la moitié
+  du corpus alors que la version en vigueur résulte du décret n°2023-1394 (2023) —
+  déjà établi ailleurs dans le même corpus. Généralisé partout (claude.js, landing,
+  llms.txt, index.html, DIPPage.jsx, 3 articles de blog, email de notification
+  franchisé dans `certificates.js`).
+- **Deux citations « à vérifier »** (Cass. 1re civ. 25 janv. 2017 n°15-28.064 ;
+  CA Paris 22 mai 2024 n°22/08672) — recherche externe inconclusive sur les numéros de
+  pourvoi exacts. Retirées par prudence (le principe juridique sous-jacent, lui,
+  reste vrai et conservé), conformément à la règle « si on n'est pas sûr, on ne met pas ».
+*Champ élargi au-delà des 6 fichiers audités* : un grep de contrôle a trouvé les mêmes
+motifs dans `OnboardingTour.jsx`, `DIPPage.jsx`, `WaitlistPage.jsx` et surtout
+`legalLibrary.js` (la bibliothèque consultée directement par les avocats) — tous corrigés.
+*Non traité (nécessite une donnée externe)* : société non immatriculée — déjà documenté
+le 2026-08-15, reste la seule action encore entre les mains du fondateur.
+`backend/src/config/claude.js`, `backend/src/routes/{alerts,certificates}.js`,
+`frontend/src/{pages/LandingPage,pages/WaitlistPage,pages/DIPPage,lib/legalLibrary,components/OnboardingTour}.jsx`,
+`frontend/index.html`, `frontend/public/llms.txt`, `frontend/content/blog/*.md`
+
+---
+
 ## 2026-08-17
 
 ### 🟢 Pivot avocat-payeur — validation avocat des éditions franchiseur

@@ -1,6 +1,6 @@
 # DIPpro by Iralink
 
-> DIPpro est un logiciel SaaS B2B pour franchiseurs français. Il automatise la gestion légale du Document d'Information Précontractuelle (DIP), obligatoire selon la Loi Doubin (Art. L.330-3 Code de commerce, Décret n°91-337 du 4 avril 1991).
+> DIPpro est un logiciel SaaS B2B pour franchiseurs français. Il automatise la gestion légale du Document d'Information Précontractuelle (DIP), obligatoire selon la Loi Doubin (Art. L.330-3 Code de commerce, R.330-1 C. com. dans sa version en vigueur au 1er janvier 2024, modifiée par le décret n°2023-1394 du 30 décembre 2023).
 
 ## Qu'est-ce que DIPpro ?
 
@@ -8,7 +8,7 @@ DIPpro est une plateforme de conformité franchise qui :
 - Analyse automatiquement un DIP par intelligence artificielle (Claude Opus 4.8) en moins de 30 secondes
 - Évalue les 10 sections réglementaires obligatoires de la Loi Doubin avec un score de conformité
 - Génère un DIP complet via un formulaire en 8 étapes assisté par IA
-- Détecte les modifications légales à notifier sous 20 jours aux franchisés
+- Détecte les modifications significatives du DIP et leur impact légal
 - Génère une attestation PDF horodatée avec empreinte SHA-256 (preuve de remise incontestable)
 - Notifie automatiquement tous les franchisés par email et WhatsApp dès approbation d'une modification
 - Surveille en temps réel les sources légales (Légifrance, FFF, Village-Justice) pour détecter les changements réglementaires impactant le DIP
@@ -16,7 +16,7 @@ DIPpro est une plateforme de conformité franchise qui :
 ## Cadre légal couvert
 
 - **Loi Doubin** (Loi n° 89-1008 du 31 décembre 1989) — Art. L.330-3 Code de commerce
-- **Décret n°91-337 du 4 avril 1991** — contenu obligatoire du DIP (10 sections)
+- **R.330-1 C. com.** (décret n°2023-1394 du 30 décembre 2023) — contenu obligatoire du DIP (10 sections)
 - **Obligation de délai** : le DIP doit être remis 20 jours minimum avant signature du contrat de franchise
 - **Jurisprudence — pas de nullité automatique** : Cass. com., 20 mars 2007 (n°06-11.290) — un DIP absent ou inexact n'entraîne PAS mécaniquement la nullité ; le franchisé doit démontrer que le manquement a vicié son consentement
 - **Jurisprudence — obligation continue** : Cass. com., 26 juin 2024 (n°23-14.085) — l'obligation d'information court jusqu'à la signature. Un franchiseur dont le DIP était par ailleurs conforme a été condamné pour avoir tu des procédures collectives survenues entre la remise du DIP et la signature (réticence dolosive). Cet arrêt ne pose pas une règle « DIP inexact = nullité »
@@ -43,16 +43,15 @@ Secteurs cibles : restauration, immobilier, beauté/coiffure, fitness, services 
 
 ## Tarification
 
-- Accès anticipé (Early Adopter) : tarif préférentiel garanti à vie, inférieur de 40% au tarif public
-- Inscription liste d'attente : gratuite, aucune carte bancaire requise
-- Offre d'analyse DIP gratuite (valeur 250€) pour tous les inscrits
+- 1 300 € de mise en place + 850 €/mois (tarif standard, confirmé par devis)
+- Première analyse offerte, aucune carte bancaire requise
 - Onboarding personnalisé inclus
 
 ## Éditeur
 
 **Iralink Agency** — théo@iralink-agency.com
 Éditeur de la plateforme DIPpro, accessible à l'adresse https://iralink-agency.dippro.business
-Hébergement exclusivement en Europe (AWS eu-west / Supabase)
+Base de données hébergée en Europe (AWS eu-west / Supabase). Certains sous-traitants (analyse IA, hébergement applicatif) sont situés hors UE et encadrés par des clauses contractuelles types.
 
 ## Pages importantes
 
@@ -66,4 +65,4 @@ Hébergement exclusivement en Europe (AWS eu-west / Supabase)
 
 ## Mots-clés SEO principaux
 
-DIP franchise, Document d'Information Précontractuelle, Loi Doubin, logiciel DIP franchise, conformité franchise France, gestion DIP franchiseur, analyse DIP IA, DIP automatique, Art. L.330-3 Code de commerce, Décret 91-337, DIPpro, Iralink
+DIP franchise, Document d'Information Précontractuelle, Loi Doubin, logiciel DIP franchise, conformité franchise France, gestion DIP franchiseur, analyse DIP IA, DIP automatique, Art. L.330-3 Code de commerce, R.330-1, DIPpro, Iralink

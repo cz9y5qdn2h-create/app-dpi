@@ -17,11 +17,17 @@ Voir aussi : [BUG_JOURNAL.md](BUG_JOURNAL.md) (incidents détaillés),
 | Présenter Cass. com. 26 juin 2024 comme confirmant une nullité pour DIP incomplet | L'arrêt porte sur la **dissimulation d'un fait postérieur à la remise**, sur un DIP par ailleurs conforme | « l'obligation d'information court jusqu'à la signature » |
 | « DIP certifié conforme » | « Certifié » est réservé à l'horodatage SHA-256 (fait technique vérifiable), jamais au jugement IA | « attestation de remise horodatée (empreinte SHA-256) » |
 | Citer « R.330-1 » seul | Un avocat doit pouvoir relier chaque statut au texte exact | « Art. R.330-1, 5° c) C. com. » |
+| « Décret n°91-337 du 4 avril 1991 » comme base actuelle | Ce décret n'est plus la version en vigueur depuis le décret n°2023-1394 du 30/12/2023 — cité seul, il expose le site à une incohérence interne visible en trois clics par un avocat | « R.330-1 C. com. dans sa version en vigueur au 1er janvier 2024, modifiée par le décret n°2023-1394 du 30 décembre 2023 » |
+| Une citation de jurisprudence sans lien Légifrance vérifiable, ou un chiffre commercial (coût moyen d'un litige, ROI, taux de succès) sans source | Trouvé le 17/08/2026 : une citation fabriquée (« Cass. com., 4 déc. 2024, Lady Moving/Fitness Park Development ») avait survécu jusque dans le prompt système de l'IA et la bibliothèque avocat | Supprimer plutôt que nuancer — règle du fondateur : « si on n'est pas sûr, on ne met pas » |
 
 **Trois endroits doivent rester synchronisés** sur le référentiel légal :
 `backend/src/config/claude.js` (prompts du moteur), `frontend/src/lib/legalLibrary.js`
 (bibliothèque avocat), `docs/LEGAL_COPY.md` (revue avocat). Modifier l'un sans
 les autres crée une divergence entre ce que l'outil applique et ce qu'il affiche.
+**Un audit du 17/08/2026 a montré que cette divergence s'étend aussi au marketing**
+(landing page, blog, `llms.txt`, `index.html`, onboarding in-app) : toute correction
+juridique doit être répercutée sur ces surfaces aussi, pas seulement sur les 3 fichiers
+de référence.
 
 ---
 

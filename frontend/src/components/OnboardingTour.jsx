@@ -13,7 +13,7 @@ const STEPS = [
     selector: null,
     icon: Shield,
     title: 'Bienvenue sur DIPpro',
-    body: 'DIPpro automatise la gestion légale de votre Document d\'Information Précontractuelle, obligation annuelle de la Loi Doubin. Un DIP incomplet expose votre réseau à la nullité du contrat et à un risque dépassant 200 000 € par contentieux.',
+    body: 'DIPpro automatise la gestion légale de votre Document d\'Information Précontractuelle, obligatoire au titre de la Loi Doubin. Un DIP incomplet expose votre réseau à un risque de nullité du contrat si le manquement a vicié le consentement du franchisé.',
     note: '6 étapes pour comprendre l\'essentiel — 2 minutes.',
   },
   {

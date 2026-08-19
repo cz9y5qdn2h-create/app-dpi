@@ -21,10 +21,10 @@ const DARK_BG = {
 
 const FEATURES = [
   { icon: Sparkles,   title: 'Analyse IA en 30 s',         desc: 'Score de conformité Loi Doubin instantané. Les 10 sections réglementaires évaluées par Claude Opus.' },
-  { icon: Shield,     title: 'Génération guidée',           desc: 'Formulaire en 8 étapes + assistant IA qui rédige les sections complexes conformément au Décret 91-337.' },
-  { icon: Zap,        title: 'Détection des changements',   desc: 'Chaque modification légale à notifier sous 20 jours est identifiée, qualifiée et tracée automatiquement.' },
+  { icon: Shield,     title: 'Génération guidée',           desc: 'Formulaire en 8 étapes + assistant IA qui rédige les sections complexes conformément à l\'art. R.330-1 C. com. (décret n°2023-1394 du 30 décembre 2023).' },
+  { icon: Zap,        title: 'Détection des changements',   desc: 'Chaque modification significative du DIP est identifiée, qualifiée par impact et tracée automatiquement — pour rester exact jusqu\'à la signature, pas seulement à la remise.' },
   { icon: FileCheck,  title: 'Attestation certifiée',       desc: 'PDF horodaté, empreinte SHA-256, lien public vérifiable — preuve de remise incontestable en cas de litige.' },
-  { icon: Bell,       title: 'Alertes renouvellement',      desc: 'Rappels automatiques 90, 30 et 7 jours avant l\'expiration annuelle obligatoire.' },
+  { icon: Bell,       title: 'Rappels de réexamen',         desc: 'Rappels automatiques configurables pour réexaminer périodiquement votre DIP — bonne pratique recommandée, la Loi Doubin n\'impose pas de renouvellement annuel formel.' },
   { icon: Users,      title: 'Portail franchisé',           desc: 'Notification email + WhatsApp automatique à tous vos franchisés dès approbation d\'une modification.' },
 ];
 
@@ -56,15 +56,15 @@ const FAQS = [
   },
   {
     q: "Combien coûte DIPpro ?",
-    a: "1 300 € de mise en place (onboarding personnalisé 1h, import et analyse de votre DIP existant, configuration complète) + 850 €/mois. Soit 11 500 € la première année — pour couvrir un risque moyen de 200 000 € par litige DIP. Première analyse offerte, aucune carte bancaire requise.",
+    a: "1 300 € de mise en place (onboarding personnalisé 1h, import et analyse de votre DIP existant, configuration complète) + 850 €/mois. Soit 11 500 € la première année. Première analyse offerte, aucune carte bancaire requise.",
   },
   {
     q: "DIPpro remplace-t-il un avocat ?",
-    a: `Non — ${AVOCAT_DISCLAIMER} Notre rapport de conformité divise généralement par 3 le temps de révision juridique et évite les oublis de sections critiques.`,
+    a: `Non — ${AVOCAT_DISCLAIMER} Notre rapport de conformité accélère la révision juridique en signalant automatiquement les sections à examiner en priorité.`,
   },
   {
     q: "Mes données sont-elles sécurisées ?",
-    a: "Hébergement exclusif en Europe (Supabase / AWS eu-west). JWT + Row Level Security Postgres, chiffrement TLS, audit log immuable. Plein RGPD — aucune donnée partagée avec des tiers.",
+    a: "Base de données hébergée en Europe (Supabase / AWS eu-west). JWT + Row Level Security Postgres, chiffrement TLS, audit log immuable. Certains sous-traitants (dont l'analyse IA et l'hébergement applicatif) sont situés hors UE et encadrés par des clauses contractuelles types — détail complet dans notre politique de confidentialité.",
   },
   {
     q: "Qu'est-ce que l'accès anticipé ?",
@@ -687,7 +687,7 @@ export default function LandingPage() {
 
               {/* Trust badges */}
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 18 }}>
-                {['Loi Doubin 1989', 'Art. L.330-3', 'RGPD conforme', 'Hébergé en France'].map(b => (
+                {['Loi Doubin 1989', 'Art. L.330-3', 'Sous-traitants encadrés RGPD', 'Base de données en Europe'].map(b => (
                   <div key={b} style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: 'rgba(244,242,238,0.35)' }}>
                     <CheckCircle style={{ width: 13, height: 13, color: '#34D399', flexShrink: 0 }} />
                     {b}
@@ -711,7 +711,7 @@ export default function LandingPage() {
         <FadeIn>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 1, borderRadius: 20, overflow: 'hidden', border: '0.5px solid rgba(200,169,110,0.14)', background: 'rgba(200,169,110,0.08)' }}>
             {[
-              { val: '200 000 €', label: 'coût moyen d\'un litige DIP', icon: AlertTriangle, iconColor: '#F87171' },
+              { val: 'SHA-256', label: 'empreinte vérifiable par attestation', icon: FileCheck, iconColor: '#F87171' },
               { val: '20 jours', label: 'délai légal avant signature', icon: Clock, iconColor: GOLD },
               { val: '10', label: 'sections réglementaires analysées', icon: FileText, iconColor: GOLD },
               { val: '30 s', label: 'pour une analyse complète IA', icon: Sparkles, iconColor: '#34D399' },
@@ -745,11 +745,11 @@ export default function LandingPage() {
               </p>
             </div>
             <div style={{ textAlign: 'center', flexShrink: 0 }}>
-              <div style={{ fontFamily: 'Cormorant Garamond, serif', fontWeight: 300, fontSize: 'clamp(2.5rem, 5vw, 3.5rem)', color: '#F87171', lineHeight: 1 }}>
-                200 000€
+              <div style={{ fontFamily: 'Cormorant Garamond, serif', fontWeight: 300, fontSize: 'clamp(2rem, 4vw, 2.8rem)', color: '#F87171', lineHeight: 1.1 }}>
+                Jusqu&apos;à la signature
               </div>
               <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: 'rgba(244,242,238,0.38)', marginTop: 4 }}>
-                coût moyen d&apos;un litige DIP
+                durée réelle de l&apos;obligation d&apos;information
               </div>
               <button onClick={scrollToForm} style={{ ...btnGold, marginTop: 20, padding: '12px 22px', fontSize: 13 }}>
                 Protégez votre réseau
@@ -795,7 +795,7 @@ export default function LandingPage() {
               Tout ce dont vous avez besoin
             </h2>
             <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 15, color: 'rgba(244,242,238,0.42)', maxWidth: 480, margin: '0 auto' }}>
-              Développé avec des juristes spécialisés en droit de la franchise française.
+              Analyse fondée sur la grille R.330-1 et la jurisprudence de la Cour de cassation, avec citation systématique de la sous-disposition exacte.
             </p>
           </div>
         </FadeIn>
@@ -899,22 +899,14 @@ export default function LandingPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div style={{ borderRadius: 16, padding: '24px 28px', background: 'rgba(244,242,238,0.025)', border: '0.5px solid rgba(244,242,238,0.07)' }}>
                 <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 10, color: 'rgba(244,242,238,0.30)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>Le calcul</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {[
-                    ['Coût an 1 (mise en place + 12 mois)', '11 500 €'],
-                    ['Risque moyen d\'un litige DIP', '200 000 €'],
-                  ].map(([label, val]) => (
-                    <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
-                      <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12.5, color: 'rgba(244,242,238,0.45)', lineHeight: 1.4 }}>{label}</span>
-                      <span style={{ fontFamily: 'DM Mono, monospace', fontSize: 13, color: 'rgba(244,242,238,0.70)', flexShrink: 0 }}>{val}</span>
-                    </div>
-                  ))}
-                  <div style={{ height: '0.5px', background: 'rgba(200,169,110,0.15)', margin: '4px 0' }} />
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12 }}>
-                    <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 13, color: GOLD, fontWeight: 500 }}>Soit moins de 6 % du risque couvert</span>
-                    <span style={{ fontFamily: 'DM Mono, monospace', fontSize: 14, color: GOLD, flexShrink: 0 }}>×17 ROI</span>
-                  </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, marginBottom: 14 }}>
+                  <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12.5, color: 'rgba(244,242,238,0.45)', lineHeight: 1.4 }}>Coût an 1 (mise en place + 12 mois)</span>
+                  <span style={{ fontFamily: 'DM Mono, monospace', fontSize: 13, color: 'rgba(244,242,238,0.70)', flexShrink: 0 }}>11 500 €</span>
                 </div>
+                <div style={{ height: '0.5px', background: 'rgba(200,169,110,0.15)', margin: '4px 0 14px' }} />
+                <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12.5, color: 'rgba(244,242,238,0.50)', lineHeight: 1.6, margin: 0 }}>
+                  Un contentieux DIP peut entraîner la restitution des droits d&apos;entrée et redevances perçus, ainsi que des dommages-intérêts — sans qu&apos;un montant moyen ne soit publiquement établi. La grille R.330-1 sert à réduire ce risque en amont, pas à le chiffrer.
+                </p>
               </div>
               <div style={{ borderRadius: 16, padding: '24px 28px', background: 'rgba(244,242,238,0.025)', border: '0.5px solid rgba(244,242,238,0.07)' }}>
                 <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 10, color: 'rgba(244,242,238,0.30)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Garantie</div>
@@ -955,7 +947,7 @@ export default function LandingPage() {
             {/* Footer form */}
             <div style={{ marginTop: 24, paddingTop: 20, borderTop: '0.5px solid rgba(200,169,110,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
               <div style={{ display: 'flex', gap: 18 }}>
-                {[['🔒', 'Données confidentielles'], ['🇫🇷', 'Hébergé en France'], ['✉', 'Zéro spam']].map(([icon, label]) => (
+                {[['🔒', 'Données confidentielles'], ['🇪🇺', 'Base de données en Europe'], ['✉', 'Zéro spam']].map(([icon, label]) => (
                   <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'DM Sans, sans-serif', fontSize: 11.5, color: 'rgba(244,242,238,0.28)' }}>
                     <span>{icon}</span> {label}
                   </div>
@@ -1131,7 +1123,7 @@ export default function LandingPage() {
               © {new Date().getFullYear()} Iralink-Agency — Société en cours de création · DIPpro
             </span>
             <span style={{ fontFamily: 'DM Mono, monospace', fontSize: 10, color: 'rgba(244,242,238,0.15)' }}>
-              Loi Doubin Art. L.330-3 · Décret 91-337 · RGPD
+              Loi Doubin Art. L.330-3 · Décret n°2023-1394 · RGPD
             </span>
           </div>
         </div>

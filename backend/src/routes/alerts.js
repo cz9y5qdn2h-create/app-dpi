@@ -243,10 +243,10 @@ router.post('/check-renewal', authMiddleware, requireFranchisor, async (req, res
         const daysLeft = Math.max(0, Math.round((365 * 24 * 3600 * 1000 - age) / (24 * 3600 * 1000)));
         const { data: alert } = await supabaseAdmin.from('alerts').insert({
           dip_id: dip.id,
-          old_value: `DIP approchant de sa date de renouvellement annuel`,
-          new_value: 'Mise à jour annuelle requise (Loi Doubin)',
-          source: 'Rappel renouvellement annuel',
-          suggestion: `La mise à jour annuelle du DIP est requise dans ${daysLeft} jour(s). Importez la nouvelle version pour rester conforme à la Loi Doubin (art. L.330-3).`,
+          old_value: `DIP non réexaminé depuis un an`,
+          new_value: 'Réexamen annuel recommandé',
+          source: 'Rappel réexamen annuel',
+          suggestion: `Ce DIP n'a pas été réexaminé depuis un an (échéance dans ${daysLeft} jour(s)). La Loi Doubin n'impose pas de renouvellement annuel formel, mais un réexamen périodique est recommandé pour vérifier que le contenu reflète toujours la réalité du réseau avant toute nouvelle remise.`,
           status: 'pending',
           urgency: daysLeft <= 7 ? 'haute' : 'moyenne',
           created_at: new Date().toISOString()

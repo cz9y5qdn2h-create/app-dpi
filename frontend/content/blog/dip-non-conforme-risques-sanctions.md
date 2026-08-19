@@ -12,7 +12,7 @@ Chaque année, des franchiseurs découvrent — souvent au pire moment, en plein
 
 ## Rappel express : l'obligation légale
 
-Le DIP doit être remis au candidat franchisé **au moins 20 jours avant** la signature du contrat ou tout versement de somme d'argent (article L.330-3 du Code de commerce, Décret n° 91-337 du 4 avril 1991). Ce délai est d'ordre public. *(Pour le détail des 10 sections obligatoires, voir notre [guide complet de la Loi Doubin](/blog/dip-franchise-guide-loi-doubin).)*
+Le DIP doit être remis au candidat franchisé **au moins 20 jours avant** la signature du contrat ou tout versement de somme d'argent (article L.330-3 du Code de commerce, R.330-1 C. com. dans sa version en vigueur au 1er janvier 2024, modifiée par le décret n°2023-1394 du 30 décembre 2023). Ce délai est d'ordre public. *(Pour le détail des 10 sections obligatoires, voir notre [guide complet de la Loi Doubin](/blog/dip-franchise-guide-loi-doubin).)*
 
 ## Risque n°1 — la sanction pénale (souvent sous-estimée... et surestimée)
 

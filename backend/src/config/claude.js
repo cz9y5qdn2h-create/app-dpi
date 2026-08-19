@@ -340,8 +340,8 @@ Tu maîtrises parfaitement :
 - Le sanction pénale de l'article R.330-2 (contravention de 5e classe) en cas de non-remise du DIP au moins 20 jours avant signature ou tout versement de somme — délai qui recommence à courir à compter de la dernière communication en cas de remise fragmentée
 - Le principe fondateur Cass. com., 20 mars 2007, n°06-11.290 : un manquement à l'obligation d'information précontractuelle N'ENTRAÎNE JAMAIS la nullité automatique — le candidat doit démontrer un vice du consentement (erreur, dol) que ce manquement a déterminé (art. 1130 s. Code civil)
 - La jurisprudence sur les prévisionnels : Cass. com. 1er déc. 2021 (n°18-26.572) et Cass. com. 1er juin 2022 (n°21-16.481), qui sanctionnent des prévisionnels grossièrement erronés sans en garantir la véracité
-- Le devoir d'actualisation de l'information jusqu'à la signature (Cass. com., 26 juin 2024, n°23-14.085 ; confirmé Cass. com., 4 déc. 2024, aff. Lady Moving/Fitness Park Development, qui rattache expressément ce devoir au fondement même de l'art. L.330-3) : le silence intentionnel sur un fait déterminant survenu après la remise du DIP constitue un dol par réticence
-- L'extension du périmètre du DIP aux montages de quasi-exclusivité : le seuil de 80 % d'achats du règlement UE 2022/720 n'est qu'indicatif — les juges apprécient la quasi-exclusivité au cas par cas (ex. CA Paris, 22 mai 2024, n°22/08672, en matière de concession), un montage en-deçà de ce seuil peut donc rester soumis au DIP si les circonstances de fait le justifient
+- Le devoir d'actualisation de l'information jusqu'à la signature (Cass. com., 26 juin 2024, n°23-14.085) : le silence intentionnel sur un fait déterminant survenu après la remise du DIP constitue un dol par réticence
+- L'extension du périmètre du DIP aux montages de quasi-exclusivité : le seuil de 80 % d'achats du règlement UE 2022/720 n'est qu'indicatif — les juges apprécient la quasi-exclusivité au cas par cas, un montage en-deçà de ce seuil peut donc rester soumis au DIP si les circonstances de fait le justifient
 
 Règles absolues :
 - Réponds TOUJOURS en JSON valide, sans markdown, sans texte avant ou après
@@ -368,7 +368,7 @@ const parseDIPSections = async (rawText) => {
     system: CACHED_SYSTEM,
     messages: [{
       role: 'user',
-      content: `Analyse ce DIP selon les exigences strictes de la Loi Doubin (art. L.330-3 Code de commerce) et du Décret n°91-337 du 4 avril 1991.
+      content: `Analyse ce DIP selon les exigences strictes de la Loi Doubin (art. L.330-3 Code de commerce) et de l'art. R.330-1 C. com. dans sa version en vigueur au 1er janvier 2024, modifiée par le décret n°2023-1394 du 30 décembre 2023.
 
 TEXTE DU DIP :
 ${rawText.substring(0, 18000)}
@@ -565,7 +565,7 @@ const generateDIPFromForm = async (formData, sourceText = '') => {
     system: CACHED_SYSTEM,
     messages: [{
       role: 'user',
-      content: `Rédige un DIP complet et conforme à la Loi Doubin (art. L.330-3 Code de commerce, Décret n°91-337 du 4 avril 1991) à partir des données ci-dessous, en respectant strictement la grille de conformité par section.
+      content: `Rédige un DIP complet et conforme à la Loi Doubin (art. L.330-3 Code de commerce, R.330-1 C. com. dans sa version en vigueur au 1er janvier 2024, modifiée par le décret n°2023-1394 du 30 décembre 2023) à partir des données ci-dessous, en respectant strictement la grille de conformité par section.
 
 DONNÉES DU FORMULAIRE FRANCHISEUR :
 ${JSON.stringify(formData, null, 2)}
@@ -1105,7 +1105,7 @@ const SYSTEM_CONTRACT_EXPERT = `Tu es un expert juridique senior spécialisé en
 Tu maîtrises parfaitement :
 - Le droit commun des contrats (articles 1103, 1104, 1217 du Code civil)
 - Le contrat de franchise et ses clauses essentielles (durée, redevances, territoire, non-concurrence, résiliation, cession)
-- L'articulation entre le DIP (art. L.330-3, R.330-1 Code de commerce) et le contrat de franchise qui lui succède : le DIP doit être remis 20 jours avant la signature du contrat ; le franchiseur reste tenu de transmettre au candidat toute information déterminante de son consentement survenue entre la remise du DIP et la signature (y compris si elle diverge de ce que le DIP indiquait), sous peine de dol par réticence engageant sa responsabilité (Cass. com., 26 juin 2024, n°23-14.085 ; confirmé Cass. com., 4 déc. 2024, aff. Lady Moving/Fitness Park Development)
+- L'articulation entre le DIP (art. L.330-3, R.330-1 Code de commerce) et le contrat de franchise qui lui succède : le DIP doit être remis 20 jours avant la signature du contrat ; le franchiseur reste tenu de transmettre au candidat toute information déterminante de son consentement survenue entre la remise du DIP et la signature (y compris si elle diverge de ce que le DIP indiquait), sous peine de dol par réticence engageant sa responsabilité (Cass. com., 26 juin 2024, n°23-14.085)
 - La jurisprudence sur les clauses abusives ou déséquilibrées en matière de franchise
 - La portée limitée des clauses de non-concurrence post-contractuelles : Cass. com., 19 mars 2025 (n°23-22.925 et n°24-13.066) juge qu'un franchisé peut accomplir des actes préparatoires à une future activité concurrente (études, démarches, contacts) sans violer la clause de non-concurrence ni son obligation de loyauté, tant que cette activité ne débute effectivement qu'après l'expiration du contrat — une clause rédigée pour interdire ces actes préparatoires eux-mêmes excède ce que la jurisprudence reconnaît comme licite
 
@@ -1754,8 +1754,8 @@ TYPE rupture_brutale [Art. L442-1, II Code commerce — Cass. com., 22 juin 2022
 → Applicable après plusieurs années de relation. Préavis insuffisant = indemnisation obligatoire.
 → Section à risque : Section 8 (conditions de résiliation, durée du préavis).
 
-TYPE ordre_public_l330_3 [Art. L330-3 Code commerce — Cass. 1re civ., 25 janv. 2017, n°15-28.064 — Cass. com., 20 mars 2007, n°06-11.290]
-→ L.330-3 est d'ordre public (Cass. 1re civ., 25 janv. 2017) : toute clause du DIP ou du contrat visant à exonérer le franchiseur de son obligation d'information précontractuelle est réputée non écrite.
+TYPE ordre_public_l330_3 [Art. L330-3 Code commerce — Cass. com., 20 mars 2007, n°06-11.290]
+→ L.330-3 est d'ordre public : toute clause du DIP ou du contrat visant à exonérer le franchiseur de son obligation d'information précontractuelle est réputée non écrite.
 → ATTENTION — PAS de nullité automatique : le principe fondateur Cass. com., 20 mars 2007 (n°06-11.290) interdit de déduire un vice du consentement du seul manquement à l'obligation d'information précontractuelle ; le candidat doit démontrer que l'absence ou l'insuffisance d'information a provoqué une erreur ou un dol ayant déterminé son consentement. Formule toujours le risque au conditionnel ("expose à un risque de nullité si le candidat franchisé démontre que le manquement a déterminé son consentement"), jamais comme une nullité certaine ou automatique.
 
 INSTRUCTIONS :

@@ -88,8 +88,6 @@ dans les délais**. Il a néanmoins été condamné pour avoir tu des procédure
 survenues dans le réseau **entre la remise du DIP et la signature**.
 
 L'obligation d'information court donc **jusqu'à la signature**, et non jusqu'à la remise.
-La Cour de cassation a confirmé ce principe le 4 décembre 2024 en le rattachant
-directement au fondement de l'article L.330-3.
 
 **Traduction opérationnelle** : pendant les 20 jours (ou davantage) qui séparent la remise
 de la signature, tout événement déterminant survenu dans votre réseau doit être
@@ -135,4 +133,3 @@ un contentieux survient trois ans après les faits.
 - [Article R.330-2 du Code de commerce](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006266481)
 - Cass. com., 20 mars 2007, n°06-11.290
 - [Cass. com., 26 juin 2024, n°23-14.085](https://www.legifrance.gouv.fr/juri/id/JURITEXT000049857380)
-- Cass. com., 4 décembre 2024 (Lady Moving / Fitness Park Development)

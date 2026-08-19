@@ -44,9 +44,8 @@ Code de commerce) — jusqu'à 1 500 €, 3 000 € en récidive, quintuplé pou
 morale. Cette sanction-là, elle, est automatique : elle ne dépend d'aucun vice du
 consentement. Mais c'est une amende, pas une annulation de contrat.
 
-**Le caractère d'ordre public de l'article L.330-3.** La Cour de cassation a jugé
-(1re civ., 25 janvier 2017, n°15-28.064) que ces dispositions sont d'ordre public : une
-clause du contrat qui exonérerait le franchiseur de sa responsabilité en cas
+**Le caractère d'ordre public de l'article L.330-3.** Ces dispositions sont d'ordre public :
+une clause du contrat qui exonérerait le franchiseur de sa responsabilité en cas
 d'information défaillante est réputée non écrite. « Ordre public » signifie qu'on ne peut
 pas y déroger par contrat — cela ne signifie pas que la violation entraîne une nullité
 automatique.
@@ -71,9 +70,7 @@ intéressant, et bien plus exigeant pour les franchiseurs :
 > la signature.
 
 Taire intentionnellement un fait déterminant survenu dans cet intervalle caractérise une
-réticence dolosive. La Cour de cassation a confirmé et renforcé ce principe le
-4 décembre 2024 (affaire Lady Moving / Fitness Park Development), en le rattachant
-expressément au fondement même de l'article L.330-3.
+réticence dolosive.
 
 **Conséquence pratique, souvent contre-intuitive : un DIP parfaitement conforme au jour
 de sa remise ne vous protège pas** si vous laissez le candidat signer sans lui signaler
@@ -151,10 +148,8 @@ opposable.
 ## Sources
 
 - Cass. com., 20 mars 2007, n°06-11.290
-- Cass. 1re civ., 25 janvier 2017, n°15-28.064
 - Cass. com., 1er décembre 2021, n°18-26.572 ; Cass. com., 1er juin 2022, n°21-16.481
 - [Cass. com., 26 juin 2024, n°23-14.085 — Légifrance](https://www.legifrance.gouv.fr/juri/id/JURITEXT000049857380)
-- Cass. com., 4 décembre 2024 (Lady Moving / Fitness Park Development)
 - Cass. com., 14 mai 2025, n°23-17.948, 23-18.049, 23-18.082
 - [Article L.330-3 du Code de commerce](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006231936)
 - [Article R.330-1 du Code de commerce](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006266469)

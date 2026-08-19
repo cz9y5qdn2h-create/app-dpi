@@ -6,9 +6,9 @@ keywords: "nullité contrat franchise, DIP inexact, vice du consentement franchi
 author: "Iralink Agency"
 ---
 
-## La nullité n'est pas automatique — mais elle est fréquente
+## La nullité n'est pas automatique — mais le risque est réel
 
-Un DIP absent ou incomplet **n'entraîne pas mécaniquement** la nullité du contrat de franchise. Les tribunaux exigent que le manquement ait **vicié le consentement** du franchisé : il faut démontrer que, correctement informé, il n'aurait pas signé (ou pas aux mêmes conditions). En pratique, cette démonstration aboutit souvent, car les lacunes du DIP portent fréquemment sur des éléments déterminants : rentabilité, état réel du réseau, litiges en cours.
+Un DIP absent ou incomplet **n'entraîne pas mécaniquement** la nullité du contrat de franchise. Les tribunaux exigent que le manquement ait **vicié le consentement** du franchisé : il faut démontrer que, correctement informé, il n'aurait pas signé (ou pas aux mêmes conditions). L'issue dépend entièrement des faits d'espèce, mais les lacunes du DIP portent fréquemment sur des éléments déterminants — rentabilité, état réel du réseau, litiges en cours — ce qui facilite la démonstration du lien de causalité quand ces éléments manquent ou sont faux.
 
 ## Le fondement : le vice du consentement
 
@@ -29,7 +29,7 @@ Quand la nullité est prononcée :
 - **Dommages-intérêts** possibles (investissements perdus, préjudice).
 - Effet en cascade sur les autres contrats du réseau reposant sur le même DIP défaillant.
 
-Le risque cumulé dépasse régulièrement **200 000 €** par contentieux.
+Aucun montant moyen n'est publiquement établi, mais l'effet cumulatif (restitution, dommages-intérêts, contagion aux autres contrats du réseau) peut rapidement dépasser le coût d'une mise en conformité préventive.
 
 ## Les prévisionnels : le piège n°1
 

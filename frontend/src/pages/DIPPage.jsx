@@ -791,7 +791,7 @@ export default function DIPPage() {
                 )}
 
                 <p className="font-dm-sans text-xs text-text-muted text-center">
-                  Analyse basée sur la Loi Doubin (art. L330-3 C. com.), le Décret n°91-337 et la jurisprudence de la Cour de cassation.
+                  Analyse basée sur la Loi Doubin (art. L330-3 C. com.), l'art. R.330-1 C. com. (décret n°2023-1394 du 30 décembre 2023) et la jurisprudence de la Cour de cassation.
                   Cette analyse ne constitue pas un avis juridique — consultez un avocat spécialisé franchise.
                 </p>
               </>

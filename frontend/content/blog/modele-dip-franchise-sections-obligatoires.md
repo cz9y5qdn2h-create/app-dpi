@@ -20,10 +20,9 @@ commerciale.
 
 **Attention au faux repère des 80 %.** Le seuil de 80 % d'achats issu du règlement
 UE 2022/720 n'est qu'un indicateur économique. La quasi-exclusivité au sens de
-l'article L.330-3 reste une notion factuelle, appréciée au cas par cas (voir par exemple
-CA Paris, 22 mai 2024, n°22/08672, en matière de concession). Un montage en-deçà de 80 %
-peut donc rester soumis à l'obligation de DIP. **Ne jamais conclure qu'un montage y
-échappe sur la seule base d'un taux d'achat.**
+l'article L.330-3 reste une notion factuelle, appréciée au cas par cas par les juges du
+fond. Un montage en-deçà de 80 % peut donc rester soumis à l'obligation de DIP.
+**Ne jamais conclure qu'un montage y échappe sur la seule base d'un taux d'achat.**
 
 ## Ce que le texte impose réellement
 
@@ -162,6 +161,5 @@ que comblées : un DIP généré ne contient jamais de chiffre inventé.
 - [Article L.330-3 du Code de commerce](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006231936)
 - [Article R.330-1 du Code de commerce](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006266469)
 - Décret n°2023-1394 du 30 décembre 2023
-- CA Paris, 22 mai 2024, n°22/08672 (quasi-exclusivité)
 - [Cass. com., 26 juin 2024, n°23-14.085](https://www.legifrance.gouv.fr/juri/id/JURITEXT000049857380)
 - Cass. com., 1er décembre 2021, n°18-26.572 ; Cass. com., 1er juin 2022, n°21-16.481
