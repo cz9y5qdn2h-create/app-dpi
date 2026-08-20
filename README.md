@@ -1,4 +1,4 @@
-# DIP Pilot
+# DIPpro
 
 SaaS de mise à jour automatique du Document d'Information Précontractuelle (DIP) pour franchiseurs français.
 
@@ -8,7 +8,7 @@ SaaS de mise à jour automatique du Document d'Information Précontractuelle (DI
 - DB: Supabase (PostgreSQL)
 - Auth: Supabase Auth
 - IA: Claude API (claude-sonnet-4-20250514)
-- Email: Brevo
+- Email: Resend
 - Deploy: Vercel
 
 ## Structure

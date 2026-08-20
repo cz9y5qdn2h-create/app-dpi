@@ -182,10 +182,10 @@ router.post('/notify', authMiddleware, requireFranchisor, async (req, res) => {
 
   await supabaseAdmin.from('notifications').insert(notifications);
 
-  // Envoyer les emails via Brevo (si configuré)
-  if (process.env.BREVO_API_KEY) {
+  // Envoyer les emails via Resend (si configuré)
+  if (process.env.RESEND_API_KEY) {
     for (const franchisee of franchisees) {
-      await sendBrevoEmail(franchisee.email, franchisee.name, summary, dip_id);
+      await sendResendEmail(franchisee.email, franchisee.name, summary, dip_id);
     }
   }
 
@@ -201,24 +201,24 @@ function escapeHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
-async function sendBrevoEmail(email, name, summary, dipId) {
+async function sendResendEmail(email, name, summary, dipId) {
   try {
     const frontendUrl = getAppUrl();
-    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+    const response = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        'api-key': process.env.BREVO_API_KEY,
+        Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        sender: { name: process.env.BREVO_SENDER_NAME || 'DIP Pilot', email: process.env.BREVO_SENDER_EMAIL || 'noreply@dip-pilot.fr' },
-        to: [{ email, name }],
+        from: `${process.env.RESEND_SENDER_NAME || 'DIPpro'} <${process.env.RESEND_SENDER_EMAIL || 'contact@dippro.business'}>`,
+        to: [email],
         subject: 'Mise à jour de votre DIP - Action requise',
-        htmlContent: `<div style="font-family:sans-serif;max-width:600px;margin:auto;background:#080808;color:#F4F2EE;padding:32px;border-radius:8px"><h2 style="color:#C8A96E">Mise à jour du DIP</h2><p>${escapeHtml(summary)}</p><p style="margin-top:24px"><a href="${frontendUrl}/dip" style="background:#C8A96E;color:#080808;padding:12px 24px;text-decoration:none;border-radius:4px;font-weight:600">Consulter le DIP mis à jour</a></p></div>`
+        html: `<div style="font-family:sans-serif;max-width:600px;margin:auto;background:#080808;color:#F4F2EE;padding:32px;border-radius:8px"><h2 style="color:#C8A96E">Mise à jour du DIP</h2><p>${escapeHtml(summary)}</p><p style="margin-top:24px"><a href="${frontendUrl}/dip" style="background:#C8A96E;color:#080808;padding:12px 24px;text-decoration:none;border-radius:4px;font-weight:600">Consulter le DIP mis à jour</a></p></div>`
       })
     });
     return response.ok;
-  } catch (e) { console.error('Brevo error:', e); return false; }
+  } catch (e) { console.error('Resend error:', e); return false; }
 }
 
 module.exports = router;

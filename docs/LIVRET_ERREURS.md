@@ -160,14 +160,14 @@ import { supabase } from '../lib/supabase';
 
 ---
 
-### ERR-BACK-004 — Email Brevo non envoyé
+### ERR-BACK-004 — Email Resend non envoyé
 **Quand** : Les franchisés ne reçoivent pas les notifications  
-**Cause** : `BREVO_API_KEY` manquante ou invalide  
+**Cause** : `RESEND_API_KEY` manquante ou invalide  
 **Solution** :
 1. Vérifier la clé dans Vercel → Environment Variables
-2. Tester la clé sur le dashboard Brevo → API Keys
-3. Vérifier que `BREVO_SENDER_EMAIL` est un domaine vérifié dans Brevo
-4. Consulter les logs d'envoi dans Brevo → Logs → Transactional
+2. Tester la clé sur le dashboard Resend → API Keys
+3. Vérifier que `RESEND_SENDER_EMAIL` est une adresse d'un domaine vérifié dans Resend → Domains
+4. Consulter les logs d'envoi dans le dashboard Resend → Emails
 
 ---
 
@@ -369,11 +369,11 @@ const { data } = await supabaseAdmin.storage
 
 ### ERR-FUNC-004 — Notification franchisés non envoyée
 **Quand** : Le bouton "Notifier" ne produit aucun email  
-**Cause** : Brevo API key invalide ou email sender non vérifié  
+**Cause** : Resend API key invalide ou email sender non vérifié  
 **Solution** :
-1. Tester la clé Brevo sur le dashboard : brevo.com → Transactional → Test
-2. Vérifier que l'adresse `BREVO_SENDER_EMAIL` est vérifiée dans Brevo → Senders
-3. Vérifier les logs dans Vercel → Functions pour voir l'erreur retournée par Brevo
+1. Tester la clé Resend sur le dashboard : resend.com → API Keys
+2. Vérifier que l'adresse `RESEND_SENDER_EMAIL` est une adresse d'un domaine vérifié dans Resend → Domains
+3. Vérifier les logs dans Vercel → Functions pour voir l'erreur retournée par Resend
 
 ---
 
@@ -422,7 +422,7 @@ SELECT tablename, policyname, cmd, qual FROM pg_policies ORDER BY tablename;
 SUPABASE_SERVICE_ROLE_KEY  → Backend uniquement, jamais dans le frontend
 ANTHROPIC_API_KEY          → Doit commencer par sk-ant-
 VITE_SUPABASE_URL          → Baked au build — redéployer si changée
-BREVO_API_KEY              → Doit commencer par xkeysib-
+RESEND_API_KEY              → Doit commencer par re_
 FRONTEND_URL               → Doit correspondre exactement au domaine frontend
 ```
 
@@ -435,7 +435,7 @@ FRONTEND_URL               → Doit correspondre exactement au domaine frontend
 **Supabase Dashboard** : https://supabase.com/dashboard/project/xlfycuhmbnzeofgnleof  
 **Vercel Dashboard** : https://vercel.com/dashboard  
 **Anthropic Console** : https://console.anthropic.com  
-**Brevo Dashboard** : https://app.brevo.com  
+**Resend Dashboard** : https://resend.com/emails  
 
 ---
 

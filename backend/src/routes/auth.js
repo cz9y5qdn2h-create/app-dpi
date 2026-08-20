@@ -9,20 +9,19 @@ const router = express.Router();
 const RESET_TTL_MS = 60 * 60 * 1000; // 1 heure
 
 async function sendResetEmail(toEmail, toName, resetUrl) {
-  const key = process.env.BREVO_API_KEY;
+  const key = process.env.RESEND_API_KEY;
   if (!key) return false;
   try {
-    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+    const fromName = process.env.RESEND_SENDER_NAME || 'DIPpro';
+    const fromEmail = process.env.RESEND_SENDER_EMAIL || 'contact@dippro.business';
+    const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
-      headers: { 'api-key': key, 'Content-Type': 'application/json' },
+      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        sender: {
-          name: process.env.BREVO_SENDER_NAME || 'DIPpro',
-          email: process.env.BREVO_SENDER_EMAIL || 'noreply@dippro.fr',
-        },
-        to: [{ email: toEmail, name: toName || '' }],
+        from: `${fromName} <${fromEmail}>`,
+        to: [toEmail],
         subject: 'Réinitialisation de votre mot de passe DIPpro',
-        htmlContent: `
+        html: `
 <div style="font-family:system-ui,sans-serif;max-width:520px;margin:auto;background:#0a0805;color:#F4F2EE;padding:36px;border-radius:12px;border:1px solid #2a2218">
   <h2 style="color:#C8A96E;margin:0 0 8px;font-size:22px;font-weight:600">Réinitialisation du mot de passe</h2>
   <p style="color:#a09070;font-size:14px;margin:0 0 28px">Ce lien est valable <strong style="color:#F4F2EE">1 heure</strong>.</p>

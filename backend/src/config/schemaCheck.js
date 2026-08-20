@@ -7,7 +7,7 @@ const { supabaseAdmin } = require('./supabase');
 // cassé les alertes pendant 11 heures sans qu'aucun signal ne remonte.
 // Ce contrôle transforme cette dérive invisible en diagnostic immédiat.
 const REQUIRED_COLUMNS = {
-  users:              ['id', 'email', 'role', 'avocat_access_token', 'franchiseur_access_token', 'lawyer_email', 'avocat_digest_frequency', 'avocat_digest_channel', 'avocat_digest_last_sent_at'],
+  users:              ['id', 'email', 'role', 'avocat_access_token', 'franchiseur_access_token', 'lawyer_email', 'avocat_digest_frequency', 'avocat_digest_channel', 'avocat_digest_last_sent_at', 'resend_api_key', 'resend_sender_name', 'resend_sender_email'],
   alerts:             ['id', 'user_id', 'type', 'title', 'contract_id', 'clause_id', 'franchisee_id'],
   dip_documents:      ['id', 'user_id', 'status', 'sha256', 'compliance_level', 'signature_image'],
   dip_sections:       ['id', 'dip_id', 'content', 'legal_blocking', 'last_edited_by', 'avocat_validation_status'],

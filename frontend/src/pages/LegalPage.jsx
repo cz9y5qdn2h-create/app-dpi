@@ -178,8 +178,7 @@ En cas de résiliation, les données sont conservées 30 jours avant suppression
 • Supabase, Inc. — base de données et authentification (hébergée AWS eu-west-1, Irlande)
 • Vercel, Inc. (San Francisco, USA) — hébergement frontend et API serverless
 • Vercel, Inc. — mesure d'audience (Vercel Analytics), sans cookie, données agrégées et anonymisées
-• Brevo (Sendinblue SA, Paris) — envoi d'emails transactionnels
-• Resend, Inc. (San Francisco, USA) — envoi des messages soumis via le formulaire de contact public, encadré par CCT
+• Resend, Inc. (San Francisco, USA) — envoi de tous les emails transactionnels (notifications aux franchisés, réinitialisation de mot de passe, invitations avocat/franchiseur, formulaire de contact), encadré par clauses contractuelles types (CCT)
 • Cal.com, Inc. — prise de rendez-vous commerciaux
 
 Ces sous-traitants traitent les données selon leurs propres politiques. Les transferts hors UE (Anthropic, Vercel) sont encadrés par des clauses contractuelles types (CCT) conformes au RGPD.`
@@ -282,8 +281,7 @@ Elles peuvent être transmises aux sous-traitants suivants dans la stricte mesur
 • Anthropic, Inc. (USA) — analyse IA des textes DIP — encadrée par clauses contractuelles types (CCT)
 • Vercel, Inc. (USA) — hébergement applicatif — encadré par CCT
 • Vercel, Inc. (USA) — mesure d'audience (Vercel Analytics) — sans cookie, sans identifiant individuel, données agrégées uniquement — encadrée par CCT
-• Brevo / Sendinblue (France) — envoi d'emails — hébergé en Europe
-• Resend, Inc. (USA) — envoi des messages du formulaire de contact (nom, email, société, message) — encadrée par CCT
+• Resend, Inc. (USA) — envoi de tous les emails transactionnels (notifications franchisés, réinitialisation de mot de passe, invitations, formulaire de contact) — encadrée par CCT
 • Cal.com, Inc. (USA) — prise de rendez-vous — encadrée par CCT
 
 Tous les transferts hors Union européenne sont encadrés par des clauses contractuelles types (CCT) adoptées par la Commission européenne (décision 2021/914), garantissant un niveau de protection adéquat.

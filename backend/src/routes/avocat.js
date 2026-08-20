@@ -596,23 +596,22 @@ router.post('/invite', authMiddleware, inviteLimiter, async (req, res) => {
 
   const joinUrl = `${appUrl}/api/auth/avocat-login/${accessToken}`;
 
-  const brevoKey = process.env.BREVO_API_KEY;
+  const resendKey = process.env.RESEND_API_KEY;
   const companyName = franchiseur?.company_name || 'Un franchiseur';
 
-  if (brevoKey) {
+  if (resendKey) {
     try {
-      await fetch('https://api.brevo.com/v3/smtp/email', {
+      await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
-          'accept': 'application/json',
-          'api-key': brevoKey,
+          Authorization: `Bearer ${resendKey}`,
           'content-type': 'application/json',
         },
         body: JSON.stringify({
-          sender: { name: 'DIPpro', email: 'noreply@dippro.business' },
-          to: [{ email }],
+          from: `DIPpro <${process.env.RESEND_SENDER_EMAIL || 'contact@dippro.business'}>`,
+          to: [email],
           subject: `${companyName} vous invite à accéder à son DIP sur DIPpro`,
-          htmlContent: `
+          html: `
 <div style="font-family:'DM Sans',Arial,sans-serif;max-width:540px;margin:auto;color:#1A1826">
   <div style="background:linear-gradient(135deg,#C8A96E,#A8893E);border-radius:12px 12px 0 0;padding:24px 32px">
     <p style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:26px;color:#fff;font-weight:600">DIPpro</p>
@@ -704,23 +703,22 @@ router.post('/invite-franchiseur', authMiddleware, requireAvocat, inviteLimiter,
 
   const joinUrl = `${appUrl}/api/auth/franchiseur-login/${accessToken}`;
 
-  const brevoKey = process.env.BREVO_API_KEY;
+  const resendKey = process.env.RESEND_API_KEY;
   const avocatName = avocat?.company_name || 'Votre avocat';
 
-  if (brevoKey) {
+  if (resendKey) {
     try {
-      await fetch('https://api.brevo.com/v3/smtp/email', {
+      await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
-          'accept': 'application/json',
-          'api-key': brevoKey,
+          Authorization: `Bearer ${resendKey}`,
           'content-type': 'application/json',
         },
         body: JSON.stringify({
-          sender: { name: 'DIPpro', email: 'noreply@dippro.business' },
-          to: [{ email }],
+          from: `DIPpro <${process.env.RESEND_SENDER_EMAIL || 'contact@dippro.business'}>`,
+          to: [email],
           subject: `${avocatName} vous invite à gérer votre DIP sur DIPpro`,
-          htmlContent: `
+          html: `
 <div style="font-family:'DM Sans',Arial,sans-serif;max-width:540px;margin:auto;color:#1A1826">
   <div style="background:linear-gradient(135deg,#C8A96E,#A8893E);border-radius:12px 12px 0 0;padding:24px 32px">
     <p style="margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:26px;color:#fff;font-weight:600">DIPpro</p>

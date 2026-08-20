@@ -1,28 +1,8 @@
 const express = require('express');
 const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware, requireFranchisor } = require('../middleware/auth');
+const { sendTransactionalEmail: sendEmail } = require('../config/email');
 const router = express.Router();
-
-// Envoyer un email via Brevo (clé de l'utilisateur ou clé env globale)
-async function sendEmail(to, name, subject, htmlContent, userBrevoKey, senderName, senderEmail) {
-  const key = userBrevoKey || process.env.BREVO_API_KEY;
-  if (!key) return { ok: false, error: 'Clé Brevo non configurée. Renseignez-la dans Paramètres > Emails.' };
-
-  const res = await fetch('https://api.brevo.com/v3/smtp/email', {
-    method: 'POST',
-    headers: { 'api-key': key, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      sender: {
-        name: senderName || process.env.BREVO_SENDER_NAME || 'DIPpro',
-        email: senderEmail || process.env.BREVO_SENDER_EMAIL || 'noreply@dip-pilot.fr'
-      },
-      to: [{ email: to, name }],
-      subject,
-      htmlContent
-    })
-  });
-  return { ok: res.ok, status: res.status };
-}
 
 // Envoyer un message WhatsApp via Twilio
 async function sendWhatsApp(to, message) {
@@ -80,9 +60,9 @@ router.post('/send', authMiddleware, requireFranchisor, async (req, res) => {
 
   if (!franchisees?.length) return res.status(400).json({ error: 'Aucun franchisé actif à notifier' });
 
-  // Charger le profil du franchiseur pour l'expéditeur (+ clé Brevo)
+  // Charger le profil du franchiseur pour l'expéditeur (+ clé Resend)
   const { data: franchisor } = await supabaseAdmin.from('users')
-    .select('company_name, brevo_api_key, brevo_sender_name, brevo_sender_email')
+    .select('company_name, resend_api_key, resend_sender_name, resend_sender_email')
     .eq('id', req.user.id).single();
   const companyName = franchisor?.company_name || 'Votre franchiseur';
 
@@ -107,9 +87,9 @@ router.post('/send', authMiddleware, requireFranchisor, async (req, res) => {
         f.email, f.name,
         `[${companyName}] Mise à jour de votre DIP`,
         html,
-        franchisor?.brevo_api_key,
-        franchisor?.brevo_sender_name,
-        franchisor?.brevo_sender_email
+        franchisor?.resend_api_key,
+        franchisor?.resend_sender_name,
+        franchisor?.resend_sender_email
       );
       if (emailResult.ok) results.email.push(f.email);
       else results.errors.push({ channel: 'email', franchisee: f.name, error: emailResult.error });
@@ -175,8 +155,8 @@ router.get('/status', authMiddleware, async (req, res) => {
   const whatsappEnabled = process.env.FEATURE_WHATSAPP === 'true';
   res.json({
     email: {
-      configured: !!process.env.BREVO_API_KEY,
-      sender: process.env.BREVO_SENDER_EMAIL || null,
+      configured: !!process.env.RESEND_API_KEY,
+      sender: process.env.RESEND_SENDER_EMAIL || null,
       enabled: true
     },
     whatsapp: {

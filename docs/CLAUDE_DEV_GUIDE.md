@@ -50,7 +50,7 @@
 |---|---|
 | Vercel | Frontend build + API serverless (timeout 60s) |
 | Supabase | PostgreSQL + Auth + Storage |
-| Brevo (Sendinblue) | Emails transactionnels |
+| Resend | Emails transactionnels |
 | Anthropic | API Claude IA |
 
 ---
@@ -110,7 +110,7 @@ app-dpi/
 │           ├── export.js             # Export DOCX/PDF/JSON
 │           ├── admin.js              # Console admin
 │           ├── history.js            # Journal d'audit
-│           ├── notifications.js      # Envoi emails Brevo
+│           ├── notifications.js      # Envoi emails Resend
 │           ├── analytics.js          # POST lecture / GET stats
 │           └── waitlist.js           # Liste d'attente landing
 │
@@ -147,9 +147,9 @@ SUPABASE_URL=https://xlfycuhmbnzeofgnleof.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=<clé service role — JAMAIS dans le code>
 ANTHROPIC_API_KEY=sk-ant-...
 ANTHROPIC_MODEL=claude-opus-4-7
-BREVO_API_KEY=xkeysib-...
-BREVO_SENDER_EMAIL=noreply@dip-pilot.fr
-BREVO_SENDER_NAME=DIP Pilot
+RESEND_API_KEY=re_...
+RESEND_SENDER_EMAIL=contact@dippro.business
+RESEND_SENDER_NAME=DIPpro
 ADMIN_EMAIL=theo@iralink-agency.com
 ADMIN_PASSWORD=<mot de passe admin>
 ```
@@ -335,7 +335,7 @@ docs(scope): description
 ## 13. Checklist avant déploiement
 
 - [ ] `cd frontend && npm run build` passe sans erreur
-- [ ] Variables d'env définies dans Vercel (SUPABASE_, ANTHROPIC_, BREVO_)
+- [ ] Variables d'env définies dans Vercel (SUPABASE_, ANTHROPIC_, RESEND_)
 - [ ] Aucun `console.log` en production
 - [ ] Aucune couleur hardcodée (utiliser CSS vars)
 - [ ] Textes traduits dans `fr.json` ET `en.json`

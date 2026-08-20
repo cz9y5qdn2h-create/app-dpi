@@ -55,8 +55,8 @@ export default function SettingsPage() {
   });
   const [inviteEmail, setInviteEmail] = useState('');
   const [lastInviteUrl, setLastInviteUrl] = useState(null);
-  const [brevoForm, setBrevoForm] = useState({ brevo_api_key: '', brevo_sender_name: 'DIPpro', brevo_sender_email: '' });
-  const [showBrevoKey, setShowBrevoKey] = useState(false);
+  const [resendForm, setResendForm] = useState({ resend_api_key: '', resend_sender_name: 'DIPpro', resend_sender_email: '' });
+  const [showResendKey, setShowResendKey] = useState(false);
   const [showSourceForm, setShowSourceForm] = useState(false);
   const [sourceForm, setSourceForm] = useState({ type: 'manual' });
   const [passwordForm, setPasswordForm] = useState({ newPassword: '', confirmPassword: '' });
@@ -160,10 +160,10 @@ export default function SettingsPage() {
         notification_frequency: data.profile.notification_frequency || 'immediate',
         renewal_alert_days: data.profile.renewal_alert_days ?? 30
       });
-      setBrevoForm({
-        brevo_api_key: data.profile.brevo_api_key || '',
-        brevo_sender_name: data.profile.brevo_sender_name || 'DIPpro',
-        brevo_sender_email: data.profile.brevo_sender_email || ''
+      setResendForm({
+        resend_api_key: data.profile.resend_api_key || '',
+        resend_sender_name: data.profile.resend_sender_name || 'DIPpro',
+        resend_sender_email: data.profile.resend_sender_email || ''
       });
       setCopilotForm({
         copilot_addressing_name: data.profile.copilot_addressing_name || '',
@@ -204,7 +204,7 @@ export default function SettingsPage() {
     onError: (err) => toast.error(err.message)
   });
 
-  const saveBrevoMutation = useMutation({
+  const saveResendMutation = useMutation({
     mutationFn: (d) => api.put('/settings/profile', d),
     onSuccess: () => { toast.success('Configuration email enregistrée'); queryClient.invalidateQueries({ queryKey: ['settings'] }); },
     onError: (err) => toast.error(err.message)
@@ -229,7 +229,7 @@ export default function SettingsPage() {
     mutationFn: () => api.post('/notifications/test', { channel: 'email', target: data?.profile?.email }),
     onSuccess: (res) => {
       if (res.data.ok) toast.success('Email de test envoyé !');
-      else toast.error('Échec : ' + (res.data.error || 'Vérifiez votre clé Brevo'));
+      else toast.error('Échec : ' + (res.data.error || 'Vérifiez votre clé Resend'));
     },
     onError: (err) => toast.error(err.message)
   });
@@ -859,35 +859,35 @@ export default function SettingsPage() {
       </div>
       )}
 
-      {/* Configuration email Brevo — envoi aux franchisés, sans objet côté avocat */}
+      {/* Configuration email Resend — envoi aux franchisés, sans objet côté avocat */}
       {!isAvocat && (
       <div className="card">
         <div className="mb-5">
           <h2 className="font-cormorant text-xl">{t('settings.sections.emailService')}</h2>
           <p className="font-dm-sans text-xs text-text-secondary mt-1">
-            Configurez votre compte Brevo pour envoyer des emails à vos franchisés. Obtenez une clé API gratuite sur{' '}
-            <a href="https://www.brevo.com" target="_blank" rel="noreferrer" className="text-gold hover:underline">brevo.com</a>.
+            Configurez votre compte Resend pour envoyer des emails à vos franchisés. Obtenez une clé API gratuite sur{' '}
+            <a href="https://resend.com" target="_blank" rel="noreferrer" className="text-gold hover:underline">resend.com</a>.
           </p>
         </div>
 
         {isLoading ? <LoadingSpinner /> : (
           <div className="space-y-4">
             <div>
-              <label className="label">Clé API Brevo</label>
+              <label className="label">Clé API Resend</label>
               <div className="relative">
                 <input
                   className="input-field pr-10"
-                  type={showBrevoKey ? 'text' : 'password'}
-                  value={brevoForm.brevo_api_key}
-                  onChange={e => setBrevoForm(f => ({ ...f, brevo_api_key: e.target.value }))}
-                  placeholder="xkeysib-..."
+                  type={showResendKey ? 'text' : 'password'}
+                  value={resendForm.resend_api_key}
+                  onChange={e => setResendForm(f => ({ ...f, resend_api_key: e.target.value }))}
+                  placeholder="re_..."
                 />
                 <button
                   type="button"
-                  onClick={() => setShowBrevoKey(s => !s)}
+                  onClick={() => setShowResendKey(s => !s)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary transition-colors"
                 >
-                  {showBrevoKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showResendKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
             </div>
@@ -895,8 +895,8 @@ export default function SettingsPage() {
               <label className="label">Nom de l'expéditeur</label>
               <input
                 className="input-field"
-                value={brevoForm.brevo_sender_name}
-                onChange={e => setBrevoForm(f => ({ ...f, brevo_sender_name: e.target.value }))}
+                value={resendForm.resend_sender_name}
+                onChange={e => setResendForm(f => ({ ...f, resend_sender_name: e.target.value }))}
                 placeholder="DIPpro"
               />
             </div>
@@ -905,25 +905,25 @@ export default function SettingsPage() {
               <input
                 className="input-field"
                 type="email"
-                value={brevoForm.brevo_sender_email}
-                onChange={e => setBrevoForm(f => ({ ...f, brevo_sender_email: e.target.value }))}
+                value={resendForm.resend_sender_email}
+                onChange={e => setResendForm(f => ({ ...f, resend_sender_email: e.target.value }))}
                 placeholder="contact@monenseigne.fr"
               />
             </div>
             <div className="flex gap-3">
               <button
                 type="button"
-                onClick={() => saveBrevoMutation.mutate(brevoForm)}
-                disabled={saveBrevoMutation.isPending}
+                onClick={() => saveResendMutation.mutate(resendForm)}
+                disabled={saveResendMutation.isPending}
                 className="btn-liquid-glass flex items-center gap-2"
               >
-                {saveBrevoMutation.isPending ? <LoadingSpinner size="sm" /> : <Save className="w-4 h-4" />}
+                {saveResendMutation.isPending ? <LoadingSpinner size="sm" /> : <Save className="w-4 h-4" />}
                 Enregistrer
               </button>
               <button
                 type="button"
                 onClick={() => testEmailMutation.mutate()}
-                disabled={testEmailMutation.isPending || !brevoForm.brevo_api_key}
+                disabled={testEmailMutation.isPending || !resendForm.resend_api_key}
                 className="btn-secondary flex items-center gap-2"
               >
                 {testEmailMutation.isPending ? <LoadingSpinner size="sm" /> : <Send className="w-4 h-4" />}

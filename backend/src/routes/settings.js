@@ -17,7 +17,7 @@ router.put('/profile', authMiddleware, async (req, res) => {
     renewal_alert_days,
     automation_level, notifications_email, notifications_inapp,
     notifications_sms, notification_frequency,
-    brevo_api_key, brevo_sender_name, brevo_sender_email,
+    resend_api_key, resend_sender_name, resend_sender_email,
     copilot_addressing_name, copilot_formality, copilot_memory_notes
   } = req.body;
 
@@ -37,9 +37,9 @@ router.put('/profile', authMiddleware, async (req, res) => {
   if (notifications_inapp !== undefined) extendedUpdates.notifications_inapp = notifications_inapp;
   if (notifications_sms !== undefined) extendedUpdates.notifications_sms = notifications_sms;
   if (notification_frequency !== undefined) extendedUpdates.notification_frequency = notification_frequency;
-  if (brevo_api_key !== undefined) extendedUpdates.brevo_api_key = brevo_api_key || null;
-  if (brevo_sender_name !== undefined) extendedUpdates.brevo_sender_name = brevo_sender_name || null;
-  if (brevo_sender_email !== undefined) extendedUpdates.brevo_sender_email = brevo_sender_email || null;
+  if (resend_api_key !== undefined) extendedUpdates.resend_api_key = resend_api_key || null;
+  if (resend_sender_name !== undefined) extendedUpdates.resend_sender_name = resend_sender_name || null;
+  if (resend_sender_email !== undefined) extendedUpdates.resend_sender_email = resend_sender_email || null;
   // Migration 015 — seuil de renouvellement configurable (1-365 jours)
   if (renewal_alert_days !== undefined) {
     const days = parseInt(renewal_alert_days, 10);

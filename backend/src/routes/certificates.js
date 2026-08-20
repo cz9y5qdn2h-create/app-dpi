@@ -130,19 +130,19 @@ const buildDipUpdateEmail = (franchiseeName, companyName, summary, attestationUr
 // ─── Notification automatique franchisés après mise à jour DIP ───────────────
 
 async function notifyFranchisees({ userId, certId, dipId, publicToken, cert, pdfUrl, changes }) {
-  const brevoKey = process.env.BREVO_API_KEY;
-  if (!brevoKey) return; // Brevo non configuré — silencieux
+  const resendKey = process.env.RESEND_API_KEY;
+  if (!resendKey) return; // Resend non configuré — silencieux
 
   const { data: franchisor } = await supabaseAdmin
     .from('users')
-    .select('company_name, brevo_api_key, brevo_sender_name, brevo_sender_email')
+    .select('company_name, resend_api_key, resend_sender_name, resend_sender_email')
     .eq('id', userId)
     .single();
 
-  const apiKey      = franchisor?.brevo_api_key || brevoKey;
+  const apiKey      = franchisor?.resend_api_key || resendKey;
   const companyName = franchisor?.company_name  || 'Votre franchiseur';
-  const senderName  = franchisor?.brevo_sender_name  || process.env.BREVO_SENDER_NAME  || 'DIPpro';
-  const senderEmail = franchisor?.brevo_sender_email || process.env.BREVO_SENDER_EMAIL || 'noreply@dippro.fr';
+  const senderName  = franchisor?.resend_sender_name  || process.env.RESEND_SENDER_NAME  || 'DIPpro';
+  const senderEmail = franchisor?.resend_sender_email || process.env.RESEND_SENDER_EMAIL || 'contact@dippro.business';
 
   const { data: franchisees } = await supabaseAdmin
     .from('franchisees')
@@ -163,14 +163,14 @@ async function notifyFranchisees({ userId, certId, dipId, publicToken, cert, pdf
     let ok = false;
     try {
       const html = buildDipUpdateEmail(f.name, companyName, summary, attestationUrl, changes.length);
-      const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      const response = await fetch('https://api.resend.com/emails', {
         method: 'POST',
-        headers: { 'api-key': apiKey, 'Content-Type': 'application/json' },
+        headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          sender: { name: senderName, email: senderEmail },
-          to: [{ email: f.email, name: f.name }],
+          from: `${senderName} <${senderEmail}>`,
+          to: [f.email],
           subject: `[${companyName}] Mise à jour de votre DIP — ${changes.length} modification(s)`,
-          htmlContent: html,
+          html,
         }),
       });
       ok = response.ok;

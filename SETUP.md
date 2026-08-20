@@ -1,4 +1,4 @@
-# Guide d'installation DIP Pilot
+# Guide d'installation DIPpro
 
 ## 1. Supabase - Base de donnees
 
@@ -43,9 +43,9 @@ SUPABASE_URL=https://xxxx.supabase.co
 SUPABASE_ANON_KEY=eyJhbGci...
 SUPABASE_SERVICE_ROLE_KEY=eyJhbGci...
 ANTHROPIC_API_KEY=sk-ant-...
-BREVO_API_KEY=xkeysib-...
-BREVO_SENDER_EMAIL=noreply@dip-pilot.fr
-BREVO_SENDER_NAME=DIP Pilot
+RESEND_API_KEY=re_...
+RESEND_SENDER_EMAIL=contact@dippro.business
+RESEND_SENDER_NAME=DIPpro
 ADMIN_EMAIL=theo@iralink-agency.com
 ADMIN_PASSWORD=*Theo.iralink-agency
 ```
@@ -92,7 +92,7 @@ npm run dev
 |---------|-------------|-------|
 | Supabase | app.supabase.com | DB + Auth + Storage |
 | Anthropic | console.anthropic.com | IA Claude Sonnet |
-| Brevo (opt.) | app.brevo.com | Emails franchises |
+| Resend (opt.) | resend.com/emails | Emails franchises |
 
 ## 7. Compte admin pre-installe
 

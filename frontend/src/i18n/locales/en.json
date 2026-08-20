@@ -366,7 +366,7 @@
       "profile": "Franchisor information",
       "automation": "Automation level",
       "notifications": "Notifications",
-      "emailService": "Email delivery (Brevo)"
+      "emailService": "Email delivery (Resend)"
     },
     "theme": {
       "label": "Interface theme",

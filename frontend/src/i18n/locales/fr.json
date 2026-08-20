@@ -366,7 +366,7 @@
       "profile": "Informations du franchiseur",
       "automation": "Niveau d'automatisation",
       "notifications": "Notifications",
-      "emailService": "Envoi d'emails (Brevo)"
+      "emailService": "Envoi d'emails (Resend)"
     },
     "theme": {
       "label": "Thème de l'interface",

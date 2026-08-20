@@ -37,20 +37,19 @@ function isAuthorized(req) {
 }
 
 async function sendEmail(to, name, subject, html, profile) {
-  const key = profile?.brevo_api_key || process.env.BREVO_API_KEY;
+  const key = profile?.resend_api_key || process.env.RESEND_API_KEY;
   if (!key) return false;
   try {
-    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+    const fromName = profile?.resend_sender_name || process.env.RESEND_SENDER_NAME || 'DIPpro';
+    const fromEmail = profile?.resend_sender_email || process.env.RESEND_SENDER_EMAIL || 'contact@dippro.business';
+    const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
-      headers: { 'api-key': key, 'Content-Type': 'application/json' },
+      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        sender: {
-          name: profile?.brevo_sender_name || process.env.BREVO_SENDER_NAME || 'DIPpro',
-          email: profile?.brevo_sender_email || process.env.BREVO_SENDER_EMAIL || 'noreply@dippro.fr',
-        },
-        to: [{ email: to, name: name || '' }],
+        from: `${fromName} <${fromEmail}>`,
+        to: [to],
         subject,
-        htmlContent: html,
+        html,
       }),
     });
     return res.ok;
@@ -287,7 +286,7 @@ async function runAvocatDigests(appUrl, sendEmailFn) {
 
   const { data: avocats } = await supabaseAdmin
     .from('users')
-    .select('id, email, company_name, avocat_digest_frequency, avocat_digest_channel, avocat_digest_last_sent_at, brevo_api_key, brevo_sender_name, brevo_sender_email')
+    .select('id, email, company_name, avocat_digest_frequency, avocat_digest_channel, avocat_digest_last_sent_at, resend_api_key, resend_sender_name, resend_sender_email')
     .eq('role', 'avocat')
     .neq('avocat_digest_frequency', 'off');
 
@@ -536,7 +535,7 @@ Réponds en JSON strict :
     if (userIdsWithChanges.length > 0) {
       const { data: profiles } = await supabaseAdmin
         .from('users')
-        .select('id, email, company_name, notifications_email, brevo_api_key, brevo_sender_name, brevo_sender_email')
+        .select('id, email, company_name, notifications_email, resend_api_key, resend_sender_name, resend_sender_email')
         .in('id', userIdsWithChanges)
         .eq('notifications_email', true);
 

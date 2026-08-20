@@ -9,6 +9,33 @@ Voir aussi : [INVARIANTS.md](INVARIANTS.md) · [BUG_JOURNAL.md](BUG_JOURNAL.md) 
 
 ---
 
+## 2026-08-20 (2)
+
+### 🟢 Migration complète Brevo → Resend
+DIPpro utilisait Brevo pour tout l'email transactionnel (notifications
+franchisés, réinitialisation de mot de passe, invitations avocat↔franchiseur,
+rapports de bugs, digests avocat) alors que le formulaire de contact utilisait
+déjà Resend depuis peu — deux prestataires pour le même usage. Migration
+complète vers Resend, décision du fondateur pour tout le groupe (Iralink +
+DIPpro).
+- Nouveau module partagé `backend/src/config/email.js` (`sendTransactionalEmail`)
+  — remplace 7 implémentations dupliquées de l'appel HTTP Brevo dans
+  `notifications.js`, `auth.js`, `certificates.js`, `bugs.js`, `avocat.js` (×2),
+  `cron.js`, `franchisees.js`.
+- Migration 049 : colonnes `resend_api_key`/`resend_sender_name`/`resend_sender_email`
+  sur `users` (remplacent `brevo_*`, conservées sans purge). Un franchiseur peut
+  toujours définir sa propre clé (Paramètres > Emails), désormais Resend.
+- `LegalPage.jsx` : Brevo retiré des sous-traitants déclarés (CGU + privacy),
+  Resend étendu pour couvrir tout l'email transactionnel — changement notable :
+  Resend est basé aux USA (CCT), Brevo était basé en France/UE.
+- Toute la doc mise à jour (`README.md`, `SETUP.md`, `DEPLOYMENT.md`,
+  `docs/CLAUDE_DEV_GUIDE.md`, `docs/LIVRET_ERREURS.md`).
+*Non fait — hors périmètre de ce dépôt* : la partie MailerLite → Resend
+concernait le site vitrine iralink-agency.com (aucune trace de MailerLite
+dans ce dépôt — DIPpro utilisait Brevo, pas MailerLite).
+
+---
+
 ## 2026-08-20
 
 ### 🔴 Lien de vérification des attestations mort depuis toujours

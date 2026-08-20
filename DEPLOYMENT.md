@@ -52,8 +52,8 @@ Dans Vercel > Project > Settings > **Environment Variables**, ajouter :
 | `VITE_CONTACT_EMAIL` | `theo@iralink-agency.com` | ✅ |
 | `VITE_CONTACT_PHONE` | numéro optionnel | ❌ |
 | `ANTHROPIC_MODEL` | `claude-sonnet-4-20250514` | ❌ |
-| `BREVO_API_KEY` | clé Brevo pour emails franchisés | ❌ |
-| `BREVO_SENDER_EMAIL` | `noreply@dip-pilot.fr` | ❌ |
+| `RESEND_API_KEY` | clé Resend pour emails franchisés | ❌ |
+| `RESEND_SENDER_EMAIL` | `contact@dippro.business` | ❌ |
 
 > ⚠️ **Ne pas** ajouter `VITE_API_URL` — le backend est sur le même domaine.
 

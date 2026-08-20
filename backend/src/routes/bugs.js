@@ -48,16 +48,16 @@ async function notifyAdmin(report) {
   const page = report.page_url || '—';
   const desc = report.description;
 
-  // Email via Brevo
-  if (process.env.BREVO_API_KEY) {
-    fetch('https://api.brevo.com/v3/smtp/email', {
+  // Email via Resend
+  if (process.env.RESEND_API_KEY) {
+    fetch('https://api.resend.com/emails', {
       method: 'POST',
-      headers: { 'api-key': process.env.BREVO_API_KEY, 'Content-Type': 'application/json' },
+      headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        sender: { name: 'DIPpro Bugs', email: process.env.BREVO_SENDER_EMAIL || 'noreply@dip-pilot.fr' },
-        to: [{ email: ADMIN_EMAIL, name: 'Théo Coutard' }],
+        from: `DIPpro Bugs <${process.env.RESEND_SENDER_EMAIL || 'contact@dippro.business'}>`,
+        to: [ADMIN_EMAIL],
         subject: `${icon} [Bug DIPpro] ${label} — ${who}`,
-        htmlContent: `
+        html: `
 <div style="font-family:system-ui,sans-serif;max-width:600px;margin:auto;background:#080808;color:#f0f0f0;padding:28px;border-radius:10px;border:1px solid #222">
   <h2 style="margin:0 0 20px;font-size:17px;color:#e53e3e">${icon} Bug DIPpro — <span style="font-weight:400">${label}</span></h2>
   <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:20px">
