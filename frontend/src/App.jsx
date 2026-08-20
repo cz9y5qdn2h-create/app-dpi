@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { useAuth } from './context/AuthContext';
 import AuthProvider from './context/AuthContext';
 import { FEATURES } from './lib/features';
@@ -47,7 +47,6 @@ const AvocatBibliothequePage = lazy(() => import('./pages/AvocatBibliothequePage
 const AvocatDocumentsPage    = lazy(() => import('./pages/AvocatDocumentsPage'));
 const AvocatExportPage       = lazy(() => import('./pages/AvocatExportPage'));
 const AvocatMonitoringPage   = lazy(() => import('./pages/AvocatMonitoringPage'));
-const AvocatCompliancePage   = lazy(() => import('./pages/AvocatCompliancePage'));
 const AvocatFilesPage        = lazy(() => import('./pages/AvocatFilesPage'));
 const DesignPreviewPage  = lazy(() => import('./pages/DesignPreviewPage'));
 
@@ -69,6 +68,14 @@ function PublicOnlyRoute({ children }) {
   if (loading) return <PageLoader />;
   if (user) return <Navigate to="/dashboard" replace />;
   return children;
+}
+
+// "Recherche conformité" a fusionné dans l'onglet "Moteur juridique" —
+// redirige une éventuelle ancienne URL en favori plutôt que de la laisser
+// atterrir sur une route morte.
+function AvocatRechercheRedirect() {
+  const { franchiseurId } = useParams();
+  return <Navigate to={`/avocat/${franchiseurId}/bibliotheque`} replace />;
 }
 
 function RootRedirect() {
@@ -165,7 +172,7 @@ export default function App() {
           <Route path="avocat/:franchiseurId/documents"      element={<S><AvocatDocumentsPage /></S>} />
           <Route path="avocat/:franchiseurId/export"         element={<S><AvocatExportPage /></S>} />
           <Route path="avocat/:franchiseurId/surveillance"   element={<S><AvocatMonitoringPage /></S>} />
-          <Route path="avocat/:franchiseurId/recherche"      element={<S><AvocatCompliancePage /></S>} />
+          <Route path="avocat/:franchiseurId/recherche"      element={<AvocatRechercheRedirect />} />
           <Route path="design-preview" element={FEATURES.design_preview ? <S><DesignPreviewPage /></S> : <Navigate to="/dashboard" replace />} />
         </Route>
 

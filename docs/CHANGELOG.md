@@ -9,6 +9,29 @@ Voir aussi : [INVARIANTS.md](INVARIANTS.md) · [BUG_JOURNAL.md](BUG_JOURNAL.md) 
 
 ---
 
+## 2026-08-20
+
+### 🟢 Moteur juridique — outil tout-en-un avocat
+Fusion de 3 onglets avocat en un seul (« Recherche conformité » supprimé, absorbé
+dans « Bibliothèque juridique » renommée « Moteur juridique ») : recherche
+instantanée dans le référentiel, bandeau de conformité live du client actif
+(score, alertes, délai 20j — via `computeLiveCompliance`), et assistant IA
+pour les questions hors référentiel statique, sur une seule page au lieu de
+trois. L'ancienne URL `/avocat/:id/recherche` redirige proprement plutôt que
+de tomber sur une route morte.
+Référentiel enrichi : art. L.341-2 C. com. (plafond légal d'un an pour la
+clause de non-concurrence post-contractuelle) — absent du référentiel ET du
+prompt d'analyse de contrat, qui vérifiait la clause sans base légale précise
+pour juger sa durée. Ajouté aux deux, plus au prompt système contrat.
+En passant : une citation incertaine (Cass. 1re civ. 25 janv. 2017, n°15-28.064,
+déjà retirée du reste du corpus lors de l'audit du 17/08) traînait encore dans
+le tableau des sanctions de `legalLibrary.js`, appliquée à tort à un point sans
+rapport — retirée.
+`frontend/src/pages/AvocatBibliothequePage.jsx`, `frontend/src/lib/legalLibrary.js`, `frontend/src/components/avocat/AvocatClientShell.jsx`, `frontend/src/App.jsx`, `backend/src/config/claude.js`, `docs/LEGAL_COPY.md`
+Page supprimée : `frontend/src/pages/AvocatCompliancePage.jsx` (fusionnée).
+
+---
+
 ## 2026-08-19
 
 ### 🟡 Dashboard avocat verrouillé sur le thème Sobre

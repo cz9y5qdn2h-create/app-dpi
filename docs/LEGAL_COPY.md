@@ -108,3 +108,11 @@ du 30/12/2023) :
   wording produit suite à relecture juridique détaillée (sous-dispositions R.330-1
   exactes, interdiction du wording "nullité automatique", libellés `compliance_level`,
   disclaimer de score, distinction section 9).
+- **2026-08-19** — Ajout de l'art. L.341-2 C. com. (plafond légal d'un an pour la clause
+  de non-concurrence post-contractuelle) : absent du prompt d'analyse de contrat alors
+  que la clause 7 (non-concurrence) était déjà vérifiée sans base légale précise pour
+  juger sa durée. Ajouté dans `claude.js` (sections DIP 8, analyse de contrat, prompt
+  système contrat) et dans `legalLibrary.js`. Correction en parallèle d'une citation
+  incertaine (Cass. 1re civ. 25 janv. 2017, n°15-28.064) recyclée à tort dans le tableau
+  des sanctions de `legalLibrary.js` pour un point sans rapport (prévisionnels) —
+  retirée, conformément à la règle « si on n'est pas sûr, on ne met pas ».

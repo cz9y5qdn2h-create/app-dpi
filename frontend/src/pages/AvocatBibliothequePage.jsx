@@ -1,8 +1,13 @@
 import { useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import api from '../lib/api';
 import AvocatClientShell from '../components/avocat/AvocatClientShell';
+import LoadingSpinner from '../components/ui/LoadingSpinner';
 import { LEGAL_ENTRIES, SANCTIONS, CATEGORIES, searchLegalEntries } from '../lib/legalLibrary';
-import { Search, ExternalLink, ChevronDown, Scale, X } from 'lucide-react';
+import { COMPLIANCE_LEVEL_LABEL, SCORE_DISCLAIMER } from '../lib/legalCopy';
+import { Search, ExternalLink, ChevronDown, Scale, X, Sparkles, ScrollText, Bell, Clock } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const CATEGORY_TONE = {
   'Socle légal':        'var(--v2-gold)',
@@ -11,7 +16,14 @@ const CATEGORY_TONE = {
   "Champ d'application": 'rgb(241 124 124)',
 };
 
-function Entry({ entry, expanded, onToggle, query }) {
+const SUGGESTIONS = [
+  "Le seuil de quasi-exclusivité de 80 % est-il un critère absolu ?",
+  "Quelles sont les conséquences d'une clause de non-concurrence post-contractuelle trop large ?",
+  "Le franchiseur doit-il actualiser le DIP entre la remise et la signature ?",
+  "Un DIP incomplet entraîne-t-il automatiquement la nullité du contrat ?",
+];
+
+function Entry({ entry, expanded, onToggle }) {
   const tone = CATEGORY_TONE[entry.category] || 'var(--v2-gold)';
   return (
     <div className="card-v2">
@@ -56,29 +68,99 @@ function Entry({ entry, expanded, onToggle, query }) {
   );
 }
 
+// Bandeau de conformité live du client actif — évite un aller-retour vers
+// l'onglet Conformité pour la première question que se pose un avocat en
+// ouvrant un dossier : "où en est ce DIP, là, maintenant ?"
+function ComplianceStrip({ franchiseurId }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ['compliance-overview', franchiseurId],
+    queryFn: () => api.get(`/compliance/overview?franchiseur_id=${franchiseurId}`).then(r => r.data),
+  });
+
+  if (isLoading) return <div className="card-v2 flex justify-center py-6"><LoadingSpinner size="sm" /></div>;
+
+  const dip = data?.dip;
+  const alerts = data?.alerts?.total ?? 0;
+  const delays = data?.signature_delays?.count ?? 0;
+
+  if (!dip) {
+    return (
+      <div className="card-v2">
+        <p className="font-dm-sans text-sm" style={{ color: 'rgb(var(--text-secondary))' }}>Aucun DIP actif pour ce client — le check de conformité s'activera dès qu'un DIP sera importé ou généré.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="card-v2">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <p className="mono-label-v2" style={{ marginBottom: 4 }}>Check de conformité — DIP actif</p>
+          <p className="font-dm-sans text-sm" style={{ color: 'rgb(var(--text-primary))' }}>
+            {COMPLIANCE_LEVEL_LABEL[dip.compliance_level] || 'Non évalué'}
+          </p>
+        </div>
+        <div className="flex items-center gap-5">
+          <div className="text-center">
+            <p className="display-v2" style={{ fontSize: 26 }}>{dip.conformity_score ?? 0}%</p>
+            <p className="font-dm-mono text-xs" style={{ color: 'rgb(var(--text-muted))' }}>score</p>
+          </div>
+          {alerts > 0 && (
+            <div className="text-center">
+              <p className="display-v2 flex items-center gap-1.5 justify-center" style={{ fontSize: 26, color: 'rgb(241 124 124)' }}>
+                <Bell className="w-4 h-4" /> {alerts}
+              </p>
+              <p className="font-dm-mono text-xs" style={{ color: 'rgb(var(--text-muted))' }}>alertes</p>
+            </div>
+          )}
+          {delays > 0 && (
+            <div className="text-center">
+              <p className="display-v2 flex items-center gap-1.5 justify-center" style={{ fontSize: 26, color: 'rgb(241 124 124)' }}>
+                <Clock className="w-4 h-4" /> {delays}
+              </p>
+              <p className="font-dm-mono text-xs" style={{ color: 'rgb(var(--text-muted))' }}>délai 20j</p>
+            </div>
+          )}
+        </div>
+      </div>
+      <p className="font-dm-sans text-xs mt-3 italic" style={{ color: 'rgb(var(--text-muted))' }}>{SCORE_DISCLAIMER}</p>
+    </div>
+  );
+}
+
 export default function AvocatBibliothequePage() {
   const { franchiseurId } = useParams();
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState('Toutes');
   const [expandedId, setExpandedId] = useState(null);
+  const [aiHistory, setAiHistory] = useState([]);
 
   const results = useMemo(() => {
     const found = searchLegalEntries(query);
     return category === 'Toutes' ? found : found.filter(e => e.category === category);
   }, [query, category]);
 
+  const askAiMutation = useMutation({
+    mutationFn: (q) => api.post('/avocat/compliance-search', { question: q, franchiseur_id: franchiseurId }).then(r => r.data),
+    onSuccess: (data, q) => setAiHistory(h => [{ question: q, answer: data.answer }, ...h]),
+    onError: (err) => toast.error(err.message),
+  });
+
   return (
     <AvocatClientShell franchiseurId={franchiseurId} active="bibliotheque">
       <div className="max-w-4xl space-y-6 animate-fade-in">
         <div>
-          <p className="mono-label-v2">Référentiel</p>
-          <p className="display-v2" style={{ fontSize: 'clamp(22px, 3vw, 30px)' }}>Bibliothèque juridique</p>
+          <p className="mono-label-v2">Outil tout-en-un</p>
+          <p className="display-v2" style={{ fontSize: 'clamp(22px, 3vw, 30px)' }}>Moteur juridique</p>
           <p className="font-dm-sans text-sm mt-2" style={{ color: 'rgb(var(--text-secondary))' }}>
-            Textes, jurisprudence et sanctions applicables au DIP de franchise — le même référentiel que celui appliqué
-            par l'analyse automatique des documents de vos clients.
+            Recherchez un texte ou un arrêt, posez une question à l'IA, vérifiez la conformité — le même
+            référentiel que celui appliqué à l'analyse automatique des documents de vos clients.
           </p>
         </div>
 
+        <ComplianceStrip franchiseurId={franchiseurId} />
+
+        {/* Recherche — instantanée dans le référentiel, en local */}
         <div className="relative">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: 'rgb(var(--text-muted))' }} />
           <input
@@ -125,12 +207,21 @@ export default function AvocatBibliothequePage() {
               onToggle={() => setExpandedId(expandedId === entry.id ? null : entry.id)}
             />
           ))}
-          {results.length === 0 && (
-            <div className="card-v2 text-center py-12">
-              <Scale className="w-8 h-8 mx-auto mb-3" style={{ color: 'rgb(var(--text-muted))' }} />
-              <p className="font-dm-sans text-sm" style={{ color: 'rgb(var(--text-secondary))' }}>
-                Aucune entrée ne correspond à « {query} ».
+          {results.length === 0 && query && (
+            <div className="card-v2 text-center py-10">
+              <Scale className="w-7 h-7 mx-auto mb-3" style={{ color: 'rgb(var(--text-muted))' }} />
+              <p className="font-dm-sans text-sm mb-4" style={{ color: 'rgb(var(--text-secondary))' }}>
+                Aucun article du référentiel ne correspond à « {query} ».
               </p>
+              <button
+                onClick={() => { askAiMutation.mutate(query); }}
+                disabled={askAiMutation.isPending}
+                className="inline-flex items-center gap-2 text-sm px-4 py-2 rounded-lg font-dm-sans"
+                style={{ border: '1px solid var(--v2-border-hot)', color: 'var(--v2-gold)' }}
+              >
+                {askAiMutation.isPending ? <LoadingSpinner size="sm" /> : <Sparkles className="w-4 h-4" />}
+                Poser la question à l'assistant IA
+              </button>
             </div>
           )}
         </div>
@@ -160,6 +251,69 @@ export default function AvocatBibliothequePage() {
             </div>
           </div>
         )}
+
+        {/* Assistant IA — pour les questions qui débordent du référentiel statique
+            (application au cas d'espèce, croisement avec le DIP du client actif) */}
+        <div className="pt-4" style={{ borderTop: '1px solid var(--v2-border)' }}>
+          <p className="mono-label-v2 mb-1">Assistant IA</p>
+          <p className="font-dm-sans text-xs mb-4" style={{ color: 'rgb(var(--text-secondary))' }}>
+            Pour une question qui déborde du référentiel statique — la réponse s'appuie sur le DIP actif de ce client quand c'est pertinent.
+          </p>
+
+          <form onSubmit={(e) => { e.preventDefault(); const q = e.target.elements.aiQuestion.value.trim(); if (q && !askAiMutation.isPending) { askAiMutation.mutate(q); e.target.reset(); } }} className="card-v2">
+            <div className="flex items-start gap-3">
+              <Search className="w-4 h-4 flex-shrink-0 mt-3" style={{ color: 'var(--v2-gold)' }} />
+              <textarea
+                name="aiQuestion"
+                placeholder="Ex : la clause de non-concurrence de la section 8 est-elle opposable après résiliation ?"
+                rows={3}
+                maxLength={2000}
+                className="input-field resize-none flex-1"
+                style={{ background: 'var(--v2-surface)', border: '1px solid var(--v2-border)' }}
+              />
+            </div>
+            <div className="flex items-center justify-end mt-3">
+              <button
+                type="submit"
+                disabled={askAiMutation.isPending}
+                className="flex items-center gap-2 text-sm px-4 py-2 rounded-lg font-dm-sans"
+                style={{ border: '1px solid var(--v2-border-hot)', color: 'var(--v2-gold)' }}
+              >
+                {askAiMutation.isPending ? <LoadingSpinner size="sm" /> : <Sparkles className="w-4 h-4" />}
+                Demander à l'IA
+              </button>
+            </div>
+          </form>
+
+          {aiHistory.length === 0 && (
+            <div className="flex flex-wrap gap-2 mt-3">
+              {SUGGESTIONS.map(s => (
+                <button
+                  key={s}
+                  onClick={() => askAiMutation.mutate(s)}
+                  className="font-dm-sans text-xs px-3 py-2 rounded-lg text-left transition-colors"
+                  style={{ background: 'var(--v2-surface)', border: '1px solid var(--v2-border)', color: 'rgb(var(--text-secondary))' }}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="space-y-4 mt-4">
+            {aiHistory.map((item, i) => (
+              <div key={i} className="card-v2">
+                <div className="flex items-start gap-2 mb-3">
+                  <ScrollText className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" style={{ color: 'var(--v2-gold)' }} />
+                  <p className="font-dm-sans text-sm font-medium" style={{ color: 'rgb(var(--text-primary))' }}>{item.question}</p>
+                </div>
+                <p className="font-dm-sans text-sm whitespace-pre-wrap leading-relaxed" style={{ color: 'rgb(var(--text-secondary))' }}>
+                  {item.answer}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </AvocatClientShell>
   );

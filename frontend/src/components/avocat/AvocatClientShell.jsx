@@ -3,18 +3,20 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import api from '../../lib/api';
 import LoadingSpinner from '../ui/LoadingSpinner';
 import {
-  FileText, ShieldCheck, FolderOpen, Download, Search, FolderSync, ClipboardCheck, Scale,
+  FileText, ShieldCheck, FolderOpen, Download, FolderSync, ClipboardCheck, Scale,
   ChevronLeft, ChevronDown, Building2, AlertCircle,
 } from 'lucide-react';
 
+// "Recherche conformité" fusionnée dans "Moteur juridique" (bibliothèque +
+// recherche IA + check de conformité réunis sur une seule page) — un onglet
+// de moins à naviguer pour l'avocat.
 const TABS = [
   { key: 'dip',          label: 'DIP / Contrat', icon: FileText,   to: (id) => `/dip/avocat/${id}` },
   { key: 'conformite',   label: 'Conformité',     icon: ClipboardCheck, to: (id) => `/avocat/${id}/conformite` },
-  { key: 'bibliotheque', label: 'Bibliothèque juridique', icon: Scale, to: (id) => `/avocat/${id}/bibliotheque` },
+  { key: 'bibliotheque', label: 'Moteur juridique', icon: Scale, to: (id) => `/avocat/${id}/bibliotheque` },
   { key: 'certifications', label: 'Certificats',  icon: ShieldCheck, to: (id) => `/avocat/${id}/certifications` },
   { key: 'documents',    label: 'Documents',       icon: FolderOpen, to: (id) => `/avocat/${id}/documents` },
   { key: 'export',       label: 'Export',          icon: Download,   to: (id) => `/avocat/${id}/export` },
-  { key: 'recherche',    label: 'Recherche conformité', icon: Search, to: (id) => `/avocat/${id}/recherche` },
   { key: 'surveillance', label: 'Surveillance',    icon: FolderSync, to: (id) => `/avocat/${id}/surveillance` },
 ];
 

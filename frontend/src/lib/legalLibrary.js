@@ -182,6 +182,20 @@ export const LEGAL_ENTRIES = [
     ],
     keywords: ['déséquilibre significatif', 'L442-1', 'clause abusive', 'rupture'],
   },
+  {
+    id: 'l341-2',
+    category: "Champ d'application",
+    ref: 'Art. L.341-2 C. com.',
+    title: 'Clause de non-concurrence post-contractuelle — plafond légal',
+    summary: "Une clause de non-concurrence après la fin du contrat n'est valable que si elle cumule quatre conditions, dont une durée maximale d'un an.",
+    body: [
+      "Conditions cumulatives : elle doit concerner des biens et services en concurrence avec ceux du réseau ; se limiter aux lieux d'exploitation prévus au contrat ; être indispensable à la protection du savoir-faire substantiel, spécifique et secret transmis ; et ne pas excéder un an après l'échéance ou la résiliation.",
+      "Une clause qui dépasse un an, ou qui manque l'une des trois autres conditions, est nulle pour cette partie — à distinguer de la clause de non-concurrence PENDANT le contrat, non soumise à ce plafond.",
+      "Point de vigilance en révision de contrat : une durée de 2 ans ou une zone géographique dépassant les lieux d'exploitation contractuels expose la clause à être réputée non écrite dans son intégralité.",
+    ],
+    url: 'https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006236792',
+    keywords: ['non-concurrence', 'post-contractuelle', 'un an', 'L341-2', 'savoir-faire', 'clause'],
+  },
 ];
 
 // Tableau récapitulatif des sanctions — vue de synthèse demandée en premier
@@ -190,7 +204,8 @@ export const SANCTIONS = [
   { manquement: 'DIP non remis ou hors délai de 20 jours', sanction: 'Amende contraventionnelle (5e classe)', fondement: 'Art. R.330-2 C. com.' },
   { manquement: 'DIP incomplet/insincère ayant vicié le consentement', sanction: 'Nullité du contrat + restitution des sommes versées', fondement: 'Art. 1130 s. C. civ. sur la base de L.330-3' },
   { manquement: 'Information déterminante dissimulée intentionnellement', sanction: 'Dol → nullité et/ou dommages-intérêts', fondement: 'Art. 1137 C. civ. ; Cass. com. 26 juin 2024' },
-  { manquement: 'Prévisionnels grossièrement erronés', sanction: 'Dommages-intérêts ; clauses d\'exonération réputées non écrites', fondement: 'Cass. com. 1er déc. 2021 ; Cass. 1re civ. 25 janv. 2017' },
+  { manquement: 'Prévisionnels grossièrement erronés', sanction: 'Dommages-intérêts ; clauses d\'exonération réputées non écrites', fondement: 'Cass. com. 1er déc. 2021, n°18-26.572' },
+  { manquement: 'Clause de non-concurrence post-contractuelle non conforme', sanction: 'Clause réputée non écrite dans son intégralité', fondement: 'Art. L.341-2 C. com.' },
   { manquement: 'Manquement sans vice du consentement démontré', sanction: 'Responsabilité civile, sans nullité', fondement: 'Art. 1112-1 et 1231-1 C. civ. ; Cass. com. 20 mars 2007' },
   { manquement: 'Clause créant un déséquilibre significatif', sanction: 'Suppression de la clause + dommages-intérêts', fondement: 'Art. L.442-1, I, 2° C. com.' },
   { manquement: 'Rupture brutale de la relation', sanction: 'Indemnisation du préavis manquant', fondement: 'Art. L.442-1, II C. com.' },
