@@ -68,7 +68,7 @@ export default function DIPAvocatPage() {
 
   if (dipLoading) {
     return (
-      <div data-theme="sobre" className="min-h-screen flex items-center justify-center" style={{ background: 'rgb(var(--bg-primary))' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'rgb(var(--bg-primary))' }}>
         <LoadingSpinner size="lg" />
       </div>
     );
@@ -76,7 +76,7 @@ export default function DIPAvocatPage() {
 
   if (dipError) {
     return (
-      <div data-theme="sobre" className="min-h-screen flex flex-col items-center justify-center gap-4 text-center" style={{ background: 'rgb(var(--bg-primary))' }}>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 text-center" style={{ background: 'rgb(var(--bg-primary))' }}>
         <AlertCircle className="w-10 h-10 text-danger/50" />
         <p className="display-v2" style={{ fontSize: 28 }}>Accès refusé</p>
         <Link to="/dashboard" className="btn-cta-glow">
@@ -90,7 +90,7 @@ export default function DIPAvocatPage() {
   const contract = contractData?.contract || null;
 
   return (
-    <div data-theme="sobre" className="min-h-screen -m-4 sm:-m-6 lg:-m-8 p-4 sm:p-6 lg:p-8" style={{ background: 'rgb(var(--bg-primary))' }}>
+    <div className="min-h-screen -m-4 sm:-m-6 lg:-m-8 p-4 sm:p-6 lg:p-8" style={{ background: 'rgb(var(--bg-primary))' }}>
       <div className="max-w-4xl mx-auto space-y-5 animate-fade-in">
         {/* En-tête : retour + sélecteur de client */}
         <div className="flex items-center justify-between gap-3 flex-wrap">

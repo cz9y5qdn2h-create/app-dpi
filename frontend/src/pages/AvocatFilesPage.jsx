@@ -173,7 +173,7 @@ export default function AvocatFilesPage() {
   const franchiseurs = data?.franchiseurs || [];
 
   return (
-    <div data-theme="sobre" className="-m-4 sm:-m-6 lg:-m-8 p-4 sm:p-6 lg:p-8 min-h-screen" style={{ background: 'rgb(var(--bg-primary))' }}>
+    <div className="-m-4 sm:-m-6 lg:-m-8 p-4 sm:p-6 lg:p-8 min-h-screen" style={{ background: 'rgb(var(--bg-primary))' }}>
       <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
         <div>
           <p className="mono-label-v2">Espace avocat</p>

@@ -31,7 +31,7 @@ export default function AvocatClientShell({ franchiseurId, active, children }) {
 
   if (isLoading) {
     return (
-      <div data-theme="sobre" className="-m-4 sm:-m-6 lg:-m-8 min-h-screen flex items-center justify-center" style={{ background: 'rgb(var(--bg-primary))' }}>
+      <div className="-m-4 sm:-m-6 lg:-m-8 min-h-screen flex items-center justify-center" style={{ background: 'rgb(var(--bg-primary))' }}>
         <LoadingSpinner size="lg" />
       </div>
     );
@@ -39,7 +39,7 @@ export default function AvocatClientShell({ franchiseurId, active, children }) {
 
   if (!current) {
     return (
-      <div data-theme="sobre" className="-m-4 sm:-m-6 lg:-m-8 min-h-screen flex flex-col items-center justify-center gap-4 text-center px-4" style={{ background: 'rgb(var(--bg-primary))' }}>
+      <div className="-m-4 sm:-m-6 lg:-m-8 min-h-screen flex flex-col items-center justify-center gap-4 text-center px-4" style={{ background: 'rgb(var(--bg-primary))' }}>
         <AlertCircle className="w-10 h-10 text-danger/50" />
         <p className="display-v2" style={{ fontSize: 24 }}>Client introuvable ou accès révoqué</p>
         <button onClick={() => navigate('/dashboard')} className="btn-cta-glow">Retour à mes clients</button>
@@ -48,7 +48,7 @@ export default function AvocatClientShell({ franchiseurId, active, children }) {
   }
 
   return (
-    <div data-theme="sobre" className="-m-4 sm:-m-6 lg:-m-8 min-h-screen" style={{ background: 'rgb(var(--bg-primary))' }}>
+    <div className="-m-4 sm:-m-6 lg:-m-8 min-h-screen" style={{ background: 'rgb(var(--bg-primary))' }}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 lg:pt-8">
         <button
           onClick={() => navigate('/dashboard')}

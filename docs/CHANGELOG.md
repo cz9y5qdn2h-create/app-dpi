@@ -9,6 +9,24 @@ Voir aussi : [INVARIANTS.md](INVARIANTS.md) · [BUG_JOURNAL.md](BUG_JOURNAL.md) 
 
 ---
 
+## 2026-08-19
+
+### 🟡 Dashboard avocat verrouillé sur le thème Sobre
+*Symptôme* : le sélecteur de thème (Sobre/Glass/Lumière) dans la Sidebar n'avait
+aucun effet une fois sur les pages avocat (Dashboard, Fichiers, DIP client,
+AvocatClientShell).
+*Cause* : ces 4 fichiers posaient `data-theme="sobre"` directement sur leur
+propre conteneur — un attribut `[data-theme]` sur un descendant l'emporte
+toujours sur celui posé par `ThemeContext` sur `<html>`, quel que soit le choix
+réel de l'utilisateur dans le sélecteur.
+*Correctif* : attribut retiré des 4 fichiers — les pages avocat suivent
+désormais le thème global comme le reste de l'app. « Sobre » reste un thème
+sélectionnable au même titre que Glass/Lumière, simplement plus l'unique
+possibilité imposée côté avocat.
+`frontend/src/components/dashboard/AvocatDashboard.jsx`, `frontend/src/components/avocat/AvocatClientShell.jsx`, `frontend/src/pages/{DIPAvocatPage,AvocatFilesPage}.jsx`
+
+---
+
 ## 2026-08-17 (7)
 
 ### 🟢 Annexes au niveau du document (plus par section)

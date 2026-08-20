@@ -74,7 +74,7 @@ export default function AvocatDashboard() {
 
   if (isLoading) {
     return (
-      <div data-theme="sobre" className="-m-4 sm:-m-6 lg:-m-8 min-h-screen flex items-center justify-center" style={{ background: 'rgb(var(--bg-primary))' }}>
+      <div className="-m-4 sm:-m-6 lg:-m-8 min-h-screen flex items-center justify-center" style={{ background: 'rgb(var(--bg-primary))' }}>
         <LoadingSpinner size="lg" />
       </div>
     );
@@ -82,7 +82,7 @@ export default function AvocatDashboard() {
 
   if (isError) {
     return (
-      <div data-theme="sobre" className="-m-4 sm:-m-6 lg:-m-8 min-h-screen flex flex-col items-center justify-center gap-4 text-center" style={{ background: 'rgb(var(--bg-primary))' }}>
+      <div className="-m-4 sm:-m-6 lg:-m-8 min-h-screen flex flex-col items-center justify-center gap-4 text-center" style={{ background: 'rgb(var(--bg-primary))' }}>
         <AlertCircle className="w-10 h-10 text-danger/50" />
         <p className="display-v2" style={{ fontSize: 24 }}>Impossible de charger le tableau de bord</p>
         <button onClick={() => window.location.reload()} className="btn-cta-glow">Recharger</button>
@@ -91,7 +91,7 @@ export default function AvocatDashboard() {
   }
 
   return (
-    <div data-theme="sobre" className="-m-4 sm:-m-6 lg:-m-8 p-4 sm:p-6 lg:p-8 min-h-screen" style={{ background: 'rgb(var(--bg-primary))' }}>
+    <div className="-m-4 sm:-m-6 lg:-m-8 p-4 sm:p-6 lg:p-8 min-h-screen" style={{ background: 'rgb(var(--bg-primary))' }}>
       <div className="max-w-5xl mx-auto space-y-6 animate-fade-in">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
