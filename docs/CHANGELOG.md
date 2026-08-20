@@ -9,6 +9,32 @@ Voir aussi : [INVARIANTS.md](INVARIANTS.md) · [BUG_JOURNAL.md](BUG_JOURNAL.md) 
 
 ---
 
+## 2026-08-20 (3)
+
+### 🔴 Migration 049 jamais donnée à l'utilisateur — santé dégradée en prod
+*Symptôme* : `/api/health` → `database_schema.ok: false`,
+`column users.resend_api_key does not exist`. Découvert en revérifiant que
+l'envoi d'email fonctionnait après la migration Brevo→Resend.
+*Cause* : la migration 049 a été committée avec le code qui en dépend, mais
+jamais transmise à l'utilisateur pour exécution dans Supabase (contrairement
+aux migrations 045-048 données explicitement plus tôt) — exactement le
+scénario que `schemaCheck.js` existe pour détecter.
+*Correctif* : SQL redonné à l'utilisateur pour exécution immédiate.
+**Rappel du protocole** : toute nouvelle migration doit être donnée en SQL
+complet à l'utilisateur dans le même message que sa création, jamais laissée
+pour un tour suivant.
+
+### 🟢 Bibliothèque juridique — nouvelle catégorie « Droit commercial connexe »
+5 nouvelles entrées vérifiées (L.341-1, L.330-1, L.420-1 C. com., L.714-1 CPI,
+1104/1194 C. civ.) — textes de loi stables uniquement, aucune nouvelle
+référence de jurisprudence ajoutée (risque de fabrication déjà rencontré 2×
+cette session). Étiquetée explicitement comme non vérifiée par le moteur IA,
+pour ne pas laisser croire que l'analyse automatique couvre ce périmètre —
+seules les catégories Socle légal/Code civil/Jurisprudence le sont.
+`frontend/src/lib/legalLibrary.js`, `frontend/src/pages/AvocatBibliothequePage.jsx`
+
+---
+
 ## 2026-08-20 (2)
 
 ### 🟢 Migration complète Brevo → Resend

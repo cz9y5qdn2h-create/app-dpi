@@ -14,6 +14,7 @@ const CATEGORY_TONE = {
   'Code civil':         'rgb(122 184 255)',
   'Jurisprudence':      'rgb(91 216 154)',
   "Champ d'application": 'rgb(241 124 124)',
+  'Droit commercial connexe': 'rgb(180 150 255)',
 };
 
 const SUGGESTIONS = [
@@ -153,8 +154,10 @@ export default function AvocatBibliothequePage() {
           <p className="mono-label-v2">Outil tout-en-un</p>
           <p className="display-v2" style={{ fontSize: 'clamp(22px, 3vw, 30px)' }}>Moteur juridique</p>
           <p className="font-dm-sans text-sm mt-2" style={{ color: 'rgb(var(--text-secondary))' }}>
-            Recherchez un texte ou un arrêt, posez une question à l'IA, vérifiez la conformité — le même
-            référentiel que celui appliqué à l'analyse automatique des documents de vos clients.
+            Recherchez un texte ou un arrêt, posez une question à l'IA, vérifiez la conformité. Les sections
+            Socle légal, Code civil et Jurisprudence sont le référentiel appliqué par l'analyse automatique de
+            vos clients ; Droit commercial connexe est une bibliothèque de référence complémentaire (non
+            encore vérifiée par le moteur IA).
           </p>
         </div>
 

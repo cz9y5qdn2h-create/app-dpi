@@ -196,6 +196,77 @@ export const LEGAL_ENTRIES = [
     url: 'https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006236792',
     keywords: ['non-concurrence', 'post-contractuelle', 'un an', 'L341-2', 'savoir-faire', 'clause'],
   },
+
+  // ── Droit commercial connexe ──────────────────────────────────────────────
+  // Textes hors périmètre direct de la Loi Doubin mais régulièrement mobilisés
+  // en révision de contrat de franchise. Contrairement aux sections précédentes,
+  // ces articles ne sont pas (encore) vérifiés par le moteur d'analyse IA de
+  // DIPpro — à traiter comme une référence documentaire, pas comme une
+  // extension du périmètre contrôlé automatiquement.
+  {
+    id: 'l341-1',
+    category: 'Droit commercial connexe',
+    ref: 'Art. L.341-1 C. com.',
+    title: "Champ d'application des art. L.341-1 à L.341-3 — contrats de distribution",
+    summary: "Définit les contrats concernés par les plafonds de non-concurrence post-contractuelle (L.341-2) : franchise, licence de marque, distribution exclusive ou quasi-exclusive.",
+    body: [
+      "S'applique aux contrats par lesquels une personne met à disposition d'une autre un nom commercial, une marque ou une enseigne, en exigeant d'elle un engagement d'exclusivité ou de quasi-exclusivité pour l'exercice de son activité — le même périmètre matériel que celui de l'art. L.330-3.",
+      "Utile pour vérifier, avant d'invoquer le plafond d'un an de l'art. L.341-2, que le contrat examiné entre bien dans ce périmètre (attention aux montages de distribution simple sans exclusivité, hors champ).",
+    ],
+    url: 'https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006236790',
+    keywords: ['L341-1', 'champ application', 'distribution', 'exclusivité', 'quasi-exclusivité'],
+  },
+  {
+    id: 'l330-1',
+    category: 'Droit commercial connexe',
+    ref: 'Art. L.330-1 C. com.',
+    title: "Durée maximale d'une clause d'exclusivité d'achat",
+    summary: "Toute clause par laquelle un acheteur, cessionnaire ou locataire de biens meubles s'engage vis-à-vis de son vendeur, cédant ou bailleur à ne pas faire usage d'objets similaires provenant d'un autre fournisseur est nulle si elle est conclue pour une durée supérieure à 10 ans.",
+    body: [
+      "S'applique aux clauses d'approvisionnement exclusif souvent adossées aux contrats de franchise (obligation d'acheter exclusivement auprès du franchiseur ou de fournisseurs référencés).",
+      "Une clause d'exclusivité d'achat de durée indéterminée ou supérieure à 10 ans encourt la nullité — distincte du plafond d'un an de la clause de non-concurrence POST-contractuelle (art. L.341-2), qui vise un objet différent (l'activité concurrente après la fin du contrat, pas l'obligation d'achat pendant le contrat).",
+    ],
+    url: 'https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006229723',
+    keywords: ['exclusivité d\'achat', 'approvisionnement', '10 ans', 'L330-1', 'fournisseur'],
+  },
+  {
+    id: 'l420-1',
+    category: 'Droit commercial connexe',
+    ref: 'Art. L.420-1 C. com.',
+    title: 'Prohibition des ententes anticoncurrentielles',
+    summary: "Interdit les actions concertées ayant pour objet ou pour effet d'empêcher, de restreindre ou de fausser le jeu de la concurrence — notamment la fixation de prix de revente imposés dans un réseau de franchise.",
+    body: [
+      "Point de vigilance en révision de contrat : le franchiseur peut recommander un prix de vente mais ne peut pas l'imposer contractuellement au franchisé — un « prix de revente imposé » (hors prix maximum ou prix conseillé non contraignant) est une restriction caractérisée (« hardcore restriction ») au sens du règlement d'exemption UE 2022/720, qui prive l'ensemble du réseau du bénéfice de l'exemption.",
+      "Distinct du contrôle DIP : ce texte sanctionne une pratique contractuelle, pas un défaut d'information précontractuelle.",
+    ],
+    url: 'https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006241546',
+    keywords: ['entente', 'concurrence', 'prix imposé', 'L420-1', 'restriction caractérisée'],
+  },
+  {
+    id: 'l714-1',
+    category: 'Droit commercial connexe',
+    ref: 'Art. L.714-1 CPI',
+    title: 'Licence de marque — cadre de la mise à disposition',
+    summary: "La marque peut faire l'objet d'une licence pour tout ou partie des produits ou services désignés dans l'enregistrement — fondement de la mise à disposition de l'enseigne dans un contrat de franchise.",
+    body: [
+      "À vérifier en révision de contrat : la licence de marque doit être formalisée (souvent une clause dédiée du contrat de franchise, parfois un acte séparé), et son inscription au registre national des marques conditionne son opposabilité aux tiers.",
+      "À croiser avec l'art. R.330-1, 2° C. com. (obligation de mentionner dans le DIP la date et le numéro d'enregistrement de la marque) — un défaut d'inscription de la licence n'est pas la même chose qu'un défaut de mention dans le DIP, les deux doivent être vérifiés séparément.",
+    ],
+    url: 'https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006279799',
+    keywords: ['marque', 'licence', 'enseigne', 'L714-1', 'CPI', 'INPI'],
+  },
+  {
+    id: 'civ-1104',
+    category: 'Droit commercial connexe',
+    ref: 'Art. 1104 et 1194 C. civ.',
+    title: 'Bonne foi contractuelle et suites du contrat',
+    summary: "Les contrats doivent être négociés, formés et exécutés de bonne foi (art. 1104) ; ils obligent à ce qui est exprimé et à toutes les suites que leur donnent l'équité, l'usage ou la loi (art. 1194).",
+    body: [
+      "Fondement résiduel régulièrement invoqué en franchise à côté de l'art. 1112-1 (devoir d'information) — notamment pour l'exécution loyale de l'assistance et de la formation promises par le franchiseur pendant toute la durée du contrat, pas seulement à sa signature.",
+      "Art. 1104 est d'ordre public — une clause qui prétendrait écarter contractuellement l'exigence de bonne foi est réputée non écrite.",
+    ],
+    keywords: ['bonne foi', '1104', '1194', 'exécution du contrat', 'assistance', 'formation'],
+  },
 ];
 
 // Tableau récapitulatif des sanctions — vue de synthèse demandée en premier
@@ -211,7 +282,7 @@ export const SANCTIONS = [
   { manquement: 'Rupture brutale de la relation', sanction: 'Indemnisation du préavis manquant', fondement: 'Art. L.442-1, II C. com.' },
 ];
 
-export const CATEGORIES = ['Socle légal', 'Code civil', 'Jurisprudence', 'Champ d\'application'];
+export const CATEGORIES = ['Socle légal', 'Code civil', 'Jurisprudence', 'Champ d\'application', 'Droit commercial connexe'];
 
 export function searchLegalEntries(query) {
   const q = query.trim().toLowerCase();

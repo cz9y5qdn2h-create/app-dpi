@@ -35,7 +35,11 @@ de référence.
 
 - **Une migration écrite n'est pas une migration appliquée.** La 022 a vécu des
   mois dans le dépôt sans être en production → 11 h d'échecs d'écriture
-  silencieux. Après toute migration, vérifier `/api/health` → `database_schema`.
+  silencieux. La 049 a reproduit l'erreur le 20/08/2026 (committée avec le
+  code Resend qui en dépend, jamais donnée à l'utilisateur). **Toute
+  migration doit être donnée en SQL complet dans le message même où elle est
+  créée, jamais reportée.** Après toute migration, vérifier `/api/health` →
+  `database_schema`.
 - **Toute nouvelle colonne dont le code dépend** doit être ajoutée à
   `backend/src/config/schemaCheck.js`, sinon la dérive redevient invisible.
 - **Vérifier les index existants** avant d'en créer un (un doublon a déjà été
