@@ -11,6 +11,49 @@ Voir aussi : [INVARIANTS.md](INVARIANTS.md) · [BUG_JOURNAL.md](BUG_JOURNAL.md) 
 
 ## 2026-08-20
 
+### 🔴 Lien de vérification des attestations mort depuis toujours
+*Symptôme* : chaque certificat PDF/DOCX imprime "Vérification en ligne :
+dippro.business/attestation/{token}", mais aucune route `/attestation/:token`
+n'a jamais existé côté frontend — un tiers (franchisé, juge) qui suit ce lien
+tombait sur la page d'accueil (soft-404, voir plus bas), sans aucun moyen de
+vérifier le document. Cassait directement la valeur probatoire "preuve de
+remise incontestable" mise en avant depuis le début du projet.
+*Correctif* : nouvelle page `AttestationPublicPage.jsx` (score, niveau,
+empreinte SHA-256, téléchargement PDF/DOCX) branchée sur l'API publique
+existante `GET /api/certificates/public/:token?format=json`, route ajoutée.
+`frontend/src/pages/AttestationPublicPage.jsx`, `frontend/src/App.jsx`
+
+### 🟡 Soft-404 — toute URL inconnue répondait HTTP 200
+*Symptôme* : `curl -I` sur une URL inexistante renvoyait 200 (mauvais pour le
+SEO — Google traite mal les soft-404).
+*Cause* : le rewrite catch-all de `vercel.json` (`/(.*) → /index.html`,
+nécessaire au routage côté client) sert index.html pour absolument tout, et
+le `<Route path="*">` de React Router redirigeait silencieusement vers "/".
+*Correctif* : `middleware.mjs` à la racine (Vercel Routing Middleware,
+s'exécute avant les rewrites) — laisse passer API/assets/blog/fichiers
+statiques/routes connues, renvoie un vrai 404 pour le reste. Côté React,
+`path="*"` affiche désormais une vraie page `NotFoundPage` au lieu d'un
+redirect silencieux.
+**Toute nouvelle route ajoutée dans `App.jsx` doit être ajoutée à
+`ALLOWED_PREFIXES` dans `middleware.mjs`, sinon elle sera bloquée par erreur** —
+ajouté à `docs/INVARIANTS.md` §8.
+`middleware.mjs`, `frontend/src/pages/NotFoundPage.jsx`, `frontend/src/App.jsx`
+
+### 🟡 "Hébergé en France" / "RGPD conforme" — variantes manquées lors de l'audit du 17/08
+*Symptôme* : l'audit légal du 17/08 avait corrigé ces formulations sur la
+landing page et l'index.html prerendu, mais un grep plus large a trouvé 7
+occurrences supplémentaires non couvertes par les motifs de recherche
+d'origine (casse différente, "hébergées" au pluriel, clé i18n `shared.badges.rgpd`
+utilisée par les pages de partage public, mentions légales elles-mêmes
+disant AWS eu-west-1 = "France" alors que c'est l'Irlande).
+*Correctif* : `LegalPage.jsx` (eu-west-1 → Irlande), `SharedDIPPage.jsx`,
+`SharedContractPage.jsx`, `WaitlistPage.jsx`, `OnboardingModal.jsx`,
+`i18n/locales/{fr,en}.json` (clé `shared.badges.rgpd` + `common.security`).
+
+---
+
+## 2026-08-20
+
 ### 🟢 Moteur juridique — outil tout-en-un avocat
 Fusion de 3 onglets avocat en un seul (« Recherche conformité » supprimé, absorbé
 dans « Bibliothèque juridique » renommée « Moteur juridique ») : recherche

@@ -174,7 +174,7 @@ export default function SharedContractPage() {
             <div className="rounded-xl p-5 text-center" style={{ background: 'rgba(255,255,255,0.5)', border: '1px solid rgba(200,169,110,0.15)' }}>
               <p className="font-dm-sans text-xs mb-1" style={{ color: '#94A3B8' }}>{t('shared.generatedBy')}</p>
               <p className="font-cormorant text-lg" style={{ color: '#1A1826' }}>{t('shared.brand')} — {t('shared.byIralink')}</p>
-              <p className="font-dm-mono text-xs mt-1" style={{ color: '#94A3B8' }}>Conformité Loi Doubin · RGPD · Données hébergées en France</p>
+              <p className="font-dm-mono text-xs mt-1" style={{ color: '#94A3B8' }}>Conformité Loi Doubin · RGPD · Base de données hébergée en Europe</p>
               <div className="flex items-center justify-center gap-4 mt-3">
                 {[
                   { icon: CheckCircle, label: t('shared.badges.law') },

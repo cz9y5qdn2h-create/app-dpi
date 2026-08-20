@@ -46,7 +46,7 @@
       "admin": "Admin",
       "franchiseur": "Franchisor"
     },
-    "security": "Secure data · GDPR compliant"
+    "security": "Secure data · GDPR-scoped subprocessors"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -461,7 +461,7 @@
     "generatedBy": "Document generated and verified by",
     "badges": {
       "law": "Loi Doubin 1989",
-      "rgpd": "GDPR compliant",
+      "rgpd": "GDPR-scoped subprocessors",
       "timestamped": "Timestamped"
     },
     "legalNotice": "Document compliant with Loi Doubin — Art. L.330-3 French Commercial Code"

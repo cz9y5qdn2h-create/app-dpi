@@ -175,7 +175,7 @@ En cas de résiliation, les données sont conservées 30 jours avant suppression
         content: `Pour fournir le service, Iralink fait appel aux prestataires suivants :
 
 • Anthropic, Inc. (San Francisco, USA) — moteur d'intelligence artificielle (Claude). Les textes des DIP sont transmis à l'API Anthropic pour analyse. Les données ne sont pas conservées au-delà du traitement selon la politique d'Anthropic.
-• Supabase, Inc. — base de données et authentification (hébergée AWS eu-west-1, France)
+• Supabase, Inc. — base de données et authentification (hébergée AWS eu-west-1, Irlande)
 • Vercel, Inc. (San Francisco, USA) — hébergement frontend et API serverless
 • Vercel, Inc. — mesure d'audience (Vercel Analytics), sans cookie, données agrégées et anonymisées
 • Brevo (Sendinblue SA, Paris) — envoi d'emails transactionnels

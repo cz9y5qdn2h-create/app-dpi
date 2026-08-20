@@ -495,7 +495,7 @@ export default function WaitlistPage() {
 
           {/* Trust */}
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: 20, marginTop: 36 }}>
-            {['Loi Doubin 1989', 'Art. L.330-3', 'RGPD conforme', 'Données hébergées en France'].map(b => (
+            {['Loi Doubin 1989', 'Art. L.330-3', 'Sous-traitants encadrés RGPD', 'Base de données en Europe'].map(b => (
               <div key={b} style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: '#64748B' }}>
                 <CheckCircle style={{ width: 14, height: 14, color: '#22C55E' }} />
                 {b}

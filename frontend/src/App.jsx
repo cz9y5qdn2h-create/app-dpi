@@ -19,6 +19,8 @@ const ResetPasswordPage  = lazy(() => import('./pages/ResetPasswordPage'));
 const WaitlistPage       = lazy(() => import('./pages/WaitlistPage'));
 const SharedDIPPage      = lazy(() => import('./pages/SharedDIPPage'));
 const SharedContractPage = lazy(() => import('./pages/SharedContractPage'));
+const AttestationPublicPage = lazy(() => import('./pages/AttestationPublicPage'));
+const NotFoundPage       = lazy(() => import('./pages/NotFoundPage'));
 const AvocatSessionPage  = lazy(() => import('./pages/AvocatSessionPage'));
 const TrialExpiredPage   = lazy(() => import('./pages/TrialExpiredPage'));
 const DashboardPage      = lazy(() => import('./pages/DashboardPage'));
@@ -140,6 +142,7 @@ export default function App() {
         <Route path="/waitlist"               element={<S><WaitlistPage /></S>} />
         <Route path="/dip/partage/:token"     element={<S><SharedDIPPage /></S>} />
         <Route path="/contrat/partage/:token" element={<S><SharedContractPage /></S>} />
+        <Route path="/attestation/:token"      element={<S><AttestationPublicPage /></S>} />
         <Route path="/avocat/session"          element={<S><AvocatSessionPage /></S>} />
 
         <Route path="/trial-expired" element={<ProtectedRoute><S><TrialExpiredPage /></S></ProtectedRoute>} />
@@ -176,7 +179,7 @@ export default function App() {
           <Route path="design-preview" element={FEATURES.design_preview ? <S><DesignPreviewPage /></S> : <Navigate to="/dashboard" replace />} />
         </Route>
 
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<S><NotFoundPage /></S>} />
       </Routes>
     </AuthProvider>
   );

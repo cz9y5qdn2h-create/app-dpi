@@ -571,7 +571,7 @@ function SlideShare() {
 
         {/* Badges */}
         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {['Loi Doubin 1989', 'RGPD conforme', 'Horodaté'].map((badge) => (
+          {['Loi Doubin 1989', 'Sous-traitants encadrés RGPD', 'Horodaté'].map((badge) => (
             <span key={badge} style={{
               padding: '3px 9px',
               borderRadius: 20,

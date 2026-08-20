@@ -179,6 +179,10 @@ interdit qu'un CNAME coexiste avec **tout autre enregistrement du même nom**.
   redirection, sinon la page s'affiche brièvement et une action peut partir
   avant la redirection (403 confus côté backend).
 - **Aucun `console.log`** en production (règle projet, vérifiée à chaque passe).
+- **Toute route ajoutée dans `App.jsx` doit avoir son premier segment de
+  chemin ajouté à `ALLOWED_PREFIXES` dans `middleware.mjs`** (racine du dépôt),
+  sinon le Routing Middleware Vercel la bloque en 404 avant même qu'elle
+  atteigne React Router.
 
 ---
 

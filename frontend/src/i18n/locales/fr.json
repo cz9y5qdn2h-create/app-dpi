@@ -46,7 +46,7 @@
       "admin": "Admin",
       "franchiseur": "Franchiseur"
     },
-    "security": "Données sécurisées · Conforme RGPD"
+    "security": "Données sécurisées · Sous-traitants encadrés RGPD"
   },
   "nav": {
     "dashboard": "Tableau de bord",
@@ -461,7 +461,7 @@
     "generatedBy": "Document généré et vérifié par",
     "badges": {
       "law": "Loi Doubin 1989",
-      "rgpd": "RGPD conforme",
+      "rgpd": "Sous-traitants encadrés RGPD",
       "timestamped": "Horodaté"
     },
     "legalNotice": "Document conforme Loi Doubin — Art. L.330-3 Code de commerce"
