@@ -152,13 +152,25 @@ délibéré, pas un oubli.
 `iralink-agency.dippro.business` est servi par un **CNAME** vers Vercel. La norme DNS
 interdit qu'un CNAME coexiste avec **tout autre enregistrement du même nom**.
 
-- **Ne jamais ajouter de TXT, A, MX ou autre sur le nom `iralink-agency`.** Le 10/08/2026,
-  un TXT de vérification Google posé à cet endroit a écrasé le CNAME et **mis le site
-  entièrement hors ligne** (résolution DNS en échec, HTTP 000).
+- **Ne jamais ajouter de TXT, A, MX, CNAME ou autre sur le nom `iralink-agency`.**
+  Incident #1 (10/08/2026) : un TXT de vérification Google posé à cet endroit a écrasé
+  le CNAME → site entièrement hors ligne (résolution DNS en échec, HTTP 000).
+  Incident #2 (21/08/2026) : la configuration du domaine d'envoi Resend a **remplacé**
+  le CNAME par `links1.resend-dns.com` (infrastructure de tracking de liens Resend) →
+  site inaccessible, certificat SSL Amazon/CloudFront au lieu de Vercel, 400 Bad Request
+  sur toute requête. Même cause racine que l'incident #1 : un enregistrement tiers posé
+  sur le nom `iralink-agency` plutôt que sur la racine `dippro.business` ou un
+  sous-domaine dédié.
 - **Vérification Google Search Console** : utiliser la **balise HTML** dans `index.html`
   (`<meta name="google-site-verification">`), jamais la méthode par enregistrement DNS.
+- **Configuration Resend (SPF/DKIM/tracking)** : toujours sur `dippro.business` (racine)
+  ou un sous-domaine dédié à l'email (ex. `mail.dippro.business`) — **jamais** sur
+  `iralink-agency`, qui doit rester exclusivement le CNAME vers Vercel.
 - Enregistrement correct : `CNAME iralink-agency → d0e3e4d5e9f7f4a2.vercel-dns-017.com.`
 - Domaine de secours toujours valide en cas de panne DNS : `app-dpi.vercel.app`.
+- **Diagnostic rapide en cas de panne** : `curl "https://cloudflare-dns.com/dns-query?name=iralink-agency.dippro.business&type=CNAME" -H "accept: application/dns-json"`
+  (préférer Cloudflare à Google DNS pour le diagnostic — Google sert parfois une valeur
+  encore en cache plusieurs dizaines de minutes après correction).
 
 ---
 

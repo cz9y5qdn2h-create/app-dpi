@@ -9,6 +9,32 @@ Voir aussi : [INVARIANTS.md](INVARIANTS.md) · [BUG_JOURNAL.md](BUG_JOURNAL.md) 
 
 ---
 
+## 2026-08-21
+
+### 🔴 Site hors ligne — CNAME écrasé par la config Resend
+*Symptôme* : site totalement inaccessible ("écran blanc" rapporté côté avocat,
+puis confirmé général), 400 Bad Request via CloudFront, certificat SSL
+Amazon au lieu de Vercel.
+*Cause* : la configuration du domaine d'envoi Resend a remplacé le CNAME de
+`iralink-agency.dippro.business` (→ Vercel) par `links1.resend-dns.com`
+(infrastructure de tracking de liens Resend) — répétition de l'incident du
+10/08/2026 (TXT Google Search Console), même cause racine : un enregistrement
+tiers posé sur `iralink-agency` au lieu de la racine `dippro.business`.
+*Diagnostic* : `curl` direct sur le domaine trompé par le cache du proxy réseau
+sortant de la session (400 identiques, pris à tort pour du bruit réseau) ;
+résolu en interrogeant directement `dns.google`/`cloudflare-dns.com` en
+DNS-over-HTTPS, qui a révélé le CNAME détourné. Le domaine de secours
+`app-dpi.vercel.app` a confirmé que le déploiement Vercel restait sain
+pendant toute la panne.
+*Correctif* : CNAME restauré vers `d0e3e4d5e9f7f4a2.vercel-dns-017.com.` sur
+le DNS Vercel du domaine (par l'utilisateur). Site et `/api/health` de
+nouveau entièrement verts. Règle ajoutée à INVARIANTS.md §6 : toute
+config Resend future (SPF/DKIM/tracking) va sur la racine `dippro.business`,
+jamais sur `iralink-agency`.
+`docs/INVARIANTS.md`
+
+---
+
 ## 2026-08-20 (3)
 
 ### 🔴 Migration 049 jamais donnée à l'utilisateur — santé dégradée en prod
