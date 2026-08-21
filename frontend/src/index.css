@@ -858,10 +858,15 @@ button, a, [role="button"] { touch-action: manipulation; }
 .filter-scroll::-webkit-scrollbar { display: none; }
 .filter-scroll > * { flex-shrink: 0; }
 
-/* Taille minimale de cible tactile — 44px (guideline Apple/Google) */
+/* Taille minimale de cible tactile — 44px (guideline Apple/Google).
+   Audit mobile du 21/08/2026 : .btn-ghost et .btn-cta-glow manquaient ici —
+   cause à elles seules d'une bonne partie des boutons sous 44px trouvés
+   dans tout le SaaS (retour d'assistant, actions avocat, CTA DIPAvocatPage). */
 @media (max-width: 639px) {
   .btn-primary, .btn-secondary,
-  .btn-liquid-glass, .btn-liquid-glass-prominent {
+  .btn-liquid-glass, .btn-liquid-glass-prominent,
+  .btn-ghost, .btn-cta-glow,
+  .lg-pill-btn, .lg-pill-btn-gold {
     min-height: 44px;
   }
 }

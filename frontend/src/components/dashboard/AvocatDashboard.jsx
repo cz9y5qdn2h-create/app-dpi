@@ -306,7 +306,7 @@ function PendingValidationRow({ label, clientLabel, onValidate, loading }) {
           <button
             onClick={() => onValidate('validated')}
             disabled={loading}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-dm-sans text-xs transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-2.5 sm:py-1.5 rounded-lg font-dm-sans text-xs transition-colors"
             style={{ border: '1px solid var(--v2-border-hot)', color: 'rgb(91 216 154)' }}
           >
             <ShieldCheck className="w-3.5 h-3.5" /> Valider
@@ -314,7 +314,7 @@ function PendingValidationRow({ label, clientLabel, onValidate, loading }) {
           <button
             onClick={() => setShowComment(v => !v)}
             disabled={loading}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg font-dm-sans text-xs transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-2.5 sm:py-1.5 rounded-lg font-dm-sans text-xs transition-colors"
             style={{ border: '1px solid var(--v2-border)', color: 'rgb(241 124 124)' }}
           >
             <Flag className="w-3.5 h-3.5" /> Signaler

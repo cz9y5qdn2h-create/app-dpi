@@ -109,7 +109,7 @@ export default function DIPAvocatPage() {
               <ChevronDown className="w-3.5 h-3.5" style={{ color: 'rgb(var(--text-muted))' }} />
             </button>
             {switcherOpen && (
-              <div className="absolute right-0 mt-2 w-64 card-v2 z-20 py-1" style={{ background: 'rgb(var(--bg-card))' }}>
+              <div className="absolute right-0 mt-2 w-64 card-v2 z-20 py-1" style={{ background: 'rgb(var(--bg-card))', maxWidth: 'calc(100vw - 32px)' }}>
                 {clients.map(c => (
                   <button
                     key={c.franchiseur_id}
@@ -592,7 +592,7 @@ function DocumentSectionItem({ item, number, isDip, dip, contract, franchiseur, 
           <p className="font-dm-sans text-xs" style={{ color: 'rgb(var(--text-muted))' }}>
             Le franchiseur devra valider cette modification avant qu'elle s'applique au document.
           </p>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => proposeMutation.mutate({ content: editContent })}
               disabled={!editContent.trim() || proposeMutation.isPending}
@@ -600,7 +600,7 @@ function DocumentSectionItem({ item, number, isDip, dip, contract, franchiseur, 
             >
               {proposeMutation.isPending ? <LoadingSpinner size="sm" /> : <Check className="w-4 h-4" />} Envoyer la proposition
             </button>
-            <button onClick={() => setIsEditing(false)} className="flex items-center gap-2 text-sm font-dm-sans px-4 py-2" style={{ color: 'rgb(var(--text-secondary))' }}>
+            <button onClick={() => setIsEditing(false)} className="btn-ghost flex items-center gap-2 text-sm font-dm-sans px-4 py-2" style={{ color: 'rgb(var(--text-secondary))' }}>
               <X className="w-4 h-4" /> Annuler
             </button>
           </div>

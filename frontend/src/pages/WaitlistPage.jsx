@@ -311,7 +311,7 @@ function WaitlistForm() {
 
   return (
     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10 }}>
         <div>
           <label style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 11, fontWeight: 500, color: '#475569', display: 'block', marginBottom: 5 }}>
             Société / Enseigne <span style={{ color: '#EF4444' }}>*</span>
@@ -420,16 +420,16 @@ export default function WaitlistPage() {
 
       {/* ── HEADER ── */}
       <header style={{ background: GLASS, backdropFilter: 'blur(24px)', borderBottom: '1px solid rgba(200,169,110,0.18)', position: 'sticky', top: 0, zIndex: 50 }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-            <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(200,169,110,0.12)', border: '1px solid rgba(200,169,110,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', rowGap: 8 }}>
+          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', minWidth: 0 }}>
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(200,169,110,0.12)', border: '1px solid rgba(200,169,110,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <Shield style={{ width: 16, height: 16, color: GOLD }} />
             </div>
             <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 20, color: DARK }}>DIPpro</span>
-            <span style={{ fontFamily: 'monospace', fontSize: 10, color: '#64748B' }}>by Iralink</span>
+            <span className="hidden sm:inline" style={{ fontFamily: 'monospace', fontSize: 10, color: '#64748B' }}>by Iralink</span>
           </Link>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ padding: '4px 12px', borderRadius: 20, background: 'rgba(200,169,110,0.1)', border: '1px solid rgba(200,169,110,0.25)' }}>
+            <div className="hidden sm:block" style={{ padding: '4px 12px', borderRadius: 20, background: 'rgba(200,169,110,0.1)', border: '1px solid rgba(200,169,110,0.25)' }}>
               <span style={{ fontFamily: 'monospace', fontSize: 11, color: GOLD }}>Accès anticipé ouvert</span>
             </div>
             <Link to="/login" style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 13, color: '#64748B', textDecoration: 'none' }}>
@@ -509,7 +509,7 @@ export default function WaitlistPage() {
       <section style={{ maxWidth: 960, margin: '0 auto', padding: '0 24px 72px' }}>
         <FadeIn>
           {/* Tab selector */}
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 20 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 8, marginBottom: 20 }}>
             {MOCKUP_TABS.map((t, i) => (
               <button key={t.label} onClick={() => setActiveTab(i)}
                 style={{ padding: '7px 16px', borderRadius: 8, border: `1px solid ${i === activeTab ? GOLD : 'rgba(200,200,220,0.4)'}`, background: i === activeTab ? 'rgba(200,169,110,0.12)' : 'rgba(255,255,255,0.5)', color: i === activeTab ? GOLD : '#64748B', fontFamily: 'DM Sans, sans-serif', fontSize: 12, fontWeight: i === activeTab ? 600 : 400, cursor: 'pointer', transition: 'all 0.2s' }}>

@@ -88,6 +88,7 @@ export default function OnboardingModal({ forceShow = false, onClose }) {
         background: 'rgba(0,0,0,0.60)',
         backdropFilter: 'blur(8px)',
         padding: '16px',
+        overflowY: 'auto',
       }}
       onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
     >
@@ -99,14 +100,16 @@ export default function OnboardingModal({ forceShow = false, onClose }) {
         style={{
           width: '100%',
           maxWidth: '640px',
+          maxHeight: 'calc(100vh - 32px)',
+          overflowY: 'auto',
           borderRadius: '24px',
           border: '1px solid rgba(200,169,110,0.30)',
-          overflow: 'hidden',
           background: 'rgba(255,255,255,0.96)',
           boxShadow: '0 32px 80px rgba(0,0,0,0.28)',
           position: 'relative',
           display: 'flex',
           flexDirection: 'column',
+          margin: 'auto',
           '--text-primary': '26 24 38',
           '--text-secondary': '71 85 105',
           '--text-muted': '148 163 184',

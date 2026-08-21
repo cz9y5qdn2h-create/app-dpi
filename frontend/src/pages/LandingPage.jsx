@@ -279,7 +279,7 @@ function WaitlistFormDark({ onSuccess }) {
 
   return (
     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
         <div>
           <label style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: 'rgba(244,242,238,0.45)', display: 'block', marginBottom: 6 }}>
             Cabinet <span style={{ color: '#F87171' }}>*</span>
@@ -418,7 +418,7 @@ function ContactFormDark({ onSuccess }) {
 
   return (
     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12, textAlign: 'left' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
         <input type="text" value={form.name} onChange={e => set('name', e.target.value)}
           placeholder="Votre nom *" required style={inputS}
           onFocus={e => (e.target.style.border = '0.5px solid rgba(200,169,110,0.55)')}

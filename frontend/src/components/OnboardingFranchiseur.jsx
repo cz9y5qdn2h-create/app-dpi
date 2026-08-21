@@ -47,14 +47,14 @@ export default function OnboardingFranchiseur({ profile, onComplete }) {
 
   return (
     <div
-      style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(8px)', padding: 16 }}
+      style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.65)', backdropFilter: 'blur(8px)', padding: 16, overflowY: 'auto' }}
       onClick={(e) => { if (e.target === e.currentTarget) onComplete(); }}
     >
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 16 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.28, ease: 'easeOut' }}
-        style={{ width: '100%', maxWidth: 540, borderRadius: 24, border: '1px solid rgba(200,169,110,0.30)', overflow: 'hidden', background: 'var(--modal-bg, rgba(255,255,255,0.96))', boxShadow: '0 32px 80px rgba(0,0,0,0.28)', display: 'flex', flexDirection: 'column' }}
+        style={{ width: '100%', maxWidth: 540, maxHeight: 'calc(100vh - 32px)', overflowY: 'auto', margin: 'auto', borderRadius: 24, border: '1px solid rgba(200,169,110,0.30)', background: 'var(--modal-bg, rgba(255,255,255,0.96))', boxShadow: '0 32px 80px rgba(0,0,0,0.28)', display: 'flex', flexDirection: 'column' }}
       >
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px 0' }}>

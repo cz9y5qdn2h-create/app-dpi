@@ -9,6 +9,49 @@ Voir aussi : [INVARIANTS.md](INVARIANTS.md) · [BUG_JOURNAL.md](BUG_JOURNAL.md) 
 
 ---
 
+## 2026-08-21 (2)
+
+### 🟡 Passe mobile — tout le SaaS
+Audit systématique (4 agents en parallèle, ~40 fichiers) puis correction des
+points les plus sérieux/à plus fort trafic :
+- **Levier le plus large** : la règle CSS globale garantissant 44px de
+  hauteur tactile (`index.css`) ne couvrait que `.btn-primary`/`.btn-secondary`/
+  `.btn-liquid-glass*` — `.btn-ghost`, `.btn-cta-glow` et `.lg-pill-btn*` en
+  étaient absents, expliquant à eux seuls une grande partie des boutons trop
+  petits trouvés dans tout le SaaS (retour d'assistant, CTA DIPAvocatPage,
+  actions dashboard). Ajoutés à la règle.
+- **Formulaires d'inscription** (LandingPage, WaitlistPage) : grilles 2
+  colonnes fixes (`gridTemplateColumns: '1fr 1fr'`) sans repli, remplacées par
+  `repeat(auto-fit, minmax(140px, 1fr))` — le motif déjà utilisé ailleurs sur
+  ces mêmes pages.
+- **En-têtes sans repli mobile** (WaitlistPage, LegalPage) : risque de
+  débordement horizontal sur les plus petits écrans, corrigé par
+  troncature/masquage des éléments secondaires + `flex-wrap`.
+- **Modales d'onboarding** (OnboardingModal, OnboardingFranchiseur,
+  OnboardingAvocat) : aucun scroll de secours — sur un écran court
+  (iPhone SE), les boutons de navigation en bas de modale pouvaient être
+  coupés sans aucun moyen d'y accéder. `overflowY: 'auto'` +
+  `maxHeight: calc(100vh - 32px)` ajoutés aux trois.
+- **DIPAvocatPage** : ligne d'envoi de proposition sans repli (`flex-wrap`
+  ajouté), sélecteur de client sans garde-fou de largeur (`maxWidth:
+  calc(100vw - 32px)`).
+- **AdminPage** : grille de stats sautait de 2 à 5 colonnes sans palier
+  intermédiaire.
+- **FranchiseesPage** : filtres de statut passés au motif `.filter-scroll`
+  déjà établi ailleurs (défilement horizontal fluide plutôt que débordement).
+- **AvocatDashboard** : boutons Valider/Signaler (action principale de
+  l'avocat) agrandis sur mobile.
+- **UploadDIPPage/UploadContractPage** : ligne de boutons post-upload passée
+  en `flex-col sm:flex-row`.
+*Non traité, volume trop important pour cette passe* : de nombreux boutons
+icône seuls (`p-1`/`p-1.5`) dans des listes denses (FranchiseesPage,
+DIPPage, ContractPage) restent sous 44px — les corriger tous aurait cassé la
+densité d'affichage de ces listes ; à revisiter par écran si un usage mobile
+intensif de ces listes est confirmé.
+`frontend/src/index.css`, `frontend/src/pages/{LandingPage,WaitlistPage,LegalPage,DIPAvocatPage,AdminPage,FranchiseesPage,UploadDIPPage,UploadContractPage}.jsx`, `frontend/src/components/{OnboardingModal,OnboardingFranchiseur,OnboardingAvocat}.jsx`, `frontend/src/components/dashboard/AvocatDashboard.jsx`
+
+---
+
 ## 2026-08-21
 
 ### 🔴 RLS manquantes + secret webhook en clair (advisor Supabase)

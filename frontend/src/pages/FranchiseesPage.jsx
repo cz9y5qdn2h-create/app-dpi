@@ -247,7 +247,7 @@ export default function FranchiseesPage() {
               onChange={e => setSearch(e.target.value)}
             />
           </div>
-          <div className="flex items-center gap-1 bg-bg-elevated rounded-lg p-1">
+          <div className="filter-scroll items-center bg-bg-elevated rounded-lg p-1">
             {[
               { key: 'tous', label: t('franchisees.filters.all') },
               { key: 'actif', label: t('franchisees.filters.active') },
@@ -257,7 +257,7 @@ export default function FranchiseesPage() {
               <button
                 key={key}
                 onClick={() => setStatusFilter(key)}
-                className={`px-3 py-1.5 rounded text-xs font-dm-sans transition-all ${
+                className={`px-3 py-2.5 sm:py-1.5 rounded text-xs font-dm-sans transition-all whitespace-nowrap ${
                   statusFilter === key ? 'bg-gold/20 text-gold font-medium' : 'text-text-secondary hover:text-text-primary'
                 }`}
               >

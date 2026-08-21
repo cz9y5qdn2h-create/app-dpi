@@ -274,7 +274,7 @@ export default function AdminPage() {
         <div className="space-y-6">
           {statsLoading ? <LoadingSpinner size="lg" /> : (
             <>
-              <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
                 {[
                   { label: 'Franchiseurs', value: stats?.totalUsers || 0, icon: Users, color: 'text-gold' },
                   { label: 'DIPs analysés', value: stats?.totalDips || 0, icon: FileText, color: 'text-text-primary' },

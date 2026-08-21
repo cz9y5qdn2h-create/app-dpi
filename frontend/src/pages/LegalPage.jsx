@@ -542,17 +542,17 @@ export default function LegalPage() {
     <div className="min-h-screen" style={{ background: 'linear-gradient(145deg, #dde2f5 0%, #ebe7fa 40%, #dceaf8 70%, #e3e1f6 100%)' }}>
       <header style={{ background: 'rgba(255,255,255,0.72)', backdropFilter: 'blur(24px)', borderBottom: '1px solid rgba(200,169,110,0.18)', position: 'sticky', top: 0, zIndex: 10 }}>
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <Link to="/" className="flex items-center gap-3">
+          <div className="flex items-center gap-4 min-w-0">
+            <Link to="/" className="flex items-center gap-3 flex-shrink-0">
               <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(200,169,110,0.12)', border: '1px solid rgba(200,169,110,0.3)' }}>
                 <Shield className="w-3.5 h-3.5" style={{ color: '#C8A96E' }} />
               </div>
               <span className="font-cormorant text-lg" style={{ color: '#1A1826' }}>DIPpro</span>
             </Link>
-            <span style={{ color: '#94A3B8' }}>/</span>
-            <span className="font-dm-sans text-sm" style={{ color: '#64748B' }}>{content.title}</span>
+            <span className="hidden sm:inline" style={{ color: '#94A3B8' }}>/</span>
+            <span className="hidden sm:inline font-dm-sans text-sm truncate" style={{ color: '#64748B' }}>{content.title}</span>
           </div>
-          <Link to="/register" className="font-dm-sans text-xs px-4 py-2 rounded-lg transition-all" style={{ background: 'rgba(200,169,110,0.12)', color: '#C8A96E', border: '1px solid rgba(200,169,110,0.3)' }}>
+          <Link to="/register" className="font-dm-sans text-xs px-4 py-2 rounded-lg transition-all flex-shrink-0" style={{ background: 'rgba(200,169,110,0.12)', color: '#C8A96E', border: '1px solid rgba(200,169,110,0.3)' }}>
             Essai gratuit →
           </Link>
         </div>

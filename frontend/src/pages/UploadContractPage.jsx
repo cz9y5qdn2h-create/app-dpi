@@ -203,7 +203,7 @@ export default function UploadContractPage() {
               </p>
             </div>
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             <button onClick={() => navigate('/contrat')} className="btn-liquid-glass flex-1">
               <CheckCircle className="w-4 h-4" /> Consulter le contrat
             </button>

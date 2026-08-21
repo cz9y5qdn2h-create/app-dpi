@@ -274,7 +274,7 @@ export default function UploadDIPPage() {
               </p>
             </div>
           </div>
-          <div className="flex gap-3">
+          <div className="flex flex-col sm:flex-row gap-3">
             <button onClick={() => navigate('/dip')} className="btn-liquid-glass flex-1">
               <CheckCircle className="w-4 h-4" /> Consulter le DIP
             </button>
