@@ -23,12 +23,16 @@
 -- casserait l'envoi pour ces cas. search_path déjà correctement épinglé
 -- ('public', 'net') — pas de faille d'injection de search_path ici.
 
--- 1. Secret en Vault. ⚠️ Le secret existant a pu être exposé (voir ci-dessus) :
---    remplacer 'dippro_webhook_8x2f1m9q' par une NOUVELLE valeur régénérée
---    côté Edge Function send-lead-email avant d'exécuter cette ligne — ne
---    pas se contenter de déplacer l'ancien secret tel quel.
+-- 1. Secret en Vault. Nouvelle valeur générée aléatoirement (32 octets,
+--    encodage base64url) pour remplacer l'ancien secret potentiellement
+--    exposé — ne le réutilise nulle part ailleurs.
+--    ⚠️ Cette même valeur doit être configurée comme secret attendu côté
+--    Edge Function `send-lead-email` (Supabase Dashboard → Edge Functions →
+--    send-lead-email → Secrets, ou `supabase secrets set`) — SINON le
+--    webhook répondra 401/403 après cette migration, silencieusement, et
+--    les emails de lead cesseront de partir.
 select vault.create_secret(
-  'REMPLACER_PAR_LE_NOUVEAU_SECRET_REGENERE',
+  'bl7BWgtnDT97Ks56usgHlzdaU2CZLnJmCEVH4TFYOOQ',
   'notify_lead_email_webhook_secret',
   'Secret partagé avec la Supabase Edge Function send-lead-email'
 );
