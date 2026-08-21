@@ -11,6 +11,28 @@ Voir aussi : [INVARIANTS.md](INVARIANTS.md) · [BUG_JOURNAL.md](BUG_JOURNAL.md) 
 
 ## 2026-08-21
 
+### 🔴 RLS manquantes + secret webhook en clair (advisor Supabase)
+*Trouvé* : `password_reset_tokens` avait RLS **désactivé** (pas juste sans
+policy) — une table de tokens de reset de mot de passe ne doit jamais
+dépendre uniquement de l'absence de GRANT pour rester privée. `bug_reports`
+avait RLS activé sans policy (déjà sans faille réelle, seul le service role
+y accède dans le code, mais ambigu pour l'advisor).
+*Trouvé en creusant `notify_lead_email()`* (jamais créée par une migration
+versionnée, recréée à la main au moins 4 fois d'après l'historique des
+REVOKE ratés — 020/024/034/036) : le secret du webhook était écrit **en
+clair dans le corps de la fonction**, lisible via `pg_get_functiondef()` par
+tout rôle authentifié — combiné aux GRANT EXECUTE anon/authenticated qui
+revenaient à chaque `CREATE OR REPLACE` manuel, le secret a probablement été
+exposé.
+*Correctif* : RLS activé + deny-all sur les deux tables (migration 050).
+Secret déplacé vers Supabase Vault, valeur régénérée, `REVOKE` regroupé dans
+la même migration que le `CREATE OR REPLACE` pour ne plus se désynchroniser
+(migration 051) — `SECURITY DEFINER` conservé délibérément, nécessaire pour
+que le trigger appelle `net.http_post()` quel que soit le rôle qui a
+déclenché l'INSERT. Appliqué par l'utilisateur, secret Edge Function
+`send-lead-email` à resynchroniser (hors dépôt, action manuelle).
+`supabase/migrations/050_rls_password_reset_bug_reports.sql`, `supabase/migrations/051_notify_lead_email_secret_hardening.sql`
+
 ### 🔴 Site hors ligne — CNAME écrasé par la config Resend
 *Symptôme* : site totalement inaccessible ("écran blanc" rapporté côté avocat,
 puis confirmé général), 400 Bad Request via CloudFront, certificat SSL
