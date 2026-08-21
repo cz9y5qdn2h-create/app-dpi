@@ -60,6 +60,10 @@ de référence.
   `assign_certificate_number` utilise un compteur atomique — un `MAX+1` sous
   insertions concurrentes attribue deux fois le même numéro ou crée un trou,
   ce qui détruit la valeur probatoire de la série.
+- **Protection « mot de passe compromis » (HaveIBeenPwned) — indisponible sur
+  le plan Supabase actuel.** Cette option (Auth → Policies → Leaked password
+  protection) nécessite le **plan Pro** de Supabase. Ne plus la reproposer
+  comme un simple réglage à activer tant que le plan n'a pas changé.
 
 ---
 
