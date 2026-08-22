@@ -49,3 +49,5 @@ C'est exactement ce que DIPpro a été conçu pour automatiser : analyse de conf
 > La conformité d'un DIP ne se prouve pas a posteriori de mémoire : elle se documente en continu, dès la première version.
 
 Sources : [Article R330-2 du Code de commerce — Légifrance](https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006266481), jurisprudence de la Cour de cassation sur le dol du franchiseur postérieur à la remise du DIP.
+
+**Avocat en droit de la franchise** : recevez notre [base des litiges DIP](/ressources/litiges-dip), qui recense les manquements, sanctions et jurisprudence de ce type classés par fondement juridique.

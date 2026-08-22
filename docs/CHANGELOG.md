@@ -9,6 +9,35 @@ Voir aussi : [INVARIANTS.md](INVARIANTS.md) · [BUG_JOURNAL.md](BUG_JOURNAL.md) 
 
 ---
 
+## 2026-08-22 (2)
+
+### 🟡 Réalignement SEO + GEO sur le pivot avocats
+Audit complet (structured data, robots.txt, sitemap, llms.txt, blog, maillage
+interne) révélant que le pivot business vers les avocats (déjà fait sur
+LandingPage.jsx et RegisterPage.jsx) n'avait pas été répercuté dans le
+contenu statique servi aux crawlers : `frontend/index.html` (title, meta,
+OG/Twitter, JSON-LD SoftwareApplication/Organization/WebSite, bloc
+`#seo-prerender`) et `frontend/public/llms.txt` ciblaient encore les
+« franchiseurs » comme clients — un LLM ou un moteur obtenait une réponse
+différente sur « à qui s'adresse DIPpro » selon la page lue. Contenu
+réaligné en réutilisant verbatim les textes déjà validés sur LandingPage.jsx
+(FEATURES, FAQS, HOW_STEPS) plutôt qu'en inventant de nouvelles
+affirmations — vérifié par un audit garde-fou-legal dédié (RGPD, pratiques
+commerciales trompeuses), conforme, rapport sauvegardé en `.docx`.
+Corrections complémentaires : titre dupliqué entre `/ressources/litiges-dip`
+et `/ressources/base-litiges-dip` (mêmes deux pages absentes du sitemap —
+ajoutées) ; pages orphelines sans lien entrant (ajout d'un lien footer sur
+la landing page et d'un renvoi contextuel dans 2 articles de blog les plus
+pertinents) ; `robots.txt` sans directive explicite pour les crawlers
+d'entraînement IA (Google-Extended, CCBot, anthropic-ai, Applebot-Extended,
+Bytespider — ajoutés en plus de GPTBot/ClaudeBot/PerplexityBot déjà
+présents, effet surtout déclaratif puisque déjà couverts par `Allow: /` du
+groupe `*`). Effet de bord positif détecté en vérifiant le rendu des deux
+liens de blog ajoutés : `frontend/scripts/generate-blog.mjs` ne supportait
+que `**gras**` et `[lien](url)`, pas `*italique*` (rendu en astérisques
+littéraux) — ajouté, corrige au passage 7 occurrences préexistantes dans
+d'autres articles.
+
 ## 2026-08-22
 
 ### 🟢 Module de capture de leads — Base des litiges DIP (campagne LinkedIn avocats)

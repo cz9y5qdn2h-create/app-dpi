@@ -64,4 +64,18 @@
     <priority>0.2</priority>
   </url>
 
+  <url>
+    <loc>https://iralink-agency.dippro.business/ressources/litiges-dip</loc>
+    <lastmod>2026-08-22</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+
+  <url>
+    <loc>https://iralink-agency.dippro.business/ressources/base-litiges-dip</loc>
+    <lastmod>2026-08-22</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+
 </urlset>

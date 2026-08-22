@@ -40,3 +40,5 @@ Les **comptes prévisionnels** trop optimistes sont une cause récurrente de con
 La meilleure défense est un DIP **complet, exact et à jour**, dont la remise est **prouvée**. C'est l'approche de **DIPpro** : analyse de conformité par IA section par section, détection des risques de litige (nullité, dol, déséquilibre significatif) avec les articles et jurisprudences applicables, et attestation de remise horodatée SHA-256. De quoi transformer le DIP d'un risque juridique en une preuve de diligence.
 
 > En cas de litige, ce n'est pas seulement le contenu du DIP qui compte, mais votre capacité à prouver qu'il a été remis, complet, dans les délais.
+
+**Avocat en droit de la franchise** : recevez notre [base des litiges DIP](/ressources/litiges-dip), qui recense les manquements, sanctions et jurisprudence de ce type classés par fondement juridique.

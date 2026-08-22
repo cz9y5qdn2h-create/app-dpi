@@ -1075,6 +1075,11 @@ export default function LandingPage() {
                       {label}
                     </a>
                   ))}
+                  <Link to="/ressources/litiges-dip" style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 13, color: 'rgba(244,242,238,0.32)', textDecoration: 'none' }}
+                    onMouseEnter={e => (e.target.style.color = 'rgba(244,242,238,0.65)')}
+                    onMouseLeave={e => (e.target.style.color = 'rgba(244,242,238,0.32)')}>
+                    Base des litiges DIP
+                  </Link>
                 </div>
               </div>
               <div>

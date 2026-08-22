@@ -51,7 +51,7 @@ export default function LeadsLitigesDIPPage() {
   return (
     <>
       <SEOHead
-        title="Base des litiges DIP — Loi Doubin"
+        title="Recevoir la base des litiges DIP — Ressource gratuite avocats"
         description="Recevez gratuitement la base des litiges DIP : sanctions, jurisprudence récente et fondements juridiques classés par manquement, pour avocats en droit de la franchise."
         canonical="/ressources/litiges-dip"
       />
