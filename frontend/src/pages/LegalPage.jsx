@@ -239,6 +239,11 @@ Données du formulaire de contact public
 • Nom, email, société (optionnelle) et message soumis via /formulaire de contact
 • Transmises à Resend, Inc. pour l'envoi de l'email vers l'équipe Iralink — non conservées en base de données par DIPpro
 
+Données de demande de ressource (formulaire "Base des litiges DIP")
+• Nom, prénom, email professionnel, téléphone, cabinet/structure (optionnelle) soumis via /ressources/litiges-dip
+• Horodatage du consentement donné lors de la soumission
+• Conservées en base de données par DIPpro en tant que prospect (lead), distinctement de tout compte client
+
 Données techniques et de navigation
 • Adresse IP (logs de connexion, conservée 90 jours)
 • Navigateur et système d'exploitation
@@ -266,6 +271,7 @@ Intérêt légitime (art. 6.1.f RGPD)
 • Preuve de l'acceptation des CGU (protection juridique d'Iralink)
 • Mesure d'audience du site (Vercel Analytics — pages consultées, sans cookie ni identifiant individuel, données agrégées)
 • Réponse aux demandes soumises via le formulaire de contact public
+• Envoi de la ressource demandée et prospection commerciale B2B relative à DIPpro auprès des avocats ayant sollicité une ressource via /ressources/litiges-dip — le numéro de téléphone collecté n'est utilisé que pour un contact manuel et personnalisé, jamais pour de la prospection téléphonique automatisée (SVI, appels robotisés)
 
 Consentement (art. 6.1.a RGPD)
 • Envoi de communications commerciales et newsletters
@@ -281,7 +287,7 @@ Elles peuvent être transmises aux sous-traitants suivants dans la stricte mesur
 • Anthropic, Inc. (USA) — analyse IA des textes DIP — encadrée par clauses contractuelles types (CCT)
 • Vercel, Inc. (USA) — hébergement applicatif — encadré par CCT
 • Vercel, Inc. (USA) — mesure d'audience (Vercel Analytics) — sans cookie, sans identifiant individuel, données agrégées uniquement — encadrée par CCT
-• Resend, Inc. (USA) — envoi de tous les emails transactionnels (notifications franchisés, réinitialisation de mot de passe, invitations, formulaire de contact) — encadrée par CCT
+• Resend, Inc. (USA) — envoi de tous les emails transactionnels (notifications franchisés, réinitialisation de mot de passe, invitations, formulaire de contact, envoi des ressources demandées) — encadrée par CCT
 • Cal.com, Inc. (USA) — prise de rendez-vous — encadrée par CCT
 
 Tous les transferts hors Union européenne sont encadrés par des clauses contractuelles types (CCT) adoptées par la Commission européenne (décision 2021/914), garantissant un niveau de protection adéquat.
@@ -301,6 +307,8 @@ Logs techniques et d'audit : 90 jours glissants
 Données de facturation : 10 ans à compter de la date de facturation (obligation comptable, art. L.123-22 Code de commerce)
 
 Données de franchise (franchisés renseignés) : durée de l'abonnement actif + 30 jours
+
+Données de demande de ressource (leads "Base des litiges DIP") : 3 ans à compter du dernier contact (durée standard recommandée par la CNIL pour la prospection commerciale)
 
 Communications marketing : jusqu'au retrait du consentement`
       },

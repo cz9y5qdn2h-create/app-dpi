@@ -19,6 +19,7 @@ const REQUIRED_COLUMNS = {
   avocat_digests:     ['id', 'avocat_id', 'generated_at', 'average_score', 'summary'],
   dip_section_annexes:['id', 'dip_id', 'contract_id', 'position', 'storage_path'],
   regulatory_news_cache: ['id', 'impact_level', 'impact_reason'],
+  leads_litiges_dip:  ['id', 'nom', 'email', 'telephone', 'source', 'consentement_horodatage'],
 };
 
 // Une seule ligne suffit à valider la présence des colonnes : PostgREST

@@ -13,7 +13,7 @@ const ALLOWED_PREFIXES = new Set([
   '', // "/"
   'cgu', 'privacy', 'mentions-legales', 'cookies',
   'login', 'register', 'forgot-password', 'reset-password',
-  'waitlist', 'trial-expired',
+  'waitlist', 'trial-expired', 'ressources',
   'dip', 'contrat', 'avocat', 'attestation',
   'dashboard', 'fichiers', 'alerts', 'history', 'franchisees', 'settings',
   'export', 'certifications', 'conformite', 'documents', 'admin',

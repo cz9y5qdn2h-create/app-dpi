@@ -9,6 +9,31 @@ Voir aussi : [INVARIANTS.md](INVARIANTS.md) · [BUG_JOURNAL.md](BUG_JOURNAL.md) 
 
 ---
 
+## 2026-08-22
+
+### 🟢 Module de capture de leads — Base des litiges DIP (campagne LinkedIn avocats)
+Nouvelle route publique `/ressources/litiges-dip` : formulaire (nom, email pro,
+téléphone, cabinet optionnel) + case de consentement RGPD non pré-cochée,
+liée à la campagne LinkedIn Post 12 ciblant les avocats en droit de la
+franchise. Table dédiée `leads_litiges_dip` (migration 052), volontairement
+séparée de `users`/`waitlist` — un lead n'est jamais un compte client, RLS
+deny-all côté client (accès service role uniquement). Le téléphone collecté
+n'est utilisé que pour un contact manuel et personnalisé, jamais pour de la
+prospection téléphonique automatisée (SVI/robocall), et n'est connecté à
+aucun usage secondaire non déclaré (revente, enrichissement externe).
+Backend `POST /api/leads/litiges-dip` (`backend/src/routes/leads.js`) :
+validation, insertion horodatée du consentement, envoi de la ressource par
+email (Resend) au demandeur + notification interne à Théo — rate-limité
+10/h/IP. Ressource elle-même publiée en page (`/ressources/base-litiges-dip`)
+plutôt qu'en PDF, construite strictement à partir du contenu déjà vérifié de
+`legalLibrary.js` (tableau des sanctions + jurisprudence), sans classement de
+fréquence inventé. Politique de confidentialité (`LegalPage.jsx`) étendue :
+nouvelle catégorie de données, nouvelle finalité en intérêt légitime
+(art. 6.1.f RGPD) pour la prospection B2B, sous-traitant Resend précisé,
+durée de conservation de 3 ans à compter du dernier contact (standard CNIL).
+Désinscription v1 : email `privacy@iralink-agency.com` déjà en place dans la
+section « Vos droits », pas de flux self-service dédié pour l'instant.
+
 ## 2026-08-21 (2)
 
 ### 🟡 Passe mobile — tout le SaaS

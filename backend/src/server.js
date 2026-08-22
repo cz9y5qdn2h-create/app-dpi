@@ -30,6 +30,7 @@ const feedbackRoutes      = require('./routes/feedback');
 const bugRoutes           = require('./routes/bugs');
 const documentRoutes      = require('./routes/documents');
 const contactRoutes       = require('./routes/contact');
+const leadsRoutes         = require('./routes/leads');
 
 const app = express();
 
@@ -94,6 +95,14 @@ const contactLimiter = rateLimit({
   message: { error: 'Trop de messages envoyés. Réessayez dans une heure.' }
 });
 
+const leadsLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Trop de demandes envoyées. Réessayez dans une heure.' }
+});
+
 // Rate limiting global en production
 if (process.env.NODE_ENV === 'production') {
   const limiter = rateLimit({
@@ -135,6 +144,7 @@ app.use('/api/feedback',      feedbackRoutes);
 app.use('/api/bugs',          bugRoutes);
 app.use('/api/documents',     documentRoutes);
 app.use('/api/contact',       contactLimiter, contactRoutes);
+app.use('/api/leads',         leadsLimiter, leadsRoutes);
 
 // Health check — ne retourne jamais les clés en clair
 app.get('/api/health', async (req, res) => {

@@ -17,6 +17,8 @@ const LegalPage          = lazy(() => import('./pages/LegalPage'));
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
 const ResetPasswordPage  = lazy(() => import('./pages/ResetPasswordPage'));
 const WaitlistPage       = lazy(() => import('./pages/WaitlistPage'));
+const LeadsLitigesDIPPage = lazy(() => import('./pages/LeadsLitigesDIPPage'));
+const BaseLitigesDIPPage  = lazy(() => import('./pages/BaseLitigesDIPPage'));
 const SharedDIPPage      = lazy(() => import('./pages/SharedDIPPage'));
 const SharedContractPage = lazy(() => import('./pages/SharedContractPage'));
 const AttestationPublicPage = lazy(() => import('./pages/AttestationPublicPage'));
@@ -140,6 +142,8 @@ export default function App() {
         <Route path="/reset-password"   element={<S><ResetPasswordPage /></S>} />
 
         <Route path="/waitlist"               element={<S><WaitlistPage /></S>} />
+        <Route path="/ressources/litiges-dip"       element={<S><LeadsLitigesDIPPage /></S>} />
+        <Route path="/ressources/base-litiges-dip"  element={<S><BaseLitigesDIPPage /></S>} />
         <Route path="/dip/partage/:token"     element={<S><SharedDIPPage /></S>} />
         <Route path="/contrat/partage/:token" element={<S><SharedContractPage /></S>} />
         <Route path="/attestation/:token"      element={<S><AttestationPublicPage /></S>} />
