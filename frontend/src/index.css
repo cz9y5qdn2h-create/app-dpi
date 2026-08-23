@@ -214,6 +214,14 @@
        liserets blancs en haut/bas de l'écran. */
     background: var(--page-bg);
     min-height: 100%;
+    /* Un seul élément trop large (largeur figée, texte non wrappable,
+       position: fixed débordant) suffit à élargir tout le viewport de mise
+       en page sur mobile Safari et à rendre l'ensemble du site défilable
+       horizontalement — corrigé une fois au cas par cas (bandeau de
+       rappel dashboard) sans que ça résolve le problème en pratique.
+       Verrou général : aucune page ne doit pouvoir défiler horizontalement,
+       quel que soit l'élément fautif, actuel ou futur. */
+    overflow-x: hidden;
   }
 
   body {
@@ -221,6 +229,7 @@
     background-attachment: fixed;
     min-height: 100vh;
     min-height: 100dvh;
+    overflow-x: hidden;
     color: rgb(var(--text-primary));
     font-family: 'Geist', sans-serif;
     font-weight: 400;

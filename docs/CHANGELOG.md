@@ -9,6 +9,26 @@ Voir aussi : [INVARIANTS.md](INVARIANTS.md) · [BUG_JOURNAL.md](BUG_JOURNAL.md) 
 
 ---
 
+## 2026-08-22 (7)
+
+### 🔴 Verrou global overflow-x — le correctif du bandeau seul ne suffisait pas
+Le correctif précédent (bandeau de rappel dashboard) corrigeait un vrai bug
+mais l'utilisateur a confirmé que le décalage horizontal persistait après
+déploiement — soit un autre élément contribue au même symptôme, soit le
+mécanisme exact différait de l'hypothèse initiale. Plutôt que de continuer
+à traquer chaque élément large un par un (pistes identifiées mais non
+confirmées : `CopilotChat.jsx` panneau `width: 380`, `FeedbackWidget.jsx`
+panneau `width: 300`, tous deux inférieurs à certains viewports mobiles
+étroits), verrou structurel posé directement dans `index.css` : `overflow-x:
+hidden` sur `html` ET `body` (les deux, pas un seul — un seul ne suffit pas
+à garantir l'absence de défilement horizontal sur tous les moteurs). Ce
+verrou clippe tout débordement horizontal quel que soit l'élément fautif,
+actuel ou futur, sans dépendre d'identifier la cause exacte à chaque fois.
+Les zones à défilement horizontal intentionnel (`overflow-x-auto` sur la
+rangée de boutons mobile de `PageHeader.jsx`, tableaux larges) restent
+inchangées — un `overflow-x: auto` imbriqué continue de défiler localement
+indépendamment du `hidden` posé sur ses ancêtres.
+
 ## 2026-08-22 (6)
 
 ### 🔴 Dashboard entièrement décalé sur mobile — bandeau de rappel trop large
