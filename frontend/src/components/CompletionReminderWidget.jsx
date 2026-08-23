@@ -57,6 +57,7 @@ export default function CompletionReminderWidget() {
             transform: 'translateX(-50%)',
             zIndex: 380,
             display: 'flex',
+            flexWrap: 'wrap',
             alignItems: 'center',
             gap: 10,
             padding: '9px 14px',
@@ -67,11 +68,11 @@ export default function CompletionReminderWidget() {
             WebkitBackdropFilter: 'blur(14px)',
             boxShadow: '0 4px 20px rgba(0,0,0,0.14)',
             maxWidth: 'calc(100vw - 32px)',
-            whiteSpace: 'nowrap',
+            boxSizing: 'border-box',
           }}
         >
           <AlertTriangle style={{ width: 14, height: 14, color: '#F59E0B', flexShrink: 0 }} />
-          <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12.5, color: 'rgb(var(--text-primary))' }}>
+          <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12.5, color: 'rgb(var(--text-primary))', minWidth: 0 }}>
             <strong>{incompleteSections.length}</strong> section{incompleteSections.length > 1 ? 's' : ''} du DIP
             {incompleteSections.length > 1 ? ' restent' : ' reste'} à compléter
             {dip.conformity_score != null && ` — ${dip.conformity_score}% de conformité`}

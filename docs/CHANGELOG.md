@@ -9,6 +9,28 @@ Voir aussi : [INVARIANTS.md](INVARIANTS.md) · [BUG_JOURNAL.md](BUG_JOURNAL.md) 
 
 ---
 
+## 2026-08-22 (6)
+
+### 🔴 Dashboard entièrement décalé sur mobile — bandeau de rappel trop large
+Capture d'écran fournie par l'utilisateur sur le dashboard mobile : la page
+entière apparaissait tronquée/décalée horizontalement (bandeau d'alerte,
+carte de score, cartes de stats toutes coupées au même point à droite).
+Cause : `CompletionReminderWidget.jsx` (le bandeau ambre « N sections du DIP
+restent à compléter », `position: fixed`, centré en haut) combinait
+`whiteSpace: 'nowrap'` avec un `maxWidth: calc(100vw - 32px)` — mais sans
+`overflow`/`textOverflow` pour faire respecter cette largeur (contrairement
+au même pattern utilisé correctement ailleurs, `OnboardingModal.jsx:557`,
+qui associe toujours nowrap à `overflow: hidden` + `textOverflow:
+ellipsis`). Le texte du message (icône + phrase + score + lien + croix de
+fermeture, tout sur une seule ligne forcée) dépassait largement 100vw sur
+un téléphone : Safari iOS élargit le viewport de mise en page pour
+accommoder un élément `fixed` qui déborde, ce qui rend TOUTE la page
+défilable horizontalement — d'où les cartes coupées, sans lien apparent
+avec le bandeau lui-même. Corrigé en autorisant le message à passer à la
+ligne (`flexWrap: 'wrap'`, retrait du `whiteSpace: nowrap`, `minWidth: 0`
+sur le texte) plutôt que de le tronquer, pour ne pas perdre l'information
+de score affichée dans ce bandeau.
+
 ## 2026-08-22 (5)
 
 ### 🔴 Bandes blanches — extension aux pages franchisé et au reste du SaaS
