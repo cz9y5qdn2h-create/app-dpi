@@ -9,6 +9,25 @@ Voir aussi : [INVARIANTS.md](INVARIANTS.md) · [BUG_JOURNAL.md](BUG_JOURNAL.md) 
 
 ---
 
+## 2026-08-22 (3)
+
+### 🟢 Estimateur de risque DIP sur /ressources/litiges-dip
+La page de capture de leads était trop mince pour un lead magnet destiné à
+des avocats : ajout d'une checklist interactive « Estimez le risque du DIP
+de votre client » (5 questions Oui/Non/Incertain — délai de 20 jours, preuve
+datée, actualisation du DIP, avertissement prévisionnel, signalement des
+faits nouveaux avant signature) qui calcule un niveau de risque indicatif
+100% côté client, sans transmission au backend (les réponses ne figurent pas
+dans le payload de `POST /api/leads/litiges-dip`). Chaque citation reprise
+telle quelle de `legalLibrary.js` (déjà vérifiée). Résultat visible dès les
+5 questions répondues — sans attendre l'envoi du formulaire, puis récapitulé
+sur l'écran de confirmation une fois la ressource envoyée par email.
+Vérifié par un audit garde-fou-legal dédié (RGPD, risque de conseil
+juridique déguisé) : conforme, un point faible (disclaimer trop vague) a
+été corrigé au passage pour reprendre la formulation exacte déjà validée
+en CGU clause 3 (« ne constitue pas un conseil juridique au sens de la loi
+n° 71-1130 du 31 décembre 1971 »). Rapport sauvegardé en `.docx`.
+
 ## 2026-08-22 (2)
 
 ### 🟡 Réalignement SEO + GEO sur le pivot avocats
