@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Shield, Eye, EyeOff, CheckCircle, AlertCircle, Lock, ArrowLeft, MessageCircle } from 'lucide-react';
+import usePageBackground from '../lib/usePageBackground';
 
 const WA_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || '33651234567';
 
@@ -77,6 +78,7 @@ const BG = `
 `;
 
 export default function ResetPasswordPage() {
+  usePageBackground(BG);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token') || '';

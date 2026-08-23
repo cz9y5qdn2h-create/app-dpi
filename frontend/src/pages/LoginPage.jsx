@@ -4,8 +4,17 @@ import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { Shield, Eye, EyeOff, AlertCircle, ArrowRight, ShieldCheck } from 'lucide-react';
 import SEOHead from '../components/SEOHead';
+import usePageBackground from '../lib/usePageBackground';
+
+const AUTH_BG = `
+  radial-gradient(ellipse 55% 50% at 15% 70%, rgba(200,169,110,0.20) 0%, transparent 60%),
+  radial-gradient(ellipse 40% 60% at 80% 20%, rgba(180,140,70,0.14) 0%, transparent 55%),
+  radial-gradient(ellipse 60% 40% at 60% 85%, rgba(140,100,40,0.10) 0%, transparent 60%),
+  linear-gradient(160deg, #0a0805 0%, #0f0d08 25%, #080808 55%, #060606 100%)
+`;
 
 export default function LoginPage() {
+  usePageBackground(AUTH_BG);
   const { login, verifyMFA } = useAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -64,14 +73,7 @@ export default function LoginPage() {
         canonical="/login"
         noindex={true}
       />
-    <div className="min-h-screen flex" style={{
-      background: `
-        radial-gradient(ellipse 55% 50% at 15% 70%, rgba(200,169,110,0.20) 0%, transparent 60%),
-        radial-gradient(ellipse 40% 60% at 80% 20%, rgba(180,140,70,0.14) 0%, transparent 55%),
-        radial-gradient(ellipse 60% 40% at 60% 85%, rgba(140,100,40,0.10) 0%, transparent 60%),
-        linear-gradient(160deg, #0a0805 0%, #0f0d08 25%, #080808 55%, #060606 100%)
-      `
-    }}>
+    <div className="min-h-screen flex" style={{ background: AUTH_BG }}>
 
       {/* Panneau gauche — branding */}
       <div className="hidden lg:flex lg:w-2/5 flex-col justify-between p-12" style={{

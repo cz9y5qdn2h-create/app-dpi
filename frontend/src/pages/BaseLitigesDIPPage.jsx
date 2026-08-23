@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Shield, ArrowLeft, Scale, Gavel } from 'lucide-react';
 import SEOHead from '../components/SEOHead';
 import { LEGAL_ENTRIES, SANCTIONS } from '../lib/legalLibrary';
+import usePageBackground from '../lib/usePageBackground';
 
 const GOLD = '#C8A96E';
 const DARK = '#1A1826';
@@ -11,6 +12,7 @@ const BG = 'linear-gradient(145deg, #dde2f5 0%, #ebe7fa 40%, #dceaf8 70%, #e3e1f
 const JURISPRUDENCE = LEGAL_ENTRIES.filter(e => e.category === 'Jurisprudence');
 
 export default function BaseLitigesDIPPage() {
+  usePageBackground(BG);
   return (
     <>
       <SEOHead

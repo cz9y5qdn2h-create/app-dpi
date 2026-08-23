@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import api from '../lib/api';
+import usePageBackground from '../lib/usePageBackground';
 
 const GOLD = '#C8A96E';
 
@@ -467,6 +468,7 @@ function ContactFormDark({ onSuccess }) {
 // ─── Page principale ──────────────────────────────────────────────────────────
 
 export default function LandingPage() {
+  usePageBackground(DARK_BG.background);
   const formRef = useRef(null);
   const [waitlistCount, setWaitlistCount] = useState(null);
   const [formDone, setFormDone] = useState(false);

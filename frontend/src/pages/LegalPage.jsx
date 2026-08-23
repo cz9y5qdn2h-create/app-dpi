@@ -1,6 +1,9 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Shield, ArrowLeft, AlertTriangle } from 'lucide-react';
 import SEOHead from '../components/SEOHead';
+import usePageBackground from '../lib/usePageBackground';
+
+const LEGAL_BG = 'linear-gradient(145deg, #dde2f5 0%, #ebe7fa 40%, #dceaf8 70%, #e3e1f6 100%)';
 
 const TODAY = '15 août 2026';
 const IRALINK_EMAIL = 'theo@iralink-agency.com';
@@ -518,13 +521,14 @@ Contact pour toute question : ${PRIVACY_EMAIL}`
 };
 
 export default function LegalPage() {
+  usePageBackground(LEGAL_BG);
   const { pathname } = useLocation();
   const slug = pathname.replace(/^\//, '');
   const content = LEGAL_CONTENT[slug];
 
   if (!content) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(145deg, #dde2f5 0%, #ebe7fa 40%, #dceaf8 70%)' }}>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: LEGAL_BG }}>
         <div className="text-center">
           <p className="font-cormorant text-2xl mb-4" style={{ color: '#1A1826' }}>Page introuvable</p>
           <Link to="/" className="font-dm-sans text-sm" style={{ color: '#C8A96E' }}>← Retour à l'accueil</Link>
@@ -547,7 +551,7 @@ export default function LegalPage() {
   return (
     <>
       <SEOHead title={seo.title} description={seo.description} canonical={seo.canonical} noindex={true} />
-    <div className="min-h-screen" style={{ background: 'linear-gradient(145deg, #dde2f5 0%, #ebe7fa 40%, #dceaf8 70%, #e3e1f6 100%)' }}>
+    <div className="min-h-screen" style={{ background: LEGAL_BG }}>
       <header style={{ background: 'rgba(255,255,255,0.72)', backdropFilter: 'blur(24px)', borderBottom: '1px solid rgba(200,169,110,0.18)', position: 'sticky', top: 0, zIndex: 10 }}>
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-4 min-w-0">

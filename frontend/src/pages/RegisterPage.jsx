@@ -7,10 +7,19 @@ import toast from 'react-hot-toast';
 import OnboardingFranchiseur from '../components/OnboardingFranchiseur';
 import OnboardingAvocat from '../components/OnboardingAvocat';
 import SEOHead from '../components/SEOHead';
+import usePageBackground from '../lib/usePageBackground';
 
 const STEP_COUNT = 3;
 
+const AUTH_BG = `
+  radial-gradient(ellipse 55% 50% at 15% 70%, rgba(200,169,110,0.20) 0%, transparent 60%),
+  radial-gradient(ellipse 40% 60% at 80% 20%, rgba(180,140,70,0.14) 0%, transparent 55%),
+  radial-gradient(ellipse 60% 40% at 60% 85%, rgba(140,100,40,0.10) 0%, transparent 60%),
+  linear-gradient(160deg, #0a0805 0%, #0f0d08 25%, #080808 55%, #060606 100%)
+`;
+
 export default function RegisterPage() {
+  usePageBackground(AUTH_BG);
   const { register } = useAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -98,14 +107,7 @@ export default function RegisterPage() {
         description="Créez votre compte avocat DIPpro et centralisez la conformité DIP de tous vos clients franchiseurs. Analyse Loi Doubin, attestations horodatées SHA-256."
         canonical="/register"
       />
-      <div className="min-h-screen flex" style={{
-        background: `
-          radial-gradient(ellipse 55% 50% at 15% 70%, rgba(200,169,110,0.20) 0%, transparent 60%),
-          radial-gradient(ellipse 40% 60% at 80% 20%, rgba(180,140,70,0.14) 0%, transparent 55%),
-          radial-gradient(ellipse 60% 40% at 60% 85%, rgba(140,100,40,0.10) 0%, transparent 60%),
-          linear-gradient(160deg, #0a0805 0%, #0f0d08 25%, #080808 55%, #060606 100%)
-        `
-      }}>
+      <div className="min-h-screen flex" style={{ background: AUTH_BG }}>
 
         {/* Panneau gauche */}
         <div className="hidden lg:flex lg:w-2/5 flex-col justify-between p-12" style={{

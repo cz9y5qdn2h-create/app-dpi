@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Shield, Send, CheckCircle, ArrowLeft, BookOpen, Gauge, AlertTriangle } from 'lucide-react';
 import SEOHead from '../components/SEOHead';
 import api from '../lib/api';
+import usePageBackground from '../lib/usePageBackground';
 
 const GOLD = '#C8A96E';
 const DARK = '#1A1826';
@@ -90,6 +91,7 @@ function AnswerPills({ value, onChange }) {
 }
 
 export default function LeadsLitigesDIPPage() {
+  usePageBackground(BG);
   const [form, setForm] = useState({ nom: '', email: '', telephone: '', structure: '' });
   const [consentement, setConsentement] = useState(false);
   const [answers, setAnswers] = useState({});

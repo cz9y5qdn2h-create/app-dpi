@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Shield, ArrowLeft, Mail, CheckCircle, AlertCircle, Eye, EyeOff, MessageCircle } from 'lucide-react';
+import usePageBackground from '../lib/usePageBackground';
 
 const BG = `
   radial-gradient(ellipse 55% 50% at 15% 70%, rgba(200,169,110,0.20) 0%, transparent 60%),
@@ -88,6 +89,7 @@ function WhatsAppBlock({ email }) {
 }
 
 export default function ForgotPasswordPage() {
+  usePageBackground(BG);
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);

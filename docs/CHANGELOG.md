@@ -9,6 +9,25 @@ Voir aussi : [INVARIANTS.md](INVARIANTS.md) · [BUG_JOURNAL.md](BUG_JOURNAL.md) 
 
 ---
 
+## 2026-08-22 (4)
+
+### 🔴 Bandes blanches en haut/bas des pages publiques sur mobile
+`<body>`/`<html>` sont peints via la variable CSS `--page-bg` (thème de
+l'espace connecté), avec un fond clair (`#FAF6EE...`) par défaut — un
+garde-fou existait déjà pour l'espace connecté (commentaire `index.css`
+ligne ~212 : le rebond de défilement sur mobile découvre ce qu'il y a
+derrière le fond, d'où l'exigence de peindre `html` ET `body`). Mais les 9
+pages publiques (Landing, Waitlist, Login, Register, Forgot/ResetPassword,
+Legal, et les 2 nouvelles pages `/ressources/*`) peignent leur propre fond
+sur un `<div className="min-h-screen">` interne, sans jamais toucher à
+`--page-bg` — en overscroll mobile, c'est donc le fond clair par défaut du
+thème connecté qui apparaît en bandes, en rupture flagrante avec le fond
+sombre de la landing page en particulier. Corrigé avec un hook réutilisable
+`usePageBackground()` (`frontend/src/lib/usePageBackground.js`) qui peint
+`document.body`/`documentElement` avec le fond propre à chaque page au
+montage, et restaure l'état précédent au démontage — appliqué aux 9 pages
+publiques concernées.
+
 ## 2026-08-22 (3)
 
 ### 🟢 Estimateur de risque DIP sur /ressources/litiges-dip

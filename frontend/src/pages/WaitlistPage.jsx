@@ -8,6 +8,7 @@ import {
   Star, FileText, Zap, Clock, ChevronRight,
 } from 'lucide-react';
 import api from '../lib/api';
+import usePageBackground from '../lib/usePageBackground';
 
 const GOLD = '#C8A96E';
 const DARK = '#1A1826';
@@ -401,6 +402,7 @@ const MOCKUP_TABS = [
 ];
 
 export default function WaitlistPage() {
+  usePageBackground(BG);
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(0);
   const formRef = useRef(null);
