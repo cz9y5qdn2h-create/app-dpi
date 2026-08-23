@@ -2,6 +2,9 @@ import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
 import { Shield, Award, AlertTriangle, Download, FileText, Hash } from 'lucide-react';
+import usePageBackground from '../lib/usePageBackground';
+
+const BG = 'linear-gradient(145deg, #dde2f5 0%, #ebe7fa 40%, #dceaf8 70%, #e3e1f6 100%)';
 
 const API_BASE = import.meta.env.VITE_API_URL
   ? import.meta.env.VITE_API_URL.replace(/\/$/, '') + '/api'
@@ -15,6 +18,7 @@ const LEVEL_LABEL = {
 };
 
 export default function AttestationPublicPage() {
+  usePageBackground(BG);
   const { token } = useParams();
 
   const { data, isLoading, isError } = useQuery({
@@ -26,9 +30,7 @@ export default function AttestationPublicPage() {
   const cert = data?.certificate;
 
   return (
-    <div className="min-h-screen p-4 py-8" style={{
-      background: 'linear-gradient(145deg, #dde2f5 0%, #ebe7fa 40%, #dceaf8 70%, #e3e1f6 100%)'
-    }}>
+    <div className="min-h-screen p-4 py-8" style={{ background: BG }}>
       <div className="max-w-xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">

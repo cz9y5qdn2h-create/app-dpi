@@ -2,11 +2,15 @@ import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Shield, Calendar, CheckCircle, LogOut, Mail, Clock, Send, ChevronDown, Users } from 'lucide-react';
 import api from '../lib/api';
+import usePageBackground from '../lib/usePageBackground';
+
+const BG = 'linear-gradient(145deg, #dde2f5 0%, #ebe7fa 40%, #dceaf8 70%, #e3e1f6 100%)';
 
 const CAL_URL = import.meta.env.VITE_CAL_COM_URL || 'https://cal.com/theo-coutard-mhdsix/presentation-dippro';
 const CONTACT_EMAIL = import.meta.env.VITE_CONTACT_EMAIL || 'theo@iralink-agency.com';
 
 export default function TrialExpiredPage() {
+  usePageBackground(BG);
   const { profile, logout } = useAuth();
   const [booked, setBooked] = useState(false);
   const [showCal, setShowCal] = useState(false);
@@ -45,9 +49,7 @@ export default function TrialExpiredPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4" style={{
-      background: 'linear-gradient(145deg, #dde2f5 0%, #ebe7fa 40%, #dceaf8 70%, #e3e1f6 100%)'
-    }}>
+    <div className="min-h-screen flex items-center justify-center p-4" style={{ background: BG }}>
       <div className="w-full max-w-lg">
         {/* Logo */}
         <div className="text-center mb-8">

@@ -5,6 +5,9 @@ import { Shield, CheckCircle, AlertTriangle, FileText, ChevronDown, ChevronUp, A
 import { useState, useRef, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import RichTextView from '../components/document/RichTextView';
+import usePageBackground from '../lib/usePageBackground';
+
+const BG = 'linear-gradient(145deg, #dde2f5 0%, #ebe7fa 40%, #dceaf8 70%, #e3e1f6 100%)';
 
 const API_BASE = import.meta.env.VITE_API_URL
   ? import.meta.env.VITE_API_URL.replace(/\/$/, '') + '/api'
@@ -145,6 +148,7 @@ function useReadTracker(dip, token) {
 }
 
 export default function SharedDIPPage() {
+  usePageBackground(BG);
   const { token } = useParams();
   const { t } = useTranslation();
 
@@ -171,9 +175,7 @@ export default function SharedDIPPage() {
   } : null;
 
   return (
-    <div className="min-h-screen p-4 py-8" style={{
-      background: 'linear-gradient(145deg, #dde2f5 0%, #ebe7fa 40%, #dceaf8 70%, #e3e1f6 100%)'
-    }}>
+    <div className="min-h-screen p-4 py-8" style={{ background: BG }}>
       <div className="max-w-2xl mx-auto space-y-6">
 
         {/* Header */}

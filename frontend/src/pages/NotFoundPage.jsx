@@ -1,15 +1,17 @@
 import { Link } from 'react-router-dom';
 import { Shield } from 'lucide-react';
+import usePageBackground from '../lib/usePageBackground';
+
+const BG = `
+  radial-gradient(ellipse 55% 50% at 15% 70%, rgba(200,169,110,0.20) 0%, transparent 60%),
+  radial-gradient(ellipse 40% 60% at 80% 20%, rgba(180,140,70,0.14) 0%, transparent 55%),
+  linear-gradient(160deg, #0a0805 0%, #0f0d08 25%, #080808 55%, #060606 100%)
+`;
 
 export default function NotFoundPage() {
+  usePageBackground(BG);
   return (
-    <div className="min-h-screen flex items-center justify-center p-6" style={{
-      background: `
-        radial-gradient(ellipse 55% 50% at 15% 70%, rgba(200,169,110,0.20) 0%, transparent 60%),
-        radial-gradient(ellipse 40% 60% at 80% 20%, rgba(180,140,70,0.14) 0%, transparent 55%),
-        linear-gradient(160deg, #0a0805 0%, #0f0d08 25%, #080808 55%, #060606 100%)
-      `
-    }}>
+    <div className="min-h-screen flex items-center justify-center p-6" style={{ background: BG }}>
       <div className="text-center">
         <div className="flex items-center justify-center gap-3 mb-8">
           <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'rgba(200,169,110,0.12)', border: '1px solid rgba(200,169,110,0.3)' }}>

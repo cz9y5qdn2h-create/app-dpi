@@ -9,6 +9,27 @@ Voir aussi : [INVARIANTS.md](INVARIANTS.md) · [BUG_JOURNAL.md](BUG_JOURNAL.md) 
 
 ---
 
+## 2026-08-22 (5)
+
+### 🔴 Bandes blanches — extension aux pages franchisé et au reste du SaaS
+Suite du correctif précédent (bandes blanches en overscroll mobile) :
+`grep "min-h-screen"` sur tout `frontend/src/pages` a trouvé 7 pages
+restantes avec le même pattern (fond peint sur un `<div>` interne au lieu de
+`body`/`html`). Corrigées avec `usePageBackground()` : `NotFoundPage.jsx`,
+`TrialExpiredPage.jsx`, et surtout les **3 pages côté franchisé** — les
+liens publics sans compte que les franchisés ouvrent sur leur téléphone
+depuis un email ou WhatsApp : `AttestationPublicPage.jsx`
+(`/attestation/:token`), `SharedDIPPage.jsx` (`/dip/partage/:token`),
+`SharedContractPage.jsx` (`/contrat/partage/:token`). Vérifié à cette
+occasion que le shell principal de l'espace connecté (avocat/franchiseur,
+`components/Layout.jsx:57`) peint déjà `background: var(--page-bg)` — la
+même variable que `body`, donc pas de rupture de fond au rebond de
+défilement sur le dashboard ou les pages internes de l'app : ce risque
+n'existait que sur les pages hors du shell principal (marketing, auth,
+liens partagés), maintenant toutes couvertes.
+`DIPAvocatPage.jsx` et `AvocatSessionPage.jsx` utilisent déjà les variables
+de thème (`--bg-primary`) plutôt qu'une couleur figée — non concernées.
+
 ## 2026-08-22 (4)
 
 ### 🔴 Bandes blanches en haut/bas des pages publiques sur mobile
