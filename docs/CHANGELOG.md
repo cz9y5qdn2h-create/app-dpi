@@ -9,6 +9,30 @@ Voir aussi : [INVARIANTS.md](INVARIANTS.md) · [BUG_JOURNAL.md](BUG_JOURNAL.md) 
 
 ---
 
+## 2026-08-23 (3)
+
+### 🔴 Soft-404 encore présent malgré middleware.mjs — vraie cause : le cache CDN, pas le middleware
+Le brief du 24/08 signalait le soft-404 encore actif sur DIPpro malgré le
+correctif `middleware.mjs` livré précédemment. Vérifié en direct : une URL
+jamais requêtée auparavant (`/test-fresh-<random>`) répond `HTTP/2 200`,
+`x-vercel-cache: HIT`, avec le même ETag et un `Age` de ~24h — c'est
+exactement l'`index.html` mis en cache, servi tel quel pour n'importe quel
+chemin inconnu, sans jamais atteindre `middleware.mjs`. Cause : les règles
+`Cache-Control` de `vercel.json` ne ciblaient que les chemins `/index.html`
+et `/` littéralement — pas les innombrables chemins que le rewrite SPA
+catch-all (`"/(.*)" → "/index.html"`) réécrit vers cette même ressource.
+Ces chemins héritaient donc du cache par défaut de Vercel (long, jamais
+revalidé), et le CDN répondait depuis ce cache avant même d'invoquer le
+middleware — le middleware n'était donc jamais le problème, il n'était
+simplement jamais exécuté. Corrigé en ajoutant une règle catch-all
+`"/(.*)"` avec `max-age=0, must-revalidate` en tête de `headers` dans
+`vercel.json` — la règle `/assets/(.*)` (immutable) reste plus spécifique
+et prioritaire pour les fichiers hashés. Accès direct à l'API Vercel non
+disponible dans cette session (permission MCP non accordable en tâche de
+fond) — à revérifier après le prochain déploiement avec une URL aléatoire
+jamais requêtée, puisque le cache déjà posé pour les anciens chemins peut
+mettre un moment à expirer même après ce correctif.
+
 ## 2026-08-23 (2)
 
 ### 🟢 Relance email — formulaire waitlist abandonné à l'email seul
