@@ -78,6 +78,15 @@ export function installGlobalErrorHandlers() {
   installed = true;
 
   window.addEventListener('error', (e) => {
+    // "Script error." sans e.error : signature du masquage cross-origin du
+    // navigateur (script tiers, extension, bloqueur de pub) — jamais notre
+    // propre code, qui est servi en same-origin. Le stack trace produit dans
+    // ce cas ne pointe que vers l'appel new Error() ci-dessous, jamais vers
+    // la vraie source : remonté en "BLOQUANT" sans aucune valeur de
+    // diagnostic, juste du bruit d'alerte. Trouvé le 23/08/2026 après un
+    // rapport "[CRASH AUTO] window.error : Script error." sur /login,
+    // stack trace pointant dans le bundle applicatif lui-même.
+    if (!e.error && e.message === 'Script error.') return;
     // Erreurs de chargement de ressource (script/img) : e.error est souvent null
     if (e.error) {
       logError(e.error, { type: 'window.error' });

@@ -9,6 +9,62 @@ Voir aussi : [INVARIANTS.md](INVARIANTS.md) · [BUG_JOURNAL.md](BUG_JOURNAL.md) 
 
 ---
 
+## 2026-08-23 (2)
+
+### 🟢 Relance email — formulaire waitlist abandonné à l'email seul
+Sur la landing page et /waitlist, l'email est maintenant capturé dès qu'il
+quitte le champ (blur), même si le visiteur n'a jamais soumis le formulaire
+en entier — un email de relance ("votre check de conformité DIP est
+presque prêt") est envoyé via Resend, une seule fois par adresse, jamais
+renvoyé. Table dédiée `waitlist_partial_emails` (migration 053,
+`company_name` étant obligatoire dans `waitlist`, impropre à une capture
+email-seul) ; dédoublonnage géré par `notified_at` côté backend (pas
+seulement côté client, pour rester fiable même en cas de rechargement de
+page). Skip silencieux si l'email a déjà entièrement rejoint `waitlist`.
+Politique de confidentialité mise à jour (nouvelle catégorie de données,
+nouvelle finalité en intérêt légitime, durée de conservation 30 jours) —
+traitement analogue à une relance de panier abandonné (donnée minimale,
+envoi unique, aucune conséquence pour qui ignore l'email). Purge des lignes
+de plus de 30 jours ajoutée au cron quotidien existant (`cron.js`), isolée
+dans son propre try/catch pour ne jamais bloquer le reste du cron en cas
+d'échec.
+
+### 🔵 Confirmation RLS `password_reset_tokens` / `bug_reports`
+Signalé comme encore en attente ; la migration 050 (précédente session)
+couvre déjà exactement ces deux tables (RLS activé + policy deny-all).
+SQL repassé à l'utilisateur pour ré-exécution — idempotent, sans risque à
+rejouer si déjà appliqué.
+
+## 2026-08-23
+
+### 🔴 Case RGPD waitlist/landing inopérante — pas un vrai `<input>`
+Rapport de bug (test automatisé) : sur la landing page et `/waitlist`, la
+case à cocher RGPD ne réagissait à aucun clic (case, label ou texte), la
+soumission ne produisait ni succès ni erreur, et aucun lead n'arrivait.
+Cause : `LandingPage.jsx` et `WaitlistPage.jsx` simulaient la case avec un
+`<div onClick={...}>` stylé, sans lien natif avec le `<label>` englobant —
+cliquer sur le texte ou le label n'atteignait jamais le gestionnaire
+(seul le carré lui-même avait un onClick), et un outil d'automatisation ou
+un lecteur d'écran ne voit tout simplement pas cet élément comme une case à
+cocher (pas de `role="checkbox"`, pas de focus clavier). `RegisterPage.jsx`
+et la nouvelle `LeadsLitigesDIPPage.jsx` utilisaient déjà un vrai
+`<input type="checkbox">` — les deux pages fautives alignées sur ce modèle.
+Un consentement RGPD techniquement présent mais difficilement activable
+constitue par ailleurs un point de fragilité sur le fond, pas seulement un
+bug ergonomique (voir garde-fou-legal : un design qui gêne l'action de
+consentement affaiblit la preuve de consentement).
+
+### 🟡 Faux-positif "BLOQUANT — Script error." filtré à la source
+Rapport auto-capturé (`ErrorBoundary`/`window.onerror`) sur `/login`,
+visiteur non connecté : `[CRASH AUTO] window.error : Script error.`, stack
+trace pointant uniquement vers l'appel `new Error()` du gestionnaire
+lui-même. Signature classique du masquage cross-origin du navigateur
+(script tiers, extension, bloqueur de pub) — jamais notre propre code
+(servi en same-origin) — et strictement sans valeur de diagnostic, tout en
+générant une alerte "BLOQUANT" à chaque occurrence. Filtré dans
+`errorJournal.js` : un `window.onerror` avec `message === 'Script error.'`
+et sans `e.error` n'est plus remonté ni journalisé.
+
 ## 2026-08-22 (7)
 
 ### 🔴 Verrou global overflow-x — le correctif du bandeau seul ne suffisait pas

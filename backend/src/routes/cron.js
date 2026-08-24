@@ -374,6 +374,16 @@ router.get('/daily', async (req, res) => {
   const appUrl = getAppUrl();
   const report = { sourcesChecked: 0, usersNotified: 0, alertsCreated: 0, newsAnalyzed: 0, newsAlertsCreated: 0, errors: 0 };
 
+  // Purge des emails saisis sans finalisation d'inscription, au-delà du
+  // délai annoncé en politique de confidentialité (§5) — isolé dans son
+  // propre try/catch pour qu'un échec ici ne bloque jamais le reste du cron.
+  try {
+    const cutoff = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString();
+    await supabaseAdmin.from('waitlist_partial_emails').delete().lt('created_at', cutoff);
+  } catch (err) {
+    console.error('Purge waitlist_partial_emails:', err.message);
+  }
+
   try {
     // ── 1. Récupérer toutes les sources de surveillance URL ──────────────────
     const { data: allSources, error: srcErr } = await supabaseAdmin

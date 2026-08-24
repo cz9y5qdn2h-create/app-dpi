@@ -247,6 +247,10 @@ Données de demande de ressource (formulaire "Base des litiges DIP")
 • Horodatage du consentement donné lors de la soumission
 • Conservées en base de données par DIPpro en tant que prospect (lead), distinctement de tout compte client
 
+Email saisi sans finalisation d'un formulaire d'inscription
+• Si vous renseignez votre email dans le formulaire d'inscription (page d'accueil ou /waitlist) sans le soumettre jusqu'au bout, cet email seul peut être conservé pour vous permettre de reprendre votre inscription
+• Un seul email de relance est envoyé, jamais renvoyé à la même adresse ensuite
+
 Données techniques et de navigation
 • Adresse IP (logs de connexion, conservée 90 jours)
 • Navigateur et système d'exploitation
@@ -275,6 +279,7 @@ Intérêt légitime (art. 6.1.f RGPD)
 • Mesure d'audience du site (Vercel Analytics — pages consultées, sans cookie ni identifiant individuel, données agrégées)
 • Réponse aux demandes soumises via le formulaire de contact public
 • Envoi de la ressource demandée et prospection commerciale B2B relative à DIPpro auprès des avocats ayant sollicité une ressource via /ressources/litiges-dip — le numéro de téléphone collecté n'est utilisé que pour un contact manuel et personnalisé, jamais pour de la prospection téléphonique automatisée (SVI, appels robotisés)
+• Envoi d'un unique email de relance si vous avez renseigné votre email dans le formulaire d'inscription sans le finaliser
 
 Consentement (art. 6.1.a RGPD)
 • Envoi de communications commerciales et newsletters
@@ -312,6 +317,8 @@ Données de facturation : 10 ans à compter de la date de facturation (obligatio
 Données de franchise (franchisés renseignés) : durée de l'abonnement actif + 30 jours
 
 Données de demande de ressource (leads "Base des litiges DIP") : 3 ans à compter du dernier contact (durée standard recommandée par la CNIL pour la prospection commerciale)
+
+Email saisi sans finalisation du formulaire d'inscription : 30 jours, sauf finalisation de l'inscription entre-temps
 
 Communications marketing : jusqu'au retrait du consentement`
       },

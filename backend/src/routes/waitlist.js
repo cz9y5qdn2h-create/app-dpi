@@ -1,10 +1,12 @@
 const express = require('express');
 const { supabaseAdmin } = require('../config/supabase');
 const { authMiddleware } = require('../middleware/auth');
+const { sendTransactionalEmail } = require('../config/email');
 const router = express.Router();
 
 const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{2,}$/;
 const ALLOWED_STATUSES = ['pending', 'contacted', 'converted', 'dismissed'];
+const ALLOWED_PARTIAL_SOURCES = ['waitlist_form', 'landing_form'];
 
 const requireAdmin = async (req, res, next) => {
   const { data } = await supabaseAdmin.from('users').select('role').eq('id', req.user.id).single();
@@ -53,6 +55,68 @@ router.post('/', async (req, res) => {
   if (error) return res.status(500).json({ error: error.message });
 
   res.status(201).json({ message: 'Inscription confirmée — nous vous contacterons très bientôt.' });
+});
+
+// POST /api/waitlist/partial — public, sans authentification
+// Capture l'email dès qu'il quitte le champ, avant tout envoi complet du
+// formulaire — permet une relance même si le visiteur abandonne. Un seul
+// email de relance par adresse, jamais renvoyé (notified_at).
+router.post('/partial', async (req, res) => {
+  const { email, source } = req.body;
+  if (!email) return res.status(400).json({ error: 'Email requis' });
+
+  const cleanEmail = String(email).toLowerCase().trim();
+  if (!EMAIL_RE.test(cleanEmail)) {
+    return res.status(400).json({ error: 'Format d\'email invalide' });
+  }
+  const cleanSource = ALLOWED_PARTIAL_SOURCES.includes(source) ? source : 'waitlist_form';
+
+  const { data: alreadyOnWaitlist } = await supabaseAdmin
+    .from('waitlist').select('id').eq('email', cleanEmail).maybeSingle();
+  if (alreadyOnWaitlist) return res.json({ ok: true });
+
+  const { data: existing } = await supabaseAdmin
+    .from('waitlist_partial_emails').select('id, notified_at').eq('email', cleanEmail).maybeSingle();
+  if (existing?.notified_at) return res.json({ ok: true });
+
+  let partialId = existing?.id;
+  if (!partialId) {
+    const { data: inserted, error } = await supabaseAdmin
+      .from('waitlist_partial_emails')
+      .insert({ email: cleanEmail, source: cleanSource })
+      .select('id')
+      .single();
+    if (error) return res.status(500).json({ error: error.message });
+    partialId = inserted.id;
+  }
+
+  const html = `
+    <div style="font-family:'DM Sans',system-ui,sans-serif;max-width:520px;margin:auto;padding:32px 28px;">
+      <p style="font-size:15px;color:#1A1826;line-height:1.6;">Bonjour,</p>
+      <p style="font-size:15px;color:#1A1826;line-height:1.6;">
+        Vous avez commencé une inscription sur DIPpro — votre <strong>analyse gratuite de conformité DIP</strong>
+        (score Loi Doubin en 30 secondes, valeur 250€) est à deux minutes de vous.
+      </p>
+      <p style="margin:28px 0;">
+        <a href="https://iralink-agency.dippro.business/waitlist" style="background:#C8A96E;color:#080808;text-decoration:none;padding:12px 24px;border-radius:10px;font-weight:600;font-size:14px;">Terminer mon inscription</a>
+      </p>
+      <p style="font-size:12px;color:#94A3B8;line-height:1.6;">
+        Si vous n'êtes pas à l'origine de cette démarche, ignorez simplement cet email — vous ne recevrez rien de plus.
+        Voir notre <a href="https://iralink-agency.dippro.business/privacy" style="color:#C8A96E;">politique de confidentialité</a>.
+      </p>
+      <p style="font-size:12px;color:#94A3B8;">DIPpro by Iralink</p>
+    </div>`;
+
+  const result = await sendTransactionalEmail(
+    cleanEmail, null, 'Votre check de conformité DIP est presque prêt', html
+  );
+
+  if (result.ok) {
+    await supabaseAdmin.from('waitlist_partial_emails')
+      .update({ notified_at: new Date().toISOString() }).eq('id', partialId);
+  }
+
+  res.json({ ok: true });
 });
 
 // GET /api/waitlist/count — public, retourne uniquement le nombre d'inscrits

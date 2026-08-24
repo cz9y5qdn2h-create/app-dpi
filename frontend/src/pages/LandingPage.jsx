@@ -217,6 +217,8 @@ function AttestationMockup() {
 
 // ─── Waitlist form (dark) ─────────────────────────────────────────────────────
 
+const LANDING_EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 function WaitlistFormDark({ onSuccess }) {
   const [form, setForm] = useState({ email: '', company_name: '', phone: '', message: '' });
   const [rgpd, setRgpd] = useState(false);
@@ -224,8 +226,15 @@ function WaitlistFormDark({ onSuccess }) {
   const [success, setSuccess] = useState(false);
   const [alreadyExists, setAlreadyExists] = useState(false);
   const [error, setError] = useState('');
+  const partialSent = useRef(false);
 
   const set = (k, v) => { setForm(f => ({ ...f, [k]: v })); setError(''); };
+
+  const notifyPartialEmail = () => {
+    if (partialSent.current || success || !LANDING_EMAIL_RE.test(form.email)) return;
+    partialSent.current = true;
+    api.post('/waitlist/partial', { email: form.email, source: 'landing_form' }).catch(() => {});
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -308,7 +317,7 @@ function WaitlistFormDark({ onSuccess }) {
         <input type="email" value={form.email} onChange={e => set('email', e.target.value)}
           placeholder="vous@entreprise.fr" required autoComplete="email" style={inputS}
           onFocus={e => (e.target.style.border = '0.5px solid rgba(200,169,110,0.55)')}
-          onBlur={e => (e.target.style.border = '0.5px solid rgba(244,242,238,0.12)')} />
+          onBlur={e => { e.target.style.border = '0.5px solid rgba(244,242,238,0.12)'; notifyPartialEmail(); }} />
       </div>
 
       <div>
@@ -323,12 +332,12 @@ function WaitlistFormDark({ onSuccess }) {
       </div>
 
       <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, cursor: 'pointer' }}>
-        <div
-          onClick={() => setRgpd(v => !v)}
-          style={{ width: 16, height: 16, borderRadius: 4, border: `1.5px solid ${rgpd ? GOLD : 'rgba(244,242,238,0.18)'}`, background: rgpd ? GOLD : 'transparent', flexShrink: 0, marginTop: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', transition: 'all 0.15s' }}
-        >
-          {rgpd && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4l3 3 5-6" stroke="#080808" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>}
-        </div>
+        <input
+          type="checkbox"
+          checked={rgpd}
+          onChange={e => setRgpd(e.target.checked)}
+          style={{ width: 16, height: 16, marginTop: 1, flexShrink: 0, accentColor: GOLD, cursor: 'pointer' }}
+        />
         <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: 'rgba(244,242,238,0.40)', lineHeight: 1.6 }}>
           J&apos;accepte que mes données soient utilisées pour me contacter au sujet de DIPpro.
           {' '}<Link to="/privacy" style={{ color: GOLD }}>Politique de confidentialité</Link>.
