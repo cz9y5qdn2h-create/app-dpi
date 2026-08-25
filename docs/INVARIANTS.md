@@ -200,9 +200,15 @@ interdit qu'un CNAME coexiste avec **tout autre enregistrement du même nom**.
   avant la redirection (403 confus côté backend).
 - **Aucun `console.log`** en production (règle projet, vérifiée à chaque passe).
 - **Toute route ajoutée dans `App.jsx` doit avoir son premier segment de
-  chemin ajouté à `ALLOWED_PREFIXES` dans `middleware.mjs`** (racine du dépôt),
+  chemin ajouté à `ALLOWED_PREFIXES` dans `middleware.js`** (racine du dépôt),
   sinon le Routing Middleware Vercel la bloque en 404 avant même qu'elle
   atteigne React Router.
+- **Le fichier doit s'appeler `middleware.js` (ou `.ts`), jamais `.mjs`** —
+  Vercel Routing Middleware ne reconnaît que ces deux extensions à la racine
+  du dépôt. Un `middleware.mjs` est un fichier parfaitement valide qui ne
+  sera **jamais exécuté**, silencieusement (pas d'erreur de build, pas
+  d'avertissement) : c'est la vraie cause du soft-404 resté actif plusieurs
+  jours malgré une logique de blocage correcte (trouvé le 25/08/2026).
 
 ---
 
