@@ -20,13 +20,13 @@
 
 ### Creer le compte admin
 1. Authentication > Users > Invite user
-   - Email: `theo@iralink-agency.com`
-   - Password: `*Theo.iralink-agency`
+   - Email: `<votre email>`
+   - Password: `<choisissez un mot de passe fort>`
 2. Copier l'UUID genere
 3. Executer dans SQL Editor :
 ```sql
 INSERT INTO public.users (id, email, role, company_name)
-VALUES ('<UUID_COPIE>', 'theo@iralink-agency.com', 'franchiseur', 'Iralink Agency');
+VALUES ('<UUID_COPIE>', '<votre email>', 'franchiseur', '<votre société>');
 ```
 OU utiliser le script seed :
 ```bash
@@ -46,8 +46,8 @@ ANTHROPIC_API_KEY=sk-ant-...
 RESEND_API_KEY=re_...
 RESEND_SENDER_EMAIL=contact@dippro.business
 RESEND_SENDER_NAME=DIPpro
-ADMIN_EMAIL=theo@iralink-agency.com
-ADMIN_PASSWORD=*Theo.iralink-agency
+ADMIN_EMAIL=<votre email>
+ADMIN_PASSWORD=<mot de passe fort — pas de valeur par défaut>
 ```
 
 ## 3. Frontend - Variables d'environnement
@@ -94,9 +94,8 @@ npm run dev
 | Anthropic | console.anthropic.com | IA Claude Sonnet |
 | Resend (opt.) | resend.com/emails | Emails franchises |
 
-## 7. Compte admin pre-installe
+## 7. Compte admin
 
-Apres le seed :
-- **Email**: `theo@iralink-agency.com`
-- **Mot de passe**: `*Theo.iralink-agency`
-- **Role**: franchiseur (admin)
+Le seed n'installe aucun compte par défaut : `ADMIN_EMAIL` et `ADMIN_PASSWORD`
+(définis à l'étape 2) sont les identifiants du compte créé, avec le rôle
+franchiseur (admin).

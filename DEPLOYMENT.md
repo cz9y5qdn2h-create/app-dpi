@@ -12,7 +12,7 @@ Un seul projet Vercel déployé depuis la **racine** du repo.
 ## 1. Prérequis : Supabase
 
 Le projet Supabase est déjà configuré :
-- **URL** : `https://nqboedyhlmyxyefjkshg.supabase.co`
+- **URL** : `<votre URL Supabase>`
 - **Anon key** : voir `frontend/.env.example`
 
 Récupérer la `service_role key` :
@@ -42,11 +42,11 @@ Dans Vercel > Project > Settings > **Environment Variables**, ajouter :
 
 | Variable | Valeur | Obligatoire |
 |---|---|---|
-| `SUPABASE_URL` | `https://nqboedyhlmyxyefjkshg.supabase.co` | ✅ |
+| `SUPABASE_URL` | `<votre URL Supabase>` | ✅ |
 | `SUPABASE_ANON_KEY` | voir `frontend/.env.example` | ✅ |
 | `SUPABASE_SERVICE_ROLE_KEY` | clé service_role Supabase | ✅ |
 | `ANTHROPIC_API_KEY` | `sk-ant-...` depuis console.anthropic.com | ✅ |
-| `VITE_SUPABASE_URL` | `https://nqboedyhlmyxyefjkshg.supabase.co` | ✅ |
+| `VITE_SUPABASE_URL` | `<votre URL Supabase>` | ✅ |
 | `VITE_SUPABASE_ANON_KEY` | voir `frontend/.env.example` | ✅ |
 | `VITE_CAL_COM_URL` | `https://cal.com/theo-coutard-mhdsix/call-clients` | ✅ |
 | `VITE_CONTACT_EMAIL` | `theo@iralink-agency.com` | ✅ |
@@ -91,11 +91,11 @@ Accéder à l'app : **http://localhost:5173**
 
 ---
 
-## 4. Compte admin par défaut
+## 4. Compte admin
 
-| Email | Mot de passe |
-|---|---|
-| `theo@iralink-agency.com` | `*Theo.iralink-agency` |
+Aucun mot de passe par défaut n'est fourni : `ADMIN_EMAIL` et `ADMIN_PASSWORD`
+doivent être définis dans l'environnement avant d'exécuter le script de seed
+(`backend/src/scripts/seed_admin.js`), qui refuse de s'exécuter sans eux.
 
 ---
 

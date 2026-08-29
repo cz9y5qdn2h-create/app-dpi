@@ -9,6 +9,50 @@ Voir aussi : [INVARIANTS.md](INVARIANTS.md) · [BUG_JOURNAL.md](BUG_JOURNAL.md) 
 
 ---
 
+## 2026-08-25
+
+### 🔴 Secrets en clair trouvés avant mise en open source — dépôt PAS ENCORE public
+Décision annoncée : DIPpro devient gratuit et open source (dépôt GitHub
+rendu public). Avant toute publication, audit complet du tree actuel ET de
+l'historique git (agent dédié) — **verdict : le dépôt ne peut pas être rendu
+public tel quel**, deux secrets réels actifs trouvés :
+1. Mot de passe admin de production (`theo@iralink-agency.com`) en clair
+   dans `backend/src/scripts/seed_admin.js` (valeur par défaut utilisée si
+   `ADMIN_PASSWORD` absent), `backend/.env.example`, `supabase/seed_admin.sql`,
+   `DEPLOYMENT.md`, `SETUP.md` (5 fichiers).
+2. Secret webhook Supabase Vault en clair dans
+   `supabase/migrations/051_notify_lead_email_secret_hardening.sql:34`
+   (déjà signalé et "corrigé" le 21/08 — déplacé en Vault, mais la valeur
+   reste visible dans la migration elle-même qui l'y insère).
+
+Corrigé dans le code : plus aucune valeur par défaut pour `ADMIN_PASSWORD`
+(`seed_admin.js` refuse de s'exécuter sans elle) ; tous les fichiers cités
+remplacés par des placeholders génériques ; clé anon Supabase d'un projet
+tiers (`nqboedyhlmyxyefjkshg`) retirée de `frontend/.env.example`,
+`backend/.env.example` et `DEPLOYMENT.md` ; retrait du fallback
+`'fallback'` sur `JWT_SECRET` dans `monitor.js` (signature OAuth state),
+remplacé par un vrai refus 503 si absent.
+
+**Reste à faire avant publication, hors de portée du code seul** :
+1. Faire tourner le mot de passe admin réel dans Supabase Auth.
+2. Régénérer le secret `notify_lead_email_webhook_secret` (Vault + Edge
+   Function `send-lead-email`).
+3. Purger l'historique git des deux valeurs ci-dessus (`git filter-repo`),
+   puis force-push — **action destructive non effectuée, en attente de
+   confirmation explicite** (réécrit tous les SHA de commit sur `main` et
+   la branche de dev).
+4. Seulement après ces 3 étapes : rendre le dépôt GitHub public.
+
+### 🟢 Passage au gratuit / open source — mise à jour du pricing partout
+`LandingPage.jsx` (section pricing + JSON-LD FAQ), `llms.txt`, `index.html`
+(JSON-LD `Offer` + FAQ statique), `WaitlistPage.jsx` (bénéfice "Early
+Adopter", SEO title/description) : les mentions de tarif (1 300 € + 850
+€/mois, -40 % Early Adopter, ROI an 1) remplacées par le nouveau
+positionnement gratuit + code source ouvert. Annonce LinkedIn préparée en
+parallèle, publication différée jusqu'à ce que le dépôt soit effectivement
+et sûrement rendu public (pas de sens à annoncer "open source" avant que
+ce soit vrai et sécurisé).
+
 ## 2026-08-23 (3)
 
 ### 🔴 Soft-404 encore présent malgré middleware.mjs — vraie cause : le cache CDN, pas le middleware

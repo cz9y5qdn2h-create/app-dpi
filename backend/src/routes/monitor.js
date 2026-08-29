@@ -13,14 +13,16 @@ const router = express.Router();
 // son token de session. Le token brut apparaissait auparavant dans l'URL de
 // redirection OAuth (potentiellement journalisé par Google/Microsoft, un
 // proxy, ou exposé via l'en-tête Referer). Même pattern que integrations.js.
+// Jamais de valeur par défaut ici : un secret public rendrait la signature
+// falsifiable par quiconque lit le code (répertoire désormais ouvert).
 function signState(payload) {
-  const sig = crypto.createHmac('sha256', process.env.JWT_SECRET || 'fallback').update(payload).digest('hex');
+  const sig = crypto.createHmac('sha256', process.env.JWT_SECRET).update(payload).digest('hex');
   return Buffer.from(JSON.stringify({ payload, sig })).toString('base64url');
 }
 
 function verifyState(raw) {
   const { payload, sig } = JSON.parse(Buffer.from(raw, 'base64url').toString());
-  const expected = crypto.createHmac('sha256', process.env.JWT_SECRET || 'fallback').update(payload).digest('hex');
+  const expected = crypto.createHmac('sha256', process.env.JWT_SECRET).update(payload).digest('hex');
   if (sig !== expected) throw new Error('invalid_state');
   return JSON.parse(payload);
 }
@@ -467,6 +469,9 @@ router.get('/google/auth', authMiddleware, requireFranchisor, async (req, res) =
   if (!process.env.GOOGLE_CLIENT_ID) {
     return res.status(503).json({ error: 'Google Drive non configuré — ajoutez GOOGLE_CLIENT_ID dans Vercel' });
   }
+  if (!process.env.JWT_SECRET) {
+    return res.status(503).json({ error: 'JWT_SECRET manquant — ajoutez-le dans Vercel' });
+  }
   const redirectUri = `${process.env.BACKEND_URL || 'https://dippro.business'}/api/monitor/google/callback`;
   const state = signState(JSON.stringify({ userId: req.user.id }));
   const params = new URLSearchParams({
@@ -557,6 +562,9 @@ router.get('/google/folders', authMiddleware, requireFranchisor, async (req, res
 // ── Routes — OneDrive ──────────────────────────────────────────────────────
 
 router.get('/onedrive/auth', authMiddleware, requireFranchisor, async (req, res) => {
+  if (!process.env.JWT_SECRET) {
+    return res.status(503).json({ error: 'JWT_SECRET manquant — ajoutez-le dans Vercel' });
+  }
   if (!process.env.MICROSOFT_CLIENT_ID) {
     return res.status(503).json({ error: 'OneDrive non configuré — ajoutez MICROSOFT_CLIENT_ID dans Vercel' });
   }

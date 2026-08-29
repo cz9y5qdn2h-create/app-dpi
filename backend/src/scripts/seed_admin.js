@@ -11,8 +11,13 @@ const supabase = createClient(
 );
 
 async function seedAdmin() {
-  const email = process.env.ADMIN_EMAIL || 'theo@iralink-agency.com';
-  const password = process.env.ADMIN_PASSWORD || '*Theo.iralink-agency';
+  const email = process.env.ADMIN_EMAIL;
+  const password = process.env.ADMIN_PASSWORD;
+
+  if (!email || !password) {
+    console.error('ADMIN_EMAIL et ADMIN_PASSWORD doivent être définis dans l\'environnement — aucune valeur par défaut par sécurité.');
+    process.exit(1);
+  }
 
   console.log(`Création du compte admin: ${email}`);
 
