@@ -850,15 +850,15 @@ export default function LandingPage() {
         </FadeIn>
       </section>
 
-      {/* ── PRICING ──────────────────────────────────────────── */}
+      {/* ── PRICING (gratuit / open source) ─────────────────────── */}
       <section style={{ maxWidth: 860, margin: '0 auto', padding: '0 24px 64px' }}>
         <FadeIn>
           <div style={{ textAlign: 'center', marginBottom: 40 }}>
             <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontWeight: 300, fontSize: 'clamp(2rem, 4vw, 2.6rem)', color: '#F4F2EE', marginBottom: 12 }}>
-              Tarification claire
+              Gratuit et open source
             </h2>
             <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 14, color: 'rgba(244,242,238,0.40)' }}>
-              Un prix réel, affiché — sans surprise.
+              DIPpro est désormais entièrement gratuit, code source ouvert.
             </p>
           </div>
 
@@ -866,18 +866,13 @@ export default function LandingPage() {
             {/* Carte prix */}
             <div style={{ borderRadius: 22, padding: '36px 32px', background: 'rgba(200,169,110,0.06)', border: '0.5px solid rgba(200,169,110,0.28)', boxSizing: 'border-box' }}>
               <div style={{ marginBottom: 24 }}>
-                <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: 'rgba(200,169,110,0.6)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Mise en place</div>
-                <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 42, fontWeight: 300, color: GOLD, lineHeight: 1 }}>1 300 €</div>
-                <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: 'rgba(244,242,238,0.38)', marginTop: 4 }}>une seule fois</div>
+                <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: 'rgba(200,169,110,0.6)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Tarif</div>
+                <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 42, fontWeight: 300, color: GOLD, lineHeight: 1 }}>0 €</div>
+                <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: 'rgba(244,242,238,0.38)', marginTop: 4 }}>gratuit, sans limite de clients franchiseurs</div>
               </div>
               <div style={{ height: '0.5px', background: 'rgba(200,169,110,0.15)', marginBottom: 24 }} />
-              <div style={{ marginBottom: 24 }}>
-                <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: 'rgba(200,169,110,0.6)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Abonnement mensuel</div>
-                <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 42, fontWeight: 300, color: GOLD, lineHeight: 1 }}>850 €<span style={{ fontSize: 18, opacity: 0.6 }}>/mois</span></div>
-                <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: 'rgba(244,242,238,0.38)', marginTop: 4 }}>par cabinet — tous vos clients franchiseurs inclus</div>
-              </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
-                {['Onboarding personnalisé 1h avec l\'équipe', 'Clients franchiseurs illimités', 'Configuration complète de votre espace', 'Support prioritaire à vie'].map(f => (
+                {['Code source ouvert', 'Clients franchiseurs illimités', 'Aucune carte bancaire, aucun engagement', 'Onboarding et support par la communauté'].map(f => (
                   <div key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
                     <CheckCircle style={{ width: 14, height: 14, color: GOLD, flexShrink: 0, marginTop: 1 }} />
                     <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12.5, color: 'rgba(244,242,238,0.55)', lineHeight: 1.5 }}>{f}</span>
@@ -885,28 +880,22 @@ export default function LandingPage() {
                 ))}
               </div>
               <button onClick={scrollToForm} style={{ ...btnGold, width: '100%', justifyContent: 'center', padding: '13px 24px', marginTop: 28 }}>
-                Première analyse offerte →
+                Créer mon compte gratuitement →
               </button>
               <p style={{ fontFamily: 'DM Mono, monospace', fontSize: 10.5, color: 'rgba(244,242,238,0.25)', textAlign: 'center', marginTop: 10 }}>Aucune carte bancaire requise</p>
             </div>
 
-            {/* ROI */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div style={{ borderRadius: 16, padding: '24px 28px', background: 'rgba(244,242,238,0.025)', border: '0.5px solid rgba(244,242,238,0.07)' }}>
-                <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 10, color: 'rgba(244,242,238,0.30)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>Le calcul</div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, marginBottom: 14 }}>
-                  <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12.5, color: 'rgba(244,242,238,0.45)', lineHeight: 1.4 }}>Coût an 1 (mise en place + 12 mois)</span>
-                  <span style={{ fontFamily: 'DM Mono, monospace', fontSize: 13, color: 'rgba(244,242,238,0.70)', flexShrink: 0 }}>11 500 €</span>
-                </div>
-                <div style={{ height: '0.5px', background: 'rgba(200,169,110,0.15)', margin: '4px 0 14px' }} />
+                <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 10, color: 'rgba(244,242,238,0.30)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>Pourquoi gratuit</div>
                 <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12.5, color: 'rgba(244,242,238,0.50)', lineHeight: 1.6, margin: 0 }}>
-                  Un contentieux DIP peut exposer votre client à la restitution des droits d&apos;entrée et redevances perçus, ainsi qu&apos;à des dommages-intérêts — sans qu&apos;un montant moyen ne soit publiquement établi. La grille R.330-1 sert à réduire ce risque en amont, pas à le chiffrer.
+                  La conformité DIP (Loi Doubin) ne devrait pas dépendre du budget d&apos;un cabinet. DIPpro reste un outil d&apos;aide à la décision, pas un substitut à votre analyse juridique.
                 </p>
               </div>
               <div style={{ borderRadius: 16, padding: '24px 28px', background: 'rgba(244,242,238,0.025)', border: '0.5px solid rgba(244,242,238,0.07)' }}>
-                <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 10, color: 'rgba(244,242,238,0.30)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Garantie</div>
+                <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 10, color: 'rgba(244,242,238,0.30)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 10 }}>Code source</div>
                 <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 13, color: 'rgba(244,242,238,0.50)', lineHeight: 1.65, margin: 0 }}>
-                  Première analyse offerte sur le DIP d&apos;un de vos clients — vous recevez le rapport complet avant de prendre toute décision. Aucun engagement, aucune carte bancaire.
+                  Le code de DIPpro est public — vous pouvez l&apos;auditer, le déployer vous-même, ou contribuer.
                 </p>
               </div>
             </div>
