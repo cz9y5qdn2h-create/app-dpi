@@ -21,6 +21,7 @@ const REQUIRED_COLUMNS = {
   regulatory_news_cache: ['id', 'impact_level', 'impact_reason'],
   leads_litiges_dip:  ['id', 'nom', 'email', 'telephone', 'source', 'consentement_horodatage'],
   waitlist_partial_emails: ['id', 'email', 'source', 'notified_at'],
+  outreach_targets:   ['id', 'email', 'status', 'unsubscribe_token', 'contacted_at'],
 };
 
 // Une seule ligne suffit à valider la présence des colonnes : PostgREST

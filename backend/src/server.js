@@ -31,6 +31,7 @@ const bugRoutes           = require('./routes/bugs');
 const documentRoutes      = require('./routes/documents');
 const contactRoutes       = require('./routes/contact');
 const leadsRoutes         = require('./routes/leads');
+const outreachRoutes      = require('./routes/outreach');
 
 const app = express();
 
@@ -145,6 +146,7 @@ app.use('/api/bugs',          bugRoutes);
 app.use('/api/documents',     documentRoutes);
 app.use('/api/contact',       contactLimiter, contactRoutes);
 app.use('/api/leads',         leadsLimiter, leadsRoutes);
+app.use('/api/outreach',      outreachRoutes);
 
 // Health check — ne retourne jamais les clés en clair
 app.get('/api/health', async (req, res) => {

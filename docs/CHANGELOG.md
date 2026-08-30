@@ -9,6 +9,43 @@ Voir aussi : [INVARIANTS.md](INVARIANTS.md) · [BUG_JOURNAL.md](BUG_JOURNAL.md) 
 
 ---
 
+## 2026-08-25 (3)
+
+### 🟢 Prospection B2B automatique par email (cabinets d'avocats)
+Nouveau module `backend/src/routes/outreach.js` : cron quotidien
+(`GET /api/outreach/run`, 09h00, protégé par `OUTREACH_CRON_SECRET`) qui
+prend un lot borné (15/jour — protège la réputation d'envoi Resend,
+partagée avec les emails transactionnels) de cibles au statut
+`a_contacter`, fait rédiger un email de prospection court par Claude
+(consignes strictes : aucun chiffre inventé, aucune promesse de résultat)
+et l'envoie via Resend, sans validation humaine (choix explicite,
+compromis assumé : risque résiduel qu'un message généré soit imprécis,
+partiellement compensé par le prompt et l'absence d'allégation chiffrée
+autorisée). Désinscription immédiate et permanente
+(`GET /api/outreach/unsubscribe/:token`, public, jamais recontacté
+ensuite). Base légale : art. L.34-5 CPCE (prospection B2B par email,
+régime d'opt-out entre professionnels). Table dédiée `outreach_targets`
+(migration 054, deny-all RLS). Politique de confidentialité mise à jour
+(nouvelle catégorie de données, finalité, durée de conservation 3 ans).
+
+**Pas branché à une source de cibles automatique** : `POST
+/api/outreach/import` (admin) attend une liste fournie (CSV/JSON) —
+brancher un fournisseur d'enrichissement B2B réel côté backend (clé API
+dédiée) reste une décision produit séparée, non prise ce soir.
+
+**LinkedIn explicitement exclu** de l'automatisation : un envoi de
+messages/connexions 100% automatique sur LinkedIn viole les conditions
+d'utilisation de la plateforme (risque de bannissement du compte) et
+aucun outil d'automatisation LinkedIn n'était disponible pour l'implémenter
+proprement — décision de ne pas le construire plutôt que de le faire à
+l'aveugle.
+
+**Vérifier après déploiement** : le plan Vercel de ce projet était rapporté
+"hobby" lors d'une vérification précédente dans cette session, qui limite
+historiquement le nombre de crons — la 5e entrée ajoutée à `vercel.json`
+peut être silencieusement ignorée par Vercel si le plan n'autorise que 2
+crons ; à confirmer dans le dashboard Vercel (Settings > Cron Jobs).
+
 ## 2026-08-25 (2)
 
 ### 🔵 Annulation du pivot gratuit/open source — retour au modèle payant

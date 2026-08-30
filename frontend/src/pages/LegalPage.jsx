@@ -251,6 +251,10 @@ Email saisi sans finalisation d'un formulaire d'inscription
 • Si vous renseignez votre email dans le formulaire d'inscription (page d'accueil ou /waitlist) sans le soumettre jusqu'au bout, cet email seul peut être conservé pour vous permettre de reprendre votre inscription
 • Un seul email de relance est envoyé, jamais renvoyé à la même adresse ensuite
 
+Données de prospection B2B (avocats en droit de la franchise)
+• Nom, email professionnel, cabinet — constituées par Iralink à partir de sources publiques ou professionnelles, sans démarche de votre part
+• Utilisées pour un email de présentation de DIPpro, avec lien de désinscription immédiate et permanente dans chaque message
+
 Données techniques et de navigation
 • Adresse IP (logs de connexion, conservée 90 jours)
 • Navigateur et système d'exploitation
@@ -280,6 +284,7 @@ Intérêt légitime (art. 6.1.f RGPD)
 • Réponse aux demandes soumises via le formulaire de contact public
 • Envoi de la ressource demandée et prospection commerciale B2B relative à DIPpro auprès des avocats ayant sollicité une ressource via /ressources/litiges-dip — le numéro de téléphone collecté n'est utilisé que pour un contact manuel et personnalisé, jamais pour de la prospection téléphonique automatisée (SVI, appels robotisés)
 • Envoi d'un unique email de relance si vous avez renseigné votre email dans le formulaire d'inscription sans le finaliser
+• Prospection commerciale B2B par email auprès d'avocats en droit de la franchise (art. L.34-5 CPCE — régime d'opt-out applicable entre professionnels, sans consentement préalable requis dès lors que le message concerne l'activité professionnelle du destinataire) — désinscription immédiate et permanente, jamais recontacté après désinscription
 
 Consentement (art. 6.1.a RGPD)
 • Envoi de communications commerciales et newsletters
@@ -295,7 +300,7 @@ Elles peuvent être transmises aux sous-traitants suivants dans la stricte mesur
 • Anthropic, Inc. (USA) — analyse IA des textes DIP — encadrée par clauses contractuelles types (CCT)
 • Vercel, Inc. (USA) — hébergement applicatif — encadré par CCT
 • Vercel, Inc. (USA) — mesure d'audience (Vercel Analytics) — sans cookie, sans identifiant individuel, données agrégées uniquement — encadrée par CCT
-• Resend, Inc. (USA) — envoi de tous les emails transactionnels (notifications franchisés, réinitialisation de mot de passe, invitations, formulaire de contact, envoi des ressources demandées) — encadrée par CCT
+• Resend, Inc. (USA) — envoi de tous les emails transactionnels et de prospection (notifications franchisés, réinitialisation de mot de passe, invitations, formulaire de contact, envoi des ressources demandées, prospection B2B avocats) — encadrée par CCT
 • Cal.com, Inc. (USA) — prise de rendez-vous — encadrée par CCT
 
 Tous les transferts hors Union européenne sont encadrés par des clauses contractuelles types (CCT) adoptées par la Commission européenne (décision 2021/914), garantissant un niveau de protection adéquat.
@@ -319,6 +324,8 @@ Données de franchise (franchisés renseignés) : durée de l'abonnement actif +
 Données de demande de ressource (leads "Base des litiges DIP") : 3 ans à compter du dernier contact (durée standard recommandée par la CNIL pour la prospection commerciale)
 
 Email saisi sans finalisation du formulaire d'inscription : 30 jours, sauf finalisation de l'inscription entre-temps
+
+Données de prospection B2B (avocats) : 3 ans à compter du dernier contact, suppression immédiate et définitive en cas de désinscription
 
 Communications marketing : jusqu'au retrait du consentement`
       },
