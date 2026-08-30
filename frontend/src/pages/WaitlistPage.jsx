@@ -17,7 +17,7 @@ const BG = 'linear-gradient(145deg, #dde2f5 0%, #ebe7fa 40%, #dceaf8 70%, #e3e1f
 
 const BENEFITS = [
   { icon: Star, label: 'Accès prioritaire dès ouverture', desc: 'Vous êtes notifié en premier et activé avant tout le monde.' },
-  { icon: TrendingUp, label: 'Gratuit et open source', desc: 'DIPpro est un logiciel gratuit, code source public.' },
+  { icon: TrendingUp, label: 'Tarif Early Adopter', desc: 'Tarification préférentielle réservée aux inscrits avant ouverture.' },
   { icon: Sparkles, label: 'Onboarding personnalisé Iralink', desc: "Mise en route en 1h avec l'équipe — pas de débrouille." },
   { icon: FileText, label: 'Analyse gratuite de votre DIP actuel', desc: 'Offerte à tous les inscrits — valeur 250€.' },
 ];
@@ -428,7 +428,7 @@ export default function WaitlistPage() {
     <>
       <SEOHead
         title="Accès anticipé — Liste d'attente"
-        description="Inscrivez-vous sur la liste d'attente DIPpro, logiciel gratuit et open source de conformité DIP (Loi Doubin). Accès anticipé pour avocats en droit de la franchise."
+        description="Inscrivez-vous sur la liste d'attente DIPpro. Accès anticipé Early Adopter, tarif préférentiel garanti à vie (-40%), analyse DIP gratuite (valeur 250€). Pour franchiseurs français."
         canonical="/waitlist"
       />
     <div className="min-h-screen" style={{ background: BG }}>

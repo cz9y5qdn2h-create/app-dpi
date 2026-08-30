@@ -43,8 +43,9 @@ Secteurs des clients franchiseurs accompagnés : restauration, immobilier, beaut
 
 ## Tarification
 
-- Gratuit — DIPpro est un logiciel open source, code source public
-- Aucune carte bancaire requise, aucune limite de clients franchiseurs
+- 1 300 € de mise en place + 850 €/mois, par cabinet — tous les clients franchiseurs inclus, sans coût supplémentaire par dossier
+- Première analyse offerte, aucune carte bancaire requise
+- Onboarding personnalisé inclus
 
 ## Éditeur
 

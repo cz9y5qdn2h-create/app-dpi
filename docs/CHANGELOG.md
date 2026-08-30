@@ -9,6 +9,20 @@ Voir aussi : [INVARIANTS.md](INVARIANTS.md) · [BUG_JOURNAL.md](BUG_JOURNAL.md) 
 
 ---
 
+## 2026-08-25 (2)
+
+### 🔵 Annulation du pivot gratuit/open source — retour au modèle payant
+Décision revenue sur elle-même dans la foulée : DIPpro reste payant
+(1 300 € mise en place + 850 €/mois par cabinet). Pricing restauré à
+l'identique dans `LandingPage.jsx`, `llms.txt`, `index.html` (JSON-LD +
+FAQ statique) et `WaitlistPage.jsx` — build vérifié byte-identique à
+l'état d'avant le pivot. Le dépôt reste privé, aucune conséquence sur ce
+front. Les correctifs de sécurité faits en vue de l'open source (mot de
+passe admin en dur retiré de `seed_admin.js`/docs, clé anon d'un projet
+tiers retirée des `.env.example`, fallback `JWT_SECRET` retiré de
+`monitor.js`) sont conservés — de bonnes pratiques indépendantes du
+modèle économique, pas de raison de les annuler.
+
 ## 2026-08-25
 
 ### 🔴 Secrets en clair trouvés avant mise en open source — dépôt PAS ENCORE public
