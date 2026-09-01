@@ -4,8 +4,8 @@ import { Shield, ArrowLeft, Mail, CheckCircle, AlertCircle, Eye, EyeOff, Message
 import usePageBackground from '../lib/usePageBackground';
 
 const BG = `
-  radial-gradient(ellipse 55% 50% at 15% 70%, rgba(200,169,110,0.20) 0%, transparent 60%),
-  radial-gradient(ellipse 40% 60% at 80% 20%, rgba(180,140,70,0.14) 0%, transparent 55%),
+  radial-gradient(ellipse 55% 50% at 15% 70%, rgba(156,65,65,0.20) 0%, transparent 60%),
+  radial-gradient(ellipse 40% 60% at 80% 20%, rgba(130,50,50,0.14) 0%, transparent 55%),
   linear-gradient(160deg, #0a0805 0%, #0f0d08 25%, #080808 55%, #060606 100%)
 `;
 
@@ -32,9 +32,9 @@ function WhatsAppBlock({ email }) {
   return (
     <div className="mt-8 space-y-4">
       <div className="flex items-center gap-3">
-        <div className="flex-1 h-px" style={{ background: 'rgba(200,169,110,0.12)' }} />
+        <div className="flex-1 h-px" style={{ background: 'rgba(156,65,65,0.12)' }} />
         <span className="font-dm-mono text-xs" style={{ color: 'rgba(244,242,238,0.25)' }}>ou</span>
-        <div className="flex-1 h-px" style={{ background: 'rgba(200,169,110,0.12)' }} />
+        <div className="flex-1 h-px" style={{ background: 'rgba(156,65,65,0.12)' }} />
       </div>
 
       <div className="rounded-xl px-4 py-4 space-y-3" style={{
@@ -121,7 +121,7 @@ export default function ForgotPasswordPage() {
 
         <div className="flex items-center gap-3 mb-10">
           <div className="lg-avatar">
-            <Shield className="w-4 h-4" style={{ color: '#C8A96E' }} />
+            <Shield className="w-4 h-4" style={{ color: '#9C4141' }} />
           </div>
           <p className="font-cormorant text-xl" style={{ color: '#F4F2EE' }}>DIPpro</p>
         </div>
@@ -183,9 +183,9 @@ export default function ForgotPasswordPage() {
                 disabled={loading || !email}
                 className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-dm-sans text-sm transition-all mt-2"
                 style={{
-                  background: loading || !email ? 'rgba(200,169,110,0.25)' : 'rgba(200,169,110,0.16)',
-                  border: `0.5px solid ${loading || !email ? 'rgba(200,169,110,0.20)' : 'rgba(200,169,110,0.42)'}`,
-                  color: loading || !email ? 'rgba(200,169,110,0.50)' : '#C8A96E',
+                  background: loading || !email ? 'rgba(156,65,65,0.25)' : 'rgba(156,65,65,0.16)',
+                  border: `0.5px solid ${loading || !email ? 'rgba(156,65,65,0.20)' : 'rgba(156,65,65,0.42)'}`,
+                  color: loading || !email ? 'rgba(156,65,65,0.50)' : '#9C4141',
                   cursor: loading || !email ? 'not-allowed' : 'pointer',
                   fontWeight: 500,
                 }}
@@ -212,7 +212,7 @@ export default function ForgotPasswordPage() {
           <Link
             to="/login"
             className="flex items-center justify-center gap-1.5 font-dm-sans text-sm transition-colors"
-            style={{ color: 'rgba(200,169,110,0.55)' }}
+            style={{ color: 'rgba(156,65,65,0.55)' }}
           >
             <ArrowLeft className="w-3.5 h-3.5" />
             Retour à la connexion

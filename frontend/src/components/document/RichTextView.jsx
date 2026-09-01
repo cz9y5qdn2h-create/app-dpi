@@ -5,7 +5,7 @@ function Segment({ seg }) {
     case 'strong': return <strong>{seg.text}</strong>;
     case 'em': return <em>{seg.text}</em>;
     case 'del': return <del>{seg.text}</del>;
-    case 'mark': return <mark style={{ background: 'rgba(245,200,66,0.35)', color: 'inherit', borderRadius: 2, padding: '0 2px' }}>{seg.text}</mark>;
+    case 'mark': return <mark style={{ background: 'rgba(156,65,65,0.35)', color: 'inherit', borderRadius: 2, padding: '0 2px' }}>{seg.text}</mark>;
     default: return seg.text;
   }
 }

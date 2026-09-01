@@ -4,7 +4,7 @@ import SEOHead from '../components/SEOHead';
 import { LEGAL_ENTRIES, SANCTIONS } from '../lib/legalLibrary';
 import usePageBackground from '../lib/usePageBackground';
 
-const GOLD = '#C8A96E';
+const GOLD = '#9C4141';
 const DARK = '#1A1826';
 const GLASS = 'rgba(255,255,255,0.85)';
 const BG = 'linear-gradient(145deg, #dde2f5 0%, #ebe7fa 40%, #dceaf8 70%, #e3e1f6 100%)';
@@ -23,16 +23,16 @@ export default function BaseLitigesDIPPage() {
       <div className="min-h-screen" style={{ background: BG }}>
         <header style={{ padding: '18px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
-            <div style={{ width: 30, height: 30, borderRadius: 8, background: 'rgba(200,169,110,0.12)', border: '1px solid rgba(200,169,110,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: 30, height: 30, borderRadius: 8, background: 'rgba(156,65,65,0.12)', border: '1px solid rgba(156,65,65,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Shield style={{ width: 15, height: 15, color: GOLD }} />
             </div>
-            <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 19, color: DARK }}>DIPpro</span>
+            <span style={{ fontFamily: 'Fraunces, serif', fontSize: 19, color: DARK }}>DIPpro</span>
           </Link>
         </header>
 
         <main style={{ maxWidth: 720, margin: '0 auto', padding: '10px 20px 70px' }}>
           <div style={{ marginBottom: 28 }}>
-            <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontWeight: 400, fontSize: 'clamp(1.9rem, 6vw, 2.6rem)', color: DARK, lineHeight: 1.2, marginBottom: 10 }}>
+            <h1 style={{ fontFamily: 'Fraunces, serif', fontWeight: 400, fontSize: 'clamp(1.9rem, 6vw, 2.6rem)', color: DARK, lineHeight: 1.2, marginBottom: 10 }}>
               La base des litiges DIP
             </h1>
             <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 14, color: '#64748B', lineHeight: 1.65 }}>
@@ -44,11 +44,11 @@ export default function BaseLitigesDIPPage() {
           <section style={{ marginBottom: 36 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
               <Scale style={{ width: 18, height: 18, color: GOLD }} />
-              <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 22, color: DARK }}>Manquements et sanctions</h2>
+              <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 22, color: DARK }}>Manquements et sanctions</h2>
             </div>
-            <div style={{ borderRadius: 16, overflow: 'hidden', border: '1px solid rgba(200,169,110,0.2)', background: GLASS, backdropFilter: 'blur(20px)' }}>
+            <div style={{ borderRadius: 16, overflow: 'hidden', border: '1px solid rgba(156,65,65,0.2)', background: GLASS, backdropFilter: 'blur(20px)' }}>
               {SANCTIONS.map((s, i) => (
-                <div key={i} style={{ padding: '16px 18px', borderBottom: i < SANCTIONS.length - 1 ? '1px solid rgba(200,169,110,0.12)' : 'none' }}>
+                <div key={i} style={{ padding: '16px 18px', borderBottom: i < SANCTIONS.length - 1 ? '1px solid rgba(156,65,65,0.12)' : 'none' }}>
                   <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 13, fontWeight: 600, color: DARK, marginBottom: 4 }}>{s.manquement}</p>
                   <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: '#64748B', marginBottom: 4 }}>{s.sanction}</p>
                   <p style={{ fontFamily: 'monospace', fontSize: 11, color: GOLD }}>{s.fondement}</p>
@@ -61,11 +61,11 @@ export default function BaseLitigesDIPPage() {
           <section style={{ marginBottom: 36 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
               <Gavel style={{ width: 18, height: 18, color: GOLD }} />
-              <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 22, color: DARK }}>Jurisprudence récente</h2>
+              <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 22, color: DARK }}>Jurisprudence récente</h2>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {JURISPRUDENCE.map(j => (
-                <div key={j.id} style={{ borderRadius: 14, padding: '18px 20px', background: GLASS, backdropFilter: 'blur(20px)', border: '1px solid rgba(200,169,110,0.18)' }}>
+                <div key={j.id} style={{ borderRadius: 14, padding: '18px 20px', background: GLASS, backdropFilter: 'blur(20px)', border: '1px solid rgba(156,65,65,0.18)' }}>
                   <p style={{ fontFamily: 'monospace', fontSize: 11, color: GOLD, marginBottom: 6 }}>{j.ref}</p>
                   <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 14, fontWeight: 600, color: DARK, marginBottom: 6 }}>{j.title}</p>
                   <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: '#64748B', lineHeight: 1.6 }}>{j.summary}</p>
@@ -79,7 +79,7 @@ export default function BaseLitigesDIPPage() {
             </div>
           </section>
 
-          <div style={{ borderRadius: 14, padding: '18px 20px', background: 'rgba(200,169,110,0.06)', border: '1px solid rgba(200,169,110,0.18)', textAlign: 'center' }}>
+          <div style={{ borderRadius: 14, padding: '18px 20px', background: 'rgba(156,65,65,0.06)', border: '1px solid rgba(156,65,65,0.18)', textAlign: 'center' }}>
             <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 13, color: '#64748B', lineHeight: 1.6, marginBottom: 10 }}>
               DIPpro est l&apos;outil de conformité DIP conçu pour les avocats en droit de la franchise — analyse IA, bibliothèque juridique complète et suivi des franchiseurs accompagnés.
             </p>

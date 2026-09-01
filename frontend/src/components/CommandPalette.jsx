@@ -150,11 +150,11 @@ export default function CommandPalette({ open, onClose }) {
                       onClick={() => go(item.to)}
                       className="w-full flex items-center gap-3 px-5 py-2.5 transition-all duration-100 group"
                       style={{
-                        background: isActive ? 'rgba(200,169,110,0.12)' : 'transparent',
+                        background: isActive ? 'rgba(156,65,65,0.12)' : 'transparent',
                       }}
                     >
                       <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-all"
-                        style={{ background: isActive ? 'rgba(200,169,110,0.18)' : iconBgDefault, border: isActive ? '1px solid rgba(200,169,110,0.35)' : '1px solid transparent' }}>
+                        style={{ background: isActive ? 'rgba(156,65,65,0.18)' : iconBgDefault, border: isActive ? '1px solid rgba(156,65,65,0.35)' : '1px solid transparent' }}>
                         <item.icon className="w-4 h-4" style={{ color: isActive ? 'rgb(184,147,87)' : labelDefault }} />
                       </div>
                       <span className="flex-1 text-left font-dm-sans text-sm" style={{ color: isActive ? (dark ? 'rgb(241,245,249)' : labelActive) : labelDefault, fontWeight: isActive ? 500 : 400 }}>

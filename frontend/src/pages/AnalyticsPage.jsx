@@ -16,7 +16,7 @@ function fmtDate(iso) {
   return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
-function StatCard({ icon: Icon, label, value, sub, color = '#C8A96E' }) {
+function StatCard({ icon: Icon, label, value, sub, color = '#9C4141' }) {
   return (
     <div className="card p-5 flex flex-col gap-2">
       <div className="flex items-center gap-2">
@@ -34,11 +34,11 @@ function StatCard({ icon: Icon, label, value, sub, color = '#C8A96E' }) {
 function SectionBar({ section, maxTime }) {
   const pct = maxTime > 0 ? (section.avg_time_s / maxTime) * 100 : 0;
   const openRate = section.open_rate_pct;
-  const barColor = openRate >= 70 ? '#22C55E' : openRate >= 40 ? '#C8A96E' : openRate > 0 ? '#EF4444' : '#334155';
+  const barColor = openRate >= 70 ? '#22C55E' : openRate >= 40 ? '#9C4141' : openRate > 0 ? '#EF4444' : '#334155';
 
   return (
     <div className="flex items-center gap-3 py-2.5 border-b" style={{ borderColor: 'var(--border-subtle)' }}>
-      <span className="font-dm-mono text-xs w-5 flex-shrink-0" style={{ color: '#C8A96E' }}>
+      <span className="font-dm-mono text-xs w-5 flex-shrink-0" style={{ color: '#9C4141' }}>
         {String(section.section_number).padStart(2, '0')}
       </span>
       <span className="font-dm-sans text-xs truncate flex-1" style={{ color: 'rgb(var(--text-secondary))', minWidth: 0 }}>
@@ -112,7 +112,7 @@ export default function AnalyticsPage() {
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard icon={Users}     label={t('analytics.stats.visits')}        value={total_visits}                                  sub="candidats uniques"        color="#C8A96E" />
+        <StatCard icon={Users}     label={t('analytics.stats.visits')}        value={total_visits}                                  sub="candidats uniques"        color="#9C4141" />
         <StatCard icon={Clock}     label={t('analytics.stats.avgTime')}    value={total_visits > 0 ? fmtTime(avg_time_total_s) : '—'} sub="par visite"         color="#818CF8" />
         <StatCard icon={Calendar}  label={t('analytics.stats.lastVisit')} value={last_visit_at ? fmtDate(last_visit_at).split(' à')[0] : '—'} sub={last_visit_at ? fmtDate(last_visit_at).split(' à')[1] ?? '' : 'Aucune visite'} color="#34D399" />
         <StatCard icon={TrendingUp} label={t('analytics.stats.topSection')}  value={total_visits > 0 && mostRead ? `§${mostRead.section_number}` : '—'} sub={total_visits > 0 && mostRead ? mostRead.section_title : 'Aucune donnée'} color="#F59E0B" />
@@ -151,18 +151,18 @@ export default function AnalyticsPage() {
             </div>
             <div className="mt-4 flex items-center gap-4 font-dm-sans text-xs" style={{ color: 'rgb(var(--text-muted))' }}>
               <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full inline-block" style={{ background: '#22C55E' }} /> {t('analytics.legend.high')}</span>
-              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full inline-block" style={{ background: '#C8A96E' }} /> {t('analytics.legend.medium')}</span>
+              <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full inline-block" style={{ background: '#9C4141' }} /> {t('analytics.legend.medium')}</span>
               <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full inline-block" style={{ background: '#EF4444' }} /> {t('analytics.legend.low')}</span>
             </div>
           </div>
 
           {/* Insight commercial */}
           {mostRead && leastRead && mostRead.section_number !== leastRead.section_number && (
-            <div className="rounded-xl p-4 flex items-start gap-3" style={{ background: 'rgba(200,169,110,0.06)', border: '1px solid rgba(200,169,110,0.2)' }}>
-              <TrendingUp className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#C8A96E' }} />
+            <div className="rounded-xl p-4 flex items-start gap-3" style={{ background: 'rgba(156,65,65,0.06)', border: '1px solid rgba(156,65,65,0.2)' }}>
+              <TrendingUp className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#9C4141' }} />
               <div className="font-dm-sans text-xs leading-relaxed" style={{ color: 'rgb(var(--text-secondary))' }}>
                 <strong style={{ color: 'rgb(var(--text-primary))' }}>Insight commercial :</strong>{' '}
-                Les candidats passent le plus de temps sur <strong style={{ color: '#C8A96E' }}>«&nbsp;{mostRead.section_title}&nbsp;»</strong> (§{mostRead.section_number})
+                Les candidats passent le plus de temps sur <strong style={{ color: '#9C4141' }}>«&nbsp;{mostRead.section_title}&nbsp;»</strong> (§{mostRead.section_number})
                 {mostRead.avg_time_s > 0 && ` — ${fmtTime(mostRead.avg_time_s)} en moyenne`}.
                 {leastRead.open_rate_pct < 30 && (
                   <> La section <strong>«&nbsp;{leastRead.section_title}&nbsp;»</strong> (§{leastRead.section_number}) est peu consultée ({leastRead.open_rate_pct}%) — envisagez de la mettre en avant lors de votre relance.</>
@@ -194,7 +194,7 @@ export default function AnalyticsPage() {
                     <Clock className="w-3 h-3" />
                     {fmtTime(v.total_time_s)}
                   </div>
-                  <div className="w-6 h-6 rounded-full flex items-center justify-center font-dm-mono text-xs" style={{ background: 'rgba(200,169,110,0.12)', color: '#C8A96E' }}>
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center font-dm-mono text-xs" style={{ background: 'rgba(156,65,65,0.12)', color: '#9C4141' }}>
                     {v.sections_opened.length}
                   </div>
                 </div>

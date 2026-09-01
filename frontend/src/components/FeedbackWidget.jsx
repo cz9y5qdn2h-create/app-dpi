@@ -41,8 +41,8 @@ export default function FeedbackWidget() {
           display: 'flex', alignItems: 'center', gap: 6,
           padding: '7px 13px', borderRadius: 99,
           background: 'rgb(var(--bg-elevated))',
-          border: '0.5px solid rgba(200,169,110,0.18)',
-          color: 'rgba(200,169,110,0.50)',
+          border: '0.5px solid rgba(156,65,65,0.18)',
+          color: 'rgba(156,65,65,0.50)',
           fontFamily: 'DM Sans, sans-serif', fontSize: 11.5,
           boxShadow: '0 4px 20px rgba(0,0,0,0.22)',
           cursor: 'pointer',
@@ -72,7 +72,7 @@ export default function FeedbackWidget() {
               background: 'rgb(var(--bg-card))',
               backdropFilter: 'blur(24px) saturate(160%)',
               WebkitBackdropFilter: 'blur(24px) saturate(160%)',
-              border: '0.5px solid rgba(200,169,110,0.25)',
+              border: '0.5px solid rgba(156,65,65,0.25)',
               borderRadius: 16,
               padding: '18px 18px 14px',
               boxShadow: '0 16px 60px rgba(0,0,0,0.45)',
@@ -80,8 +80,8 @@ export default function FeedbackWidget() {
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                <MessageSquarePlus size={13} style={{ color: 'rgb(200,169,110)' }} />
-                <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 15, color: 'rgb(var(--text-primary))' }}>
+                <MessageSquarePlus size={13} style={{ color: 'rgb(156,65,65)' }} />
+                <span style={{ fontFamily: 'Fraunces, serif', fontSize: 15, color: 'rgb(var(--text-primary))' }}>
                   Suggérer une amélioration
                 </span>
               </div>
@@ -120,7 +120,7 @@ export default function FeedbackWidget() {
                     outline: 'none', marginBottom: 10,
                     transition: 'border-color 0.15s',
                   }}
-                  onFocus={e => (e.target.style.borderColor = 'rgba(200,169,110,0.40)')}
+                  onFocus={e => (e.target.style.borderColor = 'rgba(156,65,65,0.40)')}
                   onBlur={e => (e.target.style.borderColor = 'rgb(var(--border-default))')}
                 />
                 <button
@@ -129,9 +129,9 @@ export default function FeedbackWidget() {
                   style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                     width: '100%', padding: '8px 14px', borderRadius: 9,
-                    background: text.trim() ? 'rgba(200,169,110,0.12)' : 'rgba(200,169,110,0.04)',
-                    border: '0.5px solid rgba(200,169,110,0.25)',
-                    color: text.trim() ? 'rgb(200,169,110)' : 'rgba(200,169,110,0.30)',
+                    background: text.trim() ? 'rgba(156,65,65,0.12)' : 'rgba(156,65,65,0.04)',
+                    border: '0.5px solid rgba(156,65,65,0.25)',
+                    color: text.trim() ? 'rgb(156,65,65)' : 'rgba(156,65,65,0.30)',
                     fontFamily: 'DM Sans, sans-serif', fontSize: 12.5,
                     cursor: text.trim() && !sending ? 'pointer' : 'not-allowed',
                     transition: 'all 0.2s',
@@ -140,7 +140,7 @@ export default function FeedbackWidget() {
                   <Send size={11} />
                   {sending ? 'Envoi…' : 'Envoyer'}
                 </button>
-                <p style={{ fontFamily: 'DM Mono, monospace', fontSize: 10, color: 'rgba(200,169,110,0.28)', textAlign: 'center', marginTop: 9 }}>
+                <p style={{ fontFamily: 'DM Mono, monospace', fontSize: 10, color: 'rgba(156,65,65,0.28)', textAlign: 'center', marginTop: 9 }}>
                   Toutes les suggestions sont lues par Théo · Iralink
                 </p>
               </>

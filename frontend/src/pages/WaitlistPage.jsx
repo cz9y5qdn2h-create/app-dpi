@@ -10,7 +10,7 @@ import {
 import api from '../lib/api';
 import usePageBackground from '../lib/usePageBackground';
 
-const GOLD = '#C8A96E';
+const GOLD = '#9C4141';
 const DARK = '#1A1826';
 const GLASS = 'rgba(255,255,255,0.82)';
 const BG = 'linear-gradient(145deg, #dde2f5 0%, #ebe7fa 40%, #dceaf8 70%, #e3e1f6 100%)';
@@ -86,7 +86,7 @@ function MockupDashboard() {
     { num: 5, label: "Marque & Propriété intellectuelle", score: 91, status: 'conforme' },
   ];
   const statusColor = { conforme: '#22C55E', partiel: GOLD, incomplet: '#EF4444' };
-  const statusBg = { conforme: 'rgba(34,197,94,0.12)', partiel: 'rgba(200,169,110,0.12)', incomplet: 'rgba(239,68,68,0.12)' };
+  const statusBg = { conforme: 'rgba(34,197,94,0.12)', partiel: 'rgba(156,65,65,0.12)', incomplet: 'rgba(239,68,68,0.12)' };
 
   return (
     <AppChrome url="app.dippro.fr/dashboard">
@@ -94,7 +94,7 @@ function MockupDashboard() {
         {/* Sidebar mini */}
         <div style={{ width: 52, background: 'rgba(26,24,38,0.88)', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 16, gap: 14 }}>
           {[Shield, FileText, Bell, Users, TrendingUp].map((Icon, i) => (
-            <div key={i} style={{ width: 30, height: 30, borderRadius: 8, background: i === 0 ? 'rgba(200,169,110,0.2)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div key={i} style={{ width: 30, height: 30, borderRadius: 8, background: i === 0 ? 'rgba(156,65,65,0.2)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Icon style={{ width: 14, height: 14, color: i === 0 ? GOLD : '#475569' }} />
             </div>
           ))}
@@ -111,10 +111,10 @@ function MockupDashboard() {
             </div>
           </div>
           {/* Score card */}
-          <div style={{ borderRadius: 12, padding: '12px 14px', background: GLASS, border: '1px solid rgba(200,169,110,0.2)', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ borderRadius: 12, padding: '12px 14px', background: GLASS, border: '1px solid rgba(156,65,65,0.2)', display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{ position: 'relative', width: 56, height: 56 }}>
               <svg width="56" height="56" viewBox="0 0 56 56">
-                <circle cx="28" cy="28" r="22" fill="none" stroke="rgba(200,169,110,0.15)" strokeWidth="5" />
+                <circle cx="28" cy="28" r="22" fill="none" stroke="rgba(156,65,65,0.15)" strokeWidth="5" />
                 <circle cx="28" cy="28" r="22" fill="none" stroke={GOLD} strokeWidth="5"
                   strokeDasharray={`${2 * Math.PI * 22 * 0.78} ${2 * Math.PI * 22}`}
                   strokeLinecap="round" strokeDashoffset={2 * Math.PI * 22 * 0.25}
@@ -132,7 +132,7 @@ function MockupDashboard() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
             {sections.map(s => (
               <div key={s.num} style={{ borderRadius: 8, padding: '7px 10px', background: GLASS, border: '1px solid rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontFamily: 'monospace', fontSize: 9, color: 'rgba(200,169,110,0.5)', width: 12 }}>{s.num}</span>
+                <span style={{ fontFamily: 'monospace', fontSize: 9, color: 'rgba(156,65,65,0.5)', width: 12 }}>{s.num}</span>
                 <span style={{ flex: 1, fontFamily: 'DM Sans', fontSize: 9, color: '#475569' }}>{s.label}</span>
                 <div style={{ padding: '2px 6px', borderRadius: 4, background: statusBg[s.status] }}>
                   <span style={{ fontFamily: 'monospace', fontSize: 8, color: statusColor[s.status] }}>{s.status}</span>
@@ -153,7 +153,7 @@ function MockupGenerate() {
       <div style={{ display: 'flex', minHeight: 300 }}>
         <div style={{ width: 52, background: 'rgba(26,24,38,0.88)', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 16, gap: 14 }}>
           {[Shield, FileText, Bell, Users, TrendingUp].map((Icon, i) => (
-            <div key={i} style={{ width: 30, height: 30, borderRadius: 8, background: i === 1 ? 'rgba(200,169,110,0.2)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div key={i} style={{ width: 30, height: 30, borderRadius: 8, background: i === 1 ? 'rgba(156,65,65,0.2)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Icon style={{ width: 14, height: 14, color: i === 1 ? GOLD : '#475569' }} />
             </div>
           ))}
@@ -161,12 +161,12 @@ function MockupGenerate() {
         <div style={{ flex: 1, padding: '16px 14px', display: 'flex', flexDirection: 'column', gap: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <span style={{ fontFamily: 'DM Sans', fontSize: 12, fontWeight: 600, color: DARK }}>Générer un DIP</span>
-            <div style={{ padding: '2px 8px', borderRadius: 20, background: 'rgba(200,169,110,0.1)', border: '1px solid rgba(200,169,110,0.25)' }}>
+            <div style={{ padding: '2px 8px', borderRadius: 20, background: 'rgba(156,65,65,0.1)', border: '1px solid rgba(156,65,65,0.25)' }}>
               <span style={{ fontFamily: 'monospace', fontSize: 8, color: GOLD }}>Étape 1/8</span>
             </div>
           </div>
           {/* Progress */}
-          <div style={{ height: 3, background: 'rgba(200,169,110,0.15)', borderRadius: 99, overflow: 'hidden' }}>
+          <div style={{ height: 3, background: 'rgba(156,65,65,0.15)', borderRadius: 99, overflow: 'hidden' }}>
             <div style={{ width: '12%', height: '100%', background: GOLD, borderRadius: 99 }} />
           </div>
           {/* Identité card */}
@@ -175,7 +175,7 @@ function MockupGenerate() {
             {/* Raison sociale field */}
             <div style={{ marginBottom: 10 }}>
               <p style={{ fontFamily: 'DM Sans', fontSize: 9, color: '#64748B', marginBottom: 4 }}>Raison sociale</p>
-              <div style={{ borderRadius: 8, padding: '7px 10px', background: 'rgba(255,255,255,0.9)', border: '1px solid rgba(200,169,110,0.4)' }}>
+              <div style={{ borderRadius: 8, padding: '7px 10px', background: 'rgba(255,255,255,0.9)', border: '1px solid rgba(156,65,65,0.4)' }}>
                 <span style={{ fontFamily: 'DM Sans', fontSize: 10, color: DARK }}>Ma Franchise SAS</span>
               </div>
             </div>
@@ -192,7 +192,7 @@ function MockupGenerate() {
             </div>
           </div>
           {/* AI button teaser */}
-          <div style={{ borderRadius: 10, padding: '8px 12px', background: 'rgba(200,169,110,0.05)', border: '1px solid rgba(200,169,110,0.2)', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ borderRadius: 10, padding: '8px 12px', background: 'rgba(156,65,65,0.05)', border: '1px solid rgba(156,65,65,0.2)', display: 'flex', alignItems: 'center', gap: 6 }}>
             <Sparkles style={{ width: 12, height: 12, color: GOLD }} />
             <span style={{ fontFamily: 'DM Sans', fontSize: 9, color: GOLD }}>Rédiger avec l&apos;assistant IA</span>
             <ChevronRight style={{ width: 10, height: 10, color: GOLD, marginLeft: 'auto' }} />
@@ -215,7 +215,7 @@ function MockupAnalysis() {
       <div style={{ display: 'flex', minHeight: 300 }}>
         <div style={{ width: 52, background: 'rgba(26,24,38,0.88)', display: 'flex', flexDirection: 'column', alignItems: 'center', paddingTop: 16, gap: 14 }}>
           {[Shield, FileText, Bell, Users, TrendingUp].map((Icon, i) => (
-            <div key={i} style={{ width: 30, height: 30, borderRadius: 8, background: i === 0 ? 'rgba(200,169,110,0.2)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div key={i} style={{ width: 30, height: 30, borderRadius: 8, background: i === 0 ? 'rgba(156,65,65,0.2)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Icon style={{ width: 14, height: 14, color: i === 0 ? GOLD : '#475569' }} />
             </div>
           ))}
@@ -223,12 +223,12 @@ function MockupAnalysis() {
         <div style={{ flex: 1, padding: '16px 14px', display: 'flex', flexDirection: 'column', gap: 9 }}>
           <span style={{ fontFamily: 'DM Sans', fontSize: 12, fontWeight: 600, color: DARK }}>Analyse IA — résultats</span>
           {/* Summary card */}
-          <div style={{ borderRadius: 12, padding: '10px 12px', background: 'rgba(200,169,110,0.06)', border: '1px solid rgba(200,169,110,0.18)' }}>
+          <div style={{ borderRadius: 12, padding: '10px 12px', background: 'rgba(156,65,65,0.06)', border: '1px solid rgba(156,65,65,0.18)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
               <span style={{ fontFamily: 'DM Sans', fontSize: 9, color: '#64748B' }}>Score global</span>
               <span style={{ fontFamily: 'DM Sans', fontSize: 16, fontWeight: 700, color: GOLD }}>71%</span>
             </div>
-            <div style={{ height: 4, background: 'rgba(200,169,110,0.15)', borderRadius: 99, overflow: 'hidden' }}>
+            <div style={{ height: 4, background: 'rgba(156,65,65,0.15)', borderRadius: 99, overflow: 'hidden' }}>
               <div style={{ width: '71%', height: '100%', background: GOLD, borderRadius: 99 }} />
             </div>
           </div>
@@ -301,10 +301,10 @@ function WaitlistForm() {
   if (success || alreadyExists) {
     return (
       <div style={{ textAlign: 'center', padding: '24px 0' }}>
-        <div style={{ width: 64, height: 64, borderRadius: 16, background: success ? 'rgba(34,197,94,0.1)' : 'rgba(200,169,110,0.1)', border: `1px solid ${success ? 'rgba(34,197,94,0.25)' : 'rgba(200,169,110,0.25)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+        <div style={{ width: 64, height: 64, borderRadius: 16, background: success ? 'rgba(34,197,94,0.1)' : 'rgba(156,65,65,0.1)', border: `1px solid ${success ? 'rgba(34,197,94,0.25)' : 'rgba(156,65,65,0.25)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
           <CheckCircle style={{ width: 28, height: 28, color: success ? '#22C55E' : GOLD }} />
         </div>
-        <h3 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 24, color: DARK, marginBottom: 8 }}>
+        <h3 style={{ fontFamily: 'Fraunces, serif', fontSize: 24, color: DARK, marginBottom: 8 }}>
           {success ? "Vous êtes sur la liste !" : "Déjà inscrit !"}
         </h3>
         <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 13, color: '#64748B', lineHeight: 1.6, marginBottom: 20 }}>
@@ -331,7 +331,7 @@ function WaitlistForm() {
           </label>
           <input type="text" value={form.company_name} onChange={e => set('company_name', e.target.value)}
             placeholder="Ma Franchise SAS" required style={inputStyle}
-            onFocus={e => e.target.style.border = `1px solid rgba(200,169,110,0.6)`}
+            onFocus={e => e.target.style.border = `1px solid rgba(156,65,65,0.6)`}
             onBlur={e => e.target.style.border = '1px solid rgba(200,200,220,0.5)'} />
         </div>
         <div>
@@ -340,7 +340,7 @@ function WaitlistForm() {
           </label>
           <input type="tel" value={form.phone} onChange={e => set('phone', e.target.value)}
             placeholder="+33 6 12 34 56 78" autoComplete="tel" style={inputStyle}
-            onFocus={e => e.target.style.border = `1px solid rgba(200,169,110,0.6)`}
+            onFocus={e => e.target.style.border = `1px solid rgba(156,65,65,0.6)`}
             onBlur={e => e.target.style.border = '1px solid rgba(200,200,220,0.5)'} />
         </div>
       </div>
@@ -351,7 +351,7 @@ function WaitlistForm() {
         </label>
         <input type="email" value={form.email} onChange={e => set('email', e.target.value)}
           placeholder="vous@entreprise.fr" required autoComplete="email" style={inputStyle}
-          onFocus={e => e.target.style.border = `1px solid rgba(200,169,110,0.6)`}
+          onFocus={e => e.target.style.border = `1px solid rgba(156,65,65,0.6)`}
           onBlur={e => { e.target.style.border = '1px solid rgba(200,200,220,0.5)'; notifyPartialEmail(); }} />
       </div>
 
@@ -362,7 +362,7 @@ function WaitlistForm() {
         <textarea value={form.message} onChange={e => set('message', e.target.value)} rows={3}
           placeholder="Dites-nous en plus sur votre réseau, vos besoins DIP..."
           style={{ ...inputStyle, resize: 'none' }}
-          onFocus={e => e.target.style.border = `1px solid rgba(200,169,110,0.6)`}
+          onFocus={e => e.target.style.border = `1px solid rgba(156,65,65,0.6)`}
           onBlur={e => e.target.style.border = '1px solid rgba(200,200,220,0.5)'} />
       </div>
 
@@ -391,9 +391,9 @@ function WaitlistForm() {
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
           padding: '13px 24px', borderRadius: 12, border: 'none', cursor: loading || !form.email || !form.company_name || !rgpd ? 'not-allowed' : 'pointer',
-          background: form.email && form.company_name && rgpd ? GOLD : 'rgba(200,169,110,0.4)',
+          background: form.email && form.company_name && rgpd ? GOLD : 'rgba(156,65,65,0.4)',
           color: DARK, fontFamily: 'DM Sans, sans-serif', fontSize: 14, fontWeight: 600,
-          boxShadow: form.email && form.company_name && rgpd ? '0 4px 16px rgba(200,169,110,0.35)' : 'none',
+          boxShadow: form.email && form.company_name && rgpd ? '0 4px 16px rgba(156,65,65,0.35)' : 'none',
           transition: 'all 0.2s',
         }}>
         {loading
@@ -434,17 +434,17 @@ export default function WaitlistPage() {
     <div className="min-h-screen" style={{ background: BG }}>
 
       {/* ── HEADER ── */}
-      <header style={{ background: GLASS, backdropFilter: 'blur(24px)', borderBottom: '1px solid rgba(200,169,110,0.18)', position: 'sticky', top: 0, zIndex: 50 }}>
+      <header style={{ background: GLASS, backdropFilter: 'blur(24px)', borderBottom: '1px solid rgba(156,65,65,0.18)', position: 'sticky', top: 0, zIndex: 50 }}>
         <div style={{ maxWidth: 1100, margin: '0 auto', padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', rowGap: 8 }}>
           <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', minWidth: 0 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(200,169,110,0.12)', border: '1px solid rgba(200,169,110,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: 'rgba(156,65,65,0.12)', border: '1px solid rgba(156,65,65,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               <Shield style={{ width: 16, height: 16, color: GOLD }} />
             </div>
-            <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 20, color: DARK }}>DIPpro</span>
+            <span style={{ fontFamily: 'Fraunces, serif', fontSize: 20, color: DARK }}>DIPpro</span>
             <span className="hidden sm:inline" style={{ fontFamily: 'monospace', fontSize: 10, color: '#64748B' }}>by Iralink</span>
           </Link>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div className="hidden sm:block" style={{ padding: '4px 12px', borderRadius: 20, background: 'rgba(200,169,110,0.1)', border: '1px solid rgba(200,169,110,0.25)' }}>
+            <div className="hidden sm:block" style={{ padding: '4px 12px', borderRadius: 20, background: 'rgba(156,65,65,0.1)', border: '1px solid rgba(156,65,65,0.25)' }}>
               <span style={{ fontFamily: 'monospace', fontSize: 11, color: GOLD }}>Accès anticipé ouvert</span>
             </div>
             <Link to="/login" style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 13, color: '#64748B', textDecoration: 'none' }}>
@@ -457,12 +457,12 @@ export default function WaitlistPage() {
       {/* ── HERO ── */}
       <section style={{ maxWidth: 1100, margin: '0 auto', padding: '64px 24px 48px', textAlign: 'center' }}>
         <FadeIn>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 16px', borderRadius: 20, background: 'rgba(200,169,110,0.1)', border: '1px solid rgba(200,169,110,0.25)', marginBottom: 28 }}>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 16px', borderRadius: 20, background: 'rgba(156,65,65,0.1)', border: '1px solid rgba(156,65,65,0.25)', marginBottom: 28 }}>
             <Clock style={{ width: 13, height: 13, color: GOLD }} />
             <span style={{ fontFamily: 'monospace', fontSize: 11, color: GOLD }}>Société en cours de création — Accès anticipé</span>
           </div>
 
-          <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontWeight: 300, fontSize: 'clamp(2.8rem, 7vw, 4.5rem)', color: DARK, lineHeight: 1.1, marginBottom: 20 }}>
+          <h1 style={{ fontFamily: 'Fraunces, serif', fontWeight: 300, fontSize: 'clamp(2.8rem, 7vw, 4.5rem)', color: DARK, lineHeight: 1.1, marginBottom: 20 }}>
             DIPpro arrive.<br />
             <span style={{ color: GOLD }}>Soyez parmi les premiers.</span>
           </h1>
@@ -527,7 +527,7 @@ export default function WaitlistPage() {
           <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 8, marginBottom: 20 }}>
             {MOCKUP_TABS.map((t, i) => (
               <button key={t.label} onClick={() => setActiveTab(i)}
-                style={{ padding: '7px 16px', borderRadius: 8, border: `1px solid ${i === activeTab ? GOLD : 'rgba(200,200,220,0.4)'}`, background: i === activeTab ? 'rgba(200,169,110,0.12)' : 'rgba(255,255,255,0.5)', color: i === activeTab ? GOLD : '#64748B', fontFamily: 'DM Sans, sans-serif', fontSize: 12, fontWeight: i === activeTab ? 600 : 400, cursor: 'pointer', transition: 'all 0.2s' }}>
+                style={{ padding: '7px 16px', borderRadius: 8, border: `1px solid ${i === activeTab ? GOLD : 'rgba(200,200,220,0.4)'}`, background: i === activeTab ? 'rgba(156,65,65,0.12)' : 'rgba(255,255,255,0.5)', color: i === activeTab ? GOLD : '#64748B', fontFamily: 'DM Sans, sans-serif', fontSize: 12, fontWeight: i === activeTab ? 600 : 400, cursor: 'pointer', transition: 'all 0.2s' }}>
                 {t.label}
               </button>
             ))}
@@ -546,7 +546,7 @@ export default function WaitlistPage() {
       <section style={{ maxWidth: 1100, margin: '0 auto', padding: '0 24px 72px' }}>
         <FadeIn>
           <div style={{ textAlign: 'center', marginBottom: 48 }}>
-            <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 36, color: DARK, marginBottom: 12 }}>
+            <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 36, color: DARK, marginBottom: 12 }}>
               Pourquoi s&apos;inscrire maintenant ?
             </h2>
             <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 15, color: '#64748B' }}>
@@ -557,8 +557,8 @@ export default function WaitlistPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16 }}>
           {BENEFITS.map(({ icon: Icon, label, desc }, i) => (
             <FadeIn key={label} delay={i * 80}>
-              <div style={{ borderRadius: 18, padding: '24px 20px', background: GLASS, backdropFilter: 'blur(20px)', border: '1px solid rgba(200,169,110,0.18)', height: '100%', boxSizing: 'border-box' }}>
-                <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(200,169,110,0.1)', border: '1px solid rgba(200,169,110,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
+              <div style={{ borderRadius: 18, padding: '24px 20px', background: GLASS, backdropFilter: 'blur(20px)', border: '1px solid rgba(156,65,65,0.18)', height: '100%', boxSizing: 'border-box' }}>
+                <div style={{ width: 40, height: 40, borderRadius: 10, background: 'rgba(156,65,65,0.1)', border: '1px solid rgba(156,65,65,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
                   <Icon style={{ width: 18, height: 18, color: GOLD }} />
                 </div>
                 <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 13, fontWeight: 600, color: DARK, marginBottom: 6 }}>{label}</p>
@@ -573,7 +573,7 @@ export default function WaitlistPage() {
       <section style={{ maxWidth: 1100, margin: '0 auto', padding: '0 24px 80px' }}>
         <FadeIn>
           <div style={{ textAlign: 'center', marginBottom: 48 }}>
-            <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 36, color: DARK, marginBottom: 12 }}>
+            <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 36, color: DARK, marginBottom: 12 }}>
               Tout pour votre conformité DIP
             </h2>
             <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 15, color: '#64748B', maxWidth: 500, margin: '0 auto' }}>
@@ -585,7 +585,7 @@ export default function WaitlistPage() {
           {FEATURES.map(({ icon: Icon, label, desc }, i) => (
             <FadeIn key={label} delay={i * 60}>
               <div style={{ borderRadius: 14, padding: '18px 20px', background: 'rgba(255,255,255,0.62)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.55)', display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-                <div style={{ width: 36, height: 36, borderRadius: 9, background: 'rgba(200,169,110,0.1)', border: '1px solid rgba(200,169,110,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <div style={{ width: 36, height: 36, borderRadius: 9, background: 'rgba(156,65,65,0.1)', border: '1px solid rgba(156,65,65,0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <Icon style={{ width: 16, height: 16, color: GOLD }} />
                 </div>
                 <div>
@@ -601,14 +601,14 @@ export default function WaitlistPage() {
       {/* ── FORM ── */}
       <section ref={formRef} style={{ maxWidth: 680, margin: '0 auto', padding: '0 24px 80px' }}>
         <FadeIn>
-          <div style={{ borderRadius: 24, padding: '40px 40px', background: GLASS, backdropFilter: 'blur(24px)', border: '1px solid rgba(200,169,110,0.2)', boxShadow: '0 8px 48px rgba(80,90,140,0.12)' }}>
+          <div style={{ borderRadius: 24, padding: '40px 40px', background: GLASS, backdropFilter: 'blur(24px)', border: '1px solid rgba(156,65,65,0.2)', boxShadow: '0 8px 48px rgba(80,90,140,0.12)' }}>
             {/* Header */}
             <div style={{ marginBottom: 28 }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 12px', borderRadius: 20, background: 'rgba(200,169,110,0.1)', border: '1px solid rgba(200,169,110,0.2)', marginBottom: 14 }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 12px', borderRadius: 20, background: 'rgba(156,65,65,0.1)', border: '1px solid rgba(156,65,65,0.2)', marginBottom: 14 }}>
                 <Star style={{ width: 12, height: 12, color: GOLD }} />
                 <span style={{ fontFamily: 'monospace', fontSize: 10, color: GOLD }}>Accès anticipé — places limitées</span>
               </div>
-              <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 28, color: DARK, marginBottom: 8 }}>
+              <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 28, color: DARK, marginBottom: 8 }}>
                 Rejoindre la liste d&apos;attente
               </h2>
               <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 13, color: '#64748B', lineHeight: 1.6 }}>
@@ -620,7 +620,7 @@ export default function WaitlistPage() {
 
             <WaitlistForm />
 
-            <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid rgba(200,169,110,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid rgba(156,65,65,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Link to="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: '#94A3B8', textDecoration: 'none' }}>
                 <ArrowLeft style={{ width: 12, height: 12 }} /> Retour
               </Link>
@@ -642,11 +642,11 @@ export default function WaitlistPage() {
       </section>
 
       {/* ── FOOTER ── */}
-      <footer style={{ borderTop: '1px solid rgba(200,169,110,0.15)', background: 'rgba(255,255,255,0.5)', padding: '28px 24px' }}>
+      <footer style={{ borderTop: '1px solid rgba(156,65,65,0.15)', background: 'rgba(255,255,255,0.5)', padding: '28px 24px' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <Shield style={{ width: 14, height: 14, color: GOLD }} />
-            <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 16, color: DARK }}>DIPpro</span>
+            <span style={{ fontFamily: 'Fraunces, serif', fontSize: 16, color: DARK }}>DIPpro</span>
             <span style={{ fontFamily: 'monospace', fontSize: 10, color: '#94A3B8' }}>© {new Date().getFullYear()} Iralink — Société en cours de création</span>
           </div>
           <div style={{ display: 'flex', gap: 16 }}>

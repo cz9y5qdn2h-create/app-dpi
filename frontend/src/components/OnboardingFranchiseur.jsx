@@ -54,7 +54,7 @@ export default function OnboardingFranchiseur({ profile, onComplete }) {
         initial={{ opacity: 0, scale: 0.95, y: 16 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.28, ease: 'easeOut' }}
-        style={{ width: '100%', maxWidth: 540, maxHeight: 'calc(100vh - 32px)', overflowY: 'auto', margin: 'auto', borderRadius: 24, border: '1px solid rgba(200,169,110,0.30)', background: 'var(--modal-bg, rgba(255,255,255,0.96))', boxShadow: '0 32px 80px rgba(0,0,0,0.28)', display: 'flex', flexDirection: 'column' }}
+        style={{ width: '100%', maxWidth: 540, maxHeight: 'calc(100vh - 32px)', overflowY: 'auto', margin: 'auto', borderRadius: 24, border: '1px solid rgba(156,65,65,0.30)', background: 'var(--modal-bg, rgba(255,255,255,0.96))', boxShadow: '0 32px 80px rgba(0,0,0,0.28)', display: 'flex', flexDirection: 'column' }}
       >
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px 0' }}>
@@ -101,7 +101,7 @@ export default function OnboardingFranchiseur({ profile, onComplete }) {
 
           <div style={{ display: 'flex', gap: 6 }}>
             {Array.from({ length: TOTAL }).map((_, i) => (
-              <div key={i} style={{ width: i === step ? 18 : 6, height: 6, borderRadius: 3, background: i === step ? 'rgb(var(--gold))' : 'rgba(200,169,110,0.25)', transition: 'all 0.25s' }} />
+              <div key={i} style={{ width: i === step ? 18 : 6, height: 6, borderRadius: 3, background: i === step ? 'rgb(var(--gold))' : 'rgba(156,65,65,0.25)', transition: 'all 0.25s' }} />
             ))}
           </div>
 
@@ -134,7 +134,7 @@ function StepReseau({ form, set }) {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-        <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(200,169,110,0.12)', border: '1px solid rgba(200,169,110,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(156,65,65,0.12)', border: '1px solid rgba(156,65,65,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Users style={{ width: 18, height: 18, color: 'rgb(var(--gold))' }} />
         </div>
         <div>
@@ -169,7 +169,7 @@ function StepDIP({ form, set }) {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-        <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(200,169,110,0.12)', border: '1px solid rgba(200,169,110,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(156,65,65,0.12)', border: '1px solid rgba(156,65,65,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <FileText style={{ width: 18, height: 18, color: 'rgb(var(--gold))' }} />
         </div>
         <div>
@@ -188,8 +188,8 @@ function StepDIP({ form, set }) {
             style={{
               padding: '14px 16px',
               borderRadius: 12,
-              border: `1px solid ${form.has_existing_dip === val ? 'rgba(200,169,110,0.60)' : 'rgb(var(--border-subtle))'}`,
-              background: form.has_existing_dip === val ? 'rgba(200,169,110,0.08)' : 'transparent',
+              border: `1px solid ${form.has_existing_dip === val ? 'rgba(156,65,65,0.60)' : 'rgb(var(--border-subtle))'}`,
+              background: form.has_existing_dip === val ? 'rgba(156,65,65,0.08)' : 'transparent',
               cursor: 'pointer',
               textAlign: 'left',
               transition: 'all 0.2s',
@@ -208,7 +208,7 @@ function StepAvocat({ form, set }) {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-        <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(200,169,110,0.12)', border: '1px solid rgba(200,169,110,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(156,65,65,0.12)', border: '1px solid rgba(156,65,65,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Mail style={{ width: 18, height: 18, color: 'rgb(var(--gold))' }} />
         </div>
         <div>
@@ -244,7 +244,7 @@ function StepDone({ profile }) {
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ type: 'spring', stiffness: 260, damping: 20 }}
-        style={{ width: 72, height: 72, borderRadius: '50%', background: 'rgba(200,169,110,0.12)', border: '2px solid rgba(200,169,110,0.40)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        style={{ width: 72, height: 72, borderRadius: '50%', background: 'rgba(156,65,65,0.12)', border: '2px solid rgba(156,65,65,0.40)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
       >
         <CheckCircle style={{ width: 32, height: 32, color: 'rgb(var(--gold))' }} />
       </motion.div>
@@ -259,7 +259,7 @@ function StepDone({ profile }) {
       <div style={{ display: 'flex', gap: 8 }}>
         {['Import DIP', 'Analyse IA', 'Partage'].map((label, i) => (
           <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div style={{ padding: '4px 10px', borderRadius: 20, background: 'rgba(200,169,110,0.10)', border: '1px solid rgba(200,169,110,0.22)' }}>
+            <div style={{ padding: '4px 10px', borderRadius: 20, background: 'rgba(156,65,65,0.10)', border: '1px solid rgba(156,65,65,0.22)' }}>
               <span className="font-dm-mono" style={{ fontSize: 11, color: 'rgb(var(--gold))' }}>{label}</span>
             </div>
             {i < 2 && <span style={{ color: 'rgb(var(--gold))', fontSize: 12 }}>→</span>}

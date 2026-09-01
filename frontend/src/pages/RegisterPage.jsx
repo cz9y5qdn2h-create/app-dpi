@@ -12,9 +12,9 @@ import usePageBackground from '../lib/usePageBackground';
 const STEP_COUNT = 3;
 
 const AUTH_BG = `
-  radial-gradient(ellipse 55% 50% at 15% 70%, rgba(200,169,110,0.20) 0%, transparent 60%),
-  radial-gradient(ellipse 40% 60% at 80% 20%, rgba(180,140,70,0.14) 0%, transparent 55%),
-  radial-gradient(ellipse 60% 40% at 60% 85%, rgba(140,100,40,0.10) 0%, transparent 60%),
+  radial-gradient(ellipse 55% 50% at 15% 70%, rgba(156,65,65,0.20) 0%, transparent 60%),
+  radial-gradient(ellipse 40% 60% at 80% 20%, rgba(130,50,50,0.14) 0%, transparent 55%),
+  radial-gradient(ellipse 60% 40% at 60% 85%, rgba(110,44,44,0.10) 0%, transparent 60%),
   linear-gradient(160deg, #0a0805 0%, #0f0d08 25%, #080808 55%, #060606 100%)
 `;
 
@@ -61,7 +61,7 @@ export default function RegisterPage() {
     return s;
   };
   const strength = passwordStrength(form.password);
-  const strengthColors = ['#EF4444', '#EF4444', '#FBBF24', '#C8A96E', '#34D399'];
+  const strengthColors = ['#EF4444', '#EF4444', '#FBBF24', '#9C4141', '#34D399'];
   const strengthLabels = ['', t('auth.register.passwordStrength.weak'), t('auth.register.passwordStrength.medium'), t('auth.register.passwordStrength.good'), t('auth.register.passwordStrength.excellent')];
 
   const companyLabel = selectedRole === 'avocat' ? 'Nom du cabinet' : t('auth.register.fields.companyName');
@@ -113,11 +113,11 @@ export default function RegisterPage() {
         <div className="hidden lg:flex lg:w-2/5 flex-col justify-between p-12" style={{
           background: 'rgba(8,8,8,0.60)',
           backdropFilter: 'blur(40px)',
-          borderRight: '0.5px solid rgba(200,169,110,0.10)'
+          borderRight: '0.5px solid rgba(156,65,65,0.10)'
         }}>
           <div className="flex items-center gap-3">
             <div className="lg-avatar">
-              <Shield className="w-4 h-4" style={{ color: '#C8A96E' }} />
+              <Shield className="w-4 h-4" style={{ color: '#9C4141' }} />
             </div>
             <div>
               <p className="font-cormorant text-xl" style={{ color: '#F4F2EE' }}>DIPpro</p>
@@ -129,10 +129,10 @@ export default function RegisterPage() {
             <div>
               <div className="flex items-center gap-2 mb-3">
                 {selectedRole === 'avocat'
-                  ? <Scale className="w-4 h-4" style={{ color: '#C8A96E' }} />
-                  : <Building2 className="w-4 h-4" style={{ color: '#C8A96E' }} />
+                  ? <Scale className="w-4 h-4" style={{ color: '#9C4141' }} />
+                  : <Building2 className="w-4 h-4" style={{ color: '#9C4141' }} />
                 }
-                <p className="font-dm-mono text-xs" style={{ color: '#C8A96E', textTransform: 'uppercase', letterSpacing: '0.10em' }}>
+                <p className="font-dm-mono text-xs" style={{ color: '#9C4141', textTransform: 'uppercase', letterSpacing: '0.10em' }}>
                   {selectedRole === 'avocat' ? 'Compte avocat' : t('auth.register.trialBadge')}
                 </p>
               </div>
@@ -163,7 +163,7 @@ export default function RegisterPage() {
             {/* Mobile logo */}
             <div className="flex items-center gap-3 mb-8 lg:hidden">
               <div className="lg-avatar">
-                <Shield className="w-4 h-4" style={{ color: '#C8A96E' }} />
+                <Shield className="w-4 h-4" style={{ color: '#9C4141' }} />
               </div>
               <p className="font-cormorant text-xl" style={{ color: '#F4F2EE' }}>DIPpro</p>
             </div>
@@ -179,7 +179,7 @@ export default function RegisterPage() {
               </h1>
               <p className="font-dm-sans text-sm" style={{ color: 'rgba(244,242,238,0.44)' }}>
                 {t('auth.register.subtitle')}{' '}
-                <Link to="/login" className="font-medium" style={{ color: '#C8A96E' }}>{t('auth.register.login')}</Link>
+                <Link to="/login" className="font-medium" style={{ color: '#9C4141' }}>{t('auth.register.login')}</Link>
               </p>
             </div>
 
@@ -189,9 +189,9 @@ export default function RegisterPage() {
                 <div key={i} className="flex items-center gap-2 flex-1">
                   <div className="flex items-center gap-1.5">
                     <div className="w-6 h-6 rounded-full flex items-center justify-center transition-all" style={{
-                      background: i < step ? 'rgba(52,211,153,0.20)' : i === step ? 'rgba(200,169,110,0.20)' : 'rgba(244,242,238,0.06)',
-                      border: i < step ? '0.5px solid rgba(52,211,153,0.40)' : i === step ? '0.5px solid rgba(200,169,110,0.40)' : '0.5px solid rgba(244,242,238,0.12)',
-                      color: i < step ? '#34D399' : i === step ? '#C8A96E' : 'rgba(244,242,238,0.30)',
+                      background: i < step ? 'rgba(52,211,153,0.20)' : i === step ? 'rgba(156,65,65,0.20)' : 'rgba(244,242,238,0.06)',
+                      border: i < step ? '0.5px solid rgba(52,211,153,0.40)' : i === step ? '0.5px solid rgba(156,65,65,0.40)' : '0.5px solid rgba(244,242,238,0.12)',
+                      color: i < step ? '#34D399' : i === step ? '#9C4141' : 'rgba(244,242,238,0.30)',
                       fontSize: 11,
                       fontFamily: 'DM Mono, monospace'
                     }}>
@@ -370,10 +370,10 @@ export default function RegisterPage() {
                 className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-dm-sans text-sm transition-all"
                 style={{
                   background: loading || (step === 2 && (!consents.terms || !consents.aiDisclaimer))
-                    ? 'rgba(200,169,110,0.20)'
-                    : 'rgba(200,169,110,0.16)',
-                  border: `0.5px solid ${loading || (step === 2 && (!consents.terms || !consents.aiDisclaimer)) ? 'rgba(200,169,110,0.18)' : 'rgba(200,169,110,0.42)'}`,
-                  color: loading || (step === 2 && (!consents.terms || !consents.aiDisclaimer)) ? 'rgba(200,169,110,0.45)' : '#C8A96E',
+                    ? 'rgba(156,65,65,0.20)'
+                    : 'rgba(156,65,65,0.16)',
+                  border: `0.5px solid ${loading || (step === 2 && (!consents.terms || !consents.aiDisclaimer)) ? 'rgba(156,65,65,0.18)' : 'rgba(156,65,65,0.42)'}`,
+                  color: loading || (step === 2 && (!consents.terms || !consents.aiDisclaimer)) ? 'rgba(156,65,65,0.45)' : '#9C4141',
                   cursor: loading || (step === 2 && (!consents.terms || !consents.aiDisclaimer)) ? 'not-allowed' : 'pointer',
                   fontWeight: 500
                 }}
@@ -403,7 +403,7 @@ export default function RegisterPage() {
             </form>
 
             <p className="font-dm-sans text-xs text-center mt-6" style={{ color: 'rgba(244,242,238,0.30)' }}>
-              <Link to="/waitlist" style={{ color: '#C8A96E' }}>{t('auth.register.waitlist')}</Link>
+              <Link to="/waitlist" style={{ color: '#9C4141' }}>{t('auth.register.waitlist')}</Link>
             </p>
 
             <p className="font-dm-sans text-xs text-center mt-3" style={{ color: 'rgba(244,242,238,0.22)' }}>
@@ -440,13 +440,13 @@ function ConsentCheckbox({ id, checked, onChange, label }) {
         <div
           className="w-4 h-4 rounded flex items-center justify-center transition-all"
           style={{
-            background: checked ? 'rgba(200,169,110,0.20)' : 'rgba(244,242,238,0.04)',
-            border: checked ? '0.5px solid rgba(200,169,110,0.50)' : '0.5px solid rgba(244,242,238,0.14)',
+            background: checked ? 'rgba(156,65,65,0.20)' : 'rgba(244,242,238,0.04)',
+            border: checked ? '0.5px solid rgba(156,65,65,0.50)' : '0.5px solid rgba(244,242,238,0.14)',
           }}
         >
           {checked && (
             <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-              <path d="M1 4L3.5 6.5L9 1" stroke="#C8A96E" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M1 4L3.5 6.5L9 1" stroke="#9C4141" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           )}
         </div>

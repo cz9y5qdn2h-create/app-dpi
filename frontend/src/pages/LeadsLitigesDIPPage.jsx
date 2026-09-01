@@ -5,7 +5,7 @@ import SEOHead from '../components/SEOHead';
 import api from '../lib/api';
 import usePageBackground from '../lib/usePageBackground';
 
-const GOLD = '#C8A96E';
+const GOLD = '#9C4141';
 const DARK = '#1A1826';
 const GLASS = 'rgba(255,255,255,0.85)';
 const BG = 'linear-gradient(145deg, #dde2f5 0%, #ebe7fa 40%, #dceaf8 70%, #e3e1f6 100%)';
@@ -66,7 +66,7 @@ function computeRisk(answers) {
   const points = flagged.length;
   let level, color, bg;
   if (points === 0) { level = 'Risque faible'; color = '#22C55E'; bg = 'rgba(34,197,94,0.1)'; }
-  else if (points <= 2) { level = 'Risque modéré'; color = GOLD; bg = 'rgba(200,169,110,0.12)'; }
+  else if (points <= 2) { level = 'Risque modéré'; color = GOLD; bg = 'rgba(156,65,65,0.12)'; }
   else { level = 'Risque élevé'; color = '#EF4444'; bg = 'rgba(239,68,68,0.1)'; }
   return { points, level, color, bg, flagged };
 }
@@ -80,7 +80,7 @@ function AnswerPills({ value, onChange }) {
           style={{
             padding: '7px 14px', borderRadius: 8, fontFamily: 'DM Sans, sans-serif', fontSize: 12, fontWeight: value === v ? 600 : 400,
             border: `1px solid ${value === v ? GOLD : 'rgba(200,200,220,0.5)'}`,
-            background: value === v ? 'rgba(200,169,110,0.15)' : 'rgba(255,255,255,0.7)',
+            background: value === v ? 'rgba(156,65,65,0.15)' : 'rgba(255,255,255,0.7)',
             color: value === v ? GOLD : '#64748B', cursor: 'pointer', minHeight: 32,
           }}>
           {label}
@@ -137,25 +137,25 @@ export default function LeadsLitigesDIPPage() {
       <div className="min-h-screen" style={{ background: BG }}>
         <header style={{ padding: '18px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
-            <div style={{ width: 30, height: 30, borderRadius: 8, background: 'rgba(200,169,110,0.12)', border: '1px solid rgba(200,169,110,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: 30, height: 30, borderRadius: 8, background: 'rgba(156,65,65,0.12)', border: '1px solid rgba(156,65,65,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Shield style={{ width: 15, height: 15, color: GOLD }} />
             </div>
-            <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 19, color: DARK }}>DIPpro</span>
+            <span style={{ fontFamily: 'Fraunces, serif', fontSize: 19, color: DARK }}>DIPpro</span>
           </Link>
         </header>
 
         <main style={{ maxWidth: 560, margin: '0 auto', padding: '20px 20px 60px' }}>
           <div style={{ textAlign: 'center', marginBottom: 24 }}>
-            <div style={{ width: 52, height: 52, borderRadius: 14, background: 'rgba(200,169,110,0.1)', border: '1px solid rgba(200,169,110,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+            <div style={{ width: 52, height: 52, borderRadius: 14, background: 'rgba(156,65,65,0.1)', border: '1px solid rgba(156,65,65,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
               <BookOpen style={{ width: 24, height: 24, color: GOLD }} />
             </div>
-            <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontWeight: 400, fontSize: 30, color: DARK, lineHeight: 1.2, marginBottom: 10 }}>
+            <h1 style={{ fontFamily: 'Fraunces, serif', fontWeight: 400, fontSize: 30, color: DARK, lineHeight: 1.2, marginBottom: 10 }}>
               La base des litiges DIP
             </h1>
             <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 14, color: '#64748B', lineHeight: 1.6, marginBottom: 14 }}>
               Sanctions, jurisprudence récente et fondements juridiques classés par manquement à la Loi Doubin, envoyés gratuitement par email — avec, ci-dessous, une estimation immédiate du niveau de risque du DIP de votre client.
             </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, textAlign: 'left', borderRadius: 14, padding: '14px 16px', background: 'rgba(255,255,255,0.55)', border: '1px solid rgba(200,169,110,0.15)' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, textAlign: 'left', borderRadius: 14, padding: '14px 16px', background: 'rgba(255,255,255,0.55)', border: '1px solid rgba(156,65,65,0.15)' }}>
               {RESSOURCE_TEASERS.map((t, i) => (
                 <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'baseline' }}>
                   <span style={{ fontFamily: 'monospace', fontSize: 10, color: GOLD, flexShrink: 0 }}>{t.fondement}</span>
@@ -166,10 +166,10 @@ export default function LeadsLitigesDIPPage() {
           </div>
 
           {/* ── Estimation du risque ── */}
-          <div style={{ borderRadius: 20, padding: '24px', background: GLASS, backdropFilter: 'blur(24px)', border: '1px solid rgba(200,169,110,0.2)', boxShadow: '0 8px 40px rgba(80,90,140,0.12)', marginBottom: 20 }}>
+          <div style={{ borderRadius: 20, padding: '24px', background: GLASS, backdropFilter: 'blur(24px)', border: '1px solid rgba(156,65,65,0.2)', boxShadow: '0 8px 40px rgba(80,90,140,0.12)', marginBottom: 20 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
               <Gauge style={{ width: 18, height: 18, color: GOLD }} />
-              <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 20, color: DARK }}>Estimez le risque du DIP de votre client</h2>
+              <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 20, color: DARK }}>Estimez le risque du DIP de votre client</h2>
             </div>
             <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: '#64748B', lineHeight: 1.55, marginBottom: 16 }}>
               5 points de vigilance parmi les plus fréquemment invoqués en contentieux DIP. Répondez pour obtenir une estimation immédiate — indicative, pas une analyse complète du dossier.
@@ -209,13 +209,13 @@ export default function LeadsLitigesDIPPage() {
           </div>
 
           {/* ── Formulaire de contact ── */}
-          <div style={{ borderRadius: 20, padding: '28px 24px', background: GLASS, backdropFilter: 'blur(24px)', border: '1px solid rgba(200,169,110,0.2)', boxShadow: '0 8px 40px rgba(80,90,140,0.12)' }}>
+          <div style={{ borderRadius: 20, padding: '28px 24px', background: GLASS, backdropFilter: 'blur(24px)', border: '1px solid rgba(156,65,65,0.2)', boxShadow: '0 8px 40px rgba(80,90,140,0.12)' }}>
             {success ? (
               <div style={{ textAlign: 'center', padding: '12px 0' }}>
                 <div style={{ width: 56, height: 56, borderRadius: 14, background: 'rgba(34,197,94,0.1)', border: '1px solid rgba(34,197,94,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px' }}>
                   <CheckCircle style={{ width: 26, height: 26, color: '#22C55E' }} />
                 </div>
-                <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 22, color: DARK, marginBottom: 8 }}>
+                <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 22, color: DARK, marginBottom: 8 }}>
                   Merci, {form.nom.split(' ')[0]}
                 </h2>
                 <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 13, color: '#64748B', lineHeight: 1.6, marginBottom: 16 }}>
@@ -280,7 +280,7 @@ export default function LeadsLitigesDIPPage() {
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                     padding: '14px 24px', borderRadius: 12, border: 'none', cursor: loading ? 'not-allowed' : 'pointer',
                     background: GOLD, color: DARK, fontFamily: 'DM Sans, sans-serif', fontSize: 15, fontWeight: 600,
-                    boxShadow: '0 4px 16px rgba(200,169,110,0.35)', minHeight: 48,
+                    boxShadow: '0 4px 16px rgba(156,65,65,0.35)', minHeight: 48,
                   }}>
                   {loading
                     ? <><span style={{ width: 16, height: 16, border: `2px solid ${DARK}`, borderTopColor: 'transparent', borderRadius: '50%', display: 'inline-block', animation: 'spin 0.8s linear infinite' }} /> Envoi…</>

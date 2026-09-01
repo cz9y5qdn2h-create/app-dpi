@@ -4,7 +4,7 @@ import api from '../lib/api';
 
 const SEVERITIES = [
   { value: 'bloquant',    label: 'Bloquant',    desc: 'Je ne peux plus utiliser l\'app', color: '#e53e3e' },
-  { value: 'normal',      label: 'Problème',    desc: 'Une fonctionnalité ne marche pas', color: '#c8a96e' },
+  { value: 'normal',      label: 'Problème',    desc: 'Une fonctionnalité ne marche pas', color: '#9c4141' },
   { value: 'cosmétique',  label: 'Cosmétique',  desc: 'Affichage ou texte incorrect', color: '#34d399' },
 ];
 
@@ -71,7 +71,7 @@ export default function BugReportModal({ open, onClose, errorInfo = null }) {
               <Bug size={16} color="#e53e3e" />
             </div>
             <div>
-              <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 17, color: 'rgb(var(--text-primary))', margin: 0, lineHeight: 1.2 }}>
+              <p style={{ fontFamily: 'Fraunces, serif', fontSize: 17, color: 'rgb(var(--text-primary))', margin: 0, lineHeight: 1.2 }}>
                 Signaler un problème
               </p>
               <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 11.5, color: 'rgb(var(--text-muted))', margin: '3px 0 0' }}>
@@ -87,7 +87,7 @@ export default function BugReportModal({ open, onClose, errorInfo = null }) {
         {sent ? (
           <div style={{ textAlign: 'center', padding: '28px 0 16px' }}>
             <CheckCircle size={30} color="#34d399" style={{ margin: '0 auto 12px', display: 'block' }} />
-            <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 18, color: 'rgb(var(--text-primary))', marginBottom: 8 }}>
+            <p style={{ fontFamily: 'Fraunces, serif', fontSize: 18, color: 'rgb(var(--text-primary))', marginBottom: 8 }}>
               Rapport envoyé — merci !
             </p>
             <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 13, color: 'rgb(var(--text-secondary))' }}>

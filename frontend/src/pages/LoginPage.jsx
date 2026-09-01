@@ -7,9 +7,9 @@ import SEOHead from '../components/SEOHead';
 import usePageBackground from '../lib/usePageBackground';
 
 const AUTH_BG = `
-  radial-gradient(ellipse 55% 50% at 15% 70%, rgba(200,169,110,0.20) 0%, transparent 60%),
-  radial-gradient(ellipse 40% 60% at 80% 20%, rgba(180,140,70,0.14) 0%, transparent 55%),
-  radial-gradient(ellipse 60% 40% at 60% 85%, rgba(140,100,40,0.10) 0%, transparent 60%),
+  radial-gradient(ellipse 55% 50% at 15% 70%, rgba(156,65,65,0.20) 0%, transparent 60%),
+  radial-gradient(ellipse 40% 60% at 80% 20%, rgba(130,50,50,0.14) 0%, transparent 55%),
+  radial-gradient(ellipse 60% 40% at 60% 85%, rgba(110,44,44,0.10) 0%, transparent 60%),
   linear-gradient(160deg, #0a0805 0%, #0f0d08 25%, #080808 55%, #060606 100%)
 `;
 
@@ -79,11 +79,11 @@ export default function LoginPage() {
       <div className="hidden lg:flex lg:w-2/5 flex-col justify-between p-12" style={{
         background: 'rgba(8,8,8,0.60)',
         backdropFilter: 'blur(40px)',
-        borderRight: '0.5px solid rgba(200,169,110,0.10)'
+        borderRight: '0.5px solid rgba(156,65,65,0.10)'
       }}>
         <div className="flex items-center gap-3">
           <div className="lg-avatar">
-            <Shield className="w-4 h-4" style={{ color: '#C8A96E' }} />
+            <Shield className="w-4 h-4" style={{ color: '#9C4141' }} />
           </div>
           <div>
             <p className="font-cormorant text-xl" style={{ color: '#F4F2EE' }}>DIPpro</p>
@@ -103,7 +103,7 @@ export default function LoginPage() {
 
           {t('auth.login.features', { returnObjects: true }).map((item, i) => (
             <div key={i} className="flex items-center gap-3">
-              <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: '#C8A96E' }} />
+              <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: '#9C4141' }} />
               <span className="font-dm-sans text-sm" style={{ color: 'rgba(244,242,238,0.60)' }}>{item}</span>
             </div>
           ))}
@@ -121,7 +121,7 @@ export default function LoginPage() {
           {/* Mobile logo */}
           <div className="flex items-center gap-3 mb-10 lg:hidden">
             <div className="lg-avatar">
-              <Shield className="w-4 h-4" style={{ color: '#C8A96E' }} />
+              <Shield className="w-4 h-4" style={{ color: '#9C4141' }} />
             </div>
             <p className="font-cormorant text-xl" style={{ color: '#F4F2EE' }}>DIPpro</p>
           </div>
@@ -130,7 +130,7 @@ export default function LoginPage() {
             <h1 className="font-cormorant text-3xl mb-1" style={{ color: '#F4F2EE', fontWeight: 300 }}>{t('auth.login.title')}</h1>
             <p className="font-dm-sans text-sm" style={{ color: 'rgba(244,242,238,0.44)' }}>
               {t('auth.login.subtitle')}{' '}
-              <Link to="/register" className="font-medium" style={{ color: '#C8A96E' }}>
+              <Link to="/register" className="font-medium" style={{ color: '#9C4141' }}>
                 {t('auth.login.startTrial')}
               </Link>
             </p>
@@ -151,12 +151,12 @@ export default function LoginPage() {
             /* ── Étape A2F ── */
             <form onSubmit={handleMFAVerify} className="space-y-4">
               <div className="rounded-xl px-4 py-4 mb-2" style={{
-                background: 'rgba(200,169,110,0.06)',
-                border: '0.5px solid rgba(200,169,110,0.20)',
+                background: 'rgba(156,65,65,0.06)',
+                border: '0.5px solid rgba(156,65,65,0.20)',
               }}>
                 <div className="flex items-center gap-2 mb-1">
-                  <ShieldCheck className="w-4 h-4" style={{ color: '#C8A96E' }} />
-                  <span className="font-dm-sans text-sm font-medium" style={{ color: '#C8A96E' }}>
+                  <ShieldCheck className="w-4 h-4" style={{ color: '#9C4141' }} />
+                  <span className="font-dm-sans text-sm font-medium" style={{ color: '#9C4141' }}>
                     Vérification en deux étapes
                   </span>
                 </div>
@@ -187,9 +187,9 @@ export default function LoginPage() {
                 disabled={loading || mfaCode.replace(/\s/g, '').length < 6}
                 className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-dm-sans text-sm transition-all"
                 style={{
-                  background: 'rgba(200,169,110,0.16)',
-                  border: '0.5px solid rgba(200,169,110,0.42)',
-                  color: '#C8A96E', fontWeight: 500,
+                  background: 'rgba(156,65,65,0.16)',
+                  border: '0.5px solid rgba(156,65,65,0.42)',
+                  color: '#9C4141', fontWeight: 500,
                   cursor: loading || mfaCode.replace(/\s/g, '').length < 6 ? 'not-allowed' : 'pointer',
                   opacity: mfaCode.replace(/\s/g, '').length < 6 ? 0.5 : 1,
                 }}
@@ -238,7 +238,7 @@ export default function LoginPage() {
                   <Link
                     to="/forgot-password"
                     className="font-dm-sans text-xs transition-colors"
-                    style={{ color: 'rgba(200,169,110,0.55)' }}
+                    style={{ color: 'rgba(156,65,65,0.55)' }}
                   >
                     Mot de passe oublié ?
                   </Link>
@@ -271,10 +271,10 @@ export default function LoginPage() {
                 className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-dm-sans text-sm transition-all mt-2"
                 style={{
                   background: loading || !form.email || !form.password
-                    ? 'rgba(200,169,110,0.25)'
-                    : 'rgba(200,169,110,0.16)',
-                  border: `0.5px solid ${loading || !form.email || !form.password ? 'rgba(200,169,110,0.20)' : 'rgba(200,169,110,0.42)'}`,
-                  color: loading || !form.email || !form.password ? 'rgba(200,169,110,0.50)' : '#C8A96E',
+                    ? 'rgba(156,65,65,0.25)'
+                    : 'rgba(156,65,65,0.16)',
+                  border: `0.5px solid ${loading || !form.email || !form.password ? 'rgba(156,65,65,0.20)' : 'rgba(156,65,65,0.42)'}`,
+                  color: loading || !form.email || !form.password ? 'rgba(156,65,65,0.50)' : '#9C4141',
                   cursor: loading || !form.email || !form.password ? 'not-allowed' : 'pointer',
                   fontWeight: 500
                 }}
@@ -296,15 +296,15 @@ export default function LoginPage() {
 
           <p className="font-dm-sans text-xs text-center mt-6 leading-relaxed" style={{ color: 'rgba(244,242,238,0.30)' }}>
             {t('auth.login.consent')}{' '}
-            <Link to="/cgu" className="underline underline-offset-2 transition-colors" style={{ color: 'rgba(200,169,110,0.60)' }}>
+            <Link to="/cgu" className="underline underline-offset-2 transition-colors" style={{ color: 'rgba(156,65,65,0.60)' }}>
               {t('auth.login.consentCgu')}
             </Link>
             {', '}
-            <Link to="/privacy" className="underline underline-offset-2 transition-colors" style={{ color: 'rgba(200,169,110,0.60)' }}>
+            <Link to="/privacy" className="underline underline-offset-2 transition-colors" style={{ color: 'rgba(156,65,65,0.60)' }}>
               {t('auth.login.consentPrivacy')}
             </Link>
             {' '}{t('auth.login.consentLegal') !== 'legal notice' ? 'et les' : 'and the'}{' '}
-            <Link to="/mentions-legales" className="underline underline-offset-2 transition-colors" style={{ color: 'rgba(200,169,110,0.60)' }}>
+            <Link to="/mentions-legales" className="underline underline-offset-2 transition-colors" style={{ color: 'rgba(156,65,65,0.60)' }}>
               {t('auth.login.consentLegal')}
             </Link>
             {' '}{t('auth.login.consentOf')}

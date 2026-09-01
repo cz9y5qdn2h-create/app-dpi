@@ -103,7 +103,7 @@ export default function OnboardingModal({ forceShow = false, onClose }) {
           maxHeight: 'calc(100vh - 32px)',
           overflowY: 'auto',
           borderRadius: '24px',
-          border: '1px solid rgba(200,169,110,0.30)',
+          border: '1px solid rgba(156,65,65,0.30)',
           background: 'rgba(255,255,255,0.96)',
           boxShadow: '0 32px 80px rgba(0,0,0,0.28)',
           position: 'relative',
@@ -146,8 +146,8 @@ export default function OnboardingModal({ forceShow = false, onClose }) {
         {/* Zone visuelle */}
         <div style={{
           height: '280px',
-          background: 'rgba(200,169,110,0.04)',
-          borderBottom: '1px solid rgba(200,169,110,0.12)',
+          background: 'rgba(156,65,65,0.04)',
+          borderBottom: '1px solid rgba(156,65,65,0.12)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -223,7 +223,7 @@ export default function OnboardingModal({ forceShow = false, onClose }) {
               width: 36,
               height: 36,
               borderRadius: '50%',
-              border: '1px solid rgba(200,169,110,0.25)',
+              border: '1px solid rgba(156,65,65,0.25)',
               background: 'transparent',
               display: 'flex',
               alignItems: 'center',
@@ -252,7 +252,7 @@ export default function OnboardingModal({ forceShow = false, onClose }) {
                   transition: 'all 0.25s ease',
                   background: i === current
                     ? 'rgb(var(--gold))'
-                    : 'rgba(200,169,110,0.25)',
+                    : 'rgba(156,65,65,0.25)',
                   padding: 0,
                 }}
               />
@@ -267,8 +267,8 @@ export default function OnboardingModal({ forceShow = false, onClose }) {
                 width: 36,
                 height: 36,
                 borderRadius: '50%',
-                border: '1px solid rgba(200,169,110,0.35)',
-                background: 'rgba(200,169,110,0.10)',
+                border: '1px solid rgba(156,65,65,0.35)',
+                background: 'rgba(156,65,65,0.10)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -286,7 +286,7 @@ export default function OnboardingModal({ forceShow = false, onClose }) {
                 padding: '8px 20px',
                 fontSize: '13px',
                 fontWeight: 700,
-                background: 'linear-gradient(135deg, #C8A96E 0%, #A8893E 100%)',
+                background: 'linear-gradient(135deg, #9C4141 0%, #A8893E 100%)',
                 color: '#1A1826',
                 border: 'none',
                 borderRadius: 12,
@@ -312,7 +312,7 @@ function SlideWelcome() {
       {/* Cercle de progression SVG */}
       <div style={{ position: 'relative', width: 120, height: 120 }}>
         <svg width="120" height="120" viewBox="0 0 120 120" style={{ transform: 'rotate(-90deg)' }}>
-          <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(200,169,110,0.12)" strokeWidth="8" />
+          <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(156,65,65,0.12)" strokeWidth="8" />
           <motion.circle
             cx="60" cy="60" r="52"
             fill="none"
@@ -344,12 +344,12 @@ function SlideWelcome() {
         gap: 10,
         padding: '8px 20px',
         borderRadius: 12,
-        border: '1px solid rgba(200,169,110,0.25)',
-        background: 'rgba(200,169,110,0.07)',
+        border: '1px solid rgba(156,65,65,0.25)',
+        background: 'rgba(156,65,65,0.07)',
       }}>
         <div style={{
           width: 28, height: 28, borderRadius: 8,
-          background: 'rgba(200,169,110,0.18)',
+          background: 'rgba(156,65,65,0.18)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
           <Sparkles style={{ width: 14, height: 14, color: 'rgb(var(--gold, 200 169 110))' }} />
@@ -367,14 +367,14 @@ function SlideUpload() {
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, width: '100%', maxWidth: 340 }}>
       <div style={{
         width: '100%',
-        border: '2px dashed rgba(200,169,110,0.40)',
+        border: '2px dashed rgba(156,65,65,0.40)',
         borderRadius: 16,
         padding: '32px 24px',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         gap: 12,
-        background: 'rgba(200,169,110,0.03)',
+        background: 'rgba(156,65,65,0.03)',
         position: 'relative',
       }}>
         {/* Badge IA */}
@@ -383,8 +383,8 @@ function SlideUpload() {
           top: 10, right: 10,
           padding: '3px 8px',
           borderRadius: 6,
-          background: 'rgba(200,169,110,0.20)',
-          border: '1px solid rgba(200,169,110,0.40)',
+          background: 'rgba(156,65,65,0.20)',
+          border: '1px solid rgba(156,65,65,0.40)',
         }}>
           <span className="font-dm-mono" style={{ fontSize: 10, color: 'rgb(var(--gold, 200 169 110))', fontWeight: 700 }}>IA</span>
         </div>
@@ -392,8 +392,8 @@ function SlideUpload() {
         <div style={{
           width: 52, height: 52,
           borderRadius: 14,
-          background: 'rgba(200,169,110,0.12)',
-          border: '1px solid rgba(200,169,110,0.25)',
+          background: 'rgba(156,65,65,0.12)',
+          border: '1px solid rgba(156,65,65,0.25)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
           <Upload style={{ width: 22, height: 22, color: 'rgb(var(--gold, 200 169 110))' }} />
@@ -407,8 +407,8 @@ function SlideUpload() {
         <div style={{
           padding: '6px 18px',
           borderRadius: 8,
-          background: 'rgba(200,169,110,0.14)',
-          border: '1px solid rgba(200,169,110,0.30)',
+          background: 'rgba(156,65,65,0.14)',
+          border: '1px solid rgba(156,65,65,0.30)',
         }}>
           <span className="font-dm-sans" style={{ fontSize: 12, color: 'rgb(var(--gold, 200 169 110))', fontWeight: 600 }}>
             Parcourir…
@@ -423,7 +423,7 @@ function SlideUpload() {
 function SlideScore() {
   const items = [
     { label: 'Conforme', symbol: '✓', color: 'rgb(var(--success, 52 211 153))', bg: 'rgba(52,211,153,0.08)', count: 7 },
-    { label: 'À vérifier', symbol: '⚠', color: 'rgb(var(--gold, 200 169 110))', bg: 'rgba(200,169,110,0.08)', count: 2 },
+    { label: 'À vérifier', symbol: '⚠', color: 'rgb(var(--gold, 200 169 110))', bg: 'rgba(156,65,65,0.08)', count: 2 },
     { label: 'Non conforme', symbol: '✗', color: 'rgb(var(--danger, 248 113 113))', bg: 'rgba(248,113,113,0.08)', count: 1 },
   ];
 
@@ -477,8 +477,8 @@ function SlideCorrections() {
       label: 'Section 7 · Finances',
       severity: 'Modéré',
       color: 'rgb(var(--gold, 200 169 110))',
-      bg: 'rgba(200,169,110,0.07)',
-      border: 'rgba(200,169,110,0.20)',
+      bg: 'rgba(156,65,65,0.07)',
+      border: 'rgba(156,65,65,0.20)',
       showBtn: false,
     },
   ];
@@ -504,8 +504,8 @@ function SlideCorrections() {
             <button style={{
               padding: '5px 12px',
               borderRadius: 7,
-              background: 'rgba(200,169,110,0.16)',
-              border: '1px solid rgba(200,169,110,0.35)',
+              background: 'rgba(156,65,65,0.16)',
+              border: '1px solid rgba(156,65,65,0.35)',
               color: 'rgb(var(--gold, 200 169 110))',
               fontSize: 12,
               fontWeight: 600,
@@ -522,8 +522,8 @@ function SlideCorrections() {
         display: 'flex', alignItems: 'center', gap: 8,
         padding: '8px 12px',
         borderRadius: 8,
-        background: 'rgba(200,169,110,0.05)',
-        border: '1px dashed rgba(200,169,110,0.18)',
+        background: 'rgba(156,65,65,0.05)',
+        border: '1px dashed rgba(156,65,65,0.18)',
       }}>
         <Sparkles style={{ width: 13, height: 13, color: 'rgb(var(--gold, 200 169 110))' }} />
         <span className="font-dm-sans" style={{ fontSize: 12, color: 'rgb(var(--text-secondary))' }}>
@@ -541,8 +541,8 @@ function SlideShare() {
       <div style={{
         padding: '16px',
         borderRadius: 14,
-        border: '1px solid rgba(200,169,110,0.22)',
-        background: 'rgba(200,169,110,0.04)',
+        border: '1px solid rgba(156,65,65,0.22)',
+        background: 'rgba(156,65,65,0.04)',
       }}>
         {/* Ligne URL */}
         <div style={{
@@ -550,7 +550,7 @@ function SlideShare() {
           padding: '8px 12px',
           borderRadius: 8,
           background: 'rgba(0,0,0,0.04)',
-          border: '1px solid rgba(200,169,110,0.15)',
+          border: '1px solid rgba(156,65,65,0.15)',
           marginBottom: 12,
         }}>
           <LinkIcon style={{ width: 13, height: 13, color: 'rgb(var(--gold, 200 169 110))', flexShrink: 0 }} />
@@ -560,8 +560,8 @@ function SlideShare() {
           <button style={{
             padding: '3px 10px',
             borderRadius: 6,
-            background: 'rgba(200,169,110,0.16)',
-            border: '1px solid rgba(200,169,110,0.30)',
+            background: 'rgba(156,65,65,0.16)',
+            border: '1px solid rgba(156,65,65,0.30)',
             color: 'rgb(var(--gold, 200 169 110))',
             fontSize: 11,
             fontWeight: 600,
@@ -578,8 +578,8 @@ function SlideShare() {
             <span key={badge} style={{
               padding: '3px 9px',
               borderRadius: 20,
-              background: 'rgba(200,169,110,0.10)',
-              border: '1px solid rgba(200,169,110,0.22)',
+              background: 'rgba(156,65,65,0.10)',
+              border: '1px solid rgba(156,65,65,0.22)',
               fontSize: 10,
               fontFamily: 'DM Mono, monospace',
               color: 'rgb(var(--gold, 200 169 110))',
@@ -620,8 +620,8 @@ function SlideReady() {
           style={{
             width: 80, height: 80,
             borderRadius: '50%',
-            background: 'rgba(200,169,110,0.12)',
-            border: '2px solid rgba(200,169,110,0.40)',
+            background: 'rgba(156,65,65,0.12)',
+            border: '2px solid rgba(156,65,65,0.40)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}
         >
@@ -642,7 +642,7 @@ function SlideReady() {
             position: 'absolute',
             inset: -8,
             borderRadius: '50%',
-            border: '1px solid rgba(200,169,110,0.30)',
+            border: '1px solid rgba(156,65,65,0.30)',
           }}
         />
       </div>
@@ -666,8 +666,8 @@ function SlideReady() {
               <div style={{
                 width: 36, height: 36,
                 borderRadius: 10,
-                background: 'rgba(200,169,110,0.10)',
-                border: '1px solid rgba(200,169,110,0.28)',
+                background: 'rgba(156,65,65,0.10)',
+                border: '1px solid rgba(156,65,65,0.28)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
                 <Icon style={{ width: 16, height: 16, color: 'rgb(var(--gold, 200 169 110))' }} />
@@ -677,7 +677,7 @@ function SlideReady() {
             {i < 2 && (
               <div style={{
                 width: 20, height: 1,
-                background: 'rgba(200,169,110,0.30)',
+                background: 'rgba(156,65,65,0.30)',
                 marginBottom: 18,
               }} />
             )}

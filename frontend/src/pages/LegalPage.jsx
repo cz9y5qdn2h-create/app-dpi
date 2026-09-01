@@ -451,7 +451,7 @@ Toute réclamation peut être adressée à la CNIL (www.cnil.fr).`
         title: 'Crédits',
         content: `Design et développement : Iralink Agency (${IRALINK_EMAIL})
 Icônes : Lucide React (licence ISC)
-Polices : DM Sans, DM Mono, Cormorant Garamond (Google Fonts, licence Open Font License)`
+Polices : DM Sans, DM Mono, Fraunces (Google Fonts, licence Open Font License)`
       }
     ]
   },
@@ -545,7 +545,7 @@ export default function LegalPage() {
       <div className="min-h-screen flex items-center justify-center" style={{ background: LEGAL_BG }}>
         <div className="text-center">
           <p className="font-cormorant text-2xl mb-4" style={{ color: '#1A1826' }}>Page introuvable</p>
-          <Link to="/" className="font-dm-sans text-sm" style={{ color: '#C8A96E' }}>← Retour à l'accueil</Link>
+          <Link to="/" className="font-dm-sans text-sm" style={{ color: '#9C4141' }}>← Retour à l'accueil</Link>
         </div>
       </div>
     );
@@ -566,19 +566,19 @@ export default function LegalPage() {
     <>
       <SEOHead title={seo.title} description={seo.description} canonical={seo.canonical} noindex={true} />
     <div className="min-h-screen" style={{ background: LEGAL_BG }}>
-      <header style={{ background: 'rgba(255,255,255,0.72)', backdropFilter: 'blur(24px)', borderBottom: '1px solid rgba(200,169,110,0.18)', position: 'sticky', top: 0, zIndex: 10 }}>
+      <header style={{ background: 'rgba(255,255,255,0.72)', backdropFilter: 'blur(24px)', borderBottom: '1px solid rgba(156,65,65,0.18)', position: 'sticky', top: 0, zIndex: 10 }}>
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-4 min-w-0">
             <Link to="/" className="flex items-center gap-3 flex-shrink-0">
-              <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(200,169,110,0.12)', border: '1px solid rgba(200,169,110,0.3)' }}>
-                <Shield className="w-3.5 h-3.5" style={{ color: '#C8A96E' }} />
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: 'rgba(156,65,65,0.12)', border: '1px solid rgba(156,65,65,0.3)' }}>
+                <Shield className="w-3.5 h-3.5" style={{ color: '#9C4141' }} />
               </div>
               <span className="font-cormorant text-lg" style={{ color: '#1A1826' }}>DIPpro</span>
             </Link>
             <span className="hidden sm:inline" style={{ color: '#94A3B8' }}>/</span>
             <span className="hidden sm:inline font-dm-sans text-sm truncate" style={{ color: '#64748B' }}>{content.title}</span>
           </div>
-          <Link to="/register" className="font-dm-sans text-xs px-4 py-2 rounded-lg transition-all flex-shrink-0" style={{ background: 'rgba(200,169,110,0.12)', color: '#C8A96E', border: '1px solid rgba(200,169,110,0.3)' }}>
+          <Link to="/register" className="font-dm-sans text-xs px-4 py-2 rounded-lg transition-all flex-shrink-0" style={{ background: 'rgba(156,65,65,0.12)', color: '#9C4141', border: '1px solid rgba(156,65,65,0.3)' }}>
             Essai gratuit →
           </Link>
         </div>
@@ -633,7 +633,7 @@ export default function LegalPage() {
             ))}
           </div>
 
-          <div className="mt-12 pt-8 border-t" style={{ borderColor: 'rgba(200,169,110,0.15)' }}>
+          <div className="mt-12 pt-8 border-t" style={{ borderColor: 'rgba(156,65,65,0.15)' }}>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <p className="font-dm-sans text-xs" style={{ color: '#94A3B8' }}>© {new Date().getFullYear()} Iralink Agency — Tous droits réservés</p>
               <div className="flex gap-4 flex-wrap">

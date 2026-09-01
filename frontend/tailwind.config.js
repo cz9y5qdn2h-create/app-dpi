@@ -25,7 +25,7 @@ export default {
         'border-dim':     'var(--border-dim)',
       },
       fontFamily: {
-        'cormorant': ['Geist', 'sans-serif'],
+        'cormorant': ['Fraunces', 'serif'],
         'dm-sans':   ['Geist', 'sans-serif'],
         'dm-mono':   ['Geist Mono', 'monospace'],
       },

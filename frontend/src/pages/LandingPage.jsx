@@ -10,14 +10,14 @@ import { Helmet } from 'react-helmet-async';
 import api from '../lib/api';
 import usePageBackground from '../lib/usePageBackground';
 
-const GOLD = '#C8A96E';
+const GOLD = '#9C4141';
 
 const DARK_BG = {
   background: `
-    radial-gradient(ellipse 55% 50% at 15% 70%, rgba(200,169,110,0.18) 0%, transparent 60%),
-    radial-gradient(ellipse 40% 60% at 80% 20%, rgba(180,140,70,0.12) 0%, transparent 55%),
-    radial-gradient(ellipse 60% 40% at 60% 85%, rgba(140,100,40,0.08) 0%, transparent 60%),
-    linear-gradient(160deg, #0a0805 0%, #0f0d08 25%, #080808 55%, #060606 100%)`
+    radial-gradient(ellipse 55% 50% at 15% 70%, rgba(156,65,65,0.16) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 60% at 80% 20%, rgba(140,125,100,0.09) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 40% at 60% 85%, rgba(110,44,44,0.10) 0%, transparent 60%),
+    linear-gradient(160deg, #0a0d10 0%, #0d1114 25%, #090b0d 55%, #060708 100%)`
 };
 
 const FEATURES = [
@@ -73,6 +73,55 @@ const FAQS = [
   },
 ];
 
+// ─── Carte de fonctionnalité — bascule 3D au curseur ──────────────────────────
+// Perspective + rotateX/Y pilotés par la position du curseur, icône détachée
+// du plan de la carte (translateZ) pour un vrai relief au survol, pas un
+// simple hover d'ombre. Repli neutre au clavier / hors survol (rotation 0).
+function FeatureCard3D({ icon: Icon, title, desc }) {
+  const ref = useRef(null);
+  const [tilt, setTilt] = useState({ rx: 0, ry: 0 });
+  const [hovering, setHovering] = useState(false);
+
+  const handleMove = (e) => {
+    const el = ref.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const px = (e.clientX - rect.left) / rect.width - 0.5;
+    const py = (e.clientY - rect.top) / rect.height - 0.5;
+    setTilt({ rx: py * -12, ry: px * 14 });
+  };
+
+  return (
+    <div
+      ref={ref}
+      onMouseMove={handleMove}
+      onMouseEnter={() => setHovering(true)}
+      onMouseLeave={() => { setHovering(false); setTilt({ rx: 0, ry: 0 }); }}
+      style={{
+        borderRadius: 5, padding: '26px 26px 28px', background: 'rgba(244,242,238,0.03)',
+        border: `0.5px solid ${hovering ? 'rgba(156,65,65,0.35)' : 'rgba(244,242,238,0.08)'}`,
+        boxShadow: hovering ? '9px 9px 0 rgba(156,65,65,0.20)' : '0 1px 0 rgba(0,0,0,0.2)',
+        transformStyle: 'preserve-3d', perspective: 800,
+        transform: `perspective(800px) rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg) ${hovering ? 'translateY(-2px)' : ''}`,
+        transition: hovering ? 'box-shadow 0.15s ease, border 0.15s ease' : 'transform 0.45s cubic-bezier(0.16,1,0.3,1), box-shadow 0.3s ease, border 0.3s ease',
+      }}
+    >
+      <div style={{
+        width: 42, height: 42, borderRadius: 4, background: 'rgba(156,65,65,0.12)', border: '0.5px solid rgba(156,65,65,0.28)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16,
+        transform: `translateZ(${hovering ? 34 : 0}px)`, transition: 'transform 0.45s cubic-bezier(0.16,1,0.3,1)',
+        boxShadow: hovering ? '0 8px 16px rgba(0,0,0,0.35)' : 'none',
+      }}>
+        <Icon style={{ width: 19, height: 19, color: GOLD }} />
+      </div>
+      <div style={{ transform: `translateZ(${hovering ? 14 : 0}px)`, transition: 'transform 0.45s cubic-bezier(0.16,1,0.3,1)' }}>
+        <h3 style={{ fontFamily: 'Fraunces, serif', fontWeight: 560, fontSize: 16, color: '#F4F2EE', marginBottom: 7 }}>{title}</h3>
+        <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12.5, color: 'rgba(244,242,238,0.44)', lineHeight: 1.65 }}>{desc}</p>
+      </div>
+    </div>
+  );
+}
+
 // ─── Utils ────────────────────────────────────────────────────────────────────
 
 function FadeIn({ children, delay = 0, className = '', style = {} }) {
@@ -96,7 +145,7 @@ function FadeIn({ children, delay = 0, className = '', style = {} }) {
 function FAQItem({ q, a }) {
   const [open, setOpen] = useState(false);
   return (
-    <div style={{ borderBottom: '0.5px solid rgba(200,169,110,0.14)' }}>
+    <div style={{ borderBottom: '0.5px solid rgba(156,65,65,0.14)' }}>
       <button
         onClick={() => setOpen(v => !v)}
         style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 0', cursor: 'pointer', background: 'none', border: 'none', textAlign: 'left', gap: 16 }}
@@ -118,9 +167,9 @@ function DashboardMockup() {
     <div style={{
       background: 'rgba(8,8,8,0.97)',
       borderRadius: 20,
-      border: '0.5px solid rgba(200,169,110,0.22)',
+      border: '0.5px solid rgba(156,65,65,0.22)',
       padding: 20,
-      boxShadow: '0 40px 100px rgba(0,0,0,0.55), 0 0 0 0.5px rgba(200,169,110,0.08)',
+      boxShadow: '0 40px 100px rgba(0,0,0,0.55), 0 0 0 0.5px rgba(156,65,65,0.08)',
       width: '100%',
     }}>
       {/* Traffic lights */}
@@ -134,15 +183,15 @@ function DashboardMockup() {
       {/* Greeting */}
       <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 14 }}>
         <div>
-          <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 18, fontWeight: 300, color: '#F4F2EE', lineHeight: 1 }}>
+          <div style={{ fontFamily: 'Fraunces, serif', fontSize: 18, fontWeight: 300, color: '#F4F2EE', lineHeight: 1 }}>
             Bonjour, Maître
           </div>
-          <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 9, color: 'rgba(200,169,110,0.50)', marginTop: 3, letterSpacing: '0.02em' }}>
+          <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 9, color: 'rgba(156,65,65,0.50)', marginTop: 3, letterSpacing: '0.02em' }}>
             4 réseaux suivis
           </div>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 20, fontWeight: 500, color: '#C8A96E', lineHeight: 1 }}>78%</div>
+          <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 20, fontWeight: 500, color: '#9C4141', lineHeight: 1 }}>78%</div>
           <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 8, color: 'rgba(244,242,238,0.30)', marginTop: 2 }}>score moyen</div>
         </div>
       </div>
@@ -164,13 +213,13 @@ function DashboardMockup() {
       </div>
 
       {/* Alerte validation */}
-      <div style={{ background: 'rgba(200,169,110,0.05)', border: '0.5px solid rgba(200,169,110,0.18)', borderRadius: 10, padding: '9px 12px', display: 'flex', alignItems: 'center', gap: 9 }}>
-        <div style={{ width: 24, height: 24, borderRadius: 7, background: 'rgba(200,169,110,0.10)', border: '0.5px solid rgba(200,169,110,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 11 }}>✦</div>
+      <div style={{ background: 'rgba(156,65,65,0.05)', border: '0.5px solid rgba(156,65,65,0.18)', borderRadius: 10, padding: '9px 12px', display: 'flex', alignItems: 'center', gap: 9 }}>
+        <div style={{ width: 24, height: 24, borderRadius: 7, background: 'rgba(156,65,65,0.10)', border: '0.5px solid rgba(156,65,65,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 11 }}>✦</div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 9, fontWeight: 500, color: 'rgba(244,242,238,0.85)' }}>1 section en attente de votre validation</div>
           <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 8, color: 'rgba(244,242,238,0.36)', marginTop: 1 }}>Fitness Park+ — Section 4</div>
         </div>
-        <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 8, color: '#C8A96E', background: 'rgba(200,169,110,0.10)', border: '0.5px solid rgba(200,169,110,0.22)', borderRadius: 20, padding: '3px 9px', whiteSpace: 'nowrap', flexShrink: 0 }}>Voir →</div>
+        <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 8, color: '#9C4141', background: 'rgba(156,65,65,0.10)', border: '0.5px solid rgba(156,65,65,0.22)', borderRadius: 20, padding: '3px 9px', whiteSpace: 'nowrap', flexShrink: 0 }}>Voir →</div>
       </div>
     </div>
   );
@@ -180,10 +229,10 @@ function DashboardMockup() {
 
 function AttestationMockup() {
   return (
-    <div style={{ background: 'rgba(8,8,8,0.97)', borderRadius: 16, border: '0.5px solid rgba(200,169,110,0.22)', padding: 20, boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
-      <div style={{ borderBottom: '0.5px solid rgba(200,169,110,0.20)', paddingBottom: 14, marginBottom: 16 }}>
-        <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 10, color: 'rgba(200,169,110,0.60)', marginBottom: 4 }}>ATTESTATION DE MODIFICATION</div>
-        <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 16, color: '#F4F2EE' }}>DIPpro — certificat numérique</div>
+    <div style={{ background: 'rgba(8,8,8,0.97)', borderRadius: 16, border: '0.5px solid rgba(156,65,65,0.22)', padding: 20, boxShadow: '0 20px 60px rgba(0,0,0,0.5)' }}>
+      <div style={{ borderBottom: '0.5px solid rgba(156,65,65,0.20)', paddingBottom: 14, marginBottom: 16 }}>
+        <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 10, color: 'rgba(156,65,65,0.60)', marginBottom: 4 }}>ATTESTATION DE MODIFICATION</div>
+        <div style={{ fontFamily: 'Fraunces, serif', fontSize: 16, color: '#F4F2EE' }}>DIPpro — certificat numérique</div>
       </div>
 
       {[
@@ -197,7 +246,7 @@ function AttestationMockup() {
           <span style={{
             fontFamily: mono ? 'DM Mono, monospace' : 'DM Sans, sans-serif',
             fontSize: 10,
-            color: gold ? '#C8A96E' : '#F4F2EE',
+            color: gold ? '#9C4141' : '#F4F2EE',
           }}>{value}</span>
         </div>
       ))}
@@ -269,10 +318,10 @@ function WaitlistFormDark({ onSuccess }) {
   if (success || alreadyExists) {
     return (
       <div style={{ textAlign: 'center', padding: '36px 0' }}>
-        <div style={{ width: 72, height: 72, borderRadius: 22, background: 'rgba(200,169,110,0.10)', border: '0.5px solid rgba(200,169,110,0.28)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+        <div style={{ width: 72, height: 72, borderRadius: 22, background: 'rgba(156,65,65,0.10)', border: '0.5px solid rgba(156,65,65,0.28)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
           <CheckCircle style={{ width: 32, height: 32, color: GOLD }} />
         </div>
-        <h3 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 30, fontWeight: 300, color: '#F4F2EE', marginBottom: 12 }}>
+        <h3 style={{ fontFamily: 'Fraunces, serif', fontSize: 30, fontWeight: 300, color: '#F4F2EE', marginBottom: 12 }}>
           {success ? "Vous êtes sur la liste !" : "Déjà inscrit !"}
         </h3>
         <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 14, color: 'rgba(244,242,238,0.52)', lineHeight: 1.75, marginBottom: 24, maxWidth: 380, margin: '0 auto 24px' }}>
@@ -296,7 +345,7 @@ function WaitlistFormDark({ onSuccess }) {
           </label>
           <input type="text" value={form.company_name} onChange={e => set('company_name', e.target.value)}
             placeholder="Dupont & Associés" required style={inputS}
-            onFocus={e => (e.target.style.border = '0.5px solid rgba(200,169,110,0.55)')}
+            onFocus={e => (e.target.style.border = '0.5px solid rgba(156,65,65,0.55)')}
             onBlur={e => (e.target.style.border = '0.5px solid rgba(244,242,238,0.12)')} />
         </div>
         <div>
@@ -305,7 +354,7 @@ function WaitlistFormDark({ onSuccess }) {
           </label>
           <input type="tel" value={form.phone} onChange={e => set('phone', e.target.value)}
             placeholder="+33 6 12 34 56 78" style={inputS}
-            onFocus={e => (e.target.style.border = '0.5px solid rgba(200,169,110,0.55)')}
+            onFocus={e => (e.target.style.border = '0.5px solid rgba(156,65,65,0.55)')}
             onBlur={e => (e.target.style.border = '0.5px solid rgba(244,242,238,0.12)')} />
         </div>
       </div>
@@ -316,7 +365,7 @@ function WaitlistFormDark({ onSuccess }) {
         </label>
         <input type="email" value={form.email} onChange={e => set('email', e.target.value)}
           placeholder="vous@entreprise.fr" required autoComplete="email" style={inputS}
-          onFocus={e => (e.target.style.border = '0.5px solid rgba(200,169,110,0.55)')}
+          onFocus={e => (e.target.style.border = '0.5px solid rgba(156,65,65,0.55)')}
           onBlur={e => { e.target.style.border = '0.5px solid rgba(244,242,238,0.12)'; notifyPartialEmail(); }} />
       </div>
 
@@ -327,7 +376,7 @@ function WaitlistFormDark({ onSuccess }) {
         <textarea value={form.message} onChange={e => set('message', e.target.value)} rows={3}
           placeholder="Parlez-nous de vos clients franchiseurs, de vos besoins DIP..."
           style={{ ...inputS, resize: 'none' }}
-          onFocus={e => (e.target.style.border = '0.5px solid rgba(200,169,110,0.55)')}
+          onFocus={e => (e.target.style.border = '0.5px solid rgba(156,65,65,0.55)')}
           onBlur={e => (e.target.style.border = '0.5px solid rgba(244,242,238,0.12)')} />
       </div>
 
@@ -357,10 +406,10 @@ function WaitlistFormDark({ onSuccess }) {
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
           padding: '15px 24px', borderRadius: 12, border: 'none',
           cursor: loading || !form.email || !form.company_name || !rgpd ? 'not-allowed' : 'pointer',
-          background: form.email && form.company_name && rgpd ? GOLD : 'rgba(200,169,110,0.25)',
-          color: form.email && form.company_name && rgpd ? '#080808' : 'rgba(200,169,110,0.55)',
+          background: form.email && form.company_name && rgpd ? GOLD : 'rgba(156,65,65,0.25)',
+          color: form.email && form.company_name && rgpd ? '#080808' : 'rgba(156,65,65,0.55)',
           fontFamily: 'DM Sans, sans-serif', fontSize: 14, fontWeight: 600,
-          boxShadow: form.email && form.company_name && rgpd ? '0 6px 24px rgba(200,169,110,0.28)' : 'none',
+          boxShadow: form.email && form.company_name && rgpd ? '0 6px 24px rgba(156,65,65,0.28)' : 'none',
           transition: 'all 0.2s',
         }}
       >
@@ -416,7 +465,7 @@ function ContactFormDark({ onSuccess }) {
   if (success) {
     return (
       <div style={{ textAlign: 'center', padding: '24px 0' }}>
-        <div style={{ width: 56, height: 56, borderRadius: 18, background: 'rgba(200,169,110,0.10)', border: '0.5px solid rgba(200,169,110,0.28)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px' }}>
+        <div style={{ width: 56, height: 56, borderRadius: 18, background: 'rgba(156,65,65,0.10)', border: '0.5px solid rgba(156,65,65,0.28)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px' }}>
           <CheckCircle style={{ width: 26, height: 26, color: GOLD }} />
         </div>
         <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 14, color: 'rgba(244,242,238,0.65)' }}>
@@ -431,20 +480,20 @@ function ContactFormDark({ onSuccess }) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12 }}>
         <input type="text" value={form.name} onChange={e => set('name', e.target.value)}
           placeholder="Votre nom *" required style={inputS}
-          onFocus={e => (e.target.style.border = '0.5px solid rgba(200,169,110,0.55)')}
+          onFocus={e => (e.target.style.border = '0.5px solid rgba(156,65,65,0.55)')}
           onBlur={e => (e.target.style.border = '0.5px solid rgba(244,242,238,0.12)')} />
         <input type="text" value={form.company} onChange={e => set('company', e.target.value)}
           placeholder="Société (optionnel)" style={inputS}
-          onFocus={e => (e.target.style.border = '0.5px solid rgba(200,169,110,0.55)')}
+          onFocus={e => (e.target.style.border = '0.5px solid rgba(156,65,65,0.55)')}
           onBlur={e => (e.target.style.border = '0.5px solid rgba(244,242,238,0.12)')} />
       </div>
       <input type="email" value={form.email} onChange={e => set('email', e.target.value)}
         placeholder="vous@entreprise.fr *" required autoComplete="email" style={inputS}
-        onFocus={e => (e.target.style.border = '0.5px solid rgba(200,169,110,0.55)')}
+        onFocus={e => (e.target.style.border = '0.5px solid rgba(156,65,65,0.55)')}
         onBlur={e => (e.target.style.border = '0.5px solid rgba(244,242,238,0.12)')} />
       <textarea value={form.message} onChange={e => set('message', e.target.value)} rows={3}
         placeholder="Votre message *" required style={{ ...inputS, resize: 'none' }}
-        onFocus={e => (e.target.style.border = '0.5px solid rgba(200,169,110,0.55)')}
+        onFocus={e => (e.target.style.border = '0.5px solid rgba(156,65,65,0.55)')}
         onBlur={e => (e.target.style.border = '0.5px solid rgba(244,242,238,0.12)')} />
 
       {error && (
@@ -460,8 +509,8 @@ function ContactFormDark({ onSuccess }) {
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
           padding: '14px 24px', borderRadius: 12, border: 'none',
           cursor: loading || !form.name || !form.email || !form.message ? 'not-allowed' : 'pointer',
-          background: form.name && form.email && form.message ? GOLD : 'rgba(200,169,110,0.25)',
-          color: form.name && form.email && form.message ? '#080808' : 'rgba(200,169,110,0.55)',
+          background: form.name && form.email && form.message ? GOLD : 'rgba(156,65,65,0.25)',
+          color: form.name && form.email && form.message ? '#080808' : 'rgba(156,65,65,0.55)',
           fontFamily: 'DM Sans, sans-serif', fontSize: 14, fontWeight: 600,
           transition: 'all 0.2s',
         }}
@@ -494,11 +543,11 @@ export default function LandingPage() {
 
   const btnGold = {
     display: 'inline-flex', alignItems: 'center', gap: 10,
-    background: GOLD, color: '#080808',
+    background: GOLD, color: '#F4ECE9',
     fontFamily: 'DM Sans, sans-serif', fontSize: 14, fontWeight: 600,
-    padding: '14px 28px', borderRadius: 12,
+    padding: '14px 28px', borderRadius: 2,
     cursor: 'pointer', border: 'none', textDecoration: 'none',
-    boxShadow: '0 4px 20px rgba(200,169,110,0.30)',
+    boxShadow: '10px 10px 0 rgba(156,65,65,0.24)',
     transition: 'transform 0.15s, box-shadow 0.15s',
   };
 
@@ -507,7 +556,7 @@ export default function LandingPage() {
     background: 'rgba(244,242,238,0.05)', border: '0.5px solid rgba(244,242,238,0.14)',
     color: 'rgba(244,242,238,0.65)',
     fontFamily: 'DM Sans, sans-serif', fontSize: 14,
-    padding: '14px 24px', borderRadius: 12,
+    padding: '14px 24px', borderRadius: 2,
     cursor: 'pointer', textDecoration: 'none', transition: 'background 0.15s',
   };
 
@@ -547,14 +596,14 @@ export default function LandingPage() {
     <div className="min-h-screen" style={DARK_BG}>
 
       {/* ── HEADER ───────────────────────────────────────────── */}
-      <header style={{ background: 'rgba(8,8,8,0.72)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', borderBottom: '0.5px solid rgba(200,169,110,0.14)', position: 'sticky', top: 0, zIndex: 50 }}>
+      <header style={{ background: 'rgba(8,8,8,0.72)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', borderBottom: '0.5px solid rgba(156,65,65,0.14)', position: 'sticky', top: 0, zIndex: 50 }}>
         <div style={{ maxWidth: 1100, margin: '0 auto', padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           {/* Logo */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ width: 32, height: 32, borderRadius: 9, background: 'rgba(200,169,110,0.12)', border: '0.5px solid rgba(200,169,110,0.30)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: 32, height: 32, borderRadius: 9, background: 'rgba(156,65,65,0.12)', border: '0.5px solid rgba(156,65,65,0.30)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Shield style={{ width: 16, height: 16, color: GOLD }} />
             </div>
-            <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 22, color: '#F4F2EE' }}>DIPpro</span>
+            <span style={{ fontFamily: 'Fraunces, serif', fontSize: 22, color: '#F4F2EE' }}>DIPpro</span>
             <span style={{ fontFamily: 'DM Mono, monospace', fontSize: 10, color: 'rgba(244,242,238,0.28)' }}>by Iralink</span>
           </div>
 
@@ -586,7 +635,7 @@ export default function LandingPage() {
             className="md:hidden flex items-center justify-center"
             style={{
               width: 40, height: 40, borderRadius: 10,
-              background: 'rgba(200,169,110,0.10)', border: '0.5px solid rgba(200,169,110,0.30)',
+              background: 'rgba(156,65,65,0.10)', border: '0.5px solid rgba(156,65,65,0.30)',
               color: GOLD, cursor: 'pointer',
             }}
           >
@@ -599,7 +648,7 @@ export default function LandingPage() {
           <div
             className="md:hidden flex flex-col"
             style={{
-              borderTop: '0.5px solid rgba(200,169,110,0.14)',
+              borderTop: '0.5px solid rgba(156,65,65,0.14)',
               background: 'rgba(8,8,8,0.96)',
               backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
               padding: '8px 16px 20px',
@@ -647,7 +696,7 @@ export default function LandingPage() {
           {/* Texte */}
           <div style={{ flex: 1, minWidth: 0 }}>
             <FadeIn>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '6px 14px', borderRadius: 20, background: 'rgba(200,169,110,0.10)', border: '0.5px solid rgba(200,169,110,0.28)', marginBottom: 28 }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '6px 14px', borderRadius: 20, background: 'rgba(156,65,65,0.10)', border: '0.5px solid rgba(156,65,65,0.28)', marginBottom: 28 }}>
                 <CheckCircle style={{ width: 13, height: 13, color: GOLD }} />
                 <span style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: GOLD }}>
                   MVP lancé · Accès anticipé ouvert
@@ -657,7 +706,7 @@ export default function LandingPage() {
                 </span>
               </div>
 
-              <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontWeight: 300, fontSize: 'clamp(2.5rem, 5.5vw, 4rem)', color: '#F4F2EE', lineHeight: 1.07, marginBottom: 22 }}>
+              <h1 style={{ fontFamily: 'Fraunces, serif', fontWeight: 300, fontSize: 'clamp(2.5rem, 5.5vw, 4rem)', color: '#F4F2EE', lineHeight: 1.07, marginBottom: 22 }}>
                 Tous vos clients franchiseurs.<br />
                 <span style={{ color: GOLD }}>Une seule vue de conformité.</span>
               </h1>
@@ -702,7 +751,7 @@ export default function LandingPage() {
       {/* ── STATS BAR ────────────────────────────────────────── */}
       <section style={{ maxWidth: 1100, margin: '0 auto', padding: '0 24px 64px' }}>
         <FadeIn>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 1, borderRadius: 20, overflow: 'hidden', border: '0.5px solid rgba(200,169,110,0.14)', background: 'rgba(200,169,110,0.08)' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 1, borderRadius: 20, overflow: 'hidden', border: '0.5px solid rgba(156,65,65,0.14)', background: 'rgba(156,65,65,0.08)' }}>
             {[
               { val: 'SHA-256', label: 'empreinte vérifiable par attestation', icon: FileCheck, iconColor: '#F87171' },
               { val: '20 jours', label: 'délai légal avant signature', icon: Clock, iconColor: GOLD },
@@ -711,7 +760,7 @@ export default function LandingPage() {
             ].map(({ val, label, icon: Icon, iconColor }) => (
               <div key={val} style={{ background: 'rgba(8,8,8,0.80)', padding: '28px 24px', textAlign: 'center' }}>
                 <Icon style={{ width: 18, height: 18, color: iconColor, margin: '0 auto 12px' }} />
-                <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 32, fontWeight: 300, color: '#F4F2EE', lineHeight: 1 }}>{val}</div>
+                <div style={{ fontFamily: 'Fraunces, serif', fontSize: 32, fontWeight: 300, color: '#F4F2EE', lineHeight: 1 }}>{val}</div>
                 <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: 'rgba(244,242,238,0.38)', marginTop: 6, lineHeight: 1.5 }}>{label}</div>
               </div>
             ))}
@@ -728,7 +777,7 @@ export default function LandingPage() {
                 <AlertTriangle style={{ width: 12, height: 12, color: '#F87171' }} />
                 <span style={{ fontFamily: 'DM Mono, monospace', fontSize: 10, color: '#F87171' }}>Jurisprudence récente</span>
               </div>
-              <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontWeight: 300, fontSize: 'clamp(1.6rem, 3vw, 2.2rem)', color: '#F4F2EE', lineHeight: 1.1, marginBottom: 14 }}>
+              <h2 style={{ fontFamily: 'Fraunces, serif', fontWeight: 300, fontSize: 'clamp(1.6rem, 3vw, 2.2rem)', color: '#F4F2EE', lineHeight: 1.1, marginBottom: 14 }}>
                 Arrêt Cour de cassation — 26 juin 2024
               </h2>
               <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 14, color: 'rgba(244,242,238,0.50)', lineHeight: 1.7, maxWidth: 520 }}>
@@ -739,7 +788,7 @@ export default function LandingPage() {
               </p>
             </div>
             <div style={{ textAlign: 'center', flexShrink: 0 }}>
-              <div style={{ fontFamily: 'Cormorant Garamond, serif', fontWeight: 300, fontSize: 'clamp(2rem, 4vw, 2.8rem)', color: '#F87171', lineHeight: 1.1 }}>
+              <div style={{ fontFamily: 'Fraunces, serif', fontWeight: 300, fontSize: 'clamp(2rem, 4vw, 2.8rem)', color: '#F87171', lineHeight: 1.1 }}>
                 Jusqu&apos;à la signature
               </div>
               <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: 'rgba(244,242,238,0.38)', marginTop: 4 }}>
@@ -757,7 +806,7 @@ export default function LandingPage() {
       <section id="comment" style={{ maxWidth: 1100, margin: '0 auto', padding: '0 24px 80px' }}>
         <FadeIn>
           <div style={{ textAlign: 'center', marginBottom: 56 }}>
-            <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontWeight: 300, fontSize: 'clamp(2rem, 4vw, 2.8rem)', color: '#F4F2EE', marginBottom: 12 }}>
+            <h2 style={{ fontFamily: 'Fraunces, serif', fontWeight: 300, fontSize: 'clamp(2rem, 4vw, 2.8rem)', color: '#F4F2EE', marginBottom: 12 }}>
               Comment ça marche
             </h2>
             <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 15, color: 'rgba(244,242,238,0.42)' }}>
@@ -768,9 +817,9 @@ export default function LandingPage() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 18 }}>
           {HOW_STEPS.map(({ num, icon: Icon, title, desc }, i) => (
             <FadeIn key={num} delay={i * 80}>
-              <div style={{ borderRadius: 22, padding: '32px 28px', background: 'rgba(200,169,110,0.03)', border: '0.5px solid rgba(200,169,110,0.11)', position: 'relative', overflow: 'hidden', height: '100%', boxSizing: 'border-box' }}>
-                <div style={{ fontFamily: 'Cormorant Garamond, serif', fontWeight: 300, fontSize: '4.5rem', color: 'rgba(200,169,110,0.15)', lineHeight: 1, marginBottom: 20 }}>{num}</div>
-                <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(200,169,110,0.10)', border: '0.5px solid rgba(200,169,110,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 18 }}>
+              <div style={{ borderRadius: 22, padding: '32px 28px', background: 'rgba(156,65,65,0.03)', border: '0.5px solid rgba(156,65,65,0.11)', position: 'relative', overflow: 'hidden', height: '100%', boxSizing: 'border-box' }}>
+                <div style={{ fontFamily: 'Fraunces, serif', fontWeight: 300, fontSize: '4.5rem', color: 'rgba(156,65,65,0.15)', lineHeight: 1, marginBottom: 20 }}>{num}</div>
+                <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(156,65,65,0.10)', border: '0.5px solid rgba(156,65,65,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 18 }}>
                   <Icon style={{ width: 18, height: 18, color: GOLD }} />
                 </div>
                 <h3 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 600, fontSize: 16, color: '#F4F2EE', marginBottom: 10 }}>{title}</h3>
@@ -785,7 +834,7 @@ export default function LandingPage() {
       <section id="fonctionnalites" style={{ maxWidth: 1100, margin: '0 auto', padding: '0 24px 80px' }}>
         <FadeIn>
           <div style={{ textAlign: 'center', marginBottom: 56 }}>
-            <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontWeight: 300, fontSize: 'clamp(2rem, 4vw, 2.8rem)', color: '#F4F2EE', marginBottom: 12 }}>
+            <h2 style={{ fontFamily: 'Fraunces, serif', fontWeight: 300, fontSize: 'clamp(2rem, 4vw, 2.8rem)', color: '#F4F2EE', marginBottom: 12 }}>
               Tout ce dont vous avez besoin
             </h2>
             <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 15, color: 'rgba(244,242,238,0.42)', maxWidth: 480, margin: '0 auto' }}>
@@ -793,20 +842,10 @@ export default function LandingPage() {
             </p>
           </div>
         </FadeIn>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 14 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16 }}>
           {FEATURES.map(({ icon: Icon, title, desc }, i) => (
             <FadeIn key={title} delay={i * 55}>
-              <div style={{ borderRadius: 18, padding: '22px 24px', background: 'rgba(244,242,238,0.025)', border: '0.5px solid rgba(244,242,238,0.07)', display: 'flex', gap: 16, alignItems: 'flex-start', transition: 'border 0.2s' }}
-                onMouseEnter={e => (e.currentTarget.style.border = '0.5px solid rgba(200,169,110,0.22)')}
-                onMouseLeave={e => (e.currentTarget.style.border = '0.5px solid rgba(244,242,238,0.07)')}>
-                <div style={{ width: 40, height: 40, borderRadius: 12, background: 'rgba(200,169,110,0.10)', border: '0.5px solid rgba(200,169,110,0.20)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <Icon style={{ width: 18, height: 18, color: GOLD }} />
-                </div>
-                <div>
-                  <h3 style={{ fontFamily: 'DM Sans, sans-serif', fontWeight: 600, fontSize: 14, color: '#F4F2EE', marginBottom: 6 }}>{title}</h3>
-                  <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12.5, color: 'rgba(244,242,238,0.42)', lineHeight: 1.65 }}>{desc}</p>
-                </div>
-              </div>
+              <FeatureCard3D icon={Icon} title={title} desc={desc} />
             </FadeIn>
           ))}
         </div>
@@ -815,13 +854,13 @@ export default function LandingPage() {
       {/* ── ATTESTATION SPOTLIGHT ─────────────────────────────── */}
       <section style={{ maxWidth: 1100, margin: '0 auto', padding: '0 24px 80px' }}>
         <FadeIn>
-          <div style={{ borderRadius: 28, padding: '48px 40px', background: 'rgba(200,169,110,0.04)', border: '0.5px solid rgba(200,169,110,0.16)', display: 'flex', flexDirection: 'column', gap: 40, alignItems: 'center' }} className="md:flex-row md:gap-16">
+          <div style={{ borderRadius: 28, padding: '48px 40px', background: 'rgba(156,65,65,0.04)', border: '0.5px solid rgba(156,65,65,0.16)', display: 'flex', flexDirection: 'column', gap: 40, alignItems: 'center' }} className="md:flex-row md:gap-16">
             <div style={{ flex: 1 }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 12px', borderRadius: 20, background: 'rgba(200,169,110,0.10)', border: '0.5px solid rgba(200,169,110,0.22)', marginBottom: 20 }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 12px', borderRadius: 20, background: 'rgba(156,65,65,0.10)', border: '0.5px solid rgba(156,65,65,0.22)', marginBottom: 20 }}>
                 <FileCheck style={{ width: 12, height: 12, color: GOLD }} />
                 <span style={{ fontFamily: 'DM Mono, monospace', fontSize: 10, color: GOLD }}>Nouveau · Attestation certifiée</span>
               </div>
-              <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontWeight: 300, fontSize: 'clamp(1.8rem, 3.5vw, 2.5rem)', color: '#F4F2EE', lineHeight: 1.1, marginBottom: 16 }}>
+              <h2 style={{ fontFamily: 'Fraunces, serif', fontWeight: 300, fontSize: 'clamp(1.8rem, 3.5vw, 2.5rem)', color: '#F4F2EE', lineHeight: 1.1, marginBottom: 16 }}>
                 Preuve de remise incontestable
               </h2>
               <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 14, color: 'rgba(244,242,238,0.50)', lineHeight: 1.75, marginBottom: 24 }}>
@@ -854,7 +893,7 @@ export default function LandingPage() {
       <section style={{ maxWidth: 1000, margin: '0 auto', padding: '0 24px 64px' }}>
         <FadeIn>
           <div style={{ textAlign: 'center', marginBottom: 40 }}>
-            <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontWeight: 300, fontSize: 'clamp(2rem, 4vw, 2.6rem)', color: '#F4F2EE', marginBottom: 12 }}>
+            <h2 style={{ fontFamily: 'Fraunces, serif', fontWeight: 300, fontSize: 'clamp(2rem, 4vw, 2.6rem)', color: '#F4F2EE', marginBottom: 12 }}>
               Tarification par paliers
             </h2>
             <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 14, color: 'rgba(244,242,238,0.40)' }}>
@@ -869,9 +908,9 @@ export default function LandingPage() {
               { label: '16 à 30 clients', price: '2 200 €' },
               { label: '31 clients et plus', price: 'Sur devis' },
             ].map((tier, i) => (
-              <div key={tier.label} style={{ borderRadius: 18, padding: '24px 20px', background: i === 0 ? 'rgba(200,169,110,0.08)' : 'rgba(244,242,238,0.025)', border: `0.5px solid ${i === 0 ? 'rgba(200,169,110,0.30)' : 'rgba(244,242,238,0.07)'}`, textAlign: 'center' }}>
+              <div key={tier.label} style={{ borderRadius: 18, padding: '24px 20px', background: i === 0 ? 'rgba(156,65,65,0.08)' : 'rgba(244,242,238,0.025)', border: `0.5px solid ${i === 0 ? 'rgba(156,65,65,0.30)' : 'rgba(244,242,238,0.07)'}`, textAlign: 'center' }}>
                 <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 10.5, color: 'rgba(244,242,238,0.40)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>{tier.label}</div>
-                <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 32, fontWeight: 300, color: GOLD, lineHeight: 1 }}>
+                <div style={{ fontFamily: 'Fraunces, serif', fontSize: 32, fontWeight: 300, color: GOLD, lineHeight: 1 }}>
                   {tier.price}{tier.price !== 'Sur devis' && <span style={{ fontSize: 14, opacity: 0.6 }}>/mois</span>}
                 </div>
               </div>
@@ -880,16 +919,16 @@ export default function LandingPage() {
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16, alignItems: 'start' }}>
             {/* Carte prix */}
-            <div style={{ borderRadius: 22, padding: '36px 32px', background: 'rgba(200,169,110,0.06)', border: '0.5px solid rgba(200,169,110,0.28)', boxSizing: 'border-box' }}>
+            <div style={{ borderRadius: 22, padding: '36px 32px', background: 'rgba(156,65,65,0.06)', border: '0.5px solid rgba(156,65,65,0.28)', boxSizing: 'border-box' }}>
               <div style={{ marginBottom: 24 }}>
-                <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: 'rgba(200,169,110,0.6)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Mise en place</div>
-                <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 42, fontWeight: 300, color: GOLD, lineHeight: 1 }}>1 300 €</div>
+                <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: 'rgba(156,65,65,0.6)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Mise en place</div>
+                <div style={{ fontFamily: 'Fraunces, serif', fontSize: 42, fontWeight: 300, color: GOLD, lineHeight: 1 }}>1 300 €</div>
                 <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: 'rgba(244,242,238,0.38)', marginTop: 4 }}>une seule fois, quel que soit le palier</div>
               </div>
-              <div style={{ height: '0.5px', background: 'rgba(200,169,110,0.15)', marginBottom: 24 }} />
+              <div style={{ height: '0.5px', background: 'rgba(156,65,65,0.15)', marginBottom: 24 }} />
               <div style={{ marginBottom: 24 }}>
-                <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: 'rgba(200,169,110,0.6)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>À partir de</div>
-                <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 42, fontWeight: 300, color: GOLD, lineHeight: 1 }}>850 €<span style={{ fontSize: 18, opacity: 0.6 }}>/mois</span></div>
+                <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: 'rgba(156,65,65,0.6)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>À partir de</div>
+                <div style={{ fontFamily: 'Fraunces, serif', fontSize: 42, fontWeight: 300, color: GOLD, lineHeight: 1 }}>850 €<span style={{ fontSize: 18, opacity: 0.6 }}>/mois</span></div>
                 <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: 'rgba(244,242,238,0.38)', marginTop: 4 }}>selon le nombre de clients franchiseurs suivis (voir paliers ci-dessus)</div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
@@ -914,7 +953,7 @@ export default function LandingPage() {
                   <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12.5, color: 'rgba(244,242,238,0.45)', lineHeight: 1.4 }}>Coût an 1, palier 1 à 5 clients (mise en place + 12 mois)</span>
                   <span style={{ fontFamily: 'DM Mono, monospace', fontSize: 13, color: 'rgba(244,242,238,0.70)', flexShrink: 0 }}>11 500 €</span>
                 </div>
-                <div style={{ height: '0.5px', background: 'rgba(200,169,110,0.15)', margin: '4px 0 14px' }} />
+                <div style={{ height: '0.5px', background: 'rgba(156,65,65,0.15)', margin: '4px 0 14px' }} />
                 <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12.5, color: 'rgba(244,242,238,0.50)', lineHeight: 1.6, margin: 0 }}>
                   Un contentieux DIP peut exposer votre client à la restitution des droits d&apos;entrée et redevances perçus, ainsi qu&apos;à des dommages-intérêts — sans qu&apos;un montant moyen ne soit publiquement établi. La grille R.330-1 sert à réduire ce risque en amont, pas à le chiffrer.
                 </p>
@@ -933,10 +972,10 @@ export default function LandingPage() {
       {/* ── WAITLIST FORM ────────────────────────────────────── */}
       <section ref={formRef} style={{ maxWidth: 680, margin: '0 auto', padding: '0 24px 88px' }}>
         <FadeIn>
-          <div style={{ borderRadius: 28, padding: '48px 40px', background: 'rgba(244,242,238,0.025)', border: '0.5px solid rgba(200,169,110,0.22)', boxShadow: '0 24px 80px rgba(0,0,0,0.35)' }}>
+          <div style={{ borderRadius: 28, padding: '48px 40px', background: 'rgba(244,242,238,0.025)', border: '0.5px solid rgba(156,65,65,0.22)', boxShadow: '0 24px 80px rgba(0,0,0,0.35)' }}>
             {/* Header */}
             <div style={{ textAlign: 'center', marginBottom: 36 }}>
-              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '5px 14px', borderRadius: 20, background: 'rgba(200,169,110,0.10)', border: '0.5px solid rgba(200,169,110,0.22)', marginBottom: 20 }}>
+              <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '5px 14px', borderRadius: 20, background: 'rgba(156,65,65,0.10)', border: '0.5px solid rgba(156,65,65,0.22)', marginBottom: 20 }}>
                 <Star style={{ width: 12, height: 12, color: GOLD }} />
                 <span style={{ fontFamily: 'DM Mono, monospace', fontSize: 10, color: GOLD }}>
                   Accès anticipé
@@ -945,7 +984,7 @@ export default function LandingPage() {
                   )}
                 </span>
               </div>
-              <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontWeight: 300, fontSize: 'clamp(1.8rem, 4vw, 2.4rem)', color: '#F4F2EE', marginBottom: 12 }}>
+              <h2 style={{ fontFamily: 'Fraunces, serif', fontWeight: 300, fontSize: 'clamp(1.8rem, 4vw, 2.4rem)', color: '#F4F2EE', marginBottom: 12 }}>
                 Rejoignez la liste d&apos;attente
               </h2>
               <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 13.5, color: 'rgba(244,242,238,0.45)', lineHeight: 1.7 }}>
@@ -956,7 +995,7 @@ export default function LandingPage() {
             <WaitlistFormDark onSuccess={() => setFormDone(true)} />
 
             {/* Footer form */}
-            <div style={{ marginTop: 24, paddingTop: 20, borderTop: '0.5px solid rgba(200,169,110,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+            <div style={{ marginTop: 24, paddingTop: 20, borderTop: '0.5px solid rgba(156,65,65,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
               <div style={{ display: 'flex', gap: 18 }}>
                 {[['🔒', 'Données confidentielles'], ['🇪🇺', 'Base de données en Europe'], ['✉', 'Zéro spam']].map(([icon, label]) => (
                   <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6, fontFamily: 'DM Sans, sans-serif', fontSize: 11.5, color: 'rgba(244,242,238,0.28)' }}>
@@ -976,7 +1015,7 @@ export default function LandingPage() {
       <section id="ressources" style={{ maxWidth: 1100, margin: '0 auto', padding: '0 24px 88px' }}>
         <FadeIn>
           <div style={{ textAlign: 'center', marginBottom: 48 }}>
-            <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontWeight: 300, fontSize: 'clamp(2rem, 4vw, 2.6rem)', color: '#F4F2EE' }}>
+            <h2 style={{ fontFamily: 'Fraunces, serif', fontWeight: 300, fontSize: 'clamp(2rem, 4vw, 2.6rem)', color: '#F4F2EE' }}>
               Comprendre le DIP et la Loi Doubin
             </h2>
             <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 14, color: 'rgba(244,242,238,0.42)', marginTop: 12, maxWidth: 480, marginLeft: 'auto', marginRight: 'auto' }}>
@@ -1009,7 +1048,7 @@ export default function LandingPage() {
                   background: 'rgba(244,242,238,0.02)', border: '0.5px solid rgba(244,242,238,0.08)',
                   transition: 'border-color 0.2s ease, background 0.2s ease',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(200,169,110,0.35)'; e.currentTarget.style.background = 'rgba(200,169,110,0.04)'; }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(156,65,65,0.35)'; e.currentTarget.style.background = 'rgba(156,65,65,0.04)'; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(244,242,238,0.08)'; e.currentTarget.style.background = 'rgba(244,242,238,0.02)'; }}
               >
                 <BookOpen style={{ width: 18, height: 18, color: GOLD, marginBottom: 14 }} />
@@ -1034,7 +1073,7 @@ export default function LandingPage() {
       <section id="faq" style={{ maxWidth: 720, margin: '0 auto', padding: '0 24px 88px' }}>
         <FadeIn>
           <div style={{ textAlign: 'center', marginBottom: 48 }}>
-            <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontWeight: 300, fontSize: 'clamp(2rem, 4vw, 2.6rem)', color: '#F4F2EE' }}>
+            <h2 style={{ fontFamily: 'Fraunces, serif', fontWeight: 300, fontSize: 'clamp(2rem, 4vw, 2.6rem)', color: '#F4F2EE' }}>
               Questions fréquentes
             </h2>
           </div>
@@ -1047,8 +1086,8 @@ export default function LandingPage() {
       {/* ── CTA FINAL ────────────────────────────────────────── */}
       <section style={{ maxWidth: 1100, margin: '0 auto', padding: '0 24px 88px' }}>
         <FadeIn>
-          <div style={{ borderRadius: 28, padding: '60px 48px', textAlign: 'center', background: 'rgba(200,169,110,0.05)', border: '0.5px solid rgba(200,169,110,0.20)' }}>
-            <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontWeight: 300, fontSize: 'clamp(2rem, 4vw, 2.8rem)', color: '#F4F2EE', lineHeight: 1.1, marginBottom: 16 }}>
+          <div style={{ borderRadius: 28, padding: '60px 48px', textAlign: 'center', background: 'rgba(156,65,65,0.05)', border: '0.5px solid rgba(156,65,65,0.20)' }}>
+            <h2 style={{ fontFamily: 'Fraunces, serif', fontWeight: 300, fontSize: 'clamp(2rem, 4vw, 2.8rem)', color: '#F4F2EE', lineHeight: 1.1, marginBottom: 16 }}>
               Vos clients méritent<br />mieux que l&apos;approximation.
             </h2>
             <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 14, color: 'rgba(244,242,238,0.42)', lineHeight: 1.7, maxWidth: 440, margin: '0 auto 32px' }}>
@@ -1074,14 +1113,14 @@ export default function LandingPage() {
       </section>
 
       {/* ── FOOTER ───────────────────────────────────────────── */}
-      <footer style={{ borderTop: '0.5px solid rgba(200,169,110,0.10)' }}>
+      <footer style={{ borderTop: '0.5px solid rgba(156,65,65,0.10)' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto', padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
           <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: 24 }}>
             {/* Brand */}
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
                 <Shield style={{ width: 16, height: 16, color: GOLD }} />
-                <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 20, color: '#F4F2EE' }}>DIPpro</span>
+                <span style={{ fontFamily: 'Fraunces, serif', fontSize: 20, color: '#F4F2EE' }}>DIPpro</span>
                 <span style={{ fontFamily: 'DM Mono, monospace', fontSize: 10, color: 'rgba(244,242,238,0.25)' }}>by Iralink-Agency</span>
               </div>
               <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: 'rgba(244,242,238,0.28)', lineHeight: 1.6, maxWidth: 260 }}>

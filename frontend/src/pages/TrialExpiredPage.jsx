@@ -54,9 +54,9 @@ export default function TrialExpiredPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-14 h-14 rounded-xl mb-4" style={{
-            background: 'rgba(200,169,110,0.12)', border: '1px solid rgba(200,169,110,0.3)'
+            background: 'rgba(156,65,65,0.12)', border: '1px solid rgba(156,65,65,0.3)'
           }}>
-            <Shield className="w-7 h-7" style={{ color: '#C8A96E' }} />
+            <Shield className="w-7 h-7" style={{ color: '#9C4141' }} />
           </div>
           <p className="font-cormorant text-2xl" style={{ color: '#1A1826' }}>DIPpro</p>
           <p className="font-dm-mono text-xs mt-1" style={{ color: '#94A3B8' }}>by Iralink</p>
@@ -84,11 +84,11 @@ export default function TrialExpiredPage() {
                   Vous recevrez une confirmation par email à <strong>{profile?.email}</strong>.
                 </p>
               </div>
-              <div className="rounded-xl p-4" style={{ background: 'rgba(200,169,110,0.08)', border: '1px solid rgba(200,169,110,0.2)' }}>
+              <div className="rounded-xl p-4" style={{ background: 'rgba(156,65,65,0.08)', border: '1px solid rgba(156,65,65,0.2)' }}>
                 <p className="font-dm-sans text-xs" style={{ color: '#64748B' }}>
                   Une question ? Contactez-nous directement :
                 </p>
-                <a href={`mailto:${CONTACT_EMAIL}`} className="font-dm-mono text-sm" style={{ color: '#C8A96E' }}>
+                <a href={`mailto:${CONTACT_EMAIL}`} className="font-dm-mono text-sm" style={{ color: '#9C4141' }}>
                   {CONTACT_EMAIL}
                 </a>
               </div>
@@ -155,7 +155,7 @@ export default function TrialExpiredPage() {
               <button
                 onClick={() => setShowCal(true)}
                 className="w-full flex items-center justify-center gap-3 py-4 rounded-xl font-dm-sans text-base font-medium transition-all"
-                style={{ background: '#C8A96E', color: '#1A1826', boxShadow: '0 4px 16px rgba(200,169,110,0.3)' }}
+                style={{ background: '#9C4141', color: '#1A1826', boxShadow: '0 4px 16px rgba(156,65,65,0.3)' }}
               >
                 <Calendar className="w-5 h-5" />
                 Voir la présentation DIPpro — 30 min
@@ -165,7 +165,7 @@ export default function TrialExpiredPage() {
               <a
                 href={`mailto:${CONTACT_EMAIL}?subject=DIPpro — Demande d'accès après essai&body=Bonjour,%0A%0AJe souhaite continuer à utiliser DIPpro.%0A%0ASociété : ${profile?.company_name || ''}%0AEmail : ${profile?.email || ''}%0A%0ACordialement`}
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-dm-sans text-sm transition-all"
-                style={{ border: '1px solid rgba(200,169,110,0.3)', color: '#64748B', background: 'transparent' }}
+                style={{ border: '1px solid rgba(156,65,65,0.3)', color: '#64748B', background: 'transparent' }}
               >
                 <Mail className="w-4 h-4" />
                 Contacter par email
@@ -183,7 +183,7 @@ export default function TrialExpiredPage() {
                 </button>
 
                 {showWaitlist && (
-                  <div className="mt-3 p-4 rounded-xl" style={{ background: 'rgba(200,169,110,0.06)', border: '1px solid rgba(200,169,110,0.2)' }}>
+                  <div className="mt-3 p-4 rounded-xl" style={{ background: 'rgba(156,65,65,0.06)', border: '1px solid rgba(156,65,65,0.2)' }}>
                     {waitlistSuccess ? (
                       <div className="text-center space-y-2 py-2">
                         <CheckCircle className="w-6 h-6 mx-auto" style={{ color: '#22C55E' }} />
@@ -192,13 +192,13 @@ export default function TrialExpiredPage() {
                       </div>
                     ) : waitlistAlreadyExists ? (
                       <div className="text-center space-y-2 py-2">
-                        <Users className="w-6 h-6 mx-auto" style={{ color: '#C8A96E' }} />
+                        <Users className="w-6 h-6 mx-auto" style={{ color: '#9C4141' }} />
                         <p className="font-dm-sans text-sm font-medium" style={{ color: '#1A1826' }}>Déjà inscrit !</p>
                         <p className="font-dm-sans text-xs" style={{ color: '#64748B' }}>Votre email est déjà sur notre liste d'attente.</p>
                       </div>
                     ) : (
                       <div className="space-y-2">
-                        <p className="font-dm-mono text-xs text-center mb-3" style={{ color: '#C8A96E' }}>Rejoindre la liste d'attente</p>
+                        <p className="font-dm-mono text-xs text-center mb-3" style={{ color: '#9C4141' }}>Rejoindre la liste d'attente</p>
                         {waitlistError && <p className="font-dm-sans text-xs text-center" style={{ color: '#EF4444' }}>{waitlistError}</p>}
                         <input
                           type="text"
@@ -221,7 +221,7 @@ export default function TrialExpiredPage() {
                           disabled={waitlistLoading || !waitlistForm.email || !waitlistForm.company_name}
                           className="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg font-dm-sans text-sm font-medium transition-all"
                           style={{
-                            background: waitlistForm.email && waitlistForm.company_name ? '#C8A96E' : 'rgba(200,169,110,0.4)',
+                            background: waitlistForm.email && waitlistForm.company_name ? '#9C4141' : 'rgba(156,65,65,0.4)',
                             color: '#1A1826',
                             cursor: waitlistForm.email && waitlistForm.company_name ? 'pointer' : 'not-allowed'
                           }}
@@ -238,8 +238,8 @@ export default function TrialExpiredPage() {
               </div>
 
               {/* Ce qui vous attend */}
-              <div className="rounded-xl p-4 space-y-2" style={{ background: 'rgba(200,169,110,0.06)', border: '1px solid rgba(200,169,110,0.15)' }}>
-                <p className="font-dm-mono text-xs mb-3" style={{ color: '#C8A96E' }}>Lors de notre appel</p>
+              <div className="rounded-xl p-4 space-y-2" style={{ background: 'rgba(156,65,65,0.06)', border: '1px solid rgba(156,65,65,0.15)' }}>
+                <p className="font-dm-mono text-xs mb-3" style={{ color: '#9C4141' }}>Lors de notre appel</p>
                 {[
                   'Démo complète adaptée à votre réseau',
                   'Configuration de votre DIP en temps réel',

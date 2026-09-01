@@ -243,7 +243,7 @@ export default function GenerateContractPage() {
             </p>
             <span className="font-dm-mono text-xs text-gold">{progress.pct}%</span>
           </div>
-          <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(200,169,110,0.15)' }}>
+          <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(156,65,65,0.15)' }}>
             <div
               className="h-full rounded-full transition-all duration-500"
               style={{ width: `${progress.pct}%`, background: 'linear-gradient(90deg, #F5C842, #D4A532)' }}

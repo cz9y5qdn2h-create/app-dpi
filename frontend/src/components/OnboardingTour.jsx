@@ -155,7 +155,7 @@ export default function OnboardingTour() {
       {!centered && arrowY != null && (
         <div style={{ position: 'fixed', top: arrowY - 7, left: left - 12, zIndex: 9998, pointerEvents: 'none' }}>
           <svg width="14" height="14" viewBox="0 0 14 14">
-            <path d="M14 7L0 0L4 7L0 14Z" fill="rgba(200,169,110,0.45)" />
+            <path d="M14 7L0 0L4 7L0 14Z" fill="rgba(156,65,65,0.45)" />
           </svg>
         </div>
       )}
@@ -167,7 +167,7 @@ export default function OnboardingTour() {
           background: 'rgb(var(--bg-card))',
           backdropFilter: 'blur(28px) saturate(160%)',
           WebkitBackdropFilter: 'blur(28px) saturate(160%)',
-          border: '0.5px solid rgba(200,169,110,0.32)',
+          border: '0.5px solid rgba(156,65,65,0.32)',
           borderRadius: 18,
           padding: '22px 26px 18px',
           boxShadow: '0 24px 80px rgba(0,0,0,0.55)',
@@ -189,12 +189,12 @@ export default function OnboardingTour() {
               style={{
                 height: 4, borderRadius: 99,
                 width: i === step ? 18 : 4,
-                background: i === step ? 'rgb(200,169,110)' : 'rgba(200,169,110,0.18)',
+                background: i === step ? 'rgb(156,65,65)' : 'rgba(156,65,65,0.18)',
                 transition: 'all 0.25s ease',
               }}
             />
           ))}
-          <span style={{ fontFamily: 'DM Mono, monospace', fontSize: 10, color: 'rgba(200,169,110,0.40)', marginLeft: 4 }}>
+          <span style={{ fontFamily: 'DM Mono, monospace', fontSize: 10, color: 'rgba(156,65,65,0.40)', marginLeft: 4 }}>
             {step + 1}/{STEPS.length}
           </span>
         </div>
@@ -203,13 +203,13 @@ export default function OnboardingTour() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 11 }}>
           <div style={{
             width: 30, height: 30, borderRadius: 9, flexShrink: 0,
-            background: 'rgba(200,169,110,0.10)',
-            border: '0.5px solid rgba(200,169,110,0.22)',
+            background: 'rgba(156,65,65,0.10)',
+            border: '0.5px solid rgba(156,65,65,0.22)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            <Icon size={14} style={{ color: 'rgb(200,169,110)' }} />
+            <Icon size={14} style={{ color: 'rgb(156,65,65)' }} />
           </div>
-          <h3 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 17, fontWeight: 400, color: 'rgb(var(--text-primary))' }}>
+          <h3 style={{ fontFamily: 'Fraunces, serif', fontSize: 17, fontWeight: 400, color: 'rgb(var(--text-primary))' }}>
             {current.title}
           </h3>
         </div>
@@ -223,9 +223,9 @@ export default function OnboardingTour() {
         {current.note && (
           <p style={{
             fontFamily: 'DM Mono, monospace', fontSize: 11,
-            color: 'rgba(200,169,110,0.52)', lineHeight: 1.55,
+            color: 'rgba(156,65,65,0.52)', lineHeight: 1.55,
             paddingLeft: 10, marginBottom: 18,
-            borderLeft: '2px solid rgba(200,169,110,0.18)',
+            borderLeft: '2px solid rgba(156,65,65,0.18)',
           }}>
             {current.note}
           </p>
@@ -238,7 +238,7 @@ export default function OnboardingTour() {
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               width: '100%', padding: '11px 20px', borderRadius: 10, marginBottom: 10,
-              background: 'rgb(200,169,110)', color: '#080808',
+              background: 'rgb(156,65,65)', color: '#080808',
               fontFamily: 'DM Sans, sans-serif', fontSize: 13, fontWeight: 500,
               border: 'none', cursor: 'pointer',
             }}
@@ -262,9 +262,9 @@ export default function OnboardingTour() {
             style={{
               display: 'flex', alignItems: 'center', gap: 5,
               padding: '8px 16px', borderRadius: 9,
-              background: 'rgba(200,169,110,0.10)',
-              border: '0.5px solid rgba(200,169,110,0.28)',
-              color: 'rgb(200,169,110)',
+              background: 'rgba(156,65,65,0.10)',
+              border: '0.5px solid rgba(156,65,65,0.28)',
+              color: 'rgb(156,65,65)',
               fontFamily: 'DM Sans, sans-serif', fontSize: 12.5, cursor: 'pointer',
             }}
           >
@@ -278,13 +278,13 @@ export default function OnboardingTour() {
 
       <style>{`
         [data-tour-active="true"] {
-          outline: 2px solid rgba(200,169,110,0.55) !important;
+          outline: 2px solid rgba(156,65,65,0.55) !important;
           outline-offset: 3px;
           border-radius: 8px;
         }
         @keyframes tour-pulse {
-          0%, 100% { outline-color: rgba(200,169,110,0.55); }
-          50% { outline-color: rgba(200,169,110,0.20); }
+          0%, 100% { outline-color: rgba(156,65,65,0.55); }
+          50% { outline-color: rgba(156,65,65,0.20); }
         }
         [data-tour-active="true"] {
           animation: tour-pulse 1.8s ease-in-out infinite;

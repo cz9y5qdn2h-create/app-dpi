@@ -209,7 +209,7 @@ export default function Sidebar({ open, onClose }) {
         ${open ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0
       `}>
         {/* Logo */}
-        <div className="px-4 py-5 flex items-center justify-between" style={{ borderBottom: '0.5px solid rgba(200,169,110,0.12)', marginBottom: 8 }}>
+        <div className="px-4 py-5 flex items-center justify-between" style={{ borderBottom: '0.5px solid rgba(156,65,65,0.12)', marginBottom: 8 }}>
           <div>
             <div className="lg-logo-brand-pill">
               <div className="lg-logo-brand-icon">D</div>
@@ -233,7 +233,7 @@ export default function Sidebar({ open, onClose }) {
             {navGroups.map((group, gi) => (
               <div key={group.key}>
                 {gi > 0 && (
-                  <div className="my-2 mx-1" style={{ height: '1px', background: 'rgba(200,169,110,0.08)' }} />
+                  <div className="my-2 mx-1" style={{ height: '1px', background: 'rgba(156,65,65,0.08)' }} />
                 )}
                 <NavGroup group={group} onClose={onClose} />
               </div>

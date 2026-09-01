@@ -14,7 +14,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
 const CATEGORY_COLOR = {
-  franchise: 'rgba(245,200,66,0.80)',
+  franchise: 'rgba(156,65,65,0.80)',
   juridique: 'rgba(96,165,250,0.80)',
   réglementaire: 'rgba(248,113,113,0.80)',
 };
@@ -31,7 +31,7 @@ function NewsWidget() {
     <div className="card" style={{ padding: '20px 24px' }}>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(245,200,66,0.08)', border: '0.5px solid rgba(245,200,66,0.18)' }}>
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: 'rgba(156,65,65,0.08)', border: '0.5px solid rgba(156,65,65,0.18)' }}>
             <Newspaper size={16} style={{ color: 'var(--v2-gold)' }} />
           </div>
           <div>
@@ -89,7 +89,7 @@ function NewsWidget() {
                   <div className="flex items-center gap-2 flex-wrap mb-0.5">
                     <span
                       className="font-dm-mono text-xs px-1.5 py-0.5 rounded flex-shrink-0"
-                      style={{ background: 'rgba(200,169,110,0.06)', color: 'rgba(200,169,110,0.65)', border: '0.5px solid rgba(200,169,110,0.12)' }}
+                      style={{ background: 'rgba(156,65,65,0.06)', color: 'rgba(156,65,65,0.65)', border: '0.5px solid rgba(156,65,65,0.12)' }}
                     >
                       {item.source}
                     </span>
@@ -202,7 +202,7 @@ function SourceCard({ source, onCheck, onDelete, checking }) {
         <div className="flex items-start gap-3 min-w-0">
           <div
             className="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center mt-0.5"
-            style={{ background: 'rgba(200,169,110,0.08)', border: '0.5px solid rgba(200,169,110,0.18)' }}
+            style={{ background: 'rgba(156,65,65,0.08)', border: '0.5px solid rgba(156,65,65,0.18)' }}
           >
             <Globe size={16} className="text-gold" />
           </div>
@@ -231,7 +231,7 @@ function SourceCard({ source, onCheck, onDelete, checking }) {
                   <span
                     key={kw}
                     className="font-dm-mono text-xs px-1.5 py-0.5 rounded"
-                    style={{ background: 'rgba(200,169,110,0.06)', color: 'rgba(200,169,110,0.7)', border: '0.5px solid rgba(200,169,110,0.14)' }}
+                    style={{ background: 'rgba(156,65,65,0.06)', color: 'rgba(156,65,65,0.7)', border: '0.5px solid rgba(156,65,65,0.14)' }}
                   >
                     {kw}
                   </span>
@@ -391,7 +391,7 @@ function AddSourceModal({ onClose, onAdd, prefill }) {
                   <span
                     key={kw}
                     className="flex items-center gap-1 font-dm-mono text-xs px-2 py-0.5 rounded-full cursor-pointer"
-                    style={{ background: 'rgba(200,169,110,0.1)', color: 'rgba(200,169,110,0.85)', border: '0.5px solid rgba(200,169,110,0.2)' }}
+                    style={{ background: 'rgba(156,65,65,0.1)', color: 'rgba(156,65,65,0.85)', border: '0.5px solid rgba(156,65,65,0.2)' }}
                     onClick={() => removeKeyword(kw)}
                   >
                     {kw}
@@ -423,7 +423,7 @@ function ResultRow({ result }) {
   return (
     <div
       className="border-b last:border-b-0"
-      style={{ borderColor: 'rgba(var(--border-rgb, 200,169,110), 0.08)' }}
+      style={{ borderColor: 'rgba(var(--border-rgb, 156,65,65), 0.08)' }}
     >
       <div
         className="flex items-start gap-3 py-3 px-4 cursor-pointer hover:bg-white/5 transition-colors"
@@ -459,7 +459,7 @@ function ResultRow({ result }) {
           style={{ marginLeft: '28px' }}
         >
           <p className="font-dm-sans text-xs text-text-secondary leading-relaxed"
-            style={{ padding: '10px 12px', background: 'rgba(200,169,110,0.04)', borderRadius: '8px', border: '0.5px solid rgba(200,169,110,0.1)' }}
+            style={{ padding: '10px 12px', background: 'rgba(156,65,65,0.04)', borderRadius: '8px', border: '0.5px solid rgba(156,65,65,0.1)' }}
           >
             {result.impact_detail}
           </p>
@@ -570,7 +570,7 @@ export default function DocMonitoringPage() {
           <div className="card flex flex-col items-center justify-center text-center py-16 gap-5">
             <div
               className="w-16 h-16 rounded-2xl flex items-center justify-center"
-              style={{ background: 'rgba(200,169,110,0.08)', border: '0.5px solid rgba(200,169,110,0.22)' }}
+              style={{ background: 'rgba(156,65,65,0.08)', border: '0.5px solid rgba(156,65,65,0.22)' }}
             >
               <Search size={28} className="text-gold" />
             </div>
@@ -602,8 +602,8 @@ export default function DocMonitoringPage() {
                   onClick={() => openModalWithPrefill(s)}
                   className="text-left p-3 rounded-xl transition-all hover:scale-[1.01]"
                   style={{
-                    background: 'rgba(200,169,110,0.04)',
-                    border: '0.5px solid rgba(200,169,110,0.14)',
+                    background: 'rgba(156,65,65,0.04)',
+                    border: '0.5px solid rgba(156,65,65,0.14)',
                   }}
                 >
                   <div className="flex items-center gap-2 mb-1">
@@ -611,7 +611,7 @@ export default function DocMonitoringPage() {
                     <span className="font-dm-sans text-sm font-semibold text-text-primary">{s.name}</span>
                   </div>
                   <p className="font-dm-sans text-xs text-text-secondary">{s.description}</p>
-                  <p className="font-dm-mono text-xs mt-1" style={{ color: 'rgba(200,169,110,0.55)', fontSize: '10px' }}>
+                  <p className="font-dm-mono text-xs mt-1" style={{ color: 'rgba(156,65,65,0.55)', fontSize: '10px' }}>
                     {s.url.replace('https://', '')}
                   </p>
                 </button>
@@ -655,7 +655,7 @@ export default function DocMonitoringPage() {
           ) : (
             <div
               className="rounded-xl overflow-hidden"
-              style={{ border: '0.5px solid rgba(200,169,110,0.12)' }}
+              style={{ border: '0.5px solid rgba(156,65,65,0.12)' }}
             >
               {recentResults.map((result) => (
                 <ResultRow key={result.id} result={result} />

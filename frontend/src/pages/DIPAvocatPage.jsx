@@ -534,7 +534,7 @@ function DocumentSectionItem({ item, number, isDip, dip, contract, franchiseur, 
       )}
 
       {pendingProposal && (
-        <div className="mb-4 px-3 py-2 rounded-lg font-dm-mono text-xs" style={{ background: 'rgba(245,200,66,0.08)', border: '1px solid var(--v2-border-hot)', color: 'var(--v2-gold)' }}>
+        <div className="mb-4 px-3 py-2 rounded-lg font-dm-mono text-xs" style={{ background: 'rgba(156,65,65,0.08)', border: '1px solid var(--v2-border-hot)', color: 'var(--v2-gold)' }}>
           Proposition en attente de validation par le franchiseur — suivi des modifications ci-dessous
         </div>
       )}

@@ -9,6 +9,39 @@ Voir aussi : [INVARIANTS.md](INVARIANTS.md) · [BUG_JOURNAL.md](BUG_JOURNAL.md) 
 
 ---
 
+## 2026-08-25 (5)
+
+### 🟢 Nouvelle direction visuelle « Le Registre »
+Refonte de l'identité visuelle de DIPpro, demandée pour un rendu premium,
+distinct de l'agence Iralink tout en gardant une "touche" de son savoir-
+faire (l'ombre portée dure, en aplat, sans flou). Palette encre/marine
+froide + rouge cachet (`#9C4141`, remplace l'or `#C8A96E`), typographie
+Fraunces (remplace Cormorant Garamond), coins nets (rayons réduits, ex.
+14px → 6px), ombres portées dures plutôt que des flous doux. Validée après
+deux maquettes soumises en Artifact avant implémentation dans le vrai code.
+
+Propagée via l'architecture de tokens CSS existante — `index.css` (thème
+`glass` par défaut + tokens `--v2-*` utilisés par les pages avocat) et
+`tailwind.config.js` (`font-cormorant` pointe maintenant sur Fraunces) —
+pour retinter l'app authentifiée en un minimum de fichiers modifiés à la
+main. Complétée par un remplacement global des littéraux couleur/police
+codés en dur qui contournaient ces tokens (`#C8A96E`, triplets RGB
+`200,169,110` / `180,140,70` / `140,100,40` / `245,200,66`, chaînes
+`Cormorant Garamond`), présents dans une trentaine de fichiers dont des
+composants coeur de l'app (`Sidebar.jsx`, `CommandPalette.jsx`, les
+modales d'onboarding) et pas seulement les pages marketing.
+
+`LandingPage.jsx` reçoit en plus un nouveau composant `FeatureCard3D` :
+tilt 3D au survol (CSS `perspective`/`rotateX`/`rotateY` piloté par la
+position de la souris, `translateZ` pour détacher l'icône et le texte en
+profondeur) sur les cartes de la section fonctionnalités, sans dépendance
+WebGL. Boutons principaux passés en coins nets + ombre portée dure.
+
+Hors périmètre de cette passe : les thèmes alternatifs `sobre` et
+`lumiere` (seul le thème `glass`, celui par défaut, a été retinté) et le
+motif visuel "sceau de cire / certificat" des maquettes, qui reste à
+porter dans le produit au-delà de la palette/typo/rayons/ombres.
+
 ## 2026-08-25 (4)
 
 ### 🟢 Tarification par paliers (nombre de clients franchiseurs)

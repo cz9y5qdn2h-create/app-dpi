@@ -7,54 +7,61 @@
    Système de tokens calqué sur la maquette DIPpro Refonte.
    ═══════════════════════════════════════════════════════════════ */
 
-/* ── Glass (défaut) — Liquid Glass dorée sur fond sombre ── */
+/* ── Glass (défaut) — "Le Registre" : encre froide, rouge cachet ──
+   Retint 2026-08-25 : l'or (#D6B57C) devient le rouge cachet (#9C4141),
+   le fond chaud (#15110c) devient une encre froide, les angles se
+   resserrent (14px → 6px) — voir la note de direction "Le Registre".
+   Un seul détail hérité d'iralink-agency.com par choix : l'ombre dure et
+   décalée plutôt que le flou (voir --shadow-hard ci-dessous, utilisée
+   sur les éléments signature, pas sur chaque carte de la densité de l'app). */
 :root,
 [data-theme="glass"] {
-  --page-bg:        radial-gradient(140% 120% at 12% -10%, #15110c 0%, #0a0a0d 46%, #060609 100%);
+  --page-bg:        radial-gradient(140% 120% at 12% -10%, #10151b 0%, #0a0e13 46%, #070a0e 100%);
   --glass-bg:        linear-gradient(158deg, rgba(255,255,255,.060), rgba(255,255,255,.022));
   --glass-brd:       rgba(255,255,255,.11);
   --glass-brd-top:   rgba(255,255,255,.20);
   --blur:            14px;
   --sat:             130%;
   --shadow:          0 18px 44px -20px rgba(0,0,0,.65);
+  --shadow-hard:     10px 10px 0 rgba(156,65,65,.24);
   --inset:           inset 0 1px 0 rgba(255,255,255,.12), inset 0 -1px 0 rgba(0,0,0,.16);
-  --radius:          14px;
-  --radius-sm:       10px;
+  --radius:          6px;
+  --radius-sm:       4px;
   --sidebar-bg-raw:  rgba(255,255,255,.035);
   --row-bg:          rgba(255,255,255,.020);
   --row-hover:       rgba(255,255,255,.055);
   --field-bg:        rgba(255,255,255,.048);
-  --orb-a:           rgba(91,216,154,.18);
-  --orb-b:           rgba(214,181,124,.17);
-  --orb-c:           rgba(200,160,90,.10);
+  --orb-a:           rgba(156,65,65,.14);
+  --orb-b:           rgba(140,125,100,.12);
+  --orb-c:           rgba(110,44,44,.10);
 
-  --text-hex:        #F0EDE7;
-  --dim-hex:         #A0998F;
-  --faint-hex:       #5E5A54;
-  --accent-hex:      #D6B57C;
-  --accent-strong-hex: #EFD6A2;
-  --on-accent-hex:   #251a08;
+  --text-hex:        #E9E7E1;
+  --dim-hex:         #9A968F;
+  --faint-hex:       #5A5652;
+  --accent-hex:      #B65454;
+  --accent-strong-hex: #D48888;
+  --on-accent-hex:   #2a0e0e;
   --green-hex:       #5BD89A;
   --amber-hex:       #E7B65E;
   --red-hex:         #F17C7C;
 
-  --bg-primary:     10 9 8;
-  --bg-card:        20 18 15;
-  --bg-elevated:    24 22 18;
-  --text-primary:   240 237 231;
-  --text-secondary: 160 153 143;
-  --text-muted:     94 90 84;
-  --gold:           214 181 124;
-  --gold-light:     239 214 162;
+  --bg-primary:     10 9 10;
+  --bg-card:        16 17 20;
+  --bg-elevated:    20 21 24;
+  --text-primary:   233 231 225;
+  --text-secondary: 154 150 143;
+  --text-muted:     90 86 82;
+  --gold:           156 65 65;
+  --gold-light:     214 136 136;
   --success:        91 216 154;
   --success-light:  139 234 192;
   --danger:         241 124 124;
   --error:          241 124 124;
   --ai-color:       122 184 255;
-  --accent-text:    37 26 8;
-  --border-subtle:  rgba(214, 181, 124, 0.10);
+  --accent-text:    244 236 233;
+  --border-subtle:  rgba(156, 65, 65, 0.14);
   --border-default: rgba(255, 255, 255, 0.12);
-  --border-dim:     rgba(240, 237, 231, 0.06);
+  --border-dim:     rgba(233, 231, 225, 0.06);
 
   --glass-elevated:  var(--row-hover);
   --glass-blur:      blur(var(--blur)) saturate(var(--sat));
@@ -69,7 +76,7 @@
   --input-bg:        var(--field-bg);
   --input-border:    var(--glass-brd);
   --scrollbar-track: transparent;
-  --scrollbar-thumb: rgba(214, 181, 124, 0.20);
+  --scrollbar-thumb: rgba(156, 65, 65, 0.22);
 }
 
 /* ── Sobre — variante sombre plate, contraste réduit ── */
@@ -295,7 +302,7 @@
   }
   .btn-primary:hover {
     filter: brightness(1.07);
-    box-shadow: 0 0 0 3px rgba(245,200,66,0.18), 0 8px 22px -6px rgba(212,165,50,0.60), inset 0 1px 0 rgba(255,255,255,0.28);
+    box-shadow: 0 0 0 3px rgba(156,65,65,0.18), 0 8px 22px -6px rgba(212,165,50,0.60), inset 0 1px 0 rgba(255,255,255,0.28);
   }
 
   .btn-secondary {
@@ -611,8 +618,8 @@ button:active svg, a:active svg { transform: scale(0.9); }
    --v2-gold-deep:  #D4A532  (or profond pour gradient)
    --v2-surface:    rgba(255,255,255,0.035)  (card background)
    --v2-border:     rgba(255,255,255,0.09)   (card border repos)
-   --v2-border-hot: rgba(245,200,66,0.22)    (card border hover/active)
-   --v2-glow:       rgba(245,200,66,0.18)    (CTA glow halo)
+   --v2-border-hot: rgba(156,65,65,0.22)    (card border hover/active)
+   --v2-glow:       rgba(156,65,65,0.18)    (CTA glow halo)
 
    Typographie V2 :
    - Titres display  → Cormorant Garamond, 700, 48–64px, letter-spacing -1px
@@ -622,15 +629,17 @@ button:active svg, a:active svg { transform: scale(0.9); }
    ═══════════════════════════════════════════════════════════════ */
 
 :root {
-  --v2-gold:       #F5C842;
-  --v2-gold-deep:  #D4A532;
-  --v2-gold-rgb:   245 200 66;
+  /* Retint 2026-08-25 — "Le Registre" : le v2-gold devient le rouge cachet,
+     cohérent avec le reste de l'app (voir --gold dans le bloc [data-theme="glass"]). */
+  --v2-gold:       #9C4141;
+  --v2-gold-deep:  #6E2C2C;
+  --v2-gold-rgb:   156 65 65;
   --v2-surface:    rgba(255,255,255,0.035);
   --v2-surface-hi: rgba(255,255,255,0.06);
   --v2-border:     rgba(255,255,255,0.09);
-  --v2-border-hot: rgba(245,200,66,0.22);
-  --v2-glow:       rgba(245,200,66,0.18);
-  --v2-radius:     12px;
+  --v2-border-hot: rgba(var(--v2-gold-rgb),0.22);
+  --v2-glow:       rgba(var(--v2-gold-rgb),0.18);
+  --v2-radius:     5px;
 }
 
 /* ── Card V2 — fort contraste, sans frosted glass ── */
@@ -793,7 +802,7 @@ button:active svg, a:active svg { transform: scale(0.9); }
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: linear-gradient(135deg, rgba(245,200,66,0.04) 0%, transparent 60%);
+  background: linear-gradient(135deg, rgba(156,65,65,0.04) 0%, transparent 60%);
   pointer-events: none;
 }
 
