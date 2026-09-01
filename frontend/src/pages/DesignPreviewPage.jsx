@@ -28,7 +28,7 @@ export default function DesignPreviewPage() {
         </h1>
         <p className="font-dm-sans text-sm text-text-secondary mt-4 max-w-xl leading-relaxed">
           3 composants redessinés avec l'esthétique hybride — fort contraste, typographie grand corps,
-          or saturé <code style={{ color: 'var(--v2-gold)', fontSize: 12 }}>#F5C842</code>, micro-animations.
+          rouge cachet <code style={{ color: 'var(--v2-gold)', fontSize: 12 }}>#9C4141</code>, micro-animations.
           Validez ce design avant application globale.
         </p>
       </div>

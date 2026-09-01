@@ -147,7 +147,7 @@ export default function DIPAvocatPage() {
               onClick={() => setTab(key)}
               className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-dm-sans transition-all"
               style={tab === key
-                ? { background: 'var(--v2-gold)', color: '#0a0805', fontWeight: 600 }
+                ? { background: 'var(--v2-gold)', color: '#F4ECE9', fontWeight: 600 }
                 : { background: 'var(--v2-surface)', border: '1px solid var(--v2-border)', color: 'rgb(var(--text-secondary))' }}
             >
               <Icon className="w-3.5 h-3.5" /> {label}
@@ -335,7 +335,7 @@ function DocumentView({ mode, dip, contract, franchiseurId, franchiseur }) {
               style={{
                 background: i === activeIndex ? 'var(--v2-gold)' : 'var(--v2-surface)',
                 border: `1px solid ${i === activeIndex ? 'var(--v2-gold)' : 'var(--v2-border)'}`,
-                color: i === activeIndex ? '#0a0805' : status === 'non_conforme' ? 'rgb(241 124 124)' : status === 'a_verifier' ? 'var(--v2-gold)' : 'rgb(91 216 154)',
+                color: i === activeIndex ? '#F4ECE9' : status === 'non_conforme' ? 'rgb(241 124 124)' : status === 'a_verifier' ? 'var(--v2-gold)' : 'rgb(91 216 154)',
                 fontWeight: i === activeIndex ? 700 : 400,
               }}
             >

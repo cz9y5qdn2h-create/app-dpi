@@ -246,7 +246,7 @@ export default function GenerateContractPage() {
           <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(156,65,65,0.15)' }}>
             <div
               className="h-full rounded-full transition-all duration-500"
-              style={{ width: `${progress.pct}%`, background: 'linear-gradient(90deg, #F5C842, #D4A532)' }}
+              style={{ width: `${progress.pct}%`, background: 'linear-gradient(90deg, #9C4141, #6E2C2C)' }}
             />
           </div>
           <p className="font-dm-mono text-xs text-text-muted">Claude Sonnet 4.6 · 30-60s estimés</p>
