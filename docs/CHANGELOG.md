@@ -9,6 +9,31 @@ Voir aussi : [INVARIANTS.md](INVARIANTS.md) · [BUG_JOURNAL.md](BUG_JOURNAL.md) 
 
 ---
 
+## 2026-08-25 (4)
+
+### 🟢 Tarification par paliers (nombre de clients franchiseurs)
+Passage d'un tarif plat (850 €/mois, clients illimités) à une grille par
+paliers — un cabinet à 20 clients ne paie plus la même chose qu'un cabinet
+à 2 clients. Mise en place inchangée (1 300 €, une seule fois). Paliers :
+1-5 clients 850 €/mois, 6-15 1 450 €/mois, 16-30 2 200 €/mois, 31+ sur
+devis. Choix de paliers plutôt que d'un prix strictement linéaire par
+client : facturation prévisible, pas d'effet "compteur au client près" —
+cohérent avec le positionnement premium demandé en parallèle, et bien plus
+simple à tenir sans facturation automatisée (pas de Stripe dans l'app,
+tarif géré manuellement par devis).
+
+Grille centralisée dans `frontend/src/lib/pricingTiers.js` (seule source,
+réutilisée par la landing page et l'espace avocat — évite que le site et
+le produit racontent deux tarifs différents). `AvocatDashboard.jsx` affiche
+désormais le palier actuel de l'avocat et le nombre de clients avant le
+palier suivant, à côté du nombre de réseaux suivis.
+
+Mis à jour partout où l'ancien tarif plat apparaissait : `LandingPage.jsx`
+(nouvelle grille visuelle + FAQ), `index.html` (JSON-LD `Offer` + FAQ
+statique), `llms.txt`. `LegalPage.jsx` (CGU) ne mentionnait déjà qu'un
+"tarif standard affiché sur le site" générique, sans chiffre en dur — pas
+de changement nécessaire là.
+
 ## 2026-08-25 (3)
 
 ### 🟢 Prospection B2B automatique par email (cabinets d'avocats)

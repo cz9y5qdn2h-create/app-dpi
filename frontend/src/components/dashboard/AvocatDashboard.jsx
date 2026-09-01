@@ -8,6 +8,7 @@ import { Building2, FileText, Clock, AlertCircle, ChevronRight, ShieldCheck, Fla
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import toast from 'react-hot-toast';
+import { getTierForCount, getNextTier } from '../../lib/pricingTiers';
 
 export default function AvocatDashboard() {
   const { profile } = useAuth();
@@ -64,6 +65,8 @@ export default function AvocatDashboard() {
   });
 
   const franchiseurs = data?.franchiseurs || [];
+  const currentTier = getTierForCount(franchiseurs.length || 1);
+  const nextTier = getNextTier(franchiseurs.length || 1);
   const pending = data?.pending || [];
   const averageScore = data?.average_compliance_score;
   const pendingSections = pendingValidations?.sections || [];
@@ -99,6 +102,13 @@ export default function AvocatDashboard() {
             <p className="display-v2" style={{ fontSize: 'clamp(28px, 4vw, 40px)' }}>Bonjour, {profile?.company_name || 'Maître'}</p>
             <p className="font-dm-sans text-sm mt-1" style={{ color: 'rgb(var(--text-secondary))' }}>
               {franchiseurs.length} réseau{franchiseurs.length !== 1 ? 'x' : ''} suivi{franchiseurs.length !== 1 ? 's' : ''}
+              <span style={{ color: 'rgb(var(--text-muted))' }}>
+                {' · '}Palier {currentTier.label}
+                {currentTier.onDevis ? ' (sur devis)' : ` — ${currentTier.price} €/mois`}
+                {nextTier && !currentTier.onDevis && (
+                  ` · encore ${currentTier.max - franchiseurs.length + 1} client${currentTier.max - franchiseurs.length + 1 > 1 ? 's' : ''} avant le palier suivant`
+                )}
+              </span>
             </p>
           </div>
           {averageScore !== null && averageScore !== undefined && (

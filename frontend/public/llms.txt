@@ -43,7 +43,8 @@ Secteurs des clients franchiseurs accompagnés : restauration, immobilier, beaut
 
 ## Tarification
 
-- 1 300 € de mise en place + 850 €/mois, par cabinet — tous les clients franchiseurs inclus, sans coût supplémentaire par dossier
+- 1 300 € de mise en place, une seule fois
+- Abonnement mensuel par paliers selon le nombre de clients franchiseurs suivis : 850 €/mois (1-5 clients), 1 450 €/mois (6-15), 2 200 €/mois (16-30), sur devis au-delà
 - Première analyse offerte, aucune carte bancaire requise
 - Onboarding personnalisé inclus
 

@@ -57,7 +57,7 @@ const FAQS = [
   },
   {
     q: "Combien coûte DIPpro ?",
-    a: "1 300 € de mise en place (onboarding personnalisé 1h, configuration de votre espace) + 850 €/mois, par cabinet — tous vos clients franchiseurs inclus, sans coût supplémentaire par dossier. Première analyse offerte, aucune carte bancaire requise.",
+    a: "1 300 € de mise en place (onboarding personnalisé 1h, configuration de votre espace), une seule fois. L'abonnement mensuel dépend ensuite du nombre de clients franchiseurs suivis : 850 €/mois de 1 à 5 clients, 1 450 €/mois de 6 à 15, 2 200 €/mois de 16 à 30, sur devis au-delà. Première analyse offerte, aucune carte bancaire requise.",
   },
   {
     q: "Que voient mes clients franchiseurs ?",
@@ -850,16 +850,32 @@ export default function LandingPage() {
         </FadeIn>
       </section>
 
-      {/* ── PRICING ──────────────────────────────────────────── */}
-      <section style={{ maxWidth: 860, margin: '0 auto', padding: '0 24px 64px' }}>
+      {/* ── PRICING (paliers par nombre de clients) ─────────────── */}
+      <section style={{ maxWidth: 1000, margin: '0 auto', padding: '0 24px 64px' }}>
         <FadeIn>
           <div style={{ textAlign: 'center', marginBottom: 40 }}>
             <h2 style={{ fontFamily: 'Cormorant Garamond, serif', fontWeight: 300, fontSize: 'clamp(2rem, 4vw, 2.6rem)', color: '#F4F2EE', marginBottom: 12 }}>
-              Tarification claire
+              Tarification par paliers
             </h2>
             <p style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 14, color: 'rgba(244,242,238,0.40)' }}>
-              Un prix réel, affiché — sans surprise.
+              1 300 € de mise en place, une seule fois — puis un abonnement mensuel proportionné au nombre de clients franchiseurs suivis.
             </p>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginBottom: 20 }}>
+            {[
+              { label: '1 à 5 clients', price: '850 €' },
+              { label: '6 à 15 clients', price: '1 450 €' },
+              { label: '16 à 30 clients', price: '2 200 €' },
+              { label: '31 clients et plus', price: 'Sur devis' },
+            ].map((tier, i) => (
+              <div key={tier.label} style={{ borderRadius: 18, padding: '24px 20px', background: i === 0 ? 'rgba(200,169,110,0.08)' : 'rgba(244,242,238,0.025)', border: `0.5px solid ${i === 0 ? 'rgba(200,169,110,0.30)' : 'rgba(244,242,238,0.07)'}`, textAlign: 'center' }}>
+                <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 10.5, color: 'rgba(244,242,238,0.40)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>{tier.label}</div>
+                <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 32, fontWeight: 300, color: GOLD, lineHeight: 1 }}>
+                  {tier.price}{tier.price !== 'Sur devis' && <span style={{ fontSize: 14, opacity: 0.6 }}>/mois</span>}
+                </div>
+              </div>
+            ))}
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16, alignItems: 'start' }}>
@@ -868,16 +884,16 @@ export default function LandingPage() {
               <div style={{ marginBottom: 24 }}>
                 <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: 'rgba(200,169,110,0.6)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Mise en place</div>
                 <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 42, fontWeight: 300, color: GOLD, lineHeight: 1 }}>1 300 €</div>
-                <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: 'rgba(244,242,238,0.38)', marginTop: 4 }}>une seule fois</div>
+                <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: 'rgba(244,242,238,0.38)', marginTop: 4 }}>une seule fois, quel que soit le palier</div>
               </div>
               <div style={{ height: '0.5px', background: 'rgba(200,169,110,0.15)', marginBottom: 24 }} />
               <div style={{ marginBottom: 24 }}>
-                <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: 'rgba(200,169,110,0.6)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>Abonnement mensuel</div>
+                <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 11, color: 'rgba(200,169,110,0.6)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>À partir de</div>
                 <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 42, fontWeight: 300, color: GOLD, lineHeight: 1 }}>850 €<span style={{ fontSize: 18, opacity: 0.6 }}>/mois</span></div>
-                <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: 'rgba(244,242,238,0.38)', marginTop: 4 }}>par cabinet — tous vos clients franchiseurs inclus</div>
+                <div style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12, color: 'rgba(244,242,238,0.38)', marginTop: 4 }}>selon le nombre de clients franchiseurs suivis (voir paliers ci-dessus)</div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
-                {['Onboarding personnalisé 1h avec l\'équipe', 'Clients franchiseurs illimités', 'Configuration complète de votre espace', 'Support prioritaire à vie'].map(f => (
+                {['Onboarding personnalisé 1h avec l\'équipe', 'Changement de palier automatique et transparent', 'Configuration complète de votre espace', 'Support prioritaire à vie'].map(f => (
                   <div key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
                     <CheckCircle style={{ width: 14, height: 14, color: GOLD, flexShrink: 0, marginTop: 1 }} />
                     <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12.5, color: 'rgba(244,242,238,0.55)', lineHeight: 1.5 }}>{f}</span>
@@ -895,7 +911,7 @@ export default function LandingPage() {
               <div style={{ borderRadius: 16, padding: '24px 28px', background: 'rgba(244,242,238,0.025)', border: '0.5px solid rgba(244,242,238,0.07)' }}>
                 <div style={{ fontFamily: 'DM Mono, monospace', fontSize: 10, color: 'rgba(244,242,238,0.30)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>Le calcul</div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, marginBottom: 14 }}>
-                  <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12.5, color: 'rgba(244,242,238,0.45)', lineHeight: 1.4 }}>Coût an 1 (mise en place + 12 mois)</span>
+                  <span style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 12.5, color: 'rgba(244,242,238,0.45)', lineHeight: 1.4 }}>Coût an 1, palier 1 à 5 clients (mise en place + 12 mois)</span>
                   <span style={{ fontFamily: 'DM Mono, monospace', fontSize: 13, color: 'rgba(244,242,238,0.70)', flexShrink: 0 }}>11 500 €</span>
                 </div>
                 <div style={{ height: '0.5px', background: 'rgba(200,169,110,0.15)', margin: '4px 0 14px' }} />
