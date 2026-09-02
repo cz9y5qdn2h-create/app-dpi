@@ -84,6 +84,10 @@ router.get('/users/:id', authMiddleware, requireAdmin, async (req, res) => {
     .from('franchisees').select('id, name, email, status')
     .eq('franchiseur_id', req.params.id);
 
+  // La clé Resend est un secret personnel du franchiseur (Paramètres >
+  // Emails) — l'admin n'a pas besoin de la lire pour gérer le compte.
+  delete user.resend_api_key;
+
   res.json({ user, dips: dips || [], franchisees: franchisees || [] });
 });
 

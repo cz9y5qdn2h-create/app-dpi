@@ -13,6 +13,7 @@ import AlertCard from '../components/dashboard/AlertCard';
 import CalModal from '../components/CalModal';
 import OnboardingModal from '../components/OnboardingModal';
 import AvocatDashboard from '../components/dashboard/AvocatDashboard';
+import SectionsBarChart from '../components/dashboard/SectionsBarChart';
 import {
   Upload, RefreshCw, FileText,
   AlertTriangle, CheckCircle, History,
@@ -181,11 +182,13 @@ export default function DashboardPage() {
               )}
             </div>
 
-            <div className="lg:col-span-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <StatCard label={t('dashboard.stats.totalSections')} value={stats.total} tag="DIP" tagVariant="gold" />
-              <StatCard label={t('dashboard.stats.compliant')} value={stats.conforme} tag="✓ OK" tagVariant="green" />
-              <StatCard label={t('dashboard.stats.toCheck')} value={stats.a_verifier} tag="⚠ Attente" tagVariant="gold" />
-              <StatCard label={t('dashboard.stats.nonCompliant')} value={stats.non_conforme} tag="✗ Critique" tagVariant="red" />
+            <div className="lg:col-span-3">
+              <SectionsBarChart
+                total={stats.total}
+                conforme={stats.conforme}
+                a_verifier={stats.a_verifier}
+                non_conforme={stats.non_conforme}
+              />
             </div>
           </div>
 
@@ -318,16 +321,6 @@ export default function DashboardPage() {
 
       <CalModal open={calOpen} onClose={() => setCalOpen(false)} />
       <OnboardingModal />
-    </div>
-  );
-}
-
-function StatCard({ label, value, tag, tagVariant = 'gold' }) {
-  return (
-    <div className="card" style={{ padding: '12px 13px' }}>
-      <p className="lg-metric-label">{label}</p>
-      <p className="lg-metric-val">{value ?? '—'}</p>
-      {tag && <span className={`lg-metric-tag lg-metric-tag-${tagVariant}`}>{tag}</span>}
     </div>
   );
 }

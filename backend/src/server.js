@@ -48,13 +48,18 @@ app.use(helmet({
   referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
 }));
 
-// CORS restreint aux origines autorisées
+// CORS restreint aux origines autorisées. Si ALLOWED_ORIGINS n'est pas
+// configurée sur Vercel, on retombait sur "aucune restriction" — un CORS
+// wildcard combiné à credentials:true, qui laisse n'importe quel site tiers
+// faire des requêtes authentifiées au nom d'un visiteur. Le repli est
+// désormais le domaine de production connu plutôt qu'un accès total.
+const DEFAULT_ALLOWED_ORIGINS = ['https://iralink-agency.dippro.business'];
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '').split(',').map(o => o.trim()).filter(Boolean);
+const effectiveOrigins = ALLOWED_ORIGINS.length > 0 ? ALLOWED_ORIGINS : DEFAULT_ALLOWED_ORIGINS;
 app.use(cors({
   origin: (origin, cb) => {
     if (!origin) return cb(null, true); // curl / SSR / mobile
-    if (ALLOWED_ORIGINS.length === 0) return cb(null, true); // aucune restriction configurée
-    if (ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+    if (effectiveOrigins.includes(origin)) return cb(null, true);
     cb(new Error('CORS: origine non autorisée'));
   },
   credentials: true,

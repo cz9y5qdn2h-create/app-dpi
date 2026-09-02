@@ -1,13 +1,26 @@
 const crypto = require('crypto');
 
 let KEY;
+let warned = false;
 function getKey() {
   if (KEY) return KEY;
   const raw = process.env.MONITOR_ENCRYPTION_KEY;
   if (raw && raw.length === 64) {
     KEY = Buffer.from(raw, 'hex');
   } else {
-    // Dev fallback: deterministic key from SUPABASE_URL so tokens survive restarts
+    // SUPABASE_URL n'est PAS un secret — c'est la même valeur que
+    // VITE_SUPABASE_URL, bakée en clair dans le bundle frontend. La dériver
+    // pour chiffrer des tokens OAuth (Google Drive/OneDrive) annule tout
+    // l'intérêt du chiffrement : quiconque lit le bundle public peut
+    // recalculer cette clé. Conservé uniquement en repli temporaire pour ne
+    // pas casser le déchiffrement des tokens déjà stockés — configurez
+    // MONITOR_ENCRYPTION_KEY (32 octets aléatoires en hex) dès que possible ;
+    // les intégrations déjà connectées devront être reconnectées une fois la
+    // vraie clé en place (les anciens tokens resteront chiffrés avec l'ancienne clé).
+    if (!warned) {
+      console.error('[SECURITY] MONITOR_ENCRYPTION_KEY absente — repli sur une clé dérivée de SUPABASE_URL (non secrète). Configurez MONITOR_ENCRYPTION_KEY en production.');
+      warned = true;
+    }
     const seed = process.env.SUPABASE_URL || 'dippro-dev-fallback-key-32-bytes!!';
     KEY = crypto.createHash('sha256').update(seed).digest();
   }

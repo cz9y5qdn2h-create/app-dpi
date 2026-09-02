@@ -9,6 +9,68 @@ Voir aussi : [INVARIANTS.md](INVARIANTS.md) · [BUG_JOURNAL.md](BUG_JOURNAL.md) 
 
 ---
 
+## 2026-09-02
+
+### 🔴 Buckets Storage `dip-files`/`contract-files` rendus privés
+Audit de sécurité complet du backend (demande explicite : « je veux qu'on
+soit infaillible »). Trouvaille la plus grave : les deux buckets Supabase
+Storage contenant les DIP et contrats de franchise bruts — les documents
+les plus confidentiels du produit — étaient créés avec `public: true`
+(`dip-files` depuis la toute première migration 004 ; `contract-files`
+sans migration dédiée, avec le même défaut côté code). Un bucket public
+sert les fichiers via une URL qui ignore toute policy RLS : quiconque
+obtenait un `storage_path` (lien transféré par email, en-tête Referer,
+historique navigateur) pouvait télécharger le DIP ou le contrat de
+n'importe quel franchiseur sans authentification.
+
+Migration `055_private_dip_contract_buckets.sql` bascule les deux buckets
+en privé et ajoute les policies propriétaire-uniquement (même schéma que
+`029_franchisor_documents_bucket.sql`, déjà correct). Backend
+(`dip.js`, `contracts.js`) : la création de bucket passe à `public: false`,
+et le calcul de `file_url` (jusque-là `getPublicUrl`, jamais lu par le
+frontend mais stocké en base) passe à `createSignedUrl` (7 jours). Sans
+impact fonctionnel visible — vérifié qu'aucune page ne lit `dip.file_url`.
+
+### 🔴 IDOR sur `/dip/process` et `/contracts/process`
+Ces deux endpoints téléchargeaient le fichier au `storage_path` fourni
+dans le body sans vérifier qu'il appartient à l'utilisateur authentifié —
+`documents.js` avait déjà le bon réflexe (`storage_path.startsWith(userId
++ '/')`) mais il manquait ici. Ajouté aux deux routes : rejet 403 si le
+préfixe ne correspond pas à `req.user.id`.
+
+### 🟡 CORS fail-open si `ALLOWED_ORIGINS` non configurée
+`server.js` retombait sur « aucune restriction d'origine » (combiné à
+`credentials: true`) quand la variable d'env `ALLOWED_ORIGINS` n'était pas
+définie — jamais documentée dans `.env.example`, donc probablement jamais
+configurée en prod. Le repli est désormais le domaine de production connu
+(`iralink-agency.dippro.business`) plutôt qu'un accès total ; la variable
+d'env, si définie, garde la priorité.
+
+### 🟡 Clé de chiffrement des tokens OAuth dérivée d'une valeur non secrète
+`config/encryption.js` chiffrait les tokens Google Drive/OneDrive (veille
+documentaire) avec une clé de repli dérivée de `SUPABASE_URL` — qui n'est
+pas un secret (même valeur que `VITE_SUPABASE_URL`, visible dans le bundle
+frontend public). Le repli reste en place pour ne pas casser le
+déchiffrement des tokens déjà stockés, mais journalise désormais une
+erreur explicite tant que `MONITOR_ENCRYPTION_KEY` n'est pas configurée.
+
+### 🟡 Dépendances — vulnérabilités high/critical
+`npm audit fix` (backend et frontend) : 3 high → 0 côté backend, 7 high → 1
+côté frontend (le reste nécessite un `--force` avec montée de version
+majeure — `uuid` v14 et `react-router` v7 — non appliqué, risque
+d'exploitation nul dans ce code et migration hors scope de cet audit).
+
+### 🟢 Dashboard — bloc statistiques remplacé par un graphique en barres
+Les 4 cartes « Sections totales / Conformes / À vérifier / Non conformes »
+(petits chiffres perdus dans de grandes cases) remplacées par un vrai
+graphique en barres verticales avec noms de catégorie à l'horizontale
+(`SectionsBarChart.jsx`) — même palette sémantique que `ConformityGauge`
+juste à côté (vert/ambre/rouge réservés à l'état, jamais l'accent seal-red
+de l'identité), pour que les deux widgets de la ligne 1 du dashboard
+racontent la même échelle de couleur. Le total n'est plus une 4e barre
+(un total est la somme des trois autres — le comparer comme catégorie
+indépendante aurait été trompeur) mais un sous-titre discret.
+
 ## 2026-08-25 (5)
 
 ### 🟢 Nouvelle direction visuelle « Le Registre »

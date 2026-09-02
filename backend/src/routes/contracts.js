@@ -26,7 +26,7 @@ const ensureBucket = async () => {
   const exists = buckets?.some(b => b.id === BUCKET);
   if (!exists) {
     await supabaseAdmin.storage.createBucket(BUCKET, {
-      public: true,
+      public: false,
       fileSizeLimit: 52428800,
       allowedMimeTypes: [
         'application/pdf',
@@ -69,6 +69,9 @@ router.get('/upload-url', authMiddleware, requireFranchisor, async (req, res) =>
 router.post('/process', authMiddleware, requireFranchisor, async (req, res) => {
   const { storage_path, title, signed_url, linked_dip_id } = req.body;
   if (!storage_path) return res.status(400).json({ error: 'storage_path requis' });
+  if (!storage_path.startsWith(`${req.user.id}/`)) {
+    return res.status(403).json({ error: 'storage_path invalide' });
+  }
 
   try {
     let buffer;
@@ -98,7 +101,10 @@ router.post('/process', authMiddleware, requireFranchisor, async (req, res) => {
 
     let fileUrl = null;
     try {
-      fileUrl = supabaseAdmin.storage.from(BUCKET).getPublicUrl(storage_path).data.publicUrl;
+      const { data: signedData } = await supabaseAdmin.storage
+        .from(BUCKET)
+        .createSignedUrl(storage_path, 60 * 60 * 24 * 7);
+      fileUrl = signedData?.signedUrl || null;
     } catch {
       fileUrl = signed_url || null;
     }
