@@ -53,6 +53,10 @@
   --text-muted:     90 86 82;
   --gold:           156 65 65;
   --gold-light:     214 136 136;
+  /* Statut "à vérifier/en attente" — séparé de --gold depuis que --gold
+     porte l'identité de marque (rouge cachet) : les deux se confondaient
+     avec --danger dans tous les badges de statut de l'app (StatusBadge). */
+  --warning:        224 176 82;
   --success:        91 216 154;
   --success-light:  139 234 192;
   --danger:         241 124 124;
@@ -117,6 +121,7 @@
   --text-muted:     90 90 98;
   --gold:           192 150 78;
   --gold-light:     216 180 122;
+  --warning:        192 150 78;
   --success:        91 216 154;
   --success-light:  139 234 192;
   --danger:         241 124 124;
@@ -181,6 +186,7 @@
   --text-muted:     146 141 154;
   --gold:           139 98 24;
   --gold-light:     111 77 15;
+  --warning:        139 98 24;
   --success:        26 148 89;
   --success-light:  46 179 119;
   --danger:         194 68 68;

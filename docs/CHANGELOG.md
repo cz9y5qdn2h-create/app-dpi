@@ -9,7 +9,27 @@ Voir aussi : [INVARIANTS.md](INVARIANTS.md) · [BUG_JOURNAL.md](BUG_JOURNAL.md) 
 
 ---
 
-## 2026-09-02
+## 2026-09-02 (2)
+
+### 🟡 Statuts "à vérifier" indiscernables des statuts "non conforme"
+Vérification visuelle complète du dashboard connecté (rendu reconstitué
+localement avec un profil et des données simulées, faute de session réelle
+disponible pour cette vérification) — a révélé que le token `--gold`,
+retinté en rouge cachet lors de la refonte « Le Registre », servait aussi
+de couleur "à vérifier / en attente / modéré" dans `StatusBadge.jsx` et une
+dizaine d'usages inline (`CompliancePage.jsx`, `AlertsPage.jsx`,
+`AdminPage.jsx`, `DIPPage.jsx`, `ContractPage.jsx`) — partout à côté de
+`--danger` (rouge). Résultat : les badges "À vérifier" et "Non conforme"
+étaient devenus quasiment identiques dans le thème `glass` par défaut.
+
+Nouveau token `--warning` (ambre `224 176 82`, la teinte déjà utilisée par
+`ConformityGauge` pour son niveau "En cours") séparé de `--gold` dans les
+trois thèmes — `sobre`/`lumiere` reprennent leur propre `--gold` (déjà un
+ambre distinct de leur `--danger`, donc aucun changement visuel là-bas).
+Classe Tailwind `warning` repointée sur `--warning` au lieu de `--gold`,
+et tous les usages sémantiques (statut, urgence, niveau de confiance IA,
+tone de StatCard) migrés de `gold` vers `warning` — `--gold`/`text-gold`
+reste réservé à l'identité de marque (CTA, liens, icônes d'accent).
 
 ### 🔴 Buckets Storage `dip-files`/`contract-files` rendus privés
 Audit de sécurité complet du backend (demande explicite : « je veux qu'on

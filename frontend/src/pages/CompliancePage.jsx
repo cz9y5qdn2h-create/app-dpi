@@ -12,7 +12,7 @@ import { COMPLIANCE_LEVEL_LABEL, SCORE_DISCLAIMER } from '../lib/legalCopy';
 
 const COMPLIANCE_LABEL = {
   CONFORME: { label: COMPLIANCE_LEVEL_LABEL.CONFORME, color: 'text-success' },
-  RÉVISIONS_MINEURES: { label: COMPLIANCE_LEVEL_LABEL.RÉVISIONS_MINEURES, color: 'text-gold' },
+  RÉVISIONS_MINEURES: { label: COMPLIANCE_LEVEL_LABEL.RÉVISIONS_MINEURES, color: 'text-warning' },
   RÉVISIONS_MAJEURES: { label: COMPLIANCE_LEVEL_LABEL.RÉVISIONS_MAJEURES, color: 'text-danger' },
   BLOQUANT_NON_ENVOYABLE: { label: COMPLIANCE_LEVEL_LABEL.BLOQUANT_NON_ENVOYABLE, color: 'text-danger' },
 };
@@ -21,7 +21,7 @@ function StatCard({ icon: Icon, label, value, tone = 'default', to }) {
   const toneClasses = {
     default: 'text-text-primary',
     danger: 'text-danger',
-    gold: 'text-gold',
+    warning: 'text-warning',
     success: 'text-success',
   };
   const content = (
@@ -113,8 +113,8 @@ export default function CompliancePage() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <StatCard icon={Bell} label="Alertes en attente" value={alerts.total} tone={alerts.haute > 0 ? 'danger' : 'default'} to="/alerts" />
         <StatCard icon={Clock} label="Délai 20j non respecté" value={signatureDelays.count} tone={signatureDelays.count > 0 ? 'danger' : 'success'} to="/franchisees" />
-        <StatCard icon={Users} label="Reprises en cours" value={reprises.count} tone="gold" to="/franchisees" />
-        <StatCard icon={Newspaper} label="Actualités à fort impact" value={news.length} tone={news.length > 0 ? 'gold' : 'default'} to="/monitoring" />
+        <StatCard icon={Users} label="Reprises en cours" value={reprises.count} tone="warning" to="/franchisees" />
+        <StatCard icon={Newspaper} label="Actualités à fort impact" value={news.length} tone={news.length > 0 ? 'warning' : 'default'} to="/monitoring" />
       </div>
 
       {/* Alertes prioritaires */}
@@ -133,7 +133,7 @@ export default function CompliancePage() {
                   <p className="font-dm-sans text-sm text-text-primary truncate">{a.title || a.source}</p>
                   {a.suggestion && <p className="font-dm-sans text-xs text-text-secondary mt-0.5 line-clamp-1">{a.suggestion}</p>}
                 </div>
-                <span className={`font-dm-mono text-xs px-2 py-0.5 rounded flex-shrink-0 ${a.urgency === 'haute' ? 'bg-danger/10 text-danger border border-danger/20' : 'bg-gold/10 text-gold border border-gold/20'}`}>
+                <span className={`font-dm-mono text-xs px-2 py-0.5 rounded flex-shrink-0 ${a.urgency === 'haute' ? 'bg-danger/10 text-danger border border-danger/20' : 'bg-warning/10 text-warning border border-warning/20'}`}>
                   {a.urgency}
                 </span>
               </div>
@@ -197,7 +197,7 @@ export default function CompliancePage() {
                     {n.source} {n.published_at && '· ' + formatDistanceToNow(new Date(n.published_at), { addSuffix: true, locale: fr })}
                   </p>
                 </div>
-                <span className={`font-dm-mono text-xs px-2 py-0.5 rounded flex-shrink-0 ${n.impact_level === 'critical' ? 'bg-danger/10 text-danger border border-danger/20' : 'bg-gold/10 text-gold border border-gold/20'}`}>
+                <span className={`font-dm-mono text-xs px-2 py-0.5 rounded flex-shrink-0 ${n.impact_level === 'critical' ? 'bg-danger/10 text-danger border border-danger/20' : 'bg-warning/10 text-warning border border-warning/20'}`}>
                   {n.impact_level === 'critical' ? 'Critique' : 'Élevé'}
                 </span>
               </a>

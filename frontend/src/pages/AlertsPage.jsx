@@ -240,7 +240,7 @@ export default function AlertsPage() {
                     {isIaCorrection && alert.ai_confidence && (
                       <span className={`font-dm-mono text-xs px-2 py-0.5 rounded border ${
                         alert.ai_confidence === 'haute' ? 'bg-success/10 text-success border-success/20' :
-                        alert.ai_confidence === 'moyenne' ? 'bg-gold/10 text-gold border-gold/20' :
+                        alert.ai_confidence === 'moyenne' ? 'bg-warning/10 text-warning border-warning/20' :
                         'bg-danger/10 text-danger border-danger/20'
                       }`}>
                         Confiance {alert.ai_confidence}

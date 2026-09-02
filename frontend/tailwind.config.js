@@ -17,7 +17,7 @@ export default {
         'border-default': 'var(--border-default)',
         'success':        'rgb(var(--success) / <alpha-value>)',
         'success-light':  'rgb(var(--success-light) / <alpha-value>)',
-        'warning':        'rgb(var(--gold) / <alpha-value>)',
+        'warning':        'rgb(var(--warning) / <alpha-value>)',
         'danger':         'rgb(var(--danger) / <alpha-value>)',
         'error':          'rgb(var(--error) / <alpha-value>)',
         'ai-color':       'rgb(var(--ai-color) / <alpha-value>)',

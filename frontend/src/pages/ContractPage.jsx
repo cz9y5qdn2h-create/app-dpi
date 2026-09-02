@@ -269,7 +269,7 @@ export default function ContractPage() {
         <div className="flex flex-wrap gap-4 sm:gap-6 mt-4">
           {[
             { label: 'Conformes', key: 'conforme', color: 'text-success' },
-            { label: 'À vérifier', key: 'a_verifier', color: 'text-gold' },
+            { label: 'À vérifier', key: 'a_verifier', color: 'text-warning' },
             { label: 'Non conformes', key: 'non_conforme', color: 'text-danger' },
           ].map(({ label, key, color }) => (
             <div key={key}>

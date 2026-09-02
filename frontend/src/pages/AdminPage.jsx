@@ -726,7 +726,7 @@ export default function AdminPage() {
                       </div>
                       <div className="flex flex-col items-end gap-2 flex-shrink-0">
                         <span className={`font-dm-mono text-xs px-2 py-0.5 rounded border ${
-                          w.status === 'pending' ? 'text-gold border-gold/30 bg-gold/5' :
+                          w.status === 'pending' ? 'text-warning border-warning/30 bg-warning/5' :
                           w.status === 'contacted' ? 'text-blue-400 border-blue-400/30 bg-blue-400/5' :
                           w.status === 'converted' ? 'text-success border-success/30 bg-success/10' :
                           'text-text-muted border-border-subtle bg-bg-elevated'
